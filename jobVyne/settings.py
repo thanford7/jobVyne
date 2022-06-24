@@ -9,24 +9,36 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
-
+import logging
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+from django.core.management.utils import get_random_secret_key
+from environ import environ
+
+from jvapp.utils.logger import setLogger
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env(DEBUG=(bool, False))
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-l%=u-$ow-+nuy7jx-lni2b#y)qiun^tev6_p1!jhsntp#jzqid'
+SECRET_KEY = env('DJANGO_SECRET_KEY', default=get_random_secret_key())
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG', cast=bool, default=False)
 
-ALLOWED_HOSTS = []
+LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
+logger = setLogger(LOG_LEVEL)
+logger.info(f'Base directory is: {BASE_DIR}')
 
+PREPEND_WWW = False
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0').split(',')
 
 # Application definition
 
@@ -37,11 +49,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
+    'jvapp',
+    'corsheaders',
+    # 'storages',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -73,18 +91,25 @@ WSGI_APPLICATION = 'jobVyne.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if IS_LOCAL := env('IS_LOCAL', cast=bool, default=False):
+    logger.info('Local mode')
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': env('LOCAL_DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': 'localhost',
+            'PORT': 5432
+        }
     }
-}
+else:
+    logger.info('PRODUCTION MODE')
 
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
-
+AUTH_USER_MODEL = 'jvapp.JobVineUser'
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -122,3 +147,25 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# SQL Logging
+if env('SQL_LOG', cast=bool, default=False):
+    LOGGING = {
+        'version': 1,
+        'loggers': {
+            'django.db.backends': {
+                'level': 'DEBUG',
+            }
+        }
+    }
+
+# CORS
+CORS_ALLOW_CREDENTIALS = True
+if IS_LOCAL:
+    CORS_ALLOWED_ORIGINS = (
+        'http://localhost:9100',
+    )
+else:
+    CORS_ALLOWED_ORIGIN_REGEXES = (
+        r'^https://\w+\.jobvyne\.com$',
+    )
