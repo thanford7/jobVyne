@@ -9,21 +9,32 @@ import { Cookies } from 'quasar'
 // "export default () => {}" function below (which runs individually
 // for each client)
 axios.defaults.withCredentials = true
-export default boot(({ app, ssrContext }) => {
-  const cookies = process.env.SERVER
-    ? Cookies.parseSSR(ssrContext)
-    : Cookies // otherwise we're on client
-  const csrftoken = cookies.get('csrftoken')
+export default boot(({ app, ssrContext, store }) => {
   const api = axios.create({
     baseURL: process.env.API,
-    headers: { 'X-CSRFTOKEN': csrftoken }
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   })
+
+  api.interceptors.request.use(function (config) {
+    const cookies = process.env.SERVER
+      ? Cookies.parseSSR(ssrContext)
+      : Cookies // otherwise we're on client
+    config.headers['X-CSRFTOKEN'] = cookies.get('csrftoken')
+
+    return config
+  })
+
   // for use inside Vue files (Options API) through this.$axios and this.$api
   app.config.globalProperties.$axios = axios
   // ^ ^ ^ this will allow you to use this.$axios (for Vue Options API form)
   //       so you won't necessarily have to import axios in each vue file
 
   app.config.globalProperties.$api = api
+  store.use(() => {
+    return { $api: api }
+  })
   // ^ ^ ^ this will allow you to use this.$api (for Vue Options API form)
   //       so you can easily perform requests against your app's API
 })

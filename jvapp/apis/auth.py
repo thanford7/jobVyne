@@ -18,12 +18,12 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
         if not email or not password:
-            return Response(status=HTTPStatus.BAD_REQUEST)
+            return Response('Email and password are required', status=HTTPStatus.BAD_REQUEST)
 
         logger.info('About to authenticate')
         user = authenticate(username=email, password=password)
         if not user:
-            Response('Email or password is incorrect', status=HTTPStatus.UNAUTHORIZED)
+            return Response('Email or password is incorrect', status=HTTPStatus.UNAUTHORIZED)
 
         login(request, user)
         return Response(status=HTTPStatus.OK, data={'user_id': user.id})

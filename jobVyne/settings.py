@@ -67,6 +67,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': [
+        'jobVyne.multiPartJsonParser.MultiPartJsonParser',
+    ]
+}
+
 ROOT_URLCONF = 'jobVyne.urls'
 
 TEMPLATES = [
@@ -162,10 +168,8 @@ if env('SQL_LOG', cast=bool, default=False):
 # CORS
 CORS_ALLOW_CREDENTIALS = True
 if IS_LOCAL:
-    CORS_ALLOWED_ORIGINS = (
-        'http://localhost:9100',
-    )
+    CORS_ALLOWED_ORIGINS = ('http://localhost:9100',)
+    CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 else:
-    CORS_ALLOWED_ORIGIN_REGEXES = (
-        r'^https://\w+\.jobvyne\.com$',
-    )
+    CORS_ALLOWED_ORIGIN_REGEXES = (r'^https://\w+\.jobvyne\.com$',)
+    CSRF_TRUSTED_ORIGINS = ('https://*.jobvyne.com',)

@@ -16,3 +16,6 @@ urlpatterns = [
     path(apiPath + 'auth/login-set-cookie/', auth.LoginSetCookieView.as_view()),
     path(apiPath + 'auth/logout/', auth.LogoutView.as_view()),
 ]
+
+handler404 = 'jvapp.views.handler404'
+handler500 = 'jvapp.views.handler500'

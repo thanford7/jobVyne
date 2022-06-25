@@ -18,12 +18,12 @@
             <q-input
               v-model="password"
               filled
-              :type="isPwdShown ? 'password' : 'text'"
+              :type="isPwdShown ? 'text' : 'password'"
               label="Password *"
             >
               <template v-slot:append>
                 <q-icon
-                  :name="isPwdShown ? 'visibility_off' : 'visibility'"
+                  :name="isPwdShown ? 'visibility' : 'visibility_off'"
                   class="cursor-pointer"
                   @click="isPwdShown = !isPwdShown"
                 />
@@ -55,15 +55,14 @@ export default {
   },
   methods: {
     isGoodEmail: validation.isGoodEmail,
-    login () {
+    async login () {
       const user = {
         email: this.email,
         password: this.password
       }
-      this.store.login(user)
-        .then(() => {
-          this.$router.push('/')
-        })
+      const login = this.store.login.bind(this.store)
+      await login(user)
+      this.$router.push('/')
       this.email = null
       this.password = null
     }

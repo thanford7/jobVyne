@@ -8,12 +8,33 @@
             <img src="../assets/jobVyneLogo.png" alt="Logo" style="height: 40px; object-fit: scale-down">
           </q-toolbar-title>
         </a>
-        <q-space />
-        <q-tabs align="right" shrink>
-          <q-route-tab to="/page1" label="Page One"/>
-          <q-route-tab to="/page2" label="Page Two"/>
+        <q-space/>
+        <q-tabs class="gt-sm" align="right" shrink>
           <q-route-tab to="/login" label="Login"/>
         </q-tabs>
+        <div class="lt-md q-pa-md" style="max-width: 250px">
+          <q-btn-dropdown
+            no-icon-animation
+            flat dense rounded
+            dropdown-icon="menu"
+            aria-label="Menu"
+          >
+            <q-list
+              bordered padding
+              class="rounded-borders text-primary"
+            >
+              <q-item
+                exact clickable v-close-popup
+                v-ripple
+                to="/login"
+                label="Login">
+                <q-item-section>
+                  Login
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
       </q-toolbar>
     </q-header>
 
