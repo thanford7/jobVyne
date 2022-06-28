@@ -10,6 +10,7 @@
 
 const { configure } = require('quasar/wrappers')
 const path = require('path')
+const fs = require('fs')
 
 module.exports = configure(function (ctx) {
   return {
@@ -59,7 +60,7 @@ module.exports = configure(function (ctx) {
         node: 'node16'
       },
 
-      vueRouterMode: 'hash', // available values: 'hash', 'history'
+      vueRouterMode: 'history', // available values: 'hash', 'history'
       // vueRouterBase,
       // vueDevtools,
       // vueOptionsAPI: false,
@@ -69,7 +70,7 @@ module.exports = configure(function (ctx) {
       // publicPath: '/',
       // analyze: true,
       env: {
-        API: (ctx.dev) ? 'http://localhost:8000/api/v1/' : 'api/v1/'
+        API_URL: (ctx.dev) ? 'http://localhost:8000/api/v1/' : 'api/v1/'
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
@@ -93,7 +94,10 @@ module.exports = configure(function (ctx) {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
     devServer: {
-      // https: true
+      https: {
+        cert: fs.readFileSync('./localhost.pem'),
+        key: fs.readFileSync('./localhost-key.pem')
+      },
       open: true // opens browser window automatically
     },
 

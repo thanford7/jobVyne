@@ -4,8 +4,24 @@
 
 <script>
 import { defineComponent } from 'vue'
+import { useAjaxStore } from 'stores/ajax-store'
+import { AJAX_EVENTS } from 'boot/axios'
 
 export default defineComponent({
-  name: 'App'
+  name: 'App',
+  data () {
+    return {
+      hasEventsLoaded: false
+    }
+  },
+  mounted () {
+    if (!this.hasEventsLoaded) {
+      const ajaxStore = useAjaxStore()
+      ajaxStore.$on(AJAX_EVENTS.ERROR, (error) => {
+        ajaxStore.addErrorMsg(error)
+      })
+      this.hasEventsLoaded = true
+    }
+  }
 })
 </script>

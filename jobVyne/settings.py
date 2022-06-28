@@ -24,7 +24,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
@@ -53,7 +52,8 @@ INSTALLED_APPS = [
     'jvapp',
     'corsheaders',
     # 'storages',
-    'rest_framework'
+    'social_django',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -67,13 +67,64 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'social_core.backends.facebook.FacebookOAuth2',
+    'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.instagram.InstagramOAuth2',
+    'social_core.backends.linkedin.LinkedinOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    # 'social_core.pipeline.user.get_username',
+    'social_core.pipeline.social_auth.associate_by_email',
+    'jobVyne.customSocialPipeline.create_user',
+    # 'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
+AUTH_STATE = env('AUTH_STATE')
+SOCIAL_AUTH_FACEBOOK_KEY = env('FACEBOOK_KEY')
+SOCIAL_AUTH_FACEBOOK_SECRET = env('FACEBOOK_SECRET')
+
+# this is needed to get a user's email from Facebook. See:
+# https://stackoverflow.com/questions/32024327/facebook-doesnt-return-email-python-social-auth
+# https://stackoverflow.com/a/32129851/6084948
+# https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
+    "fields": "id,name,email",
+}
+
 REST_FRAMEWORK = {
-    'DEFAULT_PARSER_CLASSES': [
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
         'jobVyne.multiPartJsonParser.MultiPartJsonParser',
-    ]
+    )
 }
 
 ROOT_URLCONF = 'jobVyne.urls'
+
+IS_LOCAL = env('IS_LOCAL', cast=bool, default=False)
+if frontend_url_override := env('FRONTEND_URL_OVERRIDE'):
+    FRONTEND_URL = frontend_url_override
+elif IS_LOCAL:
+    FRONTEND_URL = 'https://localhost:9000/'
+else:
+    FRONTEND_URL = 'https://jobvyne.com/'
 
 TEMPLATES = [
     {
@@ -87,6 +138,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -94,10 +147,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'jobVyne.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-if IS_LOCAL := env('IS_LOCAL', cast=bool, default=False):
+if IS_LOCAL:
     logger.info('Local mode')
     DATABASES = {
         'default': {
@@ -111,7 +163,6 @@ if IS_LOCAL := env('IS_LOCAL', cast=bool, default=False):
     }
 else:
     logger.info('PRODUCTION MODE')
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -131,7 +182,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -142,7 +192,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
@@ -167,8 +216,9 @@ if env('SQL_LOG', cast=bool, default=False):
 
 # CORS
 CORS_ALLOW_CREDENTIALS = True
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 if IS_LOCAL:
-    CORS_ALLOWED_ORIGINS = ('http://localhost:9100',)
+    CORS_ALLOWED_ORIGINS = ('https://localhost:9100', 'https://localhost:9000')
     CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 else:
     CORS_ALLOWED_ORIGIN_REGEXES = (r'^https://\w+\.jobvyne\.com$',)

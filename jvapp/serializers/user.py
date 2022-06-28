@@ -4,6 +4,7 @@ from . import get_datetime_format_or_none
 
 def get_serialized_user(user: JobVineUser):
     return {
+        'id': user.id,
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,

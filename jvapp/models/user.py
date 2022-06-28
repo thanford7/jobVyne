@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
-from django.utils import timezone
+from django.utils import crypto, timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -13,7 +13,7 @@ class CustomUserManager(BaseUserManager):
     Custom user model manager where email is the unique identifier
     for authentication instead of username.
     """
-    def create_user(self, email, password, **extra_fields):
+    def create_user(self, email, password=None, **extra_fields):
         """
         Create and save a User with the given email and password.
         """
@@ -21,7 +21,8 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_('Email must be set'))
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        user.set_password(password or generate_password())
+        # TODO: If not password, send password reset email
         user.save()
         return user
 
@@ -60,3 +61,7 @@ class JobVineUser(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+def generate_password():
+    return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')

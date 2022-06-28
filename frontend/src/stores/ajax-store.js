@@ -1,0 +1,47 @@
+import { defineStore } from 'pinia'
+
+export const msgClassCfgs = {
+  SUCCESS: 'bg-positive',
+  WARNING: 'bg-warning',
+  ERROR: 'bg-negative text-white',
+  INFO: 'bg-info text-white'
+}
+
+export const useAjaxStore = defineStore('ajax', {
+  state: () => ({
+    messages: [],
+    msgIdx: 0
+  }),
+
+  actions: {
+    addErrorMsg (error) {
+      const { data, status, statusText } = error.response
+      let msg = `${status} ${statusText}`
+      if (data && data.detail) {
+        msg += `: ${data.detail}`
+      }
+
+      this.msgIdx++
+      this.messages.push({
+        msg,
+        classStr: msgClassCfgs.ERROR,
+        idx: this.msgIdx
+      })
+    },
+    addSuccessMsg (msg) {
+      this.msgIdx++
+      const idx = this.msgIdx
+      this.messages.push({
+        msg,
+        classStr: msgClassCfgs.ERROR,
+        idx
+      })
+      setTimeout(() => {
+        this.removeMsg(idx)
+      }, 10000)
+    },
+    removeMsg (msgIdx) {
+      this.messages = this.messages.filter((msg) => msg.idx !== msgIdx)
+    }
+  }
+})

@@ -1,10 +1,95 @@
 // app global css in SCSS form
 
-#q-app {
-  max-width: 1280px;
-  margin: 0 auto;
+/* http://meyerweb.com/eric/tools/css/reset/
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	vertical-align: baseline;
 }
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+/*
+End reset
+ */
+
+/* Scrollbar */
+body {
+    scrollbar-width: 10px; /*thin;*/
+    scrollbar-color: $primary $white;
+    scrollbar-gutter: stable;
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: $white; /* color of the tracking area */
+    border-left: 1px solid $gray-300;
+    //border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: $primary; /* color of the scroll thumb */
+    border-radius: 10px; /* roundness of the scroll thumb */
+}
+/*
+End scrollbar
+ */
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Lustria', 'serif';
+  margin: 0.5rem 0 0.5rem 0;
+}
+
+p {
+  margin: 0.5rem 0 0.5rem 0;
+}
+
+ul:not(.nav), ol {
+    li {
+        margin-bottom: 0.5rem;
+    }
+}
+
+ul, ol {
+    p {
+      display: inline;  // Make sure bullets display on same line as text
+    }
 }

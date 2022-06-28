@@ -6,15 +6,17 @@ from jvapp.apis import auth, user
 apiPath = 'api/v1/'
 
 urlpatterns = [
-    path('', views.index, name='index'),
-
     # Data
-    re_path(apiPath + 'user/(?P<userId>[0-9]+)?/?$', user.UserView.as_view()),
+    re_path('user/(?P<userId>[0-9]+)?/?$', user.UserView.as_view()),
 
     # Auth
-    path(apiPath + 'auth/login/', auth.LoginView.as_view()),
-    path(apiPath + 'auth/login-set-cookie/', auth.LoginSetCookieView.as_view()),
-    path(apiPath + 'auth/logout/', auth.LogoutView.as_view()),
+    path('auth/login/', auth.LoginView.as_view()),
+    path('auth/login-set-cookie/', auth.LoginSetCookieView.as_view()),
+    path('auth/logout/', auth.LogoutView.as_view()),
+    
+    # Social auth
+    path('social/<backend>/', auth.social_auth),
+    path('social-credentials/', auth.SocialAuthCredentialsView.as_view())
 ]
 
 handler404 = 'jvapp.views.handler404'
