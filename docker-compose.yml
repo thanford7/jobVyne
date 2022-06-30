@@ -1,0 +1,103 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: db
+    image: mariadb:10
+    networks:
+      - main
+    ports:
+      - "3308:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+
+  nginx:
+    container_name: nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./templates:/etc/nginx/templates
+    networks:
+      - main
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    depends_on:
+      - backend
+      - db
+    volumes:
+      - ./frontend:/app
+      - /node_modules
+    networks:
+      - main
+    secrets:
+      - fe_https_cert
+      - fe_https_key
+    restart: "no"
+    command: quasar dev -p 9000
+
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: bash -c "python manage.py collectstatic --noinput --clear && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/code
+      - django-static:/code/static
+    ports:
+      - "8000:8000"
+    networks:
+      - main
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+
+volumes:
+  db-data:
+  django-static:
+
+networks:
+  main:
+    driver: bridge
+
+secrets:
+  db_root_password:
+    file: docker_secrets/MYSQL_ROOT_PASSWORD_FILE
+  db_user_name:
+    file: docker_secrets/MYSQL_USER_FILE
+  db_user_password:
+    file: docker_secrets/MYSQL_PASSWORD_FILE
+  django_secret_key:
+    file: docker_secrets/DJANGO_SECRET_KEY
+  social_auth_state:
+    file: docker_secrets/SOCIAL_AUTH_STATE
+  social_auth_facebook_key:
+    file: docker_secrets/SOCIAL_AUTH_FACEBOOK_KEY
+  social_auth_facebook_secret:
+    file: docker_secrets/SOCIAL_AUTH_FACEBOOK_SECRET
+  fe_https_cert:
+    file: frontend/localhost.pem
+  fe_https_key:
+    file: frontend/localhost-key.pem

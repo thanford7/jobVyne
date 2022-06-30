@@ -15,22 +15,26 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from django.core.management.utils import get_random_secret_key
-from environ import environ
 
 from jvapp.utils.logger import setLogger
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env = environ.Env(DEBUG=(bool, False))
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+def get_boolean_env_variable(key, default=False):
+    var = os.environ.get(key)
+    if var is not None:
+        return any([var.lower() == 'true', var == '1', var == 1, var == True])
+    return default
+    
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('DJANGO_SECRET_KEY', default=get_random_secret_key())
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY') or get_random_secret_key()
 
-DEBUG = env('DEBUG', cast=bool, default=False)
+DEBUG = get_boolean_env_variable('DEBUG')
 
 LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
 logger = setLogger(LOG_LEVEL)
@@ -50,7 +54,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'jvapp',
-    'corsheaders',
     # 'storages',
     'social_django',
     'rest_framework',
@@ -59,7 +62,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -89,9 +91,9 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.user.user_details',
 )
 
-AUTH_STATE = env('AUTH_STATE')
-SOCIAL_AUTH_FACEBOOK_KEY = env('FACEBOOK_KEY')
-SOCIAL_AUTH_FACEBOOK_SECRET = env('FACEBOOK_SECRET')
+AUTH_STATE = os.environ.get('AUTH_STATE')
+SOCIAL_AUTH_FACEBOOK_KEY = os.environ.get('FACEBOOK_KEY')
+SOCIAL_AUTH_FACEBOOK_SECRET = os.environ.get('FACEBOOK_SECRET')
 
 # this is needed to get a user's email from Facebook. See:
 # https://stackoverflow.com/questions/32024327/facebook-doesnt-return-email-python-social-auth
@@ -118,8 +120,8 @@ REST_FRAMEWORK = {
 
 ROOT_URLCONF = 'jobVyne.urls'
 
-IS_LOCAL = env('IS_LOCAL', cast=bool, default=False)
-if frontend_url_override := env('FRONTEND_URL_OVERRIDE'):
+IS_LOCAL = get_boolean_env_variable('IS_LOCAL')
+if frontend_url_override := os.environ.get('FRONTEND_URL_OVERRIDE'):
     FRONTEND_URL = frontend_url_override
 elif IS_LOCAL:
     FRONTEND_URL = 'https://localhost:9000/'
@@ -149,20 +151,16 @@ WSGI_APPLICATION = 'jobVyne.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-if IS_LOCAL:
-    logger.info('Local mode')
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': env('LOCAL_DB_NAME'),
-            'USER': env('DB_USER'),
-            'PASSWORD': env('DB_PASSWORD'),
-            'HOST': 'localhost',
-            'PORT': 5432
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('MYSQL_DATABASE', 'jobvyne'),
+        'USER': os.environ.get('MYSQL_USER', 'todd'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
+        'HOST': os.environ.get('MYSQL_DATABASE_HOST', 'db'),
+        'PORT': os.environ.get('MYSQL_DATABASE_PORT', 3306),
     }
-else:
-    logger.info('PRODUCTION MODE')
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -204,7 +202,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # SQL Logging
-if env('SQL_LOG', cast=bool, default=False):
+if get_boolean_env_variable('SQL_LOG'):
     LOGGING = {
         'version': 1,
         'loggers': {
@@ -213,13 +211,3 @@ if env('SQL_LOG', cast=bool, default=False):
             }
         }
     }
-
-# CORS
-CORS_ALLOW_CREDENTIALS = True
-CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
-if IS_LOCAL:
-    CORS_ALLOWED_ORIGINS = ('https://localhost:9100', 'https://localhost:9000')
-    CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
-else:
-    CORS_ALLOWED_ORIGIN_REGEXES = (r'^https://\w+\.jobvyne\.com$',)
-    CSRF_TRUSTED_ORIGINS = ('https://*.jobvyne.com',)

@@ -28,7 +28,6 @@ export default boot(({ app, ssrContext, store }) => {
       ? Cookies.parseSSR(ssrContext)
       : Cookies // otherwise we're on client
     config.headers['X-CSRFTOKEN'] = cookies.get('csrftoken')
-    console.log(`Token: ${config.headers['X-CSRFTOKEN']}`)
     return config
   })
 
