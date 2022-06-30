@@ -26,7 +26,7 @@ services:
       context: ./nginx
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "443:443"
     depends_on:
       - backend
       - frontend
@@ -34,6 +34,9 @@ services:
       - ./nginx/local.conf:/etc/nginx/nginx.conf:ro
     networks:
       - main
+    secrets:
+      - fe_https_cert
+      - fe_https_key
 
   frontend:
     container_name: frontend

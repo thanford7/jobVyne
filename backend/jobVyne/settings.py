@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     # 'storages',
     'social_django',
     'rest_framework',
+    'django-extensions'
 ]
 
 MIDDLEWARE = [
