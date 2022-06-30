@@ -70,7 +70,7 @@ module.exports = configure(function (ctx) {
       // publicPath: '/',
       // analyze: true,
       env: {
-        API_URL: (ctx.dev) ? 'http://localhost:8000/api/v1/' : 'api/v1/'
+        API_URL: 'api/v1/'
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
@@ -98,6 +98,11 @@ module.exports = configure(function (ctx) {
         cert: fs.readFileSync('/run/secrets/fe_https_cert'),
         key: fs.readFileSync('/run/secrets/fe_https_key')
       },
+      // proxy: {
+      //   '!/static': {
+      //     target: 'http://backend:8000'
+      //   }
+      // },
       open: true // opens browser window automatically
     },
 

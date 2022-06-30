@@ -31,7 +31,7 @@ services:
       - backend
       - frontend
     volumes:
-      - ./templates:/etc/nginx/templates
+      - ./nginx/local.conf:/etc/nginx/nginx.conf:ro
     networks:
       - main
 
@@ -61,7 +61,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: bash -c "python manage.py collectstatic --noinput --clear && python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend:/code
       - django-static:/code/static

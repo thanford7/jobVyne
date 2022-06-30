@@ -15,10 +15,15 @@ export const useAjaxStore = defineStore('ajax', {
 
   actions: {
     addErrorMsg (error) {
-      const { data, status, statusText } = error.response
-      let msg = `${status} ${statusText}`
-      if (data && data.detail) {
-        msg += `: ${data.detail}`
+      let msg
+      if (error.response) {
+        const { data, status, statusText } = error.response
+        msg = `${status} ${statusText}`
+        if (data && data.detail) {
+          msg += `: ${data.detail}`
+        }
+      } else {
+        msg = error.message
       }
 
       this.msgIdx++
