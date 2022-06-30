@@ -61,7 +61,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: bash -c "python manage.py collectstatic --noinput --clear && python manage.py runserver 0.0.0.0:8000"
+    command: bash -c "python manage.py collectstatic --noinput --clear && python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend:/code
       - django-static:/code/static
@@ -83,20 +83,6 @@ networks:
     driver: bridge
 
 secrets:
-  db_root_password:
-    file: docker_secrets/MYSQL_ROOT_PASSWORD_FILE
-  db_user_name:
-    file: docker_secrets/MYSQL_USER_FILE
-  db_user_password:
-    file: docker_secrets/MYSQL_PASSWORD_FILE
-  django_secret_key:
-    file: docker_secrets/DJANGO_SECRET_KEY
-  social_auth_state:
-    file: docker_secrets/SOCIAL_AUTH_STATE
-  social_auth_facebook_key:
-    file: docker_secrets/SOCIAL_AUTH_FACEBOOK_KEY
-  social_auth_facebook_secret:
-    file: docker_secrets/SOCIAL_AUTH_FACEBOOK_SECRET
   fe_https_cert:
     file: frontend/localhost.pem
   fe_https_key:
