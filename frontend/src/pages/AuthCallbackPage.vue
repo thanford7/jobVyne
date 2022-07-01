@@ -19,7 +19,7 @@ export default {
     handleOauthCallback () {
       const provider = this.$route.params.provider
       this.$api
-        .post(`social/${provider}/`, getAjaxFormData({ code: this.$route.query.code }))
+        .post(`/social/${provider}/`, getAjaxFormData({ code: this.$route.query.code }))
         .then((resp) => {
           this.store.updateStatus(true)
           this.store.setUserProfile(resp.data.user_id)

@@ -1,0 +1,7 @@
+@use '../quasar.variables' as *;
+
+.btn {
+  &-bordered {
+    border: 1px solid $gray-300;
+  }
+}

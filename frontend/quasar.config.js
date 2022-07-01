@@ -70,7 +70,7 @@ module.exports = configure(function (ctx) {
       // publicPath: '/',
       // analyze: true,
       env: {
-        API_URL: 'api/v1/'
+        API_URL: '/api/v1/'
       },
       // rawDefine: {}
       // ignorePublicFolder: true,

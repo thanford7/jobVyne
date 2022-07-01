@@ -13,9 +13,14 @@
           <q-card-section>
             <q-btn
               type="div"
-              class="full-width q-mt-md"
+              class="full-width q-mt-md btn-bordered"
+              :flat="true"
+              :unelevated="true"
               @click="redirectAuthUrl('facebook')"
-              >Facebook</q-btn
+            >
+              <q-icon id="facebook-logo" name="fa-brands fa-facebook-square"/>
+              &nbsp;Login with Facebook
+            </q-btn
             >
           </q-card-section>
           <q-card-section>
@@ -119,5 +124,9 @@ export default {
     opacity: 0.2;
     overflow: hidden;
   }
+
+#facebook-logo {
+  color: $facebook
+}
 }
 </style>

@@ -49,7 +49,7 @@ services:
       - backend
       - db
     volumes:
-      - ./frontend:/app
+      - ./frontend:/frontend
       - /node_modules
     networks:
       - main
@@ -57,18 +57,17 @@ services:
       - https_cert
       - https_key
     restart: "no"
-    command: quasar dev -p 9000
+    # Rebuild is necessary: https://stackoverflow.com/questions/69607736/vite-react-app-esbuild-error-in-docker-container
+    command: bash -c "npm rebuild esbuild && quasar dev -p 9000"
 
   backend:
     container_name: backend
     build:
       context: ./backend
       dockerfile: Dockerfile
-#    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
-    command: bash -c "python manage.py migrate --noinput && python manage.py runserver_plus 0.0.0.0:8000 --cert-file /run/secrets/https_cert --key-file /run/secrets/https_key"
+    command: bash -c "python manage.py migrate --noinput && python manage.py runserver_plus 0.0.0.0:8000 --keep-meta-shutdown --cert-file /run/secrets/https_cert --key-file /run/secrets/https_key"
     volumes:
-      - ./backend:/code
-      - django-static:/code/static
+      - ./backend:/backend
     ports:
       - "8000:8000"
     networks:
@@ -83,7 +82,6 @@ services:
 
 volumes:
   db-data:
-  django-static:
 
 networks:
   main:

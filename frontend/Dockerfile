@@ -7,4 +7,3 @@ COPY package.json ./
 RUN yarn install
 
 COPY . .
-CMD ["quasar", "dev", "-p", "9000"]

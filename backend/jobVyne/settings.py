@@ -125,7 +125,7 @@ IS_LOCAL = get_boolean_env_variable('IS_LOCAL')
 if frontend_url_override := os.environ.get('FRONTEND_URL_OVERRIDE'):
     FRONTEND_URL = frontend_url_override
 elif IS_LOCAL:
-    FRONTEND_URL = 'https://localhost:9000/'
+    FRONTEND_URL = 'https://localhost/'
 else:
     FRONTEND_URL = 'https://jobvyne.com/'
 
