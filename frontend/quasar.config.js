@@ -95,8 +95,8 @@ module.exports = configure(function (ctx) {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
     devServer: {
       https: {
-        cert: fs.readFileSync('/run/secrets/fe_https_cert'),
-        key: fs.readFileSync('/run/secrets/fe_https_key')
+        cert: fs.readFileSync('/run/secrets/https_cert'),
+        key: fs.readFileSync('/run/secrets/https_key')
       },
       // proxy: {
       //   '!/static': {

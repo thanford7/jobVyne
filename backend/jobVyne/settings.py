@@ -54,10 +54,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'jvapp',
+    'django_extensions',
     # 'storages',
     'social_django',
     'rest_framework',
-    'django-extensions'
 ]
 
 MIDDLEWARE = [
