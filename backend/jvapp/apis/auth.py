@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from social_django.utils import psa
 
-from jvapp.models import JobVineUser
+from jvapp.models import JobVyneUser
 from jvapp.utils.logger import getLogger
 from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
 
@@ -22,13 +22,11 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
-        logger.info('Hit login')
         email = request.data.get('email')
         password = request.data.get('password')
         if not email or not password:
             return Response('Email and password are required', status=HTTPStatus.BAD_REQUEST)
         
-        logger.info('About to authenticate')
         user = authenticate(username=email, password=password)
         if not user:
             return Response('Email or password is incorrect', status=HTTPStatus.UNAUTHORIZED)
@@ -92,7 +90,7 @@ def social_auth(request, backend):
         # this line, plus the psa decorator above, are all that's
         # necessary to get and populate a user object for any properly
         # enabled/configured backend which python-social-auth can handle.
-        user = request.backend.do_auth(access_token, user_type_bits=JobVineUser.USER_TYPE_INFLUENCER)
+        user = request.backend.do_auth(access_token, user_type_bits=JobVyneUser.USER_TYPE_EMPLOYEE)
     except HTTPError as e:
         # An HTTPError bubbled up from the request to the social
         # auth provider. This happens, at least in Google's case, every time you

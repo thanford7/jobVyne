@@ -23,7 +23,7 @@ export default {
         .then((resp) => {
           this.store.updateStatus(true)
           this.store.setUserProfile(resp.data.user_id)
-          this.$router.push('/')
+          this.$router.push('/dashboard')
         })
     }
   },

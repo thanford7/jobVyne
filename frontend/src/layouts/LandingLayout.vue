@@ -10,7 +10,10 @@
         </a>
         <q-space/>
         <q-tabs class="gt-sm" align="right" shrink>
-          <q-tab v-if="authStore.isAuthenticated" label="Logout" @click="authStore.logout"/>
+          <template v-if="authStore.isAuthenticated">
+            <q-route-tab to="/dashboard" label="Dashboard"/>
+            <q-tab label="Logout" @click="authStore.logout"/>
+          </template>
           <q-route-tab v-else to="/login" label="Login"/>
         </q-tabs>
         <div class="lt-md q-pa-md" style="max-width: 250px">
@@ -24,17 +27,28 @@
               bordered padding
               class="rounded-borders text-primary"
             >
-              <q-item
-                v-if="authStore.isAuthenticated"
-                exact clickable v-close-popup
-                v-ripple
-                label="Logout"
-                @click="authStore.logout"
-              >
-                <q-item-section>
-                  Logout
-                </q-item-section>
-              </q-item>
+              <template v-if="authStore.isAuthenticated">
+                <q-item
+                  exact clickable v-close-popup
+                  v-ripple
+                  label="Dashboard"
+                  to="/dashboard"
+                >
+                  <q-item-section>
+                    Dashboard
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  exact clickable v-close-popup
+                  v-ripple
+                  label="Logout"
+                  @click="authStore.logout"
+                >
+                  <q-item-section>
+                    Logout
+                  </q-item-section>
+                </q-item>
+              </template>
               <q-item
                 v-else
                 exact clickable v-close-popup
@@ -77,7 +91,7 @@ import { useAuthStore } from 'stores/auth-store'
 import BannerMessage from 'components/BannerMessage.vue'
 
 export default {
-  name: 'UnauthenticatedLayout',
+  name: 'LandingLayout',
   components: { BannerMessage },
   setup () {
     const authStore = useAuthStore()

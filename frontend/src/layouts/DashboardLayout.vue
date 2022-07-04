@@ -1,12 +1,39 @@
 <template>
   <q-layout view="hHh lpR fFf">
 
-    <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
+    <q-drawer
+      v-if="!utilStore.isMobile"
+      :breakpoint="0"
+      :width="200"
+      side="left"
+      show-if-above
+      :mini="!isLeftDrawerOpen"
+      bordered
+    >
       <q-scroll-area class="fit">
-        <q-list>
-
+        <q-list class="text-gray-500">
+          <q-item
+            v-if="isLeftDrawerOpen"
+            class="items-end bg-gray-100"
+            title="Close menu"
+          >
+            <q-item-section class="items-start">
+              <img src="../assets/jobVyneLogo.png" alt="Logo" style="height: 30px; object-fit: scale-down">
+            </q-item-section>
+          </q-item>
+          <q-item v-else class="bg-gray-100">
+            <q-item-section avatar>
+              <img src="../assets/jobVyneLogoOnly.png" alt="Logo" style="height: 30px; object-fit: scale-down">
+            </q-item-section>
+          </q-item>
           <template v-for="(menuItem, index) in menuList" :key="index">
-            <q-item clickable :active="menuItem.label === 'Outbox'" v-ripple>
+            <q-item
+              clickable
+              :active="menuItem.key === pageKey"
+              :class="(menuItem.key === pageKey) ? 'border-left-4-primary' : ''"
+              :to="(menuItem.key === 'dashboard') ? menuItem.key : `/dashboard/${menuItem.key}`"
+              v-ripple
+            >
               <q-item-section avatar>
                 <q-icon :name="menuItem.icon"/>
               </q-item-section>
@@ -19,9 +46,19 @@
 
         </q-list>
       </q-scroll-area>
+      <div class="absolute" style="top: 10px; right: -16px">
+        <q-btn
+          dense
+          round
+          unelevated
+          color="accent"
+          :icon="(isLeftDrawerOpen) ? 'chevron_left' : 'chevron_right'"
+          @click="isLeftDrawerOpen=!isLeftDrawerOpen"
+        />
+      </div>
     </q-drawer>
 
-    <q-drawer show-if-above v-model="rightDrawerOpen" side="right" bordered>
+    <q-drawer show-if-above v-if="isRightDrawerOpen" side="right" bordered>
       <!-- drawer content -->
     </q-drawer>
 
@@ -30,47 +67,85 @@
       <router-view/>
     </q-page-container>
 
+    <q-footer v-if="utilStore.isMobile" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow-x">
+      <div
+        v-for="menuItem in menuList"
+        class="col-3 q-py-sm"
+        :class="(menuItem.key === pageKey) ? 'text-primary q-active' : ''"
+        v-ripple
+      >
+        <div class="text-center">
+          <q-icon :name="menuItem.icon" size="24px"/>
+        </div>
+        <div class="text-center">{{ menuItem.label }}</div>
+      </div>
+    </q-footer>
+
   </q-layout>
 </template>
 
 <script>
-import { ref } from 'vue'
 import BannerMessage from 'components/BannerMessage.vue'
+import { useUtilStore } from 'stores/utility-store'
 
 const menuList = [
   {
-    icon: 'inbox',
-    label: 'Inbox',
-    separator: true
-  },
-  {
-    icon: 'send',
-    label: 'Outbox',
+    icon: 'home',
+    key: 'dashboard',
+    label: 'Dashboard',
     separator: false
   },
   {
-    icon: 'delete',
-    label: 'Trash',
+    icon: 'link',
+    key: 'links',
+    label: 'Referral Links',
     separator: false
   },
   {
-    icon: 'error',
-    label: 'Spam',
+    icon: 'person',
+    key: 'profile',
+    label: 'Profile',
+    separator: false
+  },
+  {
+    icon: 'share',
+    key: 'social-accounts',
+    label: 'Social Accounts',
+    separator: false
+  },
+  {
+    icon: 'query_stats',
+    key: 'tracking',
+    label: 'Tracking',
+    separator: false
+  },
+  {
+    icon: 'message',
+    key: 'messages',
+    label: 'Messages',
+    separator: false
+  },
+  {
+    icon: 'dynamic_feed',
+    key: 'content',
+    label: 'Content',
     separator: true
   },
   {
     icon: 'settings',
+    key: 'settings',
     label: 'Settings',
     separator: false
   },
   {
     icon: 'feedback',
+    key: 'feedback',
     label: 'Send Feedback',
     separator: false
   },
   {
     icon: 'help',
-    iconColor: 'primary',
+    key: 'help',
     label: 'Help',
     separator: false
   }
@@ -78,23 +153,48 @@ const menuList = [
 
 export default {
   components: { BannerMessage },
-  setup () {
-    const leftDrawerOpen = ref(false)
-    const rightDrawerOpen = ref(false)
-
+  data () {
     return {
-      leftDrawerOpen,
-      toggleLeftDrawer () {
-        leftDrawerOpen.value = !leftDrawerOpen.value
-      },
-
-      rightDrawerOpen,
-      toggleRightDrawer () {
-        rightDrawerOpen.value = !rightDrawerOpen.value
-      },
-
+      isLeftDrawerOpen: true,
+      isRightDrawerOpen: false,
       menuList
+    }
+  },
+  computed: {
+    pageKey () {
+      /**
+       * Get the last part of the page path which will align with the page key
+       * @type {string}
+       */
+      let path = window.location.pathname
+      path = path.split('?')[0] // Remove any params
+      const pathParts = path.split('/')
+      const lastVal = pathParts[pathParts.length - 1]
+
+      // The last part of the path could be a slash, so we need to protect against that
+      if (lastVal) {
+        return lastVal
+      } else {
+        return pathParts[pathParts.length - 2]
+      }
+    }
+  },
+  methods: {
+    toggleDrawerOpen () {
+      this.isRightDrawerOpen = !this.isRightDrawerOpen
+    }
+  },
+  setup () {
+    return {
+      utilStore: useUtilStore()
     }
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.scroll-x {
+  overflow-x: scroll;
+  flex-wrap: nowrap;
+}
+</style>

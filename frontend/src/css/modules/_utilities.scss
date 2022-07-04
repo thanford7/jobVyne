@@ -1,0 +1,35 @@
+@use '../abstracts/functions' as *;
+@use '../quasar.variables' as *;
+
+@each $name, $color in $gray-color-map {
+  .text-#{$name} {
+    color: $color;
+  }
+
+  .bg-#{$name} {
+    background-color: $color;
+  }
+}
+
+$border-directions: top bottom left right;
+$border-weights-map: (
+  1: 1px,
+  2: 2px,
+  3: 3px,
+  4: 4px
+);
+$border-colors-map: get-combined-maps($gray-color-map, $brand-color-map);
+
+@each $direction in $border-directions {
+  @each $weight-name, $weight in $border-weights-map {
+    @each $color-name, $color in $border-colors-map {
+      .border-#{$direction}-#{$weight-name}-#{$color-name} {
+        border-#{$direction}: $weight solid $color;
+      }
+    }
+  }
+}
+
+.text-small {
+  font-size: 12px;
+}

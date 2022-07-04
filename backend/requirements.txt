@@ -11,6 +11,7 @@ djangorestframework==3.13.1
 idna==3.3
 mysqlclient==2.1.0
 oauthlib==3.2.0
+Pillow==9.2.0
 pycparser==2.21
 PyJWT==2.4.0
 pyOpenSSL==22.0.0

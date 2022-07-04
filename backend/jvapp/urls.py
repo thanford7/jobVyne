@@ -1,13 +1,15 @@
 from django.urls import path, re_path
 
-from . import views
-from jvapp.apis import auth, user
+from jvapp.apis import auth, employer, social, user
 
 apiPath = 'api/v1/'
 
 urlpatterns = [
     # Data
-    re_path('user/(?P<userId>[0-9]+)?/?$', user.UserView.as_view()),
+    re_path('employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
+    re_path('employer/job/(?P<employer_job_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
+    path('social-platform/', social.SocialPlatformView.as_view()),
+    re_path('user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),

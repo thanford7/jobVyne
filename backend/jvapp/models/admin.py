@@ -1,10 +1,15 @@
+from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 
-__all__ = ('JobVineUserAdmin',)
+from jvapp.models.employer import *
+from jvapp.models.location import *
+from jvapp.models.social import *
+
+__all__ = ('JobVyneUserAdmin',)
 
 
-class JobVineUserAdmin(UserAdmin):
+class JobVyneUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         (_("Personal info"), {"fields": ("first_name", "last_name", "email")}),
@@ -34,3 +39,18 @@ class JobVineUserAdmin(UserAdmin):
     list_display = ("email", "first_name", "last_name", "is_staff")
     search_fields = ("first_name", "last_name", "email")
     ordering = ("last_name", "first_name")
+
+
+@admin.register(Employer, EmployerJob, EmployerSize)
+class EmployerAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(SocialPlatform)
+class SocialAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Country, State)
+class LocationAdmin(admin.ModelAdmin):
+    pass

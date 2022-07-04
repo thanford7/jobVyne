@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from jvapp.models import JobVineUser
+from jvapp.models import JobVyneUser
 
-admin.site.register(JobVineUser, )
+admin.site.register(JobVyneUser, )

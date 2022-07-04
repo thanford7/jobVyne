@@ -21,7 +21,6 @@ export const useAuthStore = defineStore('auth', {
         this.updateStatus(true)
       } catch (err) {
         this.updateStatus(false)
-        dataUtil.handleAjaxError(err)
         throw err
       }
       await this.setUserProfile(resp.data.user_id)
@@ -32,14 +31,9 @@ export const useAuthStore = defineStore('auth', {
       this.profile = {}
     },
     async setUserProfile (userId) {
-      try {
-        const userResp = await this.$api.get(`user/${userId}/`)
-        this.profile = userResp.data
-        LocalStorage.set('profile', userResp.data)
-      } catch (err) {
-        dataUtil.handleAjaxError(err)
-        throw err
-      }
+      const userResp = await this.$api.get(`user/${userId}/`)
+      this.profile = userResp.data
+      LocalStorage.set('profile', userResp.data)
     },
     updateStatus (isLoggedIn) {
       if (isLoggedIn) {

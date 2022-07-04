@@ -1,2 +1,6 @@
+from .location import *
+from .employer import *
+from .social import *
 from .user import *
-from .admin import *  # Must import after user file to avoid circular dependency
+
+from .admin import *  # Must import last to avoid circular dependency

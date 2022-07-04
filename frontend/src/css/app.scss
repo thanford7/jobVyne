@@ -1,5 +1,7 @@
 // app global css in SCSS form
 @use 'modules/buttons';
+@use 'modules/shapes';
+@use 'modules/utilities';
 
 /* http://meyerweb.com/eric/tools/css/reset/
    v2.0 | 20110126
@@ -69,6 +71,14 @@ body {
 *::-webkit-scrollbar-thumb {
     background-color: $primary; /* color of the scroll thumb */
     border-radius: 10px; /* roundness of the scroll thumb */
+}
+
+.scrollbar-narrow-x {
+  scrollbar-height: 6px;
+}
+
+.scrollbar-narrow-x::-webkit-scrollbar {
+  height: 6px;
 }
 /*
 End scrollbar

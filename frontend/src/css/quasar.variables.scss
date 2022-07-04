@@ -32,3 +32,18 @@ $gray-700  : #4E5F58;
 $gray-900  : #002416;
 
 $facebook  : #1a92f3;
+
+$gray-color-map: (
+  'white': $white,
+  'gray-100': $gray-100,
+  'gray-300': $gray-300,
+  'gray-500': $gray-500,
+  'gray-700': $gray-700,
+  'gray-900': $gray-900
+);
+
+$brand-color-map: (
+  'primary': $primary,
+  'secondary': $secondary,
+  'accent': $accent
+);
