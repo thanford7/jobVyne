@@ -18,8 +18,8 @@ def get_files(request):
 class JobVyneAPIView(APIView):
     
     def initial(self, request, *args, **kwargs):
-        requestData = request.data.dict() if isinstance(request.data, QueryDict) else request.data
-        self.data = {**requestData, **request.query_params}
+        self.data = request.data.dict() if isinstance(request.data, QueryDict) else request.data
+        self.query_params = request.query_params
         # Django's dict method doesn't work for files - it drops all but the first uploaded file
         self.files = get_files(request)
         self.user = request.user

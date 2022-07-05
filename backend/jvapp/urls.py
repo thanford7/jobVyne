@@ -6,10 +6,10 @@ apiPath = 'api/v1/'
 
 urlpatterns = [
     # Data
-    re_path('employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
-    re_path('employer/job/(?P<employer_job_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
+    re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
+    re_path('^employer/job/(?P<employer_job_id>[0-9]+)?/?$', employer.EmployerJobView.as_view()),
     path('social-platform/', social.SocialPlatformView.as_view()),
-    re_path('user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
+    re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),

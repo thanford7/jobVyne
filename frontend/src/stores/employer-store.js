@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
+import dataUtil from 'src/utils/data'
 
 export const useEmployerStore = defineStore('employer', {
   state: () => ({
@@ -9,8 +9,63 @@ export const useEmployerStore = defineStore('employer', {
   }),
 
   getters: {
-    getEmployer (employerId) {
-      return this.employers[employerId]
+    getEmployer (state, employerId = null) {
+      employerId = employerId || this.getUserEmployerId()
+      if (!employerId) {
+        return null
+      }
+      return state.employers[employerId]
+    },
+    getEmployerJobs (state, employerId = null) {
+      employerId = employerId || this.getUserEmployerId()
+      if (!employerId) {
+        return null
+      }
+      return state.employerJobs[employerId]
+    },
+    getJobDepartments (state, employerId = null) {
+      employerId = employerId || this.getUserEmployerId()
+      if (!employerId || !state.employerJobs[employerId]) {
+        return null
+      }
+      const vals = dataUtil.uniqBy(
+        state.employerJobs[employerId].map((j) => ({ department: j.job_department })),
+        'department'
+      )
+      return dataUtil.sortBy(vals, 'department')
+    },
+    getJobCities (state, employerId = null) {
+      employerId = employerId || this.getUserEmployerId()
+      if (!employerId || !state.employerJobs[employerId]) {
+        return null
+      }
+      const vals = dataUtil.uniqBy(
+        state.employerJobs[employerId].map((j) => ({ city: j.city })),
+        'city'
+      )
+      return dataUtil.sortBy(vals, 'city')
+    },
+    getJobStates (state, employerId = null) {
+      employerId = employerId || this.getUserEmployerId()
+      if (!employerId || !state.employerJobs[employerId]) {
+        return null
+      }
+      const vals = dataUtil.uniqBy(
+        state.employerJobs[employerId].map((j) => ({ state: j.state })),
+        'state'
+      )
+      return dataUtil.sortBy(vals, 'state')
+    },
+    getJobCountries (state, employerId = null) {
+      employerId = employerId || this.getUserEmployerId()
+      if (!employerId || !state.employerJobs[employerId]) {
+        return null
+      }
+      const vals = dataUtil.uniqBy(
+        state.employerJobs[employerId].map((j) => ({ country: j.country })),
+        'country'
+      )
+      return dataUtil.sortBy(vals, 'country')
     }
   },
 
@@ -18,23 +73,25 @@ export const useEmployerStore = defineStore('employer', {
     async setEmployer (employerId = null, isForceRefresh = false) {
       employerId = employerId || this.getUserEmployerId()
       if (!this.employers[employerId] || isForceRefresh) {
-        this.employers[employerId] = await this.$api.get(`employer/${employerId}/`)
+        const resp = await this.$api.get(`employer/${employerId}/`)
+        this.employers[employerId] = resp.data
       }
     },
     async setEmployerJobs (employerId = null, isForceRefresh = false) {
       employerId = employerId || this.getUserEmployerId()
       if (!this.employerJobs[employerId] || isForceRefresh) {
-        this.employerJobs[employerId] = await this.$api.get(
+        const resp = await this.$api.get(
           'employer/job/',
           {
             params: { employer_id: employerId }
           }
         )
+        this.employerJobs[employerId] = resp.data
       }
     },
     getUserEmployerId () {
       const authStore = useAuthStore()
-      return authStore?.profile?.employer_id
+      return authStore.getProfile.employer_id
     }
   }
 })

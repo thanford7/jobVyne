@@ -27,7 +27,7 @@ class EmployerView(JobVyneAPIView):
         if employer_id:
             employer_filter = Q(id=employer_id)
         
-        employers = Employer.objects.filter(employer_filter)
+        employers = Employer.objects.select_related('employerSize').filter(employer_filter)
         
         if employer_id:
             if not employers:
@@ -44,7 +44,8 @@ class EmployerJobView(JobVyneAPIView):
         if employer_job_id:
             job = self.get_employer_jobs(employer_job_id=employer_job_id)
             data = get_serialized_employer_job(job)
-        elif employer_id := self.data.get('employer_id'):
+        elif employer_id := self.query_params.get('employer_id'):
+            employer_id = employer_id[0]
             job_filter = Q(employer_id=employer_id)
             jobs = self.get_employer_jobs(employer_job_filter=job_filter)
             data = [get_serialized_employer_job(j) for j in jobs]

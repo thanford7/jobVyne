@@ -8,7 +8,7 @@ def get_serialized_employer(employer: Employer):
         'name': employer.employerName,
         'logo': employer.logo.url if employer.logo else None,
         'description': employer.description,
-        'size': employer.employerSize
+        'size': employer.employerSize.size
     }
 
 

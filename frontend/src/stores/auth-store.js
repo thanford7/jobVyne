@@ -29,6 +29,7 @@ export const useAuthStore = defineStore('auth', {
       await this.$api.post('auth/logout/')
       this.updateStatus(false)
       this.profile = {}
+      this.$router.push('/')
     },
     async setUserProfile (userId) {
       const userResp = await this.$api.get(`user/${userId}/`)

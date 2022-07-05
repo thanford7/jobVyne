@@ -31,7 +31,7 @@
               clickable
               :active="menuItem.key === pageKey"
               :class="(menuItem.key === pageKey) ? 'border-left-4-primary' : ''"
-              :to="(menuItem.key === 'dashboard') ? menuItem.key : `/dashboard/${menuItem.key}`"
+              :to="(menuItem.key === 'dashboard') ? `/${menuItem.key}` : `/dashboard/${menuItem.key}`"
               v-ripple
             >
               <q-item-section avatar>
@@ -43,6 +43,18 @@
             </q-item>
             <q-separator :key="'sep' + index" v-if="menuItem.separator"/>
           </template>
+          <q-item
+            clickable
+            @click="authStore.logout"
+            v-ripple
+          >
+            <q-item-section avatar>
+              <q-icon name="logout"/>
+            </q-item-section>
+            <q-item-section>
+              Logout
+            </q-item-section>
+          </q-item>
 
         </q-list>
       </q-scroll-area>
@@ -87,6 +99,7 @@
 <script>
 import BannerMessage from 'components/BannerMessage.vue'
 import { useUtilStore } from 'stores/utility-store'
+import { useAuthStore } from 'stores/auth-store'
 
 const menuList = [
   {
@@ -186,6 +199,7 @@ export default {
   },
   setup () {
     return {
+      authStore: useAuthStore(),
       utilStore: useUtilStore()
     }
   }
