@@ -1,5 +1,5 @@
 from jvapp.models.user import JobVyneUser
-from . import get_datetime_format_or_none
+from jvapp.utils.datetime import get_datetime_format_or_none
 
 
 def get_serialized_user(user: JobVyneUser):

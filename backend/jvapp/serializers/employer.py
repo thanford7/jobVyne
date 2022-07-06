@@ -1,5 +1,5 @@
 from jvapp.models.employer import *
-from jvapp.utils.datetime import get_date_time_format_or_none
+from jvapp.utils.datetime import get_datetime_format_or_none
 
 
 def get_serialized_employer(employer: Employer):
@@ -18,9 +18,10 @@ def get_serialized_employer_job(employer_job: EmployerJob):
         'employer_id': employer_job.employer_id,
         'job_title': employer_job.jobTitle,
         'job_description': employer_job.jobDescription,
-        'job_department': employer_job.jobDepartment,
-        'open_date': get_date_time_format_or_none(employer_job.openDate),
-        'close_date': get_date_time_format_or_none(employer_job.closeDate),
+        'job_department': employer_job.jobDepartment.name if employer_job.jobDepartment else None,
+        'job_department_id': employer_job.jobDepartment_id,
+        'open_date': get_datetime_format_or_none(employer_job.openDate),
+        'close_date': get_datetime_format_or_none(employer_job.closeDate),
         'salary_floor': employer_job.salaryFloor,
         'salary_ceiling': employer_job.salaryCeiling,
         'referral_bonus': employer_job.referralBonus,
@@ -29,5 +30,7 @@ def get_serialized_employer_job(employer_job: EmployerJob):
         'location': employer_job.location,
         'city': employer_job.city,
         'state': employer_job.state.stateName,
-        'country': employer_job.country.countryName
+        'state_id': employer_job.state_id,
+        'country': employer_job.country.countryName,
+        'country_id': employer_job.country_id
     }

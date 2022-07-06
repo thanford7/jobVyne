@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     'jvapp',
     'django_extensions',
-    # 'storages',
+    'storages',
     'social_django',
     'rest_framework',
 ]
@@ -195,7 +195,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = 'static/'
+if IS_LOCAL:
+    logger.info('Using local static storage')
+    STATIC_URL = '/static/'
+
+    DEFAULT_FILE_STORAGE = 'jobVyne.customStorage.OverwriteStorage'
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+else:
+    # TODO: Update this for S3 storage once setup
+    pass
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field

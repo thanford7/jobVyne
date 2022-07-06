@@ -4,7 +4,7 @@ from jvapp.models.abstract import AuditFields
 from jvapp.models.location import Country, State
 
 
-__all__ = ('Employer', 'EmployerJob', 'EmployerSize')
+__all__ = ('Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment')
 
 
 class Employer(AuditFields):
@@ -21,7 +21,7 @@ class EmployerJob(AuditFields):
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employerJob')
     jobTitle = models.CharField(max_length=100)
     jobDescription = models.TextField()
-    jobDepartment = models.CharField(max_length=50, null=True, blank=True)
+    jobDepartment = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
     openDate = models.DateField(null=True, blank=True)
     closeDate = models.DateField(null=True, blank=True)
     salaryFloor = models.FloatField(null=True, blank=True)
@@ -48,3 +48,10 @@ class EmployerSize(models.Model):
     
     def __str__(self):
         return self.size
+    
+    
+class JobDepartment(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    
+    def __str__(self):
+        return self.name

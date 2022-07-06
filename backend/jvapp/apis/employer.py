@@ -59,7 +59,13 @@ class EmployerJobView(JobVyneAPIView):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
         
-        jobs = EmployerJob.objects.filter(employer_job_filter)
+        jobs = EmployerJob.objects\
+            .select_related(
+                'jobDepartment',
+                'state',
+                'country'
+            )\
+            .filter(employer_job_filter)
         
         if employer_job_id:
             if not jobs:

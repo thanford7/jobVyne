@@ -31,7 +31,7 @@
               clickable
               :active="menuItem.key === pageKey"
               :class="(menuItem.key === pageKey) ? 'border-left-4-primary' : ''"
-              :to="(menuItem.key === 'dashboard') ? `/${menuItem.key}` : `/dashboard/${menuItem.key}`"
+              @click="redirectUrl(menuItem.key)"
               v-ripple
             >
               <q-item-section avatar>
@@ -84,12 +84,19 @@
         v-for="menuItem in menuList"
         class="col-3 q-py-sm"
         :class="(menuItem.key === pageKey) ? 'text-primary q-active' : ''"
+        @click="redirectUrl(menuItem.key)"
         v-ripple
       >
         <div class="text-center">
           <q-icon :name="menuItem.icon" size="24px"/>
         </div>
         <div class="text-center">{{ menuItem.label }}</div>
+      </div>
+      <div class="col-3 q-py-sm" v-ripple @click="authStore.logout">
+        <div class="text-center">
+          <q-icon name="logout" size="24px"/>
+        </div>
+        <div class="text-center">Logout</div>
       </div>
     </q-footer>
 
@@ -170,11 +177,12 @@ export default {
     return {
       isLeftDrawerOpen: true,
       isRightDrawerOpen: false,
+      pageKey: null,
       menuList
     }
   },
-  computed: {
-    pageKey () {
+  methods: {
+    getPageKey () {
       /**
        * Get the last part of the page path which will align with the page key
        * @type {string}
@@ -190,11 +198,14 @@ export default {
       } else {
         return pathParts[pathParts.length - 2]
       }
-    }
-  },
-  methods: {
+    },
     toggleDrawerOpen () {
       this.isRightDrawerOpen = !this.isRightDrawerOpen
+    },
+    redirectUrl (key) {
+      const url = (key === 'dashboard') ? `/${key}` : `/dashboard/${key}`
+      this.pageKey = key
+      this.$router.push(url)
     }
   },
   setup () {
@@ -202,6 +213,9 @@ export default {
       authStore: useAuthStore(),
       utilStore: useUtilStore()
     }
+  },
+  mounted () {
+    this.pageKey = this.getPageKey()
   }
 }
 </script>

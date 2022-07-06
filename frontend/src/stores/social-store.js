@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import dataUtil from 'src/utils/data'
 
 export const useSocialStore = defineStore('social', {
   state: () => ({
@@ -9,7 +10,7 @@ export const useSocialStore = defineStore('social', {
     async setPlatforms () {
       if (!this.platforms) {
         const resp = await this.$api.get('social-platform/')
-        this.platforms = resp.data
+        this.platforms = dataUtil.sortBy(resp.data, 'name')
       }
     }
   }

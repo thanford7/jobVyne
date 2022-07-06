@@ -72,12 +72,14 @@ body {
     border-radius: 10px; /* roundness of the scroll thumb */
 }
 
-.scrollbar-narrow-x {
+.scrollbar-narrow-x, .q-table__container {
   scrollbar-height: 6px;
+  scrollbar-width: 6px;
 }
 
-.scrollbar-narrow-x::-webkit-scrollbar {
+.scrollbar-narrow-x::-webkit-scrollbar, .q-table__container ::-webkit-scrollbar {
   height: 6px;
+  width: 6px;
 }
 /*
 End scrollbar

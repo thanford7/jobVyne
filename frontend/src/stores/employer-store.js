@@ -21,7 +21,7 @@ export const useEmployerStore = defineStore('employer', {
       if (!employerId) {
         return null
       }
-      return state.employerJobs[employerId]
+      return dataUtil.sortBy(state.employerJobs[employerId] || [], 'job_title')
     },
     getJobDepartments (state, employerId = null) {
       employerId = employerId || this.getUserEmployerId()
@@ -29,7 +29,7 @@ export const useEmployerStore = defineStore('employer', {
         return null
       }
       const vals = dataUtil.uniqBy(
-        state.employerJobs[employerId].map((j) => ({ department: j.job_department })),
+        state.employerJobs[employerId].map((j) => ({ department: j.job_department, id: j.job_department_id })),
         'department'
       )
       return dataUtil.sortBy(vals, 'department')
@@ -51,7 +51,7 @@ export const useEmployerStore = defineStore('employer', {
         return null
       }
       const vals = dataUtil.uniqBy(
-        state.employerJobs[employerId].map((j) => ({ state: j.state })),
+        state.employerJobs[employerId].map((j) => ({ state: j.state, id: j.state_id })),
         'state'
       )
       return dataUtil.sortBy(vals, 'state')
@@ -62,7 +62,7 @@ export const useEmployerStore = defineStore('employer', {
         return null
       }
       const vals = dataUtil.uniqBy(
-        state.employerJobs[employerId].map((j) => ({ country: j.country })),
+        state.employerJobs[employerId].map((j) => ({ country: j.country, id: j.country_id })),
         'country'
       )
       return dataUtil.sortBy(vals, 'country')

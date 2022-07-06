@@ -41,12 +41,12 @@ class JobVyneUserAdmin(UserAdmin):
     ordering = ("last_name", "first_name")
 
 
-@admin.register(Employer, EmployerJob, EmployerSize)
+@admin.register(Employer, EmployerJob, EmployerSize, JobDepartment)
 class EmployerAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(SocialPlatform)
+@admin.register(SocialPlatform, SocialLinkFilter)
 class SocialAdmin(admin.ModelAdmin):
     pass
 
