@@ -1,7 +1,15 @@
 import { defineStore } from 'pinia'
 import { getAjaxFormData } from 'src/utils/requests'
 import { LocalStorage } from 'quasar'
-import dataUtil from 'src/utils/data'
+
+// Keep in sync with backend user model
+const USER_TYPES = {
+  USER_TYPE_ADMIN: 0x1,
+  USER_TYPE_CANDIDATE: 0x2,
+  USER_TYPE_EMPLOYEE: 0x4,
+  USER_TYPE_INFLUENCER: 0x8,
+  USER_TYPE_EMPLOYER: 0x10
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -10,7 +18,11 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     getProfile: (state) => state.profile,
-    isProfileLoaded: (state) => !dataUtil.isEmpty(state.profile)
+    getIsAdmin: (state) => state?.profile?.user_type_bits & USER_TYPES.USER_TYPE_ADMIN,
+    getIsCandidate: (state) => state?.profile?.user_type_bits & USER_TYPES.USER_TYPE_CANDIDATE,
+    getIsEmployee: (state) => state?.profile?.user_type_bits & USER_TYPES.USER_TYPE_EMPLOYEE,
+    getIsInfluencer: (state) => state?.profile?.user_type_bits & USER_TYPES.USER_TYPE_INFLUENCER,
+    getIsEmployer: (state) => state?.profile?.user_type_bits & USER_TYPES.USER_TYPE_EMPLOYER
   },
   actions: {
     async login (user) {

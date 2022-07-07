@@ -6,10 +6,15 @@ const isMobileFn = () => window.innerWidth < mobileBreakPoint
 export const useUtilStore = defineStore('util', {
   state: () => ({
     mobileBreakPoint,
-    isMobile: isMobileFn()
+    isMobile: isMobileFn(),
+    elId: 0
   }),
 
   actions: {
+    getNewElId () {
+      this.elId++
+      return this.elId
+    },
     updateIsMobile () {
       this.isMobile = isMobileFn()
     }

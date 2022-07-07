@@ -1,6 +1,7 @@
 // app global css in SCSS form
 @use 'modules/buttons';
 @use 'modules/shapes';
+@use 'modules/tables';
 @use 'modules/utilities';
 
 /* http://meyerweb.com/eric/tools/css/reset/
@@ -32,19 +33,6 @@ footer, header, hgroup, menu, nav, section {
 }
 body {
 	line-height: 1;
-}
-
-blockquote, q {
-	quotes: none;
-}
-blockquote:before, blockquote:after,
-q:before, q:after {
-	content: '';
-	content: none;
-}
-table {
-	border-collapse: collapse;
-	border-spacing: 0;
 }
 /*
 End reset
@@ -84,6 +72,10 @@ body {
 /*
 End scrollbar
  */
+
+* {
+  font-family: 'Open Sans', 'sans-serif';
+}
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Lustria', 'serif';

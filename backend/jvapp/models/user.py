@@ -42,6 +42,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class JobVyneUser(AbstractUser):
+    # Keep in sync with frontend auth-store
     USER_TYPE_ADMIN = 0x1
     USER_TYPE_CANDIDATE = 0x2  # Allows users to save their info so they can apply to jobs with existing info
     USER_TYPE_EMPLOYEE = 0x4
@@ -66,23 +67,23 @@ class JobVyneUser(AbstractUser):
     
     @property
     def is_admin(self):
-        return self.user_type_bits & self.USER_TYPE_ADMIN
+        return bool(self.user_type_bits & self.USER_TYPE_ADMIN)
     
     @property
     def is_candidate(self):
-        return self.user_type_bits & self.USER_TYPE_CANDIDATE
+        return bool(self.user_type_bits & self.USER_TYPE_CANDIDATE)
     
     @property
     def is_employee(self):
-        return self.user_type_bits & self.USER_TYPE_EMPLOYEE
+        return bool(self.user_type_bits & self.USER_TYPE_EMPLOYEE)
     
     @property
     def is_influencer(self):
-        return self.user_type_bits & self.USER_TYPE_INFLUENCER
+        return bool(self.user_type_bits & self.USER_TYPE_INFLUENCER)
     
     @property
     def is_employer(self):
-        return self.user_type_bits & self.USER_TYPE_EMPLOYER
+        return bool(self.user_type_bits & self.USER_TYPE_EMPLOYER)
 
 
 def generate_password():

@@ -10,133 +10,252 @@
           you can collect a referral bonus!
         </p>
       </div>
-      <div class="row">
-        <div class="col-12">
-          <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
-            1
-          </div>
-          <h6 style="display: inline-block;">Select the platform where you will display the link</h6>
-        </div>
-        <div class="col-12 col-md-6">
-          <q-select
-            outlined
-            v-model="formData.platform"
-            :options="socialStore.platforms"
-            autocomplete="name"
-            option-value="name"
-            option-label="name"
-            label="Platform"
-          >
-            <template v-slot:option="scope">
-              <q-item v-bind="scope.itemProps">
-                <q-item-section avatar>
-                  <img :src="scope.opt.logo" alt="Logo" style="max-height: 20px">
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ scope.opt.name }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </template>
-          </q-select>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-12">
-          <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
-            2
-          </div>
-          <h6 style="display: inline-block;">(Optional) Add filters for the jobs to display when the link is clicked</h6>
-        </div>
-        <div class="col-12">
+      <q-tabs
+        v-model="tab"
+        dense
+        class="text-grey"
+        active-color="primary"
+        indicator-color="primary"
+        align="left"
+        narrow-indicator
+      >
+        <q-tab name="current" label="Current links"/>
+        <q-tab name="create" label="Create link"/>
+      </q-tabs>
+      <q-tab-panels v-model="tab" animated>
+        <q-tab-panel name="current">
           <div class="row">
-            <div class="col-12 col-md-6 q-pr-md-sm">
-              <q-select
-                outlined multiple clearable use-chips
-                v-model="formData.departments"
-                :options="employerStore.getJobDepartments"
-                option-value="id"
-                option-label="department"
-                label="Department"
-              />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-select
-                outlined multiple clearable use-chips
-                v-model="formData.cities"
-                :emit-value="true"
-                :options="employerStore.getJobCities"
-                option-value="city"
-                option-label="city"
-                label="City"
-              />
-            </div>
-            <div class="col-12 col-md-6 q-pr-md-sm">
-              <q-select
-                outlined multiple clearable use-chips
-                v-model="formData.states"
-                :options="employerStore.getJobStates"
-                option-value="id"
-                option-label="state"
-                label="State"
-              />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-select
-                outlined multiple clearable use-chips
-                v-model="formData.countries"
-                :options="employerStore.getJobCountries"
-                option-value="id"
-                option-label="country"
-                label="Country"
-              />
+            <div class="col-12">
+              <q-table
+                :rows="socialStore.socialLinkFilters || []"
+                :columns="linkColumns"
+                row-key="id"
+                :rows-per-page-options="[5, 10, 15]"
+              >
+                <template v-slot:top>
+                  <q-btn color="primary" label="Create new link" @click="tab = 'create'" />
+                </template>
+                <template v-slot:body="props">
+                  <q-tr :props="props">
+                    <q-td key="platform_name" :props="props">
+                      {{ props.row.platform_name || globalStore.nullValueStr }}
+                    </q-td>
+                    <q-td key="departments" :props="props">
+                      <q-chip
+                        v-for="dept in props.row.departments"
+                        :key="dept.id"
+                        dense
+                        color="blue-grey-7"
+                        text-color="white"
+                        size="13px"
+                      >
+                        {{ dept.name }}
+                      </q-chip>
+                      <span v-if="!props.row.departments.length">
+                        {{ globalStore.nullValueAnyStr }}
+                      </span>
+                    </q-td>
+                    <q-td key="departments" :props="props">
+                      <q-chip
+                        v-for="loc in getLocations(props.row)"
+                        :key="loc.key"
+                        dense
+                        :color="loc.color"
+                        text-color="white"
+                        size="13px"
+                      >
+                        {{ loc.name }}
+                      </q-chip>
+                      <span v-if="!getLocations(props.row).length">
+                        {{ globalStore.nullValueAnyStr }}
+                      </span>
+                    </q-td>
+                    <q-td key="link" :props="props">
+                      <a :href="getJobLinkUrl(props.row)">
+                        {{ getJobLinkUrl(props.row) }}
+                      </a>
+                    </q-td>
+                  </q-tr>
+                </template>
+              </q-table>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-12">
-          <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
-            3
+        </q-tab-panel>
+        <q-tab-panel name="create">
+          <div v-if="!linkId">
+            <div class="row">
+              <div class="col-12">
+                <div class="flex items-center">
+                  <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
+                    1
+                  </div>
+                  <h6 style="display: inline-block;">
+                    (Optional) Select the platform where you will display the link
+                  </h6>
+                  <CustomTooltip>
+                    <template v-slot:icon>
+                      <q-icon class="text-gray-500" tag="span" name="help_outline" size="24px"/>
+                    </template>
+                    Selecting a platform allows you to analyze the performance of each of your links based on each
+                    platform
+                  </CustomTooltip>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <q-select
+                  outlined
+                  v-model="formData.platform"
+                  :options="socialStore.platforms"
+                  autocomplete="name"
+                  option-value="name"
+                  option-label="name"
+                  label="Platform"
+                >
+                  <template v-slot:option="scope">
+                    <q-item v-bind="scope.itemProps">
+                      <q-item-section avatar>
+                        <img :src="scope.opt.logo" alt="Logo" style="max-height: 20px">
+                      </q-item-section>
+                      <q-item-section>
+                        <q-item-label>{{ scope.opt.name }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <div class="flex items-center">
+                  <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
+                    2
+                  </div>
+                  <h6 style="display: inline-block;">
+                    (Optional) Add filters for the jobs to display when the link is clicked
+                  </h6>
+                  <CustomTooltip>
+                    <template v-slot:icon>
+                      <q-icon class="text-gray-500" tag="span" name="help_outline" size="24px"/>
+                    </template>
+                    Leave blank if you wish to display all jobs. Keep in mind that your link will perform better if the
+                    filtered jobs are relevant to your connections/audience
+                  </CustomTooltip>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="row">
+                  <div class="col-12 col-md-6 q-pr-md-sm">
+                    <q-select
+                      outlined multiple clearable use-chips
+                      v-model="formData.departments"
+                      :options="employerStore.getJobDepartments"
+                      option-value="id"
+                      option-label="department"
+                      label="Department"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <q-select
+                      outlined multiple clearable use-chips
+                      v-model="formData.cities"
+                      :emit-value="true"
+                      :options="employerStore.getJobCities"
+                      option-value="city"
+                      option-label="city"
+                      label="City"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6 q-pr-md-sm">
+                    <q-select
+                      outlined multiple clearable use-chips
+                      v-model="formData.states"
+                      :options="employerStore.getJobStates"
+                      option-value="id"
+                      option-label="state"
+                      label="State"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <q-select
+                      outlined multiple clearable use-chips
+                      v-model="formData.countries"
+                      :options="employerStore.getJobCountries"
+                      option-value="id"
+                      option-label="country"
+                      label="Country"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
+                  3
+                </div>
+                <h6 style="display: inline-block;">These are the currently open jobs based on the filter</h6>
+              </div>
+              <div class="col-12">
+                <q-table
+                  :rows="employerStore.getEmployerJobs"
+                  row-key="id"
+                  :columns="jobColumns"
+                  :filter-method="jobDataFilter"
+                  filter="formData"
+                  no-data-label="No jobs match the filter"
+                  :rows-per-page-options="[5, 10, 15]"
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <q-btn color="primary" label="Generate link" size="lg" @click="saveLink"/>
+              </div>
+            </div>
           </div>
-          <h6 style="display: inline-block;">These are the currently open jobs based on the filter</h6>
-        </div>
-        <div class="col-12">
-          <q-table
-            :rows="employerStore.getEmployerJobs"
-            row-key="id"
-            :columns="jobColumns"
-            :filter-method="jobDataFilter"
-            filter="formData"
-            no-data-label="No jobs match the filter"
-            :rows-per-page-options="[5, 10, 15]"
-          />
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-12">
-          <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
-            4
+          <div v-else>
+            <div class="row">
+              <div class="col-12">
+                <div class="flex items-center">
+                  <h6 class="font-secondary" style="display: inline-block;">
+                    Link: <span class="copy-target">{{ getJobLinkUrl() }}</span>&nbsp;
+                  </h6>
+                  <span @click="copyText" style="cursor: pointer;">
+                <q-icon name="content_copy"></q-icon>
+                Click to copy
+              </span>
+                </div>
+                <div class="flex items-center">
+                  <h6 class="font-secondary" style="display: inline-block;">
+                    Suggested link text: <span class="copy-target">{{ getJobLinkText() }}</span>&nbsp;
+                  </h6>
+                  <span @click="copyText" style="cursor: pointer;">
+                <q-icon name="content_copy"></q-icon>
+                Click to copy
+              </span>
+                </div>
+              </div>
+            </div>
           </div>
-          <h6 style="display: inline-block;">
-            Generate link <span v-if="formData.platform">and post to {{formData.platform.name}}</span>
-          </h6>
-        </div>
-        <div class="col-12">
-          <q-btn color="primary" label="Generate link" size="lg"/>
-        </div>
-      </div>
+        </q-tab-panel>
+      </q-tab-panels>
     </div>
   </q-page>
 </template>
 
 <script>
+import { getAjaxFormData } from 'src/utils/requests'
+import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
 import { useSocialStore } from 'stores/social-store'
 import dataUtil from 'src/utils/data'
 import dateTimeUtil from 'src/utils/datetime'
+import CustomTooltip from 'components/CustomTooltip.vue'
+import { useGlobalStore } from 'stores/global-store'
+import { useMeta } from 'quasar'
 
 const jobColumns = [
-  { name: 'job_title', field: 'job_title', required: true, align: 'left', label: 'Title', sortable: true },
+  { name: 'job_title', field: 'job_title', align: 'left', label: 'Title', sortable: true },
   { name: 'job_department', field: 'job_department', align: 'left', label: 'Department', sortable: true },
   { name: 'location', field: 'location', align: 'left', label: 'Location', sortable: true },
   {
@@ -157,48 +276,141 @@ const jobColumns = [
   }
 ]
 
+const formDataTemplate = {
+  platform: null,
+  departments: null,
+  cities: null,
+  states: null,
+  countries: null
+}
+
 export default {
+  components: { CustomTooltip },
   data () {
     return {
-      formData: {
-        platform: null,
-        departments: null,
-        cities: null,
-        states: null,
-        countries: null
-      },
+      formData: { ...formDataTemplate },
+      linkId: null,
+      tab: 'current',
       jobColumns
     }
   },
+  computed: {
+    linkColumns () {
+      return [
+        { name: 'platform_name', field: 'platform_name', align: 'left', label: 'Platform', sortable: true },
+        { name: 'departments', field: 'departments', align: 'left', label: 'Departments' },
+        { name: 'locations', field: this.getLocations, align: 'left', label: 'Locations' },
+        { name: 'link', field: this.getJobLinkUrl, align: 'left', label: 'Link' }
+      ]
+    }
+  },
   methods: {
+    copyText: dataUtil.copyText.bind(dataUtil),
+    getLocations (row) {
+      const locations = []
+      dataUtil.getForceArray(row.cities).forEach((cityName) => {
+        const city = { name: cityName }
+        city.type = 'city'
+        city.key = cityName
+        city.color = 'blue-8'
+        locations.push(city)
+      })
+      dataUtil.getForceArray(row.states).forEach((state) => {
+        state.type = 'state'
+        state.key = `state-${state.id}`
+        state.color = 'teal-8'
+        locations.push(state)
+      })
+      dataUtil.getForceArray(row.countries).forEach((country) => {
+        country.type = 'country'
+        country.key = `country-${country.id}`
+        country.color = 'blue-grey-8'
+        locations.push(country)
+      })
+      return locations
+    },
+    getJobLinkUrl (jobLink) {
+      const id = (jobLink) ? jobLink.id : this.linkId
+      return `${window.location.origin}/job-link/${id}`
+    },
+    getJobLinkText () {
+      const employer = this.employerStore.getEmployer
+      if (!employer) {
+        return ''
+      }
+      let text = `${employer.name} is hiring! Click the link to apply`
+      let jobText = ''
+      if (this.formData.departments) {
+        const deptString = (this.formData.departments.length > 1) ? 'departments' : 'department'
+        jobText += ' in the ' + dataUtil.concatWithAnd(this.formData.departments.map((d) => d.department)) + ' ' + deptString
+      }
+      if (this.formData?.cities?.length) {
+        jobText += ' in ' + dataUtil.concatWithAnd(this.formData.cities)
+      } else if (this.formData?.states?.length) {
+        jobText += ' in ' + dataUtil.concatWithAnd(this.formData.states.map((s) => s.state))
+      } else if (this.formData?.countries?.length) {
+        jobText += ' in ' + dataUtil.concatWithAnd(this.formData.countries.map((c) => c.country))
+      }
+
+      if (jobText.length) {
+        text += ' to jobs' + jobText
+      }
+
+      text += '!'
+      return text
+    },
     jobDataFilter (rows) {
-      const departments = (this.formData.departments) ? this.formData.departments.map((department) => department.department) : []
-      const states = (this.formData.states) ? this.formData.states.map((state) => state.state) : []
-      const countries = (this.formData.countries) ? this.formData.countries.map((country) => country.country) : []
+      const departmentIds = (this.formData.departments) ? this.formData.departments.map((department) => department.id) : []
+      const stateIds = (this.formData.states) ? this.formData.states.map((state) => state.id) : []
+      const countryIds = (this.formData.countries) ? this.formData.countries.map((country) => country.id) : []
       return rows.filter((job) => {
-        if (this.formData.departments?.length && !departments.includes(job.job_department)) {
+        if (this.formData.departments?.length && !departmentIds.includes(job.job_department_id)) {
           return false
         }
         if (this.formData.cities?.length && !this.formData.cities.includes(job.city)) {
           return false
         }
-        if (this.formData.states?.length && !states.includes(job.state)) {
+        if (this.formData.states?.length && !stateIds.includes(job.state_id)) {
           return false
         }
-        if (this.formData.countries?.length && !countries.includes(job.country)) {
+        if (this.formData.countries?.length && !countryIds.includes(job.country_id)) {
           return false
         }
         return true
       })
+    },
+    async saveLink () {
+      const profile = this.authStore.getProfile
+      const data = {
+        owner_id: profile.id,
+        employer_id: profile.employer_id,
+        platform_id: this.formData?.platform?.id,
+        department_ids: this.formData?.departments?.map((dept) => dept.id),
+        cities: (this.formData.cities) ? this.formData.cities : null,
+        state_ids: this.formData?.states?.map((state) => state.id),
+        country_ids: this.formData?.countries?.map((country) => country.id)
+      }
+      const resp = await this.$api.post('social-link-filter/', getAjaxFormData(data))
+      this.linkId = resp.data.id
     }
   },
   setup () {
     const socialStore = useSocialStore()
     const employerStore = useEmployerStore()
+    const globalStore = useGlobalStore()
     socialStore.setPlatforms()
+    socialStore.setSocialLinkFilters()
     employerStore.setEmployer()
     employerStore.setEmployerJobs()
-    return { socialStore, employerStore }
+
+    const pageTitle = 'Referral Links'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle
+    }
+    useMeta(metaData)
+
+    return { socialStore, employerStore, authStore: useAuthStore(), globalStore }
   }
 }
 </script>

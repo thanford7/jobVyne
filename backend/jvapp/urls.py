@@ -8,6 +8,7 @@ urlpatterns = [
     # Data
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
     re_path('^employer/job/(?P<employer_job_id>[0-9]+)?/?$', employer.EmployerJobView.as_view()),
+    re_path('^social-link-filter/(?P<link_filter_id>[0-9]+)?/?$', social.SocialLinkFilterView.as_view()),
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
 

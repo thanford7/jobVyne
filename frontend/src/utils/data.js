@@ -1,4 +1,6 @@
+import { useUtilStore } from 'stores/utility-store'
 import clone from 'just-clone'
+import pluralize from 'pluralize'
 
 class DataUtil {
   formatCurrency (val) {
@@ -13,20 +15,21 @@ class DataUtil {
   }
 
   copyText (e) {
+    const utilStore = useUtilStore()
     const targetEl = e.currentTarget
     const copyTargetEl = targetEl.closest('div').querySelector('.copy-target')
-    const text = copyTargetEl.text() || copyTargetEl.val()
-    const copyMsgId = this.getNewElUid()
+    const text = copyTargetEl.innerText || copyTargetEl.value
+    const copyMsgId = utilStore.getNewElId()
     navigator.clipboard.writeText(text).then(
       () => {
         targetEl.parentNode.insertAdjacentHTML(
           'beforeend',
-          `<span id="${copyMsgId}" class="-color-green-text -sub-text"> Copied successfully</span>`
+          `<span id="${copyMsgId}" class="text-positive text-small"> Copied successfully</span>`
         )
       }, () => {
         targetEl.parentNode.insertAdjacentHTML(
           'beforeend',
-          `<span id="${copyMsgId}" class="-color-red-text -sub-text"> Copy failed. Please copy manually</span>`
+          `<span id="${copyMsgId}" class="text-negative text-small"> Copy failed. Please copy manually</span>`
         )
       }
     )
@@ -190,6 +193,29 @@ class DataUtil {
     return firstLetter + restOfString
   }
 
+  concatWithAnd (list) {
+    if (!list || !list.length) {
+      return null
+    }
+    if (list.length === 1) {
+      return list[0]
+    }
+    if (list.length === 2) {
+      return list[0] + ' and ' + list[1]
+    }
+
+    return list.reduce((text, item, idx) => {
+      if (idx === 0) {
+        text = item
+      } else if (idx !== list.length - 1) {
+        text += ', ' + item
+      } else {
+        text += ', and ' + item
+      }
+      return text
+    }, '')
+  }
+
   debounce (func, waitMS, immediate = false) {
     let timeout
     return () => {
@@ -236,6 +262,13 @@ class DataUtil {
     }
 
     return objectArray.map((v) => this.get(v, objectKey))
+  }
+
+  getForceArray (val) {
+    if (Array.isArray(val)) {
+      return val
+    }
+    return []
   }
 
   get (obj, path, defaultValue = undefined) {
@@ -374,6 +407,10 @@ class DataUtil {
       }
       return obj
     }, {})
+  }
+
+  pluralize (word, count, includeWord = true) {
+    return pluralize(word, count, includeWord)
   }
 
   sortBy (targetArray, sortKey, isInPlace = false) {

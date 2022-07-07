@@ -126,7 +126,8 @@ module.exports = configure(function (ctx) {
       plugins: [
         'Cookies',
         'LocalStorage',
-        'SessionStorage'
+        'SessionStorage',
+        'Meta'
       ]
     },
 

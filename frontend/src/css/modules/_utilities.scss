@@ -33,3 +33,11 @@ $border-colors-map: get-combined-maps($gray-color-map, $brand-color-map);
 .text-small {
   font-size: 12px;
 }
+
+.font-primary {
+  font-family: 'Lustria', 'serif';
+}
+
+.font-secondary {
+  font-family: 'Open Sans', 'sans-serif';
+}

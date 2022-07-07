@@ -134,12 +134,6 @@ const menuList = [
     separator: false
   },
   {
-    icon: 'query_stats',
-    key: 'tracking',
-    label: 'Tracking',
-    separator: false
-  },
-  {
     icon: 'message',
     key: 'messages',
     label: 'Messages',
