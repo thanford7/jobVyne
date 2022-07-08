@@ -1,12 +1,19 @@
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+
 from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis.employer import EmployerJobView, EmployerView
+from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
+from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
 from jvapp.serializers.social import *
+from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import set_object_attributes
 
 
@@ -97,7 +104,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             link_filter.jobs.set(job_ids)
             
     @staticmethod
-    def get_link_filters(user, link_filter_id=None, link_filter_filter=None):
+    def get_link_filters(user, link_filter_id=None, link_filter_filter=None, is_use_permissions=True):
         if link_filter_id:
             link_filter_filter = Q(id=link_filter_id)
             
@@ -106,7 +113,8 @@ class SocialLinkFilterView(JobVyneAPIView):
             .prefetch_related('departments', 'states', 'countries', 'jobs')\
             .filter(link_filter_filter)
         
-        links = SocialLinkFilter.jv_filter_perm(user, links)
+        if is_use_permissions:
+            links = SocialLinkFilter.jv_filter_perm(user, links)
         
         if link_filter_id:
             if not links:
@@ -114,3 +122,45 @@ class SocialLinkFilterView(JobVyneAPIView):
             return links[0]
         
         return links
+    
+    
+class SocialLinkJobsView(JobVyneAPIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request, link_filter_id):
+        link_filter = SocialLinkFilterView.get_link_filters(
+            self.user,
+            link_filter_id=link_filter_id,
+            is_use_permissions=False  # This is a public page
+        )
+        jobs = self.get_jobs_from_filter(link_filter)
+        employer = EmployerView.get_employers(employer_id=link_filter.employer_id)
+        profile = UserView.get_user(user_id=link_filter.owner_id)
+        return Response(status=status.HTTP_200_OK, data={
+            'jobs': [get_serialized_employer_job(j) for j in jobs],
+            'employer': get_serialized_employer(employer),
+            'profile': get_serialized_user(profile)
+        })
+        
+    @staticmethod
+    def get_jobs_from_filter(link_filter):
+        jobs_filter = Q(employer_id=link_filter.employer_id)
+        jobs_filter &= Q(openDate__lte=timezone.now().date())
+        jobs_filter &= (Q(closeDate__isnull=True) | Q(closeDate__gt=timezone.now().date()))
+        
+        if len(link_filter.departments.all()):
+            jobs_filter &= Q(jobDepartment_id__in=[d.id for d in link_filter.departments.all()])
+            
+        if link_filter.cities:
+            jobs_filter &= Q(city__in=link_filter.cities)
+            
+        if len(link_filter.states.all()):
+            jobs_filter &= Q(state_id__in=[s.id for s in link_filter.states.all()])
+            
+        if len(link_filter.countries.all()):
+            jobs_filter &= Q(country_id__in=[c.id for c in link_filter.countries.all()])
+            
+        if len(link_filter.jobs.all()):
+            jobs_filter &= Q(id__in=[j.id for j in link_filter.jobs.all()])
+            
+        return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)

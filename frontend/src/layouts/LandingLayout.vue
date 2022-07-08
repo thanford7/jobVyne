@@ -71,17 +71,7 @@
       <router-view/>
     </q-page-container>
 
-    <q-footer elevated reveal class="bg-grey-8 text-white justify-center row">
-      <q-toolbar class="col-12 col-md-11 col-lg-8 q-py-md">
-        <q-toolbar-title>
-          <img src="../assets/jobVyneLogoWhite.png" alt="Logo" style="height: 40px; object-fit: scale-down">
-        </q-toolbar-title>
-        <q-tabs align="right" shrink>
-          <q-route-tab to="/privacy" label="Privacy"/>
-          <q-route-tab to="/terms-of-service" label="Terms of Service"/>
-        </q-tabs>
-      </q-toolbar>
-    </q-footer>
+    <CustomFooter/>
 
   </q-layout>
 </template>
@@ -89,17 +79,14 @@
 <script>
 import { useAuthStore } from 'stores/auth-store'
 import BannerMessage from 'components/BannerMessage.vue'
+import CustomFooter from 'components/CustomFooter.vue'
 
 export default {
   name: 'LandingLayout',
-  components: { BannerMessage },
+  components: { CustomFooter, BannerMessage },
   setup () {
     const authStore = useAuthStore()
     return { authStore }
   }
 }
 </script>
-
-<style scoped>
-
-</style>

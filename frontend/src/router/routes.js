@@ -27,6 +27,11 @@ const routes = [
     ]
   },
 
+  {
+    path: '/jobs-link/:jobId',
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
   // Always leave this as last one,
   // but you can also remove it
   {

@@ -31,9 +31,6 @@ article, aside, details, figcaption, figure,
 footer, header, hgroup, menu, nav, section {
 	display: block;
 }
-body {
-	line-height: 1;
-}
 /*
 End reset
  */
@@ -75,6 +72,10 @@ End scrollbar
 
 * {
   font-family: 'Open Sans', 'sans-serif';
+}
+
+body {
+	color: $gray-900;
 }
 
 h1, h2, h3, h4, h5, h6 {

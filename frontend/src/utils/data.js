@@ -14,6 +14,19 @@ class DataUtil {
     return formatter.format(val)
   }
 
+  getSalaryRange (salaryFloor, salaryCeiling) {
+    if (!salaryFloor && !salaryCeiling) {
+      return null
+    }
+    if (salaryFloor && salaryCeiling) {
+      return `${this.formatCurrency(salaryFloor)}-${this.formatCurrency(salaryCeiling)}`
+    }
+    if (salaryFloor) {
+      return this.formatCurrency(salaryFloor)
+    }
+    return this.formatCurrency(salaryCeiling)
+  }
+
   copyText (e) {
     const utilStore = useUtilStore()
     const targetEl = e.currentTarget

@@ -331,7 +331,7 @@ export default {
     },
     getJobLinkUrl (jobLink) {
       const id = (jobLink) ? jobLink.id : this.linkId
-      return `${window.location.origin}/job-link/${id}`
+      return `${window.location.origin}/jobs-link/${id}`
     },
     getJobLinkText () {
       const employer = this.employerStore.getEmployer
