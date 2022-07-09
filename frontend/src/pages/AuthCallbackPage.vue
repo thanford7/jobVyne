@@ -36,7 +36,7 @@ export default {
     const pageTitle = 'Auth'
     const metaData = {
       title: pageTitle,
-      titleTemplate: globalStore.getPageTitle(pageTitle)
+      titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
   }

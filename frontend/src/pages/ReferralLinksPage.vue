@@ -422,7 +422,7 @@ export default {
     const pageTitle = 'Referral Links'
     const metaData = {
       title: pageTitle,
-      titleTemplate: globalStore.getPageTitle(pageTitle)
+      titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
 

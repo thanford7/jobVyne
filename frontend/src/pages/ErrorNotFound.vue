@@ -35,7 +35,7 @@ export default defineComponent({
     const pageTitle = 'Error'
     const metaData = {
       title: pageTitle,
-      titleTemplate: globalStore.getPageTitle(pageTitle)
+      titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
   }

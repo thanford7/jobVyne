@@ -420,7 +420,7 @@ export default {
     const pageTitle = 'Terms of service'
     const metaData = {
       title: pageTitle,
-      titleTemplate: globalStore.getPageTitle(pageTitle)
+      titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
   }

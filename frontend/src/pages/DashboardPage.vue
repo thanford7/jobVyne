@@ -16,7 +16,7 @@ export default {
     const pageTitle = 'Dashboard'
     const metaData = {
       title: pageTitle,
-      titleTemplate: globalStore.getPageTitle(pageTitle)
+      titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
   }
