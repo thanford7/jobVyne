@@ -1,13 +1,18 @@
 <template>
   <q-page padding>
-    <page-text> Logging in with {{ provider }}...</page-text>
+    <div class="row" style="height: 75vh">
+      <div class="col-12">
+        <div class="text-h6">Logging in with {{ provider }}...</div>
+      </div>
+    </div>
   </q-page>
 </template>
 
 <script>
 import { getAjaxFormData } from 'src/utils/requests'
-import { useAuthStore } from 'stores/auth-store'
 import dataUtil from 'src/utils/data'
+import { useGlobalStore } from 'stores/global-store'
+import { useMeta } from 'quasar'
 
 export default {
   computed: {
@@ -16,23 +21,24 @@ export default {
     }
   },
   methods: {
-    handleOauthCallback () {
+    async handleOauthCallback () {
       const provider = this.$route.params.provider
-      this.$api
-        .post(`/social/${provider}/`, getAjaxFormData({ code: this.$route.query.code }))
-        .then((resp) => {
-          this.store.updateStatus(true)
-          this.store.setUserProfile(resp.data.user_id)
-          this.$router.push('/dashboard')
-        })
+      await this.$api.post(`/social/${provider}/`, getAjaxFormData({ code: this.$route.query.code }))
+      this.$router.push('/dashboard')
     }
-  },
-  setup () {
-    const store = useAuthStore()
-    return { store }
   },
   mounted () {
     this.handleOauthCallback()
+  },
+  setup () {
+    const globalStore = useGlobalStore()
+
+    const pageTitle = 'Auth'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle(pageTitle)
+    }
+    useMeta(metaData)
   }
 }
 </script>

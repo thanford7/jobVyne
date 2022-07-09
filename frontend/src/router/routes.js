@@ -3,7 +3,7 @@ const routes = [
     path: '/login',
     component: () => import('layouts/HeaderlessLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/LoginPage.vue') }
+      { path: '', name: 'login', meta: { isNoAuth: true }, component: () => import('pages/LoginPage.vue') }
     ]
   },
 
@@ -11,10 +11,20 @@ const routes = [
     path: '/',
     component: () => import('layouts/LandingLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/IndexPage.vue') },
-      { path: 'terms-of-service', component: () => import('pages/TermsOfServicePage.vue') },
-      { path: 'privacy', component: () => import('pages/PrivacyPage.vue') },
-      { path: '/auth/:provider/callback', component: () => import('pages/AuthCallbackPage.vue') }
+      { path: '', name: 'landing', meta: { isNoAuth: true }, component: () => import('pages/IndexPage.vue') },
+      {
+        path: 'terms-of-service',
+        name: 'tos',
+        meta: { isNoAuth: true },
+        component: () => import('pages/TermsOfServicePage.vue')
+      },
+      { path: 'privacy', name: 'privacy', meta: { isNoAuth: true }, component: () => import('pages/PrivacyPage.vue') },
+      {
+        path: '/auth/:provider/callback',
+        name: 'auth-callback',
+        meta: { isNoAuth: true },
+        component: () => import('pages/AuthCallbackPage.vue')
+      }
     ]
   },
 
@@ -22,13 +32,15 @@ const routes = [
     path: '/dashboard',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/DashboardPage.vue') },
-      { path: 'links', component: () => import('pages/ReferralLinksPage.vue') }
+      { path: '', name: 'dashboard', component: () => import('pages/DashboardPage.vue') },
+      { path: 'links', name: 'dashboard-links', component: () => import('pages/ReferralLinksPage.vue') }
     ]
   },
 
   {
     path: '/jobs-link/:jobId',
+    name: 'jobs-link',
+    meta: { isNoAuth: true },
     component: () => import('layouts/JobsLayout.vue')
   },
 
@@ -36,6 +48,7 @@ const routes = [
   // but you can also remove it
   {
     path: '/:catchAll(.*)*',
+    meta: { isNoAuth: true },
     component: () => import('pages/ErrorNotFound.vue')
   }
 ]

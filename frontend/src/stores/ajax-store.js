@@ -21,6 +21,8 @@ export const useAjaxStore = defineStore('ajax', {
         msg = `${status} ${statusText}`
         if (data && data.detail) {
           msg += `: ${data.detail}`
+        } else if (data.includes('<!doctype html>')) {
+          msg += `: ${this.parseHtmlMessage(data)}`
         }
       } else {
         msg = error.message
@@ -47,6 +49,11 @@ export const useAjaxStore = defineStore('ajax', {
     },
     removeMsg (msgIdx) {
       this.messages = this.messages.filter((msg) => msg.idx !== msgIdx)
+    },
+    parseHtmlMessage (htmlText) {
+      const parser = new DOMParser()
+      const htmlDoc = parser.parseFromString(htmlText, 'text/html')
+      return htmlDoc.querySelector('.detail .errormsg').textContent
     }
   }
 })

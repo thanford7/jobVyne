@@ -1,0 +1,7 @@
+@use '../quasar.variables' as *;
+
+.q-card {
+  &--selected {
+    box-shadow: 0 0 5px 2px $primary;
+  }
+}

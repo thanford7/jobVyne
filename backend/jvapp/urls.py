@@ -1,6 +1,6 @@
 from django.urls import path, re_path
 
-from jvapp.apis import auth, employer, social, user
+from jvapp.apis import auth, employer, job_seeker, social, user
 
 apiPath = 'api/v1/'
 
@@ -11,12 +11,14 @@ urlpatterns = [
     re_path('^social-link-filter/(?P<link_filter_id>\S+)?/?$', social.SocialLinkFilterView.as_view()),
     re_path('^social-link-jobs/(?P<link_filter_id>\S+)/?$', social.SocialLinkJobsView.as_view()),
     path('social-platform/', social.SocialPlatformView.as_view()),
+    path('submit-application/', job_seeker.ApplicationView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),
     path('auth/login-set-cookie/', auth.LoginSetCookieView.as_view()),
     path('auth/logout/', auth.LogoutView.as_view()),
+    path('auth/check-auth/', auth.CheckAuthView.as_view()),
     
     # Social auth
     path('social/<backend>/', auth.social_auth),

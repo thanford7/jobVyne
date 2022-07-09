@@ -33,7 +33,7 @@
                 :rows-per-page-options="[5, 10, 15]"
               >
                 <template v-slot:top>
-                  <q-btn color="primary" label="Create new link" @click="tab = 'create'" />
+                  <q-btn color="primary" label="Create new link" @click="tab = 'create'"/>
                 </template>
                 <template v-slot:body="props">
                   <q-tr :props="props">
@@ -71,8 +71,9 @@
                       </span>
                     </q-td>
                     <q-td key="link" :props="props">
-                      <a :href="getJobLinkUrl(props.row)">
-                        {{ getJobLinkUrl(props.row) }}
+                      <a :href="getJobLinkUrl(props.row)" target="_blank">
+                        <q-icon name="launch"/>
+                        &nbsp;{{ getJobLinkUrl(props.row) }}
                       </a>
                     </q-td>
                   </q-tr>
@@ -148,7 +149,7 @@
                     <q-select
                       outlined multiple clearable use-chips
                       v-model="formData.departments"
-                      :options="employerStore.getJobDepartments"
+                      :options="employerStore.getJobDepartments(user.employer_id)"
                       option-value="id"
                       option-label="department"
                       label="Department"
@@ -159,7 +160,7 @@
                       outlined multiple clearable use-chips
                       v-model="formData.cities"
                       :emit-value="true"
-                      :options="employerStore.getJobCities"
+                      :options="employerStore.getJobCities(user.employer_id)"
                       option-value="city"
                       option-label="city"
                       label="City"
@@ -169,7 +170,7 @@
                     <q-select
                       outlined multiple clearable use-chips
                       v-model="formData.states"
-                      :options="employerStore.getJobStates"
+                      :options="employerStore.getJobStates(user.employer_id)"
                       option-value="id"
                       option-label="state"
                       label="State"
@@ -179,7 +180,7 @@
                     <q-select
                       outlined multiple clearable use-chips
                       v-model="formData.countries"
-                      :options="employerStore.getJobCountries"
+                      :options="employerStore.getJobCountries(user.employer_id)"
                       option-value="id"
                       option-label="country"
                       label="Country"
@@ -197,7 +198,7 @@
               </div>
               <div class="col-12">
                 <q-table
-                  :rows="employerStore.getEmployerJobs"
+                  :rows="employerStore.getEmployerJobs(user.employer_id)"
                   row-key="id"
                   :columns="jobColumns"
                   :filter-method="jobDataFilter"
@@ -252,7 +253,7 @@ import dataUtil from 'src/utils/data'
 import dateTimeUtil from 'src/utils/datetime'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import { useGlobalStore } from 'stores/global-store'
-import { useMeta } from 'quasar'
+import { Loading, useMeta } from 'quasar'
 
 const jobColumns = [
   { name: 'job_title', field: 'job_title', align: 'left', label: 'Title', sortable: true },
@@ -302,6 +303,9 @@ export default {
         { name: 'locations', field: this.getLocations, align: 'left', label: 'Locations' },
         { name: 'link', field: this.getJobLinkUrl, align: 'left', label: 'Link' }
       ]
+    },
+    user () {
+      return this.authStore.propUser
     }
   },
   methods: {
@@ -334,7 +338,7 @@ export default {
       return `${window.location.origin}/jobs-link/${id}`
     },
     getJobLinkText () {
-      const employer = this.employerStore.getEmployer
+      const employer = this.employerStore.getEmployer(this.user.employer_id)
       if (!employer) {
         return ''
       }
@@ -380,10 +384,10 @@ export default {
       })
     },
     async saveLink () {
-      const profile = this.authStore.getProfile
+      const user = this.authStore.propUser
       const data = {
-        owner_id: profile.id,
-        employer_id: profile.employer_id,
+        owner_id: user.id,
+        employer_id: user.employer_id,
         platform_id: this.formData?.platform?.id,
         department_ids: this.formData?.departments?.map((dept) => dept.id),
         cities: (this.formData.cities) ? this.formData.cities : null,
@@ -394,23 +398,35 @@ export default {
       this.linkId = resp.data.id
     }
   },
+  preFetch () {
+    const socialStore = useSocialStore()
+    const employerStore = useEmployerStore()
+    const authStore = useAuthStore()
+    Loading.show()
+
+    return authStore.setUser().then(() => {
+      Promise.all([
+        socialStore.setPlatforms(),
+        socialStore.setSocialLinkFilters(),
+        employerStore.setEmployer(authStore.propUser.employer_id),
+        employerStore.setEmployerJobs(authStore.propUser.employer_id)
+      ])
+    }).finally(() => Loading.hide())
+  },
   setup () {
     const socialStore = useSocialStore()
     const employerStore = useEmployerStore()
     const globalStore = useGlobalStore()
-    socialStore.setPlatforms()
-    socialStore.setSocialLinkFilters()
-    employerStore.setEmployer()
-    employerStore.setEmployerJobs()
+    const authStore = useAuthStore()
 
     const pageTitle = 'Referral Links'
     const metaData = {
       title: pageTitle,
-      titleTemplate: globalStore.getPageTitle
+      titleTemplate: globalStore.getPageTitle(pageTitle)
     }
     useMeta(metaData)
 
-    return { socialStore, employerStore, authStore: useAuthStore(), globalStore }
+    return { socialStore, employerStore, authStore, globalStore }
   }
 }
 </script>

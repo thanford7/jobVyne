@@ -10,7 +10,7 @@
         </a>
         <q-space/>
         <q-tabs class="gt-sm" align="right" shrink>
-          <template v-if="authStore.isAuthenticated">
+          <template v-if="authStore.propIsAuthenticated">
             <q-route-tab to="/dashboard" label="Dashboard"/>
             <q-tab label="Logout" @click="authStore.logout"/>
           </template>
@@ -27,7 +27,7 @@
               bordered padding
               class="rounded-borders text-primary"
             >
-              <template v-if="authStore.isAuthenticated">
+              <template v-if="authStore.propIsAuthenticated">
                 <q-item
                   exact clickable v-close-popup
                   v-ripple

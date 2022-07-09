@@ -107,6 +107,7 @@
 import BannerMessage from 'components/BannerMessage.vue'
 import { useUtilStore } from 'stores/utility-store'
 import { useAuthStore } from 'stores/auth-store'
+import { Loading } from 'quasar'
 
 const menuList = [
   {
@@ -201,6 +202,11 @@ export default {
       this.pageKey = key
       this.$router.push(url)
     }
+  },
+  preFetch () {
+    const authStore = useAuthStore()
+    Loading.show()
+    authStore.setUser().finally(() => Loading.hide())
   },
   setup () {
     return {

@@ -1,5 +1,6 @@
 from django.db.models import Q
-from rest_framework import status, authentication
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
@@ -8,9 +9,12 @@ from jvapp.serializers.user import get_serialized_user
 
 
 class UserView(JobVyneAPIView):
-    authentication_classes = [authentication.SessionAuthentication]
-
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
     def get(self, request, user_id=None):
+        # This allows use to check authentication and conditionally grab user info in one request
+        if not all((request.user, request.user.is_authenticated)):
+            return Response(status=status.HTTP_200_OK, data=False)
         data = request.data
         if user_id:
             user = self.get_user(user_id=user_id)

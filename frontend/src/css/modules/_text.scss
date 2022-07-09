@@ -1,0 +1,19 @@
+@use '../quasar.variables' as *;
+
+@each $name, $color in $gray-color-map {
+  .text-#{$name} {
+    color: $color;
+  }
+}
+
+.text-small {
+  font-size: 12px;
+}
+
+.font-primary {
+  font-family: 'Lustria', 'serif';
+}
+
+.font-secondary {
+  font-family: 'Open Sans', 'sans-serif';
+}

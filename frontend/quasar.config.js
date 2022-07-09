@@ -31,7 +31,8 @@ module.exports = configure(function (ctx) {
     // https://v2.quasar.dev/quasar-cli/boot-files
     boot: [
       'i18n',
-      'axios'
+      'axios',
+      'router-guards'
     ],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
@@ -108,7 +109,16 @@ module.exports = configure(function (ctx) {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
     framework: {
-      config: {},
+      config: {
+        loading: {
+          message: 'Loading',
+          backgroundColor: 'primary',
+          spinner: 'QSpinnerGears',
+          spinnerColor: 'accent',
+          spinnerSize: '100',
+          messageColor: 'accent'
+        }
+      },
 
       cssAddon: true,
 
@@ -125,6 +135,7 @@ module.exports = configure(function (ctx) {
       // Quasar plugins
       plugins: [
         'Cookies',
+        'Loading',
         'LocalStorage',
         'SessionStorage',
         'Meta'

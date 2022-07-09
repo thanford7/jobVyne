@@ -18,10 +18,10 @@ export const useSocialStore = defineStore('social', {
     async setSocialLinkFilters () {
       const authStore = useAuthStore()
       const params = {}
-      if (authStore.getIsEmployer) {
-        params.employer_id = authStore.getProfile.employer_id
+      if (authStore.propIsEmployer) {
+        params.employer_id = authStore.propUser.employer_id
       } else {
-        params.owner_id = authStore.getProfile.id
+        params.owner_id = authStore.propUser.id
       }
 
       const resp = await this.$api.get(

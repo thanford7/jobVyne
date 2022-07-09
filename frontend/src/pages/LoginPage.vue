@@ -11,50 +11,10 @@
             <h5 class="text-center">Welcome back!</h5>
           </q-card-section>
           <q-card-section>
-            <q-btn
-              type="div"
-              class="full-width q-mt-md btn-bordered"
-              :flat="true"
-              :unelevated="true"
-              @click="redirectAuthUrl('facebook')"
-            >
-              <q-icon id="facebook-logo" name="fa-brands fa-facebook-square"/>
-              &nbsp;Login with Facebook
-            </q-btn
-            >
+            <AuthSocialButtons/>
           </q-card-section>
           <q-card-section>
-            <q-form
-              @submit="login"
-              class="q-gutter-md"
-            >
-              <q-input
-                filled
-                v-model="email"
-                label="Email *"
-                lazy-rules
-                :rules="[ val => val && val.length > 0 && isGoodEmail(val) || 'Please enter a valid email']"
-              />
-
-              <q-input
-                v-model="password"
-                filled
-                :type="isPwdShown ? 'text' : 'password'"
-                label="Password *"
-              >
-                <template v-slot:append>
-                  <q-icon
-                    :name="isPwdShown ? 'visibility' : 'visibility_off'"
-                    class="cursor-pointer"
-                    @click="isPwdShown = !isPwdShown"
-                  />
-                </template>
-              </q-input>
-
-              <div>
-                <q-btn label="Login" type="submit" color="primary"/>
-              </div>
-            </q-form>
+            <AuthEmailForm/>
           </q-card-section>
         </q-card>
       </div>
@@ -63,45 +23,24 @@
 </template>
 
 <script>
-import { useAuthStore } from 'stores/auth-store'
-import { useSocialAuthStore } from 'stores/social-auth-store'
 import BannerMessage from 'components/BannerMessage.vue'
-import validation from 'src/utils/validation'
+import AuthSocialButtons from 'components/AuthSocialButtons.vue'
+import AuthEmailForm from 'components/AuthEmailForm.vue'
+import { useGlobalStore } from 'stores/global-store'
+import { useMeta } from 'quasar'
 
 export default {
   name: 'PageName',
-  components: { BannerMessage },
-  data () {
-    return {
-      email: null,
-      password: null,
-      isPwdShown: false
-    }
-  },
-  methods: {
-    isGoodEmail: validation.isGoodEmail,
-    async login () {
-      const user = {
-        email: this.email,
-        password: this.password
-      }
-      const login = this.store.login.bind(this.store)
-      await login(user)
-      this.$router.push('/')
-      this.email = null
-      this.password = null
-    },
-    async redirectAuthUrl (provider) {
-      window.location = await this.socialStore.getOauthUrl(provider)
-    }
-  },
-  created () {
-    this.$api.get('auth/login-set-cookie/')
-  },
+  components: { AuthEmailForm, AuthSocialButtons, BannerMessage },
   setup () {
-    const store = useAuthStore()
-    const socialStore = useSocialAuthStore()
-    return { store, socialStore }
+    const globalStore = useGlobalStore()
+
+    const pageTitle = 'Login'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle(pageTitle)
+    }
+    useMeta(metaData)
   }
 }
 </script>
@@ -124,9 +63,5 @@ export default {
     opacity: 0.2;
     overflow: hidden;
   }
-
-#facebook-logo {
-  color: $facebook
-}
 }
 </style>

@@ -18,13 +18,17 @@
 
     <q-drawer
       v-if="applicationJob"
-      v-model="rightDrawerOpen"
+      v-model="isRightDrawerOpen"
       side="right"
       overlay bordered :width="400"
     >
       <template v-if="!isApplicationSaved">
         <div class="q-pa-sm bg-primary text-white">
           <div class="text-h6 text-center">Apply to {{ applicationJob.job_title }}</div>
+        </div>
+        <div v-if="!authStore.propIsAuthenticated">
+          Have an account? Login to auto-populate the form
+          TODO
         </div>
         <div class="q-pa-sm q-mt-sm">
           <q-form
@@ -33,14 +37,14 @@
           >
             <q-input
               filled
-              v-model="formData.firstName"
+              v-model="formData.first_name"
               label="First name"
               lazy-rules
               :rules="[ val => val && val.length > 0 || 'First name is required']"
             />
             <q-input
               filled
-              v-model="formData.lastName"
+              v-model="formData.last_name"
               label="Last name"
               lazy-rules
               :rules="[ val => val && val.length > 0 || 'Last name is required']"
@@ -51,24 +55,24 @@
               type="email"
               label="Email"
               lazy-rules
-              :rules="[ val => val && val.length > 0 && isGoodEmail(val) || 'A valid email is required']"
+              :rules="[ val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'A valid email is required']"
             />
             <q-input
               filled
-              v-model="formData.phoneNumber"
+              v-model="formData.phone_number"
               type="tel"
               label="Phone number*"
               lazy-rules
-              :rules="[ val => !val || !val.length || !isGoodPhoneNumber(val) || 'The phone number must be valid']"
+              :rules="[ val => !val || !val.length || formUtil.isGoodPhoneNumber(val) || 'The phone number must be valid']"
             />
             <q-input
               filled
-              v-model="formData.linkedInUrl"
+              v-model="formData.linkedin_url"
               type="url"
               label="LinkedIn URL*"
               hint="www.linkedin.com/in/{your profile id}"
               lazy-rules
-              :rules="[ val => !val || !val.length || !isGoodLinkedInUrl(val)  || 'The LinkedIn URL must be valid']"
+              :rules="[ val => !val || !val.length || formUtil.isGoodLinkedInUrl(val)  || 'The LinkedIn URL must be valid']"
             />
             <q-file
               filled bottom-slots
@@ -86,7 +90,7 @@
           </q-form>
         </div>
       </template>
-      <template v-else-if="true || !authStore.isAuthenticated">
+      <template v-else-if="!authStore.propIsAuthenticated">
         <div class="q-pa-sm bg-primary text-white">
           <div class="text-h6 text-center">Create an account</div>
         </div>
@@ -97,19 +101,26 @@
             icon-name="thumb_up"
             :items="[
               'One click application submission',
-              'Message with employees and employers'
+              'Message with employees and employers',
+              'Track the jobs you\'ve already applied to'
             ]"
           />
+          <q-separator/>
+          <div class="q-mt-md">
+            <AuthEmailForm :is-create="true"/>
+            <SeparatorWithText>or</SeparatorWithText>
+            <AuthSocialButtons :is-create="true"/>
+          </div>
         </div>
       </template>
-      <div v-if="rightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
+      <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
         <q-btn
           dense
           round
           unelevated
           color="grey-5"
           icon="chevron_right"
-          @click="rightDrawerOpen=false"
+          @click="closeRightDrawer()"
         />
       </div>
     </q-drawer>
@@ -123,7 +134,7 @@
               <div class="row">
                 <div class="col-12">
                   <div v-for="job in jobs" :key="job.id" class="q-mb-md">
-                    <q-card>
+                    <q-card :class="(applicationJob && applicationJob.id === job.id) ? 'q-card--selected' : ''">
                       <q-card-section>
                         <h6>{{ job.job_title }}</h6>
                         <div>
@@ -146,6 +157,7 @@
                             {{ getSalaryRange(job.salary_floor, job.salary_ceiling) }}
                           </q-chip>
                         </div>
+                        <q-separator class="q-mt-sm"/>
                         <p>
                           {{ job.job_description }}
                         </p>
@@ -187,13 +199,19 @@ import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
 import { useAuthStore } from 'stores/auth-store'
 import ListIcon from 'components/ListIcon.vue'
+import AuthEmailForm from 'components/AuthEmailForm.vue'
+import AuthSocialButtons from 'components/AuthSocialButtons.vue'
+import SeparatorWithText from 'components/SeparatorWithText.vue'
+import { getAjaxFormData } from 'src/utils/requests'
+import { Loading, useMeta } from 'quasar'
+import { useGlobalStore } from 'stores/global-store'
 
 const formDataTemplate = {
-  firstName: null,
-  lastName: null,
+  first_name: null,
+  last_name: null,
   email: null,
-  phoneNumber: null,
-  linkedInUrl: null,
+  phone_number: null,
+  linkedin_url: null,
   resume: null
 }
 
@@ -205,37 +223,47 @@ export default {
       employer: null,
       profile: null,
       isLoading: true,
-      isApplicationSaved: true,
+      isApplicationSaved: false,
       applicationJob: null,
-      formData: { ...formDataTemplate }
+      formData: { ...formDataTemplate },
+      formUtil
     }
   },
-  components: { ListIcon, CustomFooter, BannerMessage },
+  components: { SeparatorWithText, AuthSocialButtons, AuthEmailForm, ListIcon, CustomFooter, BannerMessage },
   computed: {
+    applicantProfile () {
+      return this.authStore.propUser
+    },
     applicationTemplate () {
-      const applicantProfile = this.authStore.getProfile
-      if (!applicantProfile) {
+      if (!this.applicantProfile) {
         return null
       }
-      return applicantProfile.applicationTemplate
+      return this.applicantProfile.applicationTemplate
     }
   },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
-    isGoodEmail: formUtil.isGoodEmail,
-    isGoodLinkedInUrl: formUtil.isGoodLinkedInUrl,
-    isGoodPhoneNumber: formUtil.isGoodPhoneNumber,
+    closeRightDrawer () {
+      this.isRightDrawerOpen = false
+      this.applicationJob = null
+    },
     openApplication (jobId) {
       this.applicationJob = this.jobs.find((j) => j.id === jobId)
-      this.rightDrawerOpen = true
-      if (this.applicationTemplate) {
-        Object.assign(this.formData, this.applicationTemplate)
-      }
+      this.isRightDrawerOpen = true
+      Object.assign(
+        this.formData,
+        (this.applicantProfile) ? dataUtil.pick(this.applicantProfile, ['first_name', 'last_name', 'email']) : {},
+        this.applicationTemplate || {}
+      )
     },
-    saveApplication () {
-      // TODO: Add backend and axios call
+    async saveApplication () {
+      await this.$api.post('submit-application', getAjaxFormData(this.formData, ['resume']))
       this.isApplicationSaved = true
+      // Leave the drawer open to allow user to create an account if they don't have one
+      if (this.authStore.propIsAuthenticated) {
+        this.closeRightDrawer()
+      }
     }
   },
   async mounted () {
@@ -246,15 +274,27 @@ export default {
     this.profile = profile
     this.isLoading = false
   },
-  setup () {
-    const rightDrawerOpen = ref(false)
+  preFetch () {
     const authStore = useAuthStore()
+    Loading.show()
+    authStore.setUser().finally(() => Loading.hide())
+  },
+  setup () {
+    const isRightDrawerOpen = ref(false)
+    const globalStore = useGlobalStore()
+
+    const pageTitle = 'Jobs'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle(pageTitle)
+    }
+    useMeta(metaData)
 
     return {
-      authStore,
-      rightDrawerOpen,
+      authStore: useAuthStore(),
+      isRightDrawerOpen,
       toggleRightDrawer () {
-        rightDrawerOpen.value = !rightDrawerOpen.value
+        isRightDrawerOpen.value = !isRightDrawerOpen.value
       }
     }
   }

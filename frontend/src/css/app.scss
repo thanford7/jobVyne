@@ -1,7 +1,10 @@
 // app global css in SCSS form
+@use 'modules/borders';
 @use 'modules/buttons';
+@use 'modules/cards';
 @use 'modules/shapes';
 @use 'modules/tables';
+@use 'modules/text';
 @use 'modules/utilities';
 
 /* http://meyerweb.com/eric/tools/css/reset/

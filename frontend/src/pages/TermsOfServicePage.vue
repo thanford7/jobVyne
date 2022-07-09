@@ -409,7 +409,20 @@
 </template>
 
 <script>
+import { useGlobalStore } from 'stores/global-store'
+import { useMeta } from 'quasar'
+
 export default {
-  name: 'TermsOfService'
+  name: 'TermsOfService',
+  setup () {
+    const globalStore = useGlobalStore()
+
+    const pageTitle = 'Terms of service'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle(pageTitle)
+    }
+    useMeta(metaData)
+  }
 }
 </script>

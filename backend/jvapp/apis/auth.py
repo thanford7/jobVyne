@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from social_django.utils import psa
 
 from jvapp.models import JobVyneUser
+from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.logger import getLogger
 from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
 
@@ -50,10 +51,24 @@ class LoginSetCookieView(APIView):
 
 
 class LogoutView(APIView):
-
+    
     def post(self, request):
         logout(request)
         return Response(status=HTTPStatus.OK)
+    
+    
+class CheckAuthView(APIView):
+    
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        if not all((request.user, request.user.is_authenticated)):
+            return Response(status=status.HTTP_200_OK, data=False)
+        
+        return Response(
+            status=status.HTTP_200_OK,
+            data=get_serialized_user(request.user)
+        )
 
 
 @api_view(http_method_names=['POST'])
