@@ -7,26 +7,17 @@ export default boot(({ app, router }) => {
     const $api = app.config.globalProperties.$api
     if (to.name === 'auth-callback') {
       const provider = to.params.provider
-      const protectedParams = ['code', 'state']
+      const { state, redirectPageUrl, redirectParams } = JSON.parse(to.query.state)
       try {
-        // The redirect URL needs to be the same as the one passed to the social platform
-        // The platform adds a few additional params so we need to remove them
-        let redirectUrl = window.location.origin + to.fullPath.replace(to.hash, '')
-        redirectUrl = dataUtil.removeQueryParams(redirectUrl, protectedParams)
         await $api.post(
           `/social/${provider}/`,
-          getAjaxFormData({
-            code: to.query.code,
-            redirectUrl
-          })
+          getAjaxFormData({ code: to.query.code, state })
         )
       } catch (e) {
         return { name: 'error' }
       }
-      return {
-        name: to.query.redirectPage || 'dashboard',
-        query: dataUtil.omit(to.query, [...protectedParams, 'redirectPage'])
-      }
+
+      return { path: redirectPageUrl || '/dashboard', query: redirectParams }
     }
 
     try {

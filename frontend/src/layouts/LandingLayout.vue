@@ -80,10 +80,16 @@
 import { useAuthStore } from 'stores/auth-store'
 import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
+import { Loading } from 'quasar'
 
 export default {
   name: 'LandingLayout',
   components: { CustomFooter, BannerMessage },
+  preFetch () {
+    const authStore = useAuthStore()
+    Loading.show()
+    authStore.setUser().finally(() => Loading.hide())
+  },
   setup () {
     const authStore = useAuthStore()
     return { authStore }

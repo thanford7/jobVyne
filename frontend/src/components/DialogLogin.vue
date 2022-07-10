@@ -1,9 +1,9 @@
 <template>
   <DialogBase
-    primary-button-text="Login"
     title-text="Login"
+    :is-include-buttons="false"
   >
-    <AuthAll/>
+    <AuthAll :redirect-page-url="redirectPageUrl" :redirect-params="redirectParams"/>
   </DialogBase>
 </template>
 
@@ -15,6 +15,14 @@ export default {
   name: 'DialogLogin',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { AuthAll, DialogBase }
+  components: { AuthAll, DialogBase },
+  props: {
+    redirectPageUrl: {
+      type: [String, null]
+    },
+    redirectParams: {
+      type: [Object, null]
+    }
+  }
 }
 </script>

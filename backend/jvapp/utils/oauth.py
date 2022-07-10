@@ -29,7 +29,7 @@ OAUTH_CFGS = {
 SOCIAL_AUTH_PREFIX = 'SOCIAL_AUTH_'
 
 
-def get_payload(backend, code, redirect_url):
+def get_payload(backend, code):
 
     client_id = getattr(settings, f'{SOCIAL_AUTH_PREFIX}{backend.upper()}_KEY')
     client_secret = getattr(settings, f'{SOCIAL_AUTH_PREFIX}{backend.upper()}_SECRET')
@@ -37,12 +37,17 @@ def get_payload(backend, code, redirect_url):
         raise ValueError('OAuth client key and secret are required')
 
     payload = None
+    if not (backend_cfg := OAUTH_CFGS.get(backend)):
+        raise ValueError(f'{backend} is not a valid option')
+    
+    redirect_uri = backend_cfg['auth_params']['redirect_uri']
+    
     if backend == 'google':
         payload = {
             'code': code,
             'client_id': client_id,
             'client_secret': client_secret,
-            'redirect_uri': redirect_url,
+            'redirect_uri': redirect_uri,
             'grant_type': "authorization_code",
         }
     elif backend == 'facebook':
@@ -50,20 +55,17 @@ def get_payload(backend, code, redirect_url):
             'code': code,
             'client_id': client_id,
             'client_secret': client_secret,
-            'redirect_uri': redirect_url,
+            'redirect_uri': redirect_uri,
         }
-        
-    if not payload:
-        raise ValueError(f'{backend} is not a valid option')
 
     return payload
 
 
-def get_access_token_from_code(backend, code, redirect_url):
+def get_access_token_from_code(backend, code):
     """Get access token for any OAuth backend from code"""
 
     url = OAUTH_CFGS[backend]['token_url']
-    payload = get_payload(backend, code, redirect_url)
+    payload = get_payload(backend, code)
 
     # different providers have different responses to their oauth endpoint
     if backend == 'google':

@@ -10,7 +10,15 @@
 
 <script>
 
+import { useAuthStore } from 'stores/auth-store'
+import { Loading } from 'quasar'
+
 export default {
-  name: 'HeaderlessLayout'
+  name: 'HeaderlessLayout',
+  preFetch () {
+    const authStore = useAuthStore()
+    Loading.show()
+    authStore.setUser().finally(() => Loading.hide())
+  }
 }
 </script>

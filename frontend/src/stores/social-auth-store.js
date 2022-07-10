@@ -16,25 +16,18 @@ export const useSocialAuthStore = defineStore('social-auth', {
   }),
 
   actions: {
-    async getOauthUrl (provider, { redirectPage, redirectParams } = {}) {
+    async getOauthUrl (provider, { redirectPageUrl, redirectParams } = {}) {
       if (!this.socialCfgs) {
         const resp = await this.$api.get('social-credentials/')
         this.socialCfgs = resp.data
       }
 
-      redirectParams = redirectParams || {}
-      if (redirectPage) {
-        redirectParams.redirectPage = redirectPage
-      }
-
-      // redirect_uri is the "fake" url that is intercepted by the router-guard
-      // The redirectParams set the page that the user actually ends up on
-      // If redirectParams are not provided, the router-guard uses a default redirect page
       const providerCfg = this.socialCfgs[provider]
-      providerCfg.auth_params.redirect_uri = buildURL(
-        providerCfg.auth_params.redirect_uri,
+      providerCfg.auth_params.state = JSON.stringify({
+        state: providerCfg.auth_params.state,
+        redirectPageUrl,
         redirectParams
-      )
+      })
       return buildURL(providerCfg.auth_url, providerCfg.auth_params)
     }
   }

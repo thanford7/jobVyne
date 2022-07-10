@@ -5,7 +5,7 @@
     <AuthSocialButtons
       :is-create="isCreate"
       :user-type-bit="userTypeBit"
-      :redirect-page="redirectPage"
+      :redirect-page-url="redirectPageUrl"
       :redirect-params="redirectParams"
     />
   </div>
@@ -36,7 +36,7 @@ export default {
       type: Number,
       default: USER_TYPES.USER_TYPE_EMPLOYEE
     },
-    redirectPage: {
+    redirectPageUrl: {
       type: [String, null]
     },
     redirectParams: {

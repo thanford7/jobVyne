@@ -35,7 +35,7 @@ export default {
       type: Number,
       default: USER_TYPES.USER_TYPE_EMPLOYEE
     },
-    redirectPage: {
+    redirectPageUrl: {
       type: [String, null]
     },
     redirectParams: {
@@ -46,7 +46,7 @@ export default {
     async redirectAuthUrl (provider) {
       const url = await this.socialStore.getOauthUrl(
         provider,
-        { redirectPage: this.redirectPage, redirectParams: this.redirectParams }
+        { redirectPageUrl: this.redirectPageUrl, redirectParams: this.redirectParams }
       )
       window.location.href = url
     }

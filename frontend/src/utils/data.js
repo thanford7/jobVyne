@@ -81,12 +81,22 @@ class DataUtil {
     return paramDict
   }
 
-  getUrlWithParams (params, path, isExcludeExistingParams = false) {
+  /**
+   * Get a modified URL string
+   * @param isExcludeExistingParams {Boolean}: If true, remove all existing params
+   * @param addParams {Array}: Params to add [{key: <param key>, val: <param val> || [<param val>...]},...]
+   * @param deleteParams {Array|null}: Param keys to remove
+   * @param path {String|null}: redirect path
+   * @returns {string}
+   */
+  getUrlWithParams ({ isExcludeExistingParams = false, addParams = null, deleteParams = null, path = null }) {
     if (!('URLSearchParams' in window)) {
       return
     }
     const searchParams = (isExcludeExistingParams) ? new URLSearchParams() : new URLSearchParams(window.location.search)
-    params.forEach(({ key, val }) => {
+
+    this.getForceArray(deleteParams).forEach((paramKey) => searchParams.delete(paramKey))
+    this.getForceArray(addParams).forEach(({ key, val }) => {
       searchParams.delete(key) // Remove existing
       const vals = (Array.isArray(val)) ? val : [val]
       vals.forEach((v) => {
@@ -130,12 +140,12 @@ class DataUtil {
 
   /**
    * Update query params and optionally redirect to a new page
-   * @param params {Array}: Array of dicts with key: val: pairs. The key represents the name of the query param and
-   * val represents the value. Val can be a single value or a list of values. Example: [{key: 'tab', val: 'settings'}]
-   * @param path {null|string}: Optional path if directing to a new page
+   * See getUrlWithParams for argument definitions
    */
-  setQueryParams (params, path = null) {
-    const newRelativePathQuery = this.getUrlWithParams(params, path)
+  setQueryParams ({ isExcludeExistingParams = false, addParams = null, deleteParams = null, path = null }) {
+    const newRelativePathQuery = this.getUrlWithParams(
+      { isExcludeExistingParams, addParams, deleteParams, path }
+    )
     if (!newRelativePathQuery) {
       return
     }

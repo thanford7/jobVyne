@@ -243,9 +243,11 @@ export default {
     closeRightDrawer () {
       this.isRightDrawerOpen = false
       this.applicationJob = null
+      dataUtil.setQueryParams({ deleteParams: ['jobId'] })
     },
     openApplication (jobId) {
       this.applicationJob = this.jobs.find((j) => j.id === jobId)
+      dataUtil.setQueryParams({ addParams: [{ key: 'jobId', val: jobId }] })
       this.isRightDrawerOpen = true
       Object.assign(
         this.formData,
@@ -263,7 +265,11 @@ export default {
     },
     openLoginModal () {
       this.$q.dialog({
-        component: DialogLogin
+        component: DialogLogin,
+        componentProps: {
+          redirectPageUrl: window.location.pathname,
+          redirectParams: dataUtil.getQueryParams()
+        }
       }).onOk(() => {
         console.log('OK')
       }).onCancel(() => {
@@ -279,6 +285,12 @@ export default {
     this.jobs = jobs
     this.employer = employer
     this.profile = profile
+
+    const { jobId } = dataUtil.getQueryParams()
+    if (jobId) {
+      this.openApplication(parseInt(jobId))
+    }
+
     this.isLoading = false
   },
   preFetch () {
@@ -300,9 +312,6 @@ export default {
     return {
       authStore: useAuthStore(),
       isRightDrawerOpen,
-      toggleRightDrawer () {
-        isRightDrawerOpen.value = !isRightDrawerOpen.value
-      },
       $q
     }
   }

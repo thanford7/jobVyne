@@ -5,13 +5,21 @@
         <div class="text-h6">
           {{titleText}}
         </div>
+        <q-btn
+          flat unelevated
+          icon="close"
+          text-color="grey-5"
+          @click="onDialogCancel"
+          class="q-pr-sm"
+          style="position: absolute; top: 0; right: 0"
+        />
       </q-card-section>
 
       <q-card-section class="q-pt-none">
         <slot/>
       </q-card-section>
 
-      <q-card-actions align="right" class="text-primary">
+      <q-card-actions v-if="isIncludeButtons" align="right" class="text-primary">
         <slot name="buttons">
           <q-btn flat label="Cancel" @click="onDialogCancel" />
           <q-btn flat color="accent" :label="primaryButtonText" @click="onDialogOK"/>
@@ -33,6 +41,10 @@ export default {
     },
     titleText: {
       type: [String, null]
+    },
+    isIncludeButtons: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [
@@ -62,3 +74,7 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+
+</style>

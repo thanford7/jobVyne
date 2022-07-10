@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
@@ -96,11 +97,14 @@ def social_auth(request, backend):
         """
     
     code = request.data.get('code', '').strip()
-    redirect_url = request.data.get('redirectUrl', '').strip()
     if not code:
         return Response('An auth token is required', status=status.HTTP_400_BAD_REQUEST)
+
+    state = request.data.get('state', '').strip()
+    if state != settings.AUTH_STATE:
+        return Response('Request state is not the same as the callback state', status=status.HTTP_401_UNAUTHORIZED)
     
-    access_token = get_access_token_from_code(backend, code, redirect_url)
+    access_token = get_access_token_from_code(backend, code)
     
     try:
         # this line, plus the psa decorator above, are all that's
