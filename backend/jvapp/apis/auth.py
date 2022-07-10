@@ -96,10 +96,11 @@ def social_auth(request, backend):
         """
     
     code = request.data.get('code', '').strip()
+    redirect_url = request.data.get('redirectUrl', '').strip()
     if not code:
         return Response('An auth token is required', status=status.HTTP_400_BAD_REQUEST)
     
-    access_token = get_access_token_from_code(backend, code)
+    access_token = get_access_token_from_code(backend, code, redirect_url)
     
     try:
         # this line, plus the psa decorator above, are all that's

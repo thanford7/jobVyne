@@ -20,6 +20,9 @@ export default defineComponent({
       ajaxStore.$on(AJAX_EVENTS.ERROR, (error) => {
         ajaxStore.addErrorMsg(error)
       })
+      ajaxStore.$on(AJAX_EVENTS.SUCCESS, (msg) => {
+        ajaxStore.addSuccessMsg(msg)
+      })
       this.hasEventsLoaded = true
     }
   }

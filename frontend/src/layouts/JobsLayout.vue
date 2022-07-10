@@ -26,9 +26,8 @@
         <div class="q-pa-sm bg-primary text-white">
           <div class="text-h6 text-center">Apply to {{ applicationJob.job_title }}</div>
         </div>
-        <div v-if="!authStore.propIsAuthenticated">
-          Have an account? Login to auto-populate the form
-          TODO
+        <div v-if="!authStore.propIsAuthenticated" class="q-pa-sm">
+          <a href="#" @click="openLoginModal">Have an account? Login to auto-populate the form</a>
         </div>
         <div class="q-pa-sm q-mt-sm">
           <q-form
@@ -75,10 +74,12 @@
               :rules="[ val => !val || !val.length || formUtil.isGoodLinkedInUrl(val)  || 'The LinkedIn URL must be valid']"
             />
             <q-file
-              filled bottom-slots
+              filled bottom-slots clearable
               v-model="formData.resume"
               label="Resume"
               class="q-mb-none"
+              accept=".pdf,.doc,.docx,.pages,.gdoc"
+              :rules="[ val => val || 'A resume is required']"
             />
             <div class="text-small text-gray-3">
               *Optional
@@ -106,11 +107,7 @@
             ]"
           />
           <q-separator/>
-          <div class="q-mt-md">
-            <AuthEmailForm :is-create="true"/>
-            <SeparatorWithText>or</SeparatorWithText>
-            <AuthSocialButtons :is-create="true"/>
-          </div>
+          <AuthAll class="q-mt-md" :is-create="true"/>
         </div>
       </template>
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
@@ -199,12 +196,11 @@ import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
 import { useAuthStore } from 'stores/auth-store'
 import ListIcon from 'components/ListIcon.vue'
-import AuthEmailForm from 'components/AuthEmailForm.vue'
-import AuthSocialButtons from 'components/AuthSocialButtons.vue'
-import SeparatorWithText from 'components/SeparatorWithText.vue'
 import { getAjaxFormData } from 'src/utils/requests'
-import { Loading, useMeta } from 'quasar'
+import { Loading, useMeta, useQuasar } from 'quasar'
 import { useGlobalStore } from 'stores/global-store'
+import AuthAll from 'components/AuthAll.vue'
+import DialogLogin from 'components/DialogLogin.vue'
 
 const formDataTemplate = {
   first_name: null,
@@ -229,7 +225,7 @@ export default {
       formUtil
     }
   },
-  components: { SeparatorWithText, AuthSocialButtons, AuthEmailForm, ListIcon, CustomFooter, BannerMessage },
+  components: { AuthAll, ListIcon, CustomFooter, BannerMessage },
   computed: {
     applicantProfile () {
       return this.authStore.propUser
@@ -258,12 +254,23 @@ export default {
       )
     },
     async saveApplication () {
-      await this.$api.post('submit-application', getAjaxFormData(this.formData, ['resume']))
+      await this.$api.post('submit-application/', getAjaxFormData(this.formData, ['resume']))
       this.isApplicationSaved = true
       // Leave the drawer open to allow user to create an account if they don't have one
       if (this.authStore.propIsAuthenticated) {
         this.closeRightDrawer()
       }
+    },
+    openLoginModal () {
+      this.$q.dialog({
+        component: DialogLogin
+      }).onOk(() => {
+        console.log('OK')
+      }).onCancel(() => {
+        console.log('Cancel')
+      }).onDismiss(() => {
+        console.log('Called on OK or Cancel')
+      })
     }
   },
   async mounted () {
@@ -289,13 +296,14 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-
+    const $q = useQuasar()
     return {
       authStore: useAuthStore(),
       isRightDrawerOpen,
       toggleRightDrawer () {
         isRightDrawerOpen.value = !isRightDrawerOpen.value
-      }
+      },
+      $q
     }
   }
 }

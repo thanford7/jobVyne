@@ -100,6 +100,35 @@ class DataUtil {
   }
 
   /**
+   * Removes query params in place to avoid rearranging the params
+   * @param url {String}: Full url including base and query params
+   * @param paramsToRemove {Array}: List of param keys to remove
+   * @returns {string|*}
+   */
+  removeQueryParams (url, paramsToRemove) {
+    const urlParts = url.split('?')
+    // No query params
+    if (urlParts.length === 1) {
+      return url
+    }
+    const queryStr = urlParts[1].split('&').reduce((totalQueryStr, queryParam) => {
+      const [queryKey, queryValue] = queryParam.split('=')
+      if (paramsToRemove.includes(queryKey)) {
+        return totalQueryStr
+      }
+      const queryStr = queryKey + '=' + queryValue
+      if (!totalQueryStr.length) {
+        totalQueryStr = queryStr
+      } else {
+        totalQueryStr += '&' + queryStr
+      }
+      return totalQueryStr
+    }, '')
+
+    return (queryStr.length) ? urlParts[0] + '?' + queryStr : urlParts[0]
+  }
+
+  /**
    * Update query params and optionally redirect to a new page
    * @param params {Array}: Array of dicts with key: val: pairs. The key represents the name of the query param and
    * val represents the value. Val can be a single value or a list of values. Example: [{key: 'tab', val: 'settings'}]

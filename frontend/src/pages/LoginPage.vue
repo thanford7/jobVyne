@@ -11,10 +11,7 @@
             <h5 class="text-center">Welcome back!</h5>
           </q-card-section>
           <q-card-section>
-            <AuthSocialButtons/>
-          </q-card-section>
-          <q-card-section>
-            <AuthEmailForm/>
+            <AuthAll/>
           </q-card-section>
         </q-card>
       </div>
@@ -24,14 +21,15 @@
 
 <script>
 import BannerMessage from 'components/BannerMessage.vue'
-import AuthSocialButtons from 'components/AuthSocialButtons.vue'
-import AuthEmailForm from 'components/AuthEmailForm.vue'
 import { useGlobalStore } from 'stores/global-store'
 import { useMeta } from 'quasar'
+import AuthAll from 'components/AuthAll.vue'
 
+// TODO: Add functionality to switch between user types (this could be a unique link for each - employer, influencer, etc)
+// TODO: Add functionality to switch between sign up vs login
 export default {
   name: 'PageName',
-  components: { AuthEmailForm, AuthSocialButtons, BannerMessage },
+  components: { AuthAll, BannerMessage },
   setup () {
     const globalStore = useGlobalStore()
 

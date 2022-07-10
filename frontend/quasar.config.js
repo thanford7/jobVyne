@@ -135,6 +135,7 @@ module.exports = configure(function (ctx) {
       // Quasar plugins
       plugins: [
         'Cookies',
+        'Dialog',
         'Loading',
         'LocalStorage',
         'SessionStorage',

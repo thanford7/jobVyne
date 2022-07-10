@@ -10,11 +10,12 @@ import emitter from 'tiny-emitter/instance'
 // "export default () => {}" function below (which runs individually
 // for each client)
 export const AJAX_EVENTS = {
-  ERROR: 'ajax-error'
+  ERROR: 'ajax-error',
+  SUCCESS: 'ajax-success'
 }
 
 axios.defaults.withCredentials = true
-export default boot(({ app, ssrContext, store }) => {
+export default boot(({ app, ssrContext, store, router }) => {
   const api = axios.create({
     withCredentials: true,
     baseURL: process.env.API_URL,
@@ -32,7 +33,10 @@ export default boot(({ app, ssrContext, store }) => {
   })
 
   api.interceptors.response.use(function (response) {
-    // Do something with response data
+    const successMessage = response?.data?.successMessage
+    if (successMessage) {
+      emitter.emit(AJAX_EVENTS.SUCCESS, successMessage)
+    }
     return response
   }, function (error) {
     emitter.emit(AJAX_EVENTS.ERROR, error)
@@ -53,7 +57,7 @@ export default boot(({ app, ssrContext, store }) => {
 
   app.config.globalProperties.$api = api
   store.use(() => {
-    return { $api: api, ...emitterEvents }
+    return { $api: api, $router: router, ...emitterEvents }
   })
   // ^ ^ ^ this will allow you to use this.$api (for Vue Options API form)
   //       so you can easily perform requests against your app's API

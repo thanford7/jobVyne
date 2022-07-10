@@ -17,9 +17,16 @@ export const useUtilStore = defineStore('util', {
     },
     updateIsMobile () {
       this.isMobile = isMobileFn()
+    },
+    redirectUrl (url, isNewTab = false) {
+      if (isNewTab) {
+        window.open(url, '_blank')
+      } else {
+        this.$router.push(url)
+      }
     }
   }
 })
 
-const counterStore = useUtilStore()
-window.addEventListener('resize', () => counterStore.updateIsMobile())
+const utilStore = useUtilStore()
+window.addEventListener('resize', () => utilStore.updateIsMobile())

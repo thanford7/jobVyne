@@ -20,10 +20,12 @@ const routes = [
       },
       { path: 'privacy', name: 'privacy', meta: { isNoAuth: true }, component: () => import('pages/PrivacyPage.vue') },
       {
+        // This is a "fake" page. We need a route to catch the redirect after social authentication
+        // This route is redirected in router-guard.js
         path: '/auth/:provider/callback',
         name: 'auth-callback',
         meta: { isNoAuth: true },
-        component: () => import('pages/AuthCallbackPage.vue')
+        component: () => {}
       }
     ]
   },
@@ -42,6 +44,13 @@ const routes = [
     name: 'jobs-link',
     meta: { isNoAuth: true },
     component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/error',
+    name: 'error',
+    meta: { isNoAuth: true },
+    component: () => import('pages/ErrorPage.vue')
   },
 
   // Always leave this as last one,

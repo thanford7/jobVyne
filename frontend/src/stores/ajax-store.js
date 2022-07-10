@@ -40,7 +40,7 @@ export const useAjaxStore = defineStore('ajax', {
       const idx = this.msgIdx
       this.messages.push({
         msg,
-        classStr: msgClassCfgs.ERROR,
+        classStr: msgClassCfgs.SUCCESS,
         idx
       })
       setTimeout(() => {

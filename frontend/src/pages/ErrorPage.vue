@@ -1,12 +1,9 @@
 <template>
   <div class="fullscreen bg-primary text-white text-center q-pa-md flex flex-center">
     <div>
-      <div style="font-size: 30vh">
-        404
-      </div>
-
+      <BannerMessage/>
       <div class="text-h2" style="opacity:.4">
-        Oops. Nothing here...
+        Sorry, something went wrong
       </div>
 
       <q-btn
@@ -26,13 +23,15 @@
 import { defineComponent } from 'vue'
 import { useGlobalStore } from 'stores/global-store'
 import { useMeta } from 'quasar'
+import BannerMessage from 'components/BannerMessage.vue'
 
 export default defineComponent({
-  name: 'ErrorNotFound',
+  name: 'ErrorPage',
+  components: { BannerMessage },
   setup () {
     const globalStore = useGlobalStore()
 
-    const pageTitle = 'Not Found'
+    const pageTitle = 'Error'
     const metaData = {
       title: pageTitle,
       titleTemplate: globalStore.getPageTitle

@@ -71,9 +71,11 @@
                       </span>
                     </q-td>
                     <q-td key="link" :props="props">
-                      <a :href="getJobLinkUrl(props.row)" target="_blank">
-                        <q-icon name="launch"/>
-                        &nbsp;{{ getJobLinkUrl(props.row) }}
+                      <a :href="getJobLinkUrl(props.row)" target="_blank" class="no-decoration">
+                        <span class="text-gray-3">
+                          <q-icon name="launch"/>&nbsp;
+                        </span>
+                        {{ getJobLinkUrl(props.row) }}
                       </a>
                     </q-td>
                   </q-tr>
@@ -249,6 +251,7 @@ import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
 import { useSocialStore } from 'stores/social-store'
+import { useUtilStore } from 'stores/utility-store'
 import dataUtil from 'src/utils/data'
 import dateTimeUtil from 'src/utils/datetime'
 import CustomTooltip from 'components/CustomTooltip.vue'
@@ -418,6 +421,7 @@ export default {
     const employerStore = useEmployerStore()
     const globalStore = useGlobalStore()
     const authStore = useAuthStore()
+    const utilStore = useUtilStore()
 
     const pageTitle = 'Referral Links'
     const metaData = {
@@ -426,7 +430,7 @@ export default {
     }
     useMeta(metaData)
 
-    return { socialStore, employerStore, authStore, globalStore }
+    return { socialStore, employerStore, authStore, globalStore, utilStore }
   }
 }
 </script>

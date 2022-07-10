@@ -3,6 +3,9 @@ from django.http import QueryDict
 from rest_framework.views import APIView
 
 
+SUCCESS_MESSAGE_KEY = 'successMessage'
+
+
 def get_files(request):
     if not request.data:
         return None

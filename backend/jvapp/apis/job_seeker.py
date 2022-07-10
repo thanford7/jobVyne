@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.models import JobVyneUser
 
 
@@ -22,4 +22,10 @@ class ApplicationView(JobVyneAPIView):
         
         # Push application to ATS integration
         
-        return Response(status=status.HTTP_200_OK)
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                # TODO: Add employer and job title to success message
+                SUCCESS_MESSAGE_KEY: 'Your application was submitted'
+            }
+        )

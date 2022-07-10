@@ -34,11 +34,20 @@ export default {
     userTypeBit: {
       type: Number,
       default: USER_TYPES.USER_TYPE_EMPLOYEE
+    },
+    redirectPage: {
+      type: [String, null]
+    },
+    redirectParams: {
+      type: [Object, null]
     }
   },
   methods: {
     async redirectAuthUrl (provider) {
-      const url = await this.socialStore.getOauthUrl(provider)
+      const url = await this.socialStore.getOauthUrl(
+        provider,
+        { redirectPage: this.redirectPage, redirectParams: this.redirectParams }
+      )
       window.location.href = url
     }
   },
