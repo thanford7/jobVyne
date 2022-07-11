@@ -1,8 +1,8 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin">
-      <q-card-section v-if="titleText">
-        <div class="text-h6">
+      <q-card-section>
+        <div v-if="titleText" class="text-h6">
           {{titleText}}
         </div>
         <q-btn
@@ -14,6 +14,8 @@
           style="position: absolute; top: 0; right: 0"
         />
       </q-card-section>
+
+      <slot name="fullWidthBody"/>
 
       <q-card-section class="q-pt-none">
         <slot/>

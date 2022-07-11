@@ -7,6 +7,8 @@ export const msgClassCfgs = {
   INFO: 'bg-info text-white'
 }
 
+const isString = (val) => val && typeof val.valueOf() === 'string'
+
 export const useAjaxStore = defineStore('ajax', {
   state: () => ({
     messages: [],
@@ -21,6 +23,8 @@ export const useAjaxStore = defineStore('ajax', {
         msg = `${status} ${statusText}`
         if (data && data.detail) {
           msg += `: ${data.detail}`
+        } else if (isString(data)) {
+          msg += `: ${data}`
         } else if (data.includes('<!doctype html>')) {
           msg += `: ${this.parseHtmlMessage(data)}`
         }

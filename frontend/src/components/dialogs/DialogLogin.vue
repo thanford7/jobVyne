@@ -9,7 +9,7 @@
 
 <script>
 import AuthAll from 'components/AuthAll.vue'
-import DialogBase from 'components/DialogBase.vue'
+import DialogBase from 'components/dialogs/DialogBase.vue'
 
 export default {
   name: 'DialogLogin',

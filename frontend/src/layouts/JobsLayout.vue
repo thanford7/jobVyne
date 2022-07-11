@@ -17,99 +17,12 @@
     </q-header>
 
     <q-drawer
-      v-if="applicationJob"
+      v-if="jobApplication"
       v-model="isRightDrawerOpen"
       side="right"
-      overlay bordered :width="400"
+      overlay bordered persistent :width="400"
     >
-      <template v-if="!isApplicationSaved">
-        <div class="q-pa-sm bg-primary text-white">
-          <div class="text-h6 text-center">Apply to {{ applicationJob.job_title }}</div>
-        </div>
-        <div v-if="!authStore.propIsAuthenticated" class="q-pa-sm">
-          <a href="#" @click="openLoginModal">Have an account? Login to auto-populate the form</a>
-        </div>
-        <div class="q-pa-sm q-mt-sm">
-          <q-form
-            @submit="saveApplication"
-            class="q-gutter-xs"
-          >
-            <q-input
-              filled
-              v-model="formData.first_name"
-              label="First name"
-              lazy-rules
-              :rules="[ val => val && val.length > 0 || 'First name is required']"
-            />
-            <q-input
-              filled
-              v-model="formData.last_name"
-              label="Last name"
-              lazy-rules
-              :rules="[ val => val && val.length > 0 || 'Last name is required']"
-            />
-            <q-input
-              filled
-              v-model="formData.email"
-              type="email"
-              label="Email"
-              lazy-rules
-              :rules="[ val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'A valid email is required']"
-            />
-            <q-input
-              filled
-              v-model="formData.phone_number"
-              type="tel"
-              label="Phone number*"
-              lazy-rules
-              :rules="[ val => !val || !val.length || formUtil.isGoodPhoneNumber(val) || 'The phone number must be valid']"
-            />
-            <q-input
-              filled
-              v-model="formData.linkedin_url"
-              type="url"
-              label="LinkedIn URL*"
-              hint="www.linkedin.com/in/{your profile id}"
-              lazy-rules
-              :rules="[ val => !val || !val.length || formUtil.isGoodLinkedInUrl(val)  || 'The LinkedIn URL must be valid']"
-            />
-            <q-file
-              filled bottom-slots clearable
-              v-model="formData.resume"
-              label="Resume"
-              class="q-mb-none"
-              accept=".pdf,.doc,.docx,.pages,.gdoc"
-              :rules="[ val => val || 'A resume is required']"
-            />
-            <div class="text-small text-gray-3">
-              *Optional
-            </div>
-
-            <div>
-              <q-btn label="Submit application" type="submit" color="accent"/>
-            </div>
-          </q-form>
-        </div>
-      </template>
-      <template v-else-if="!authStore.propIsAuthenticated">
-        <div class="q-pa-sm bg-primary text-white">
-          <div class="text-h6 text-center">Create an account</div>
-        </div>
-        <div class="q-pa-sm q-mt-sm">
-          <div class="text-bold">Create an account and save time</div>
-          <ListIcon
-            color="primary"
-            icon-name="thumb_up"
-            :items="[
-              'One click application submission',
-              'Message with employees and employers',
-              'Track the jobs you\'ve already applied to'
-            ]"
-          />
-          <q-separator/>
-          <AuthAll class="q-mt-md" :is-create="true"/>
-        </div>
-      </template>
+      <FormJobApplication :job-application="jobApplication" @closeApplication="closeApplication"/>
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
         <q-btn
           dense
@@ -117,7 +30,7 @@
           unelevated
           color="grey-5"
           icon="chevron_right"
-          @click="closeRightDrawer()"
+          @click="closeApplication()"
         />
       </div>
     </q-drawer>
@@ -131,7 +44,7 @@
               <div class="row">
                 <div class="col-12">
                   <div v-for="job in jobs" :key="job.id" class="q-mb-md">
-                    <q-card :class="(applicationJob && applicationJob.id === job.id) ? 'q-card--selected' : ''">
+                    <q-card :class="(jobApplication && jobApplication.id === job.id) ? 'q-card--selected' : ''">
                       <q-card-section>
                         <h6>{{ job.job_title }}</h6>
                         <div>
@@ -193,23 +106,11 @@ import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import locationUtil from 'src/utils/location'
 import dataUtil from 'src/utils/data'
-import formUtil from 'src/utils/form'
 import { useAuthStore } from 'stores/auth-store'
-import ListIcon from 'components/ListIcon.vue'
-import { getAjaxFormData } from 'src/utils/requests'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import { useGlobalStore } from 'stores/global-store'
-import AuthAll from 'components/AuthAll.vue'
-import DialogLogin from 'components/DialogLogin.vue'
-
-const formDataTemplate = {
-  first_name: null,
-  last_name: null,
-  email: null,
-  phone_number: null,
-  linkedin_url: null,
-  resume: null
-}
+import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
+import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 
 export default {
   data () {
@@ -219,13 +120,10 @@ export default {
       employer: null,
       profile: null,
       isLoading: true,
-      isApplicationSaved: false,
-      applicationJob: null,
-      formData: { ...formDataTemplate },
-      formUtil
+      jobApplication: null
     }
   },
-  components: { AuthAll, ListIcon, CustomFooter, BannerMessage },
+  components: { FormJobApplication, CustomFooter, BannerMessage },
   computed: {
     applicantProfile () {
       return this.authStore.propUser
@@ -240,32 +138,18 @@ export default {
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
-    closeRightDrawer () {
+    async closeApplication () {
       this.isRightDrawerOpen = false
-      this.applicationJob = null
-      dataUtil.setQueryParams({ deleteParams: ['jobId'] })
+      this.jobApplication = null
+      await this.$router.replace({ name: this.$route.name, query: {} })
     },
-    openApplication (jobId) {
-      this.applicationJob = this.jobs.find((j) => j.id === jobId)
-      dataUtil.setQueryParams({ addParams: [{ key: 'jobId', val: jobId }] })
-      this.isRightDrawerOpen = true
-      Object.assign(
-        this.formData,
-        (this.applicantProfile) ? dataUtil.pick(this.applicantProfile, ['first_name', 'last_name', 'email']) : {},
-        this.applicationTemplate || {}
-      )
-    },
-    async saveApplication () {
-      const data = Object.assign(
-        {},
-        this.formData,
-        { job_id: this.applicationJob.id, filter_id: this.$route.params.filterId }
-      )
-      await this.$api.post('submit-application/', getAjaxFormData(data, ['resume']))
-      this.isApplicationSaved = true
-      // Leave the drawer open to allow user to create an account if they don't have one
-      if (this.authStore.propIsAuthenticated) {
-        this.closeRightDrawer()
+    async openApplication (jobId) {
+      this.jobApplication = this.jobs.find((j) => j.id === jobId)
+      await this.$router.replace({ name: this.$route.name, query: { jobId } })
+      if (window.innerHeight < 1023) {
+        this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
+      } else {
+        this.isRightDrawerOpen = true
       }
     }
   },
@@ -299,20 +183,18 @@ export default {
     }
     useMeta(metaData)
     const $q = useQuasar()
-    const openLoginModal = () => {
-      $q.dialog({
-        component: DialogLogin,
-        componentProps: {
-          redirectPageUrl: window.location.pathname,
-          redirectParams: dataUtil.getQueryParams()
-        }
+    const openJobAppModal = (jobApplication) => {
+      return $q.dialog({
+        component: DialogJobApp,
+        componentProps: { jobApplication },
+        noRouteDismiss: true
       })
     }
 
     return {
       authStore: useAuthStore(),
       isRightDrawerOpen,
-      openLoginModal
+      openJobAppModal
     }
   }
 }

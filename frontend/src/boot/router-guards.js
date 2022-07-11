@@ -5,6 +5,7 @@ import { getAjaxFormData } from 'src/utils/requests'
 export default boot(({ app, router }) => {
   router.beforeEach(async (to, from) => {
     const $api = app.config.globalProperties.$api
+    // Handle oauth callback
     if (to.name === 'auth-callback') {
       const provider = to.params.provider
       const { state, redirectPageUrl, redirectParams } = JSON.parse(to.query.state)
@@ -20,6 +21,7 @@ export default boot(({ app, router }) => {
       return { path: redirectPageUrl || '/dashboard', query: redirectParams }
     }
 
+    // Redirect if unauthenticated user is trying to access a page that requires authentication
     try {
       const resp = await $api.get('auth/check-auth/')
       const isAuthenticated = resp.data && !dataUtil.isEmptyOrNil(resp.data)

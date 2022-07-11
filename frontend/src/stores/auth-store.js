@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { getAjaxFormData } from 'src/utils/requests'
 import dataUtil from 'src/utils/data'
 
 // Keep in sync with backend user model
@@ -16,7 +15,6 @@ export const USER_TYPES = {
  * (1) Check if user is authenticated
  *
  * authStore is used to:
- * (1) Login
  * (2) Logout
  * (3) Set user and access all properties
  */
@@ -34,11 +32,6 @@ export const useAuthStore = defineStore('auth', {
     propIsEmployer: (state) => state?.user?.user_type_bits & USER_TYPES.USER_TYPE_EMPLOYER
   },
   actions: {
-    async login (userData) {
-      // TODO: Add loading indicator
-      await this.$api.post('auth/login/', getAjaxFormData(userData))
-      this.$router.push('/dashboard')
-    },
     async logout () {
       await this.$api.post('auth/logout/')
       this.user = {}

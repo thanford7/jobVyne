@@ -3,7 +3,7 @@ const EMAIL_REGEX = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))
 const WEB_LINK_REGEX = /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/gi
 
 // TODO: Test this
-const PHONE_REGEX = /^[0-9.+\-()\s]$/
+const PHONE_REGEX = /^[0-9.+\-()\s]+$/
 const LINKED_IN_REGEX = /^(https:\/\/)?(www\.)?linkedin.com\/in\/\S+$/i
 
 class FormUtil {

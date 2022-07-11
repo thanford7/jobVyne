@@ -35,6 +35,7 @@
 <script>
 import formUtil from 'src/utils/form'
 import { useAuthStore, USER_TYPES } from 'stores/auth-store'
+import { getAjaxFormData } from 'src/utils/requests'
 
 export default {
   name: 'AuthEmailForm',
@@ -68,11 +69,12 @@ export default {
         email: this.email,
         password: this.password
       }
-      const login = this.store.login.bind(this.store)
-      await login(user)
-      this.$router.push('/dashboard')
-      this.email = null
-      this.password = null
+      await this.$api.post('auth/login/', getAjaxFormData(user))
+      if (this.$route.name === 'login') {
+        this.$router.push('/dashboard')
+      } else {
+        this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })
+      }
     },
     setEmail () {
       if (!this.email && this.defaultEmail) {
