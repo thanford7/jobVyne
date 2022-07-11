@@ -5,7 +5,7 @@
       <q-toolbar class="col-12 col-md-11 col-lg-8 q-py-md">
         <a href="/">
           <q-toolbar-title>
-            <img src="../assets/jobVyneLogo.png" alt="Logo" style="height: 40px; object-fit: scale-down">
+            <img src="~assets/jobVyneLogo.png" alt="Logo" style="height: 40px; object-fit: scale-down">
           </q-toolbar-title>
         </a>
         <q-space/>

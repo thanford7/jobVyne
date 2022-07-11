@@ -1,10 +1,10 @@
 <template>
   <q-page class="flex flex-center">
-    <img
-      alt="Quasar logo"
-      src="~assets/quasar-logo-vertical.svg"
-      style="width: 200px; height: 200px"
-    >
+    <div class="row">
+      <div class="col-12">
+        <h5>This will be an amazing landing page...</h5>
+      </div>
+    </div>
   </q-page>
 </template>
 

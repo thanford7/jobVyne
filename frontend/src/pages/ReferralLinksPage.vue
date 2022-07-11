@@ -70,6 +70,9 @@
                         {{ globalStore.nullValueAnyStr }}
                       </span>
                     </q-td>
+                    <q-td key="applications" :props="props">
+                      {{ props.row.performance.applications.length }}
+                    </q-td>
                     <q-td key="link" :props="props">
                       <a :href="getJobLinkUrl(props.row)" target="_blank" class="no-decoration">
                         <span class="text-gray-3">
@@ -304,6 +307,7 @@ export default {
         { name: 'platform_name', field: 'platform_name', align: 'left', label: 'Platform', sortable: true },
         { name: 'departments', field: 'departments', align: 'left', label: 'Departments' },
         { name: 'locations', field: this.getLocations, align: 'left', label: 'Locations' },
+        { name: 'applications', field: 'performance.applications', align: 'center', label: 'Applications' },
         { name: 'link', field: this.getJobLinkUrl, align: 'left', label: 'Link' }
       ]
     },

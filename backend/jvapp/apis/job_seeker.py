@@ -1,31 +1,126 @@
+from django.db.models import Q
+from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.models import JobVyneUser
+from jvapp.models.abstract import PermissionTypes
+from jvapp.models.job_seeker import JobApplication
+from jvapp.utils.data import set_object_attributes
+
+APPLICATION_SAVE_CFG = {
+    'first_name': None,
+    'last_name': None,
+    'email': None,
+    'phone_number': None,
+    'linkedin_url': None,
+}
 
 
 class ApplicationView(JobVyneAPIView):
-    
     permission_classes = [AllowAny]
     
+    @atomic
     def post(self, request):
+        email = self.data.get('email')
+        job_id = self.data.get('job_id')
+        if not all((email, job_id)):
+            return Response('Email and job ID are required', status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if the user has an account, but is not logged in
+        
+        if not self.user.is_authenticated:
+            try:
+                user = JobVyneUser.objects.get(email=email)
+            except JobVyneUser.DoesNotExist:
+                user = None
+        else:
+            user = self.user
+        
+        
+        # Check if this person has already applied
+        applications = self.get_applications(application_filter=Q(email=email, employer_job_id=job_id))
+        if len(applications):
+            return Response('You have already applied to this job', status=status.HTTP_400_BAD_REQUEST)
+        
         # Save application to Django model
+        application = JobApplication()
+        self.create_application(application, self.data, self.files['resume'][0])
         
-        # Save or update application template to Django model
-        
-        # Update user if they don't have the candidate bit set
-        if not self.user.is_candidate:
-            self.user.user_type_bits |= JobVyneUser.USER_TYPE_CANDIDATE
-            self.user.save()
+        if user:
+            # Save or update application template to Django model
+            # TODO
+            
+            # Update user if they don't have the candidate bit set
+            if not user.is_candidate:
+                user.user_type_bits |= JobVyneUser.USER_TYPE_CANDIDATE
+                user.save()
         
         # Push application to ATS integration
+        
+        # Refetch application to get related models
+        application = self.get_applications(application_id=application.id)
         
         return Response(
             status=status.HTTP_200_OK,
             data={
-                # TODO: Add employer and job title to success message
-                SUCCESS_MESSAGE_KEY: 'Your application was submitted'
+                SUCCESS_MESSAGE_KEY: f'Your application to {application.employer_job.employer.employerName} for the {application.employer_job.jobTitle} position was submitted'
             }
         )
+    
+    @staticmethod
+    @atomic
+    def create_application(application, data, resume):
+        cfg = {
+            'employer_job_id': {'form_name': 'job_id'},
+            'social_link_filter_id': {'form_name': 'filter_id'},
+            **APPLICATION_SAVE_CFG
+        }
+        set_object_attributes(application, data, cfg)
+        application.resume = resume
+        application.save()
+    
+    @staticmethod
+    def get_applications(application_id=None, application_filter=None):
+        if application_id:
+            application_filter = Q(id=application_id)
+        
+        applications = JobApplication.objects \
+            .select_related(
+            'social_link_filter',
+            'employer_job',
+            'employer_job__employer'
+        ) \
+            .filter(application_filter)
+        
+        if application_id:
+            if not applications:
+                raise JobApplication.DoesNotExist
+            return applications[0]
+        
+        return applications
+
+
+class ApplicationTemplateView(JobVyneAPIView):
+    
+    def post(self, request):
+        pass
+    
+    def put(self, request, application_template_id):
+        pass
+    
+    @staticmethod
+    @atomic
+    def create_or_update_application_template(application_template, data, resume, user):
+        cfg = {**APPLICATION_SAVE_CFG}
+        if not application_template.id:
+            cfg['owner_id'] = None
+        
+        set_object_attributes(application_template, data, cfg)
+        if resume:
+            application_template.resume = resume
+        permission_type = PermissionTypes.EDIT.value if application_template.id else PermissionTypes.CREATE.value
+        application_template.jv_check_permission(permission_type, user)
+        application_template.save()

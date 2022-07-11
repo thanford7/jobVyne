@@ -7,10 +7,13 @@ from django.utils import timezone
 
 from jvapp.utils.logger import getLogger
 
-__all__ = ('AuditFields', 'JobVynePermissionsMixin')
+__all__ = ('ALLOWED_UPLOADS_FILE', 'AuditFields', 'JobVynePermissionsMixin')
 
 
 logger = getLogger()
+
+
+ALLOWED_UPLOADS_FILE = ['doc', 'docx', 'pdf', 'pages', 'gdoc']
 
 
 @receiver(pre_save)

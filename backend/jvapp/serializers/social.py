@@ -2,6 +2,9 @@ from jvapp.models.social import *
 
 __all__ = ['get_serialized_social_platform', 'get_serialized_social_link_filter']
 
+from jvapp.utils.datetime import get_datetime_format_or_none
+
+
 def get_serialized_social_platform(social_platform: SocialPlatform):
     return {
         'id': social_platform.id,
@@ -10,8 +13,8 @@ def get_serialized_social_platform(social_platform: SocialPlatform):
     }
 
 
-def get_serialized_social_link_filter(link_filter: SocialLinkFilter):
-    return {
+def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_performance=False):
+    data = {
         'id': link_filter.id,
         'owner_id': link_filter.owner_id,
         'employer_name': link_filter.employer.employerName,
@@ -24,3 +27,14 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter):
         'countries': [{'name': c.countryName, 'id': c.id} for c in link_filter.countries.all()],
         'jobs': [{'title': j.jobTitle, 'id': j.id} for j in link_filter.jobs.all()]
     }
+    
+    if is_include_performance:
+        data['performance'] = {
+            'applications': [{
+                'first_name': app.first_name,
+                'last_name': app.last_name,
+                'apply_dt': get_datetime_format_or_none(app.created_dt)
+            } for app in link_filter.job_application.all()]
+        }
+    
+    return data

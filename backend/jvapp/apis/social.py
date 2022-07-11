@@ -38,7 +38,7 @@ class SocialLinkFilterView(JobVyneAPIView):
                 return Response('You must provide an ID, owner ID, or employer ID', status=status.HTTP_400_BAD_REQUEST)
             
             data = [
-                get_serialized_social_link_filter(lf) for lf
+                get_serialized_social_link_filter(lf, is_include_performance=True) for lf
                 in self.get_link_filters(self.user, link_filter_filter=q_filter)
             ]
         
@@ -110,7 +110,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             
         links = SocialLinkFilter.objects\
             .select_related('employer', 'platform')\
-            .prefetch_related('departments', 'states', 'countries', 'jobs')\
+            .prefetch_related('departments', 'states', 'countries', 'jobs', 'job_application')\
             .filter(link_filter_filter)
         
         if is_use_permissions:

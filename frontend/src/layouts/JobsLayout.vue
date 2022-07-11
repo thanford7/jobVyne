@@ -256,31 +256,21 @@ export default {
       )
     },
     async saveApplication () {
-      await this.$api.post('submit-application/', getAjaxFormData(this.formData, ['resume']))
+      const data = Object.assign(
+        {},
+        this.formData,
+        { job_id: this.applicationJob.id, filter_id: this.$route.params.filterId }
+      )
+      await this.$api.post('submit-application/', getAjaxFormData(data, ['resume']))
       this.isApplicationSaved = true
       // Leave the drawer open to allow user to create an account if they don't have one
       if (this.authStore.propIsAuthenticated) {
         this.closeRightDrawer()
       }
-    },
-    openLoginModal () {
-      this.$q.dialog({
-        component: DialogLogin,
-        componentProps: {
-          redirectPageUrl: window.location.pathname,
-          redirectParams: dataUtil.getQueryParams()
-        }
-      }).onOk(() => {
-        console.log('OK')
-      }).onCancel(() => {
-        console.log('Cancel')
-      }).onDismiss(() => {
-        console.log('Called on OK or Cancel')
-      })
     }
   },
   async mounted () {
-    const resp = await this.$api.get(`social-link-jobs/${this.$route.params.jobId}`)
+    const resp = await this.$api.get(`social-link-jobs/${this.$route.params.filterId}`)
     const { jobs, employer, profile } = resp.data
     this.jobs = jobs
     this.employer = employer
@@ -309,10 +299,20 @@ export default {
     }
     useMeta(metaData)
     const $q = useQuasar()
+    const openLoginModal = () => {
+      $q.dialog({
+        component: DialogLogin,
+        componentProps: {
+          redirectPageUrl: window.location.pathname,
+          redirectParams: dataUtil.getQueryParams()
+        }
+      })
+    }
+
     return {
       authStore: useAuthStore(),
       isRightDrawerOpen,
-      $q
+      openLoginModal
     }
   }
 }
