@@ -227,18 +227,27 @@
                     Link: <span class="copy-target">{{ getJobLinkUrl() }}</span>&nbsp;
                   </h6>
                   <span @click="copyText" style="cursor: pointer;">
-                <q-icon name="content_copy"></q-icon>
-                Click to copy
-              </span>
+                    <q-icon name="content_copy"></q-icon>
+                    Click to copy
+                  </span>
                 </div>
                 <div class="flex items-center">
                   <h6 class="font-secondary" style="display: inline-block;">
-                    Suggested link text: <span class="copy-target">{{ getJobLinkText() }}</span>&nbsp;
+                    Suggested short link text: <span class="copy-target">{{ getJobLinkText(true) }}</span>&nbsp;
                   </h6>
                   <span @click="copyText" style="cursor: pointer;">
-                <q-icon name="content_copy"></q-icon>
-                Click to copy
-              </span>
+                    <q-icon name="content_copy"></q-icon>
+                    Click to copy
+                  </span>
+                </div>
+                <div class="flex items-center">
+                  <h6 class="font-secondary" style="display: inline-block;">
+                    Suggested link text: <span class="copy-target">{{ getJobLinkText(false) }}</span>&nbsp;
+                  </h6>
+                  <span @click="copyText" style="cursor: pointer;">
+                    <q-icon name="content_copy"></q-icon>
+                    Click to copy
+                  </span>
                 </div>
               </div>
             </div>
@@ -344,12 +353,15 @@ export default {
       const id = (jobLink) ? jobLink.id : this.linkId
       return `${window.location.origin}/jobs-link/${id}`
     },
-    getJobLinkText () {
+    getJobLinkText (isShort) {
       const employer = this.employerStore.getEmployer(this.user.employer_id)
       if (!employer) {
         return ''
       }
-      let text = `${employer.name} is hiring! Click the link to apply`
+      if (isShort) {
+        return `${employer.name} is hiring! Apply ->`
+      }
+      let text = `${employer.name} is hiring! Click to apply`
       let jobText = ''
       if (this.formData.departments) {
         const deptString = (this.formData.departments.length > 1) ? 'departments' : 'department'

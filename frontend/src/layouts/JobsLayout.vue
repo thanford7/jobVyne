@@ -20,6 +20,7 @@
       v-if="jobApplication"
       v-model="isRightDrawerOpen"
       side="right"
+      :breakpoint="600"
       overlay bordered persistent :width="400"
     >
       <FormJobApplication :job-application="jobApplication" @closeApplication="closeApplication"/>
@@ -146,7 +147,7 @@ export default {
     async openApplication (jobId) {
       this.jobApplication = this.jobs.find((j) => j.id === jobId)
       await this.$router.replace({ name: this.$route.name, query: { jobId } })
-      if (window.innerHeight < 1023) {
+      if (window.innerWidth < 600) {
         this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
       } else {
         this.isRightDrawerOpen = true
