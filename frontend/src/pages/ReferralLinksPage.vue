@@ -71,7 +71,14 @@
                       </span>
                     </q-td>
                     <q-td key="applications" :props="props">
-                      {{ props.row.performance.applications.length }}
+                      <span v-if="props.row.performance.applications.length">
+                        <a href="#" @click="selectedLinkId = props.row.id">
+                          {{ props.row.performance.applications.length }}
+                        </a>
+                      </span>
+                      <span v-else>
+                        {{ props.row.performance.applications.length }}
+                      </span>
                     </q-td>
                     <q-td key="link" :props="props">
                       <a :href="getJobLinkUrl(props.row)" target="_blank" class="no-decoration">
@@ -82,6 +89,29 @@
                       </a>
                     </q-td>
                   </q-tr>
+                </template>
+              </q-table>
+            </div>
+            <div v-if="selectedLinkFilter" class="col-12 q-mt-md">
+              <q-table
+                :rows="jobLinkApplications"
+                :columns="applicationsColumns"
+                row-key="id"
+                :rows-per-page-options="[5, 10, 15]"
+                style="position: relative"
+              >
+                <template v-slot:top>
+                  <div class="q-table__title">Job applications</div>
+                  <q-space/>
+                  <q-btn
+                    flat unelevated
+                    icon="close"
+                    text-color="grey-7"
+                    size="md"
+                    class="q-pr-sm"
+                    style="position: absolute; top: 0; right: 0;"
+                    @click="selectedLinkId = null"
+                  />
                 </template>
               </q-table>
             </div>
@@ -292,6 +322,20 @@ const jobColumns = [
   }
 ]
 
+const applicationsColumns = [
+  { name: 'first_name', field: 'first_name', align: 'left', label: 'First name', sortable: true },
+  { name: 'last_name', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
+  { name: 'job_title', field: 'job_title', align: 'left', label: 'Job title', sortable: true },
+  {
+    name: 'apply_dt',
+    field: 'apply_dt',
+    align: 'left',
+    label: 'Application date',
+    sortable: true,
+    format: dateTimeUtil.getShortDate
+  }
+]
+
 const formDataTemplate = {
   platform: null,
   departments: null,
@@ -306,7 +350,9 @@ export default {
     return {
       formData: { ...formDataTemplate },
       linkId: null,
+      selectedLinkId: null, // Used to drill into application details
       tab: 'current',
+      applicationsColumns,
       jobColumns
     }
   },
@@ -319,6 +365,16 @@ export default {
         { name: 'applications', field: 'performance.applications', align: 'center', label: 'Applications' },
         { name: 'link', field: this.getJobLinkUrl, align: 'left', label: 'Link' }
       ]
+    },
+    selectedLinkFilter () {
+      return dataUtil.getForceArray(this.socialStore.socialLinkFilters).find((linkFilter) => linkFilter.id === this.selectedLinkId)
+    },
+    jobLinkApplications () {
+      if (!this.selectedLinkFilter) {
+        return null
+      }
+      const applications = this.selectedLinkFilter.performance.applications
+      return (applications.length) ? applications : null
     },
     user () {
       return this.authStore.propUser
@@ -353,6 +409,21 @@ export default {
       const id = (jobLink) ? jobLink.id : this.linkId
       return `${window.location.origin}/jobs-link/${id}`
     },
+    getJobLinkName (defaultName = null, { departments, cities, states, countries }) {
+      let jobLinkName = ''
+      if (departments) {
+        const deptString = (departments.length > 1) ? 'departments' : 'department'
+        jobLinkName += ' in the ' + dataUtil.concatWithAnd(departments.map((d) => d.department)) + ' ' + deptString
+      }
+      if (cities && cities.length) {
+        jobLinkName += ' in ' + dataUtil.concatWithAnd(this.formData.cities)
+      } else if (states && states.length) {
+        jobLinkName += ' in ' + dataUtil.concatWithAnd(this.formData.states.map((s) => s.state))
+      } else if (countries && countries.length) {
+        jobLinkName += ' in ' + dataUtil.concatWithAnd(this.formData.countries.map((c) => c.country))
+      }
+      return (defaultName && !jobLinkName.length) ? defaultName : jobLinkName
+    },
     getJobLinkText (isShort) {
       const employer = this.employerStore.getEmployer(this.user.employer_id)
       if (!employer) {
@@ -362,18 +433,7 @@ export default {
         return `${employer.name} is hiring! Apply ->`
       }
       let text = `${employer.name} is hiring! Click to apply`
-      let jobText = ''
-      if (this.formData.departments) {
-        const deptString = (this.formData.departments.length > 1) ? 'departments' : 'department'
-        jobText += ' in the ' + dataUtil.concatWithAnd(this.formData.departments.map((d) => d.department)) + ' ' + deptString
-      }
-      if (this.formData?.cities?.length) {
-        jobText += ' in ' + dataUtil.concatWithAnd(this.formData.cities)
-      } else if (this.formData?.states?.length) {
-        jobText += ' in ' + dataUtil.concatWithAnd(this.formData.states.map((s) => s.state))
-      } else if (this.formData?.countries?.length) {
-        jobText += ' in ' + dataUtil.concatWithAnd(this.formData.countries.map((c) => c.country))
-      }
+      const jobText = this.getJobLinkName(null, this.formData)
 
       if (jobText.length) {
         text += ' to jobs' + jobText

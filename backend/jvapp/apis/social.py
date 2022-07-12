@@ -110,7 +110,10 @@ class SocialLinkFilterView(JobVyneAPIView):
             
         links = SocialLinkFilter.objects\
             .select_related('employer', 'platform')\
-            .prefetch_related('departments', 'states', 'countries', 'jobs', 'job_application')\
+            .prefetch_related(
+                'departments', 'states', 'countries', 'jobs',
+                'job_application', 'job_application__employer_job'
+            )\
             .filter(link_filter_filter)
         
         if is_use_permissions:

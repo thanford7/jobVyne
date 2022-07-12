@@ -31,8 +31,10 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
     if is_include_performance:
         data['performance'] = {
             'applications': [{
+                'id': app.id,
                 'first_name': app.first_name,
                 'last_name': app.last_name,
+                'job_title': app.employer_job.jobTitle,
                 'apply_dt': get_datetime_format_or_none(app.created_dt)
             } for app in link_filter.job_application.all()]
         }

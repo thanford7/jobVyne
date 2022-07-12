@@ -66,6 +66,7 @@
                 label="Resume"
                 class="q-mb-none"
                 accept=".pdf,.doc,.docx,.pages,.gdoc"
+                max-file-size="1000000"
                 :rules="[ val => val || 'A resume is required']"
               />
             </template>
