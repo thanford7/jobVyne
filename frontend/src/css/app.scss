@@ -25,39 +25,41 @@ article, aside, canvas, details, embed,
 figure, figcaption, footer, header, hgroup,
 menu, nav, output, ruby, section, summary,
 time, mark, audio, video {
-	margin: 0;
-	padding: 0;
-	border: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
+
 /* HTML5 display-role reset for older browsers */
 article, aside, details, figcaption, figure,
 footer, header, hgroup, menu, nav, section {
-	display: block;
+  display: block;
 }
+
 /*
 End reset
  */
 
 /* Scrollbar */
 body {
-    scrollbar-width: 10px; /*thin;*/
-    scrollbar-color: $primary $white;
-    scrollbar-gutter: stable;
+  scrollbar-width: 10px; /*thin;*/
+  scrollbar-color: $primary $white;
+  scrollbar-gutter: stable;
 }
 
 *::-webkit-scrollbar {
-    width: 10px;
+  width: 10px;
 }
 
 *::-webkit-scrollbar-track {
-    background: $white; /* color of the tracking area */
-    border-left: 1px solid $gray-300;
-    //border-radius: 10px;
+  background: $white; /* color of the tracking area */
+  border-left: 1px solid $gray-300;
+  //border-radius: 10px;
 }
 
 *::-webkit-scrollbar-thumb {
-    background-color: $primary; /* color of the scroll thumb */
-    border-radius: 10px; /* roundness of the scroll thumb */
+  background-color: $primary; /* color of the scroll thumb */
+  border-radius: 10px; /* roundness of the scroll thumb */
 }
 
 .scrollbar-narrow-x, .q-table__container {
@@ -69,6 +71,7 @@ body {
   height: 6px;
   width: 6px;
 }
+
 /*
 End scrollbar
  */
@@ -78,7 +81,7 @@ End scrollbar
 }
 
 body {
-	color: $gray-900;
+  color: $gray-900;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -91,13 +94,17 @@ p {
 }
 
 ul:not(.nav), ol {
-    li {
-        margin-bottom: 0.5rem;
-    }
+  li {
+    margin-bottom: 0.5rem;
+  }
 }
 
 ul, ol {
-    p {
-      display: inline;  // Make sure bullets display on same line as text
-    }
+  li {
+    margin-left: 1.5em;
+  }
+
+  p {
+    display: inline; // Make sure bullets display on same line as text
+  }
 }
