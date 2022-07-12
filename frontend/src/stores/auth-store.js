@@ -20,7 +20,8 @@ export const USER_TYPES = {
  */
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: {}
+    user: {},
+    applications: []
   }),
   getters: {
     propIsAuthenticated: (state) => state.user && !dataUtil.isEmpty(state.user),
@@ -37,10 +38,24 @@ export const useAuthStore = defineStore('auth', {
       this.user = {}
       this.$router.push('/')
     },
-    async setUser () {
-      if (!this.user || dataUtil.isEmpty(this.user)) {
+    async setUser (isForce = false) {
+      if (isForce || !this.user || dataUtil.isEmpty(this.user)) {
         const resp = await this.$api.get('auth/check-auth/')
         this.user = resp.data || {}
+        if (!dataUtil.isEmpty(this.user)) {
+          await this.setApplications(this.user, isForce)
+        }
+      }
+    },
+    async setApplications (user, isForce = false) {
+      if (!user) {
+        return
+      }
+      if (isForce || !this.applications.length) {
+        const resp = await this.$api.get('job-application/', {
+          params: { user_id: user.id }
+        })
+        this.applications = resp.data
       }
     }
   }

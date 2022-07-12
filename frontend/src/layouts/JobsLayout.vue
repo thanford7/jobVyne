@@ -21,7 +21,8 @@
       v-model="isRightDrawerOpen"
       side="right"
       :breakpoint="600"
-      overlay bordered persistent :width="400"
+      :width="400"
+      overlay bordered persistent
     >
       <FormJobApplication :job-application="jobApplication" @closeApplication="closeApplication"/>
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
@@ -46,6 +47,9 @@
                 <div class="col-12">
                   <div v-for="job in jobs" :key="job.id" class="q-mb-md">
                     <q-card :class="(jobApplication && jobApplication.id === job.id) ? 'q-card--selected' : ''">
+                      <div v-if="getJobApplication(job.id)" class="application-date">
+                          Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
+                        </div>
                       <q-card-section>
                         <h6>{{ job.job_title }}</h6>
                         <div>
@@ -74,7 +78,7 @@
                         </p>
                       </q-card-section>
                       <q-separator dark/>
-                      <q-card-actions>
+                      <q-card-actions v-if="!getJobApplication(job.id)">
                         <q-btn unelevated color="accent" label="Apply" @click="openApplication(job.id)"/>
                       </q-card-actions>
                     </q-card>
@@ -112,6 +116,8 @@ import { Loading, useMeta, useQuasar } from 'quasar'
 import { useGlobalStore } from 'stores/global-store'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
+import dateTimeUtil from 'src/utils/datetime'
+import { storeToRefs } from 'pinia/dist/pinia'
 
 export default {
   data () {
@@ -121,21 +127,11 @@ export default {
       employer: null,
       profile: null,
       isLoading: true,
-      jobApplication: null
+      jobApplication: null,
+      dateTimeUtil
     }
   },
   components: { FormJobApplication, CustomFooter, BannerMessage },
-  computed: {
-    applicantProfile () {
-      return this.authStore.propUser
-    },
-    applicationTemplate () {
-      if (!this.applicantProfile) {
-        return null
-      }
-      return this.applicantProfile.applicationTemplate
-    }
-  },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
@@ -152,6 +148,12 @@ export default {
       } else {
         this.isRightDrawerOpen = true
       }
+    },
+    getJobApplication (jobId) {
+      if (!this.applications) {
+        return null
+      }
+      return this.applications.find((app) => app.employer_job.id === jobId)
     }
   },
   async mounted () {
@@ -176,6 +178,8 @@ export default {
   setup () {
     const isRightDrawerOpen = ref(false)
     const globalStore = useGlobalStore()
+    const authStore = useAuthStore()
+    const { user, applications } = storeToRefs(authStore)
 
     const pageTitle = 'Jobs'
     const metaData = {
@@ -193,10 +197,19 @@ export default {
     }
 
     return {
-      authStore: useAuthStore(),
+      user,
+      applications,
       isRightDrawerOpen,
       openJobAppModal
     }
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.application-date {
+  padding: 8px;
+  color: $white;
+  background-color: map-get($brand-color-map, 'primary');
+}
+</style>

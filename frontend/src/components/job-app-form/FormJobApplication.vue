@@ -51,14 +51,25 @@
             lazy-rules
             :rules="[ val => !val || !val.length || formUtil.isGoodLinkedInUrl(val)  || 'The LinkedIn URL must be valid']"
           />
-          <q-file
-            filled bottom-slots clearable
-            v-model="formData.resume"
-            label="Resume"
-            class="q-mb-none"
-            accept=".pdf,.doc,.docx,.pages,.gdoc"
-            :rules="[ val => val || 'A resume is required']"
-          />
+          <FileDisplayOrUpload
+            ref="resumeUpload"
+            label="resume"
+            :file-url="formData.resume_url"
+            :new-file="formData.resume"
+            new-file-key="resume"
+            file-url-key="resume_url"
+          >
+            <template v-slot:fileInput>
+              <q-file
+                filled bottom-slots clearable
+                v-model="formData.resume"
+                label="Resume"
+                class="q-mb-none"
+                accept=".pdf,.doc,.docx,.pages,.gdoc"
+                :rules="[ val => val || 'A resume is required']"
+              />
+            </template>
+          </FileDisplayOrUpload>
           <div class="text-small text-gray-3">
             *Optional
           </div>
@@ -100,6 +111,8 @@ import DialogLogin from 'components/dialogs/DialogLogin.vue'
 import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
 import ListIcon from 'components/ListIcon.vue'
+import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 
 const formDataTemplate = {
   first_name: null,
@@ -107,18 +120,19 @@ const formDataTemplate = {
   email: null,
   phone_number: null,
   linkedin_url: null,
-  resume: null
+  resume: null,
+  resume_url: null
 }
 
 export default {
   name: 'FormJobApplication',
-  components: { AuthAll, ListIcon },
+  components: { FileDisplayOrUpload, AuthAll, ListIcon },
   data () {
     return {
       formData: Object.assign(
         formDataTemplate,
-        (this.authStore.propUser) ? dataUtil.pick(this.authStore.propUser, ['first_name', 'last_name', 'email']) : {},
-        this.authStore?.propUser?.applicationTemplate || {}
+        (this.user) ? dataUtil.pick(this.user, ['first_name', 'last_name', 'email']) : {},
+        this?.user?.application_template || {}
       ),
       isApplicationSaved: false,
       formUtil
@@ -139,9 +153,11 @@ export default {
       const data = Object.assign(
         {},
         this.formData,
+        this.$refs.resumeUpload.getValues(),
         { job_id: this.jobApplication.id, filter_id: this.$route.params.filterId }
       )
-      await this.$api.post('submit-application/', getAjaxFormData(data, ['resume']))
+      await this.$api.post('job-application/', getAjaxFormData(data, ['resume']))
+      await this.authStore.setUser(true) // Update user applications and application template
       this.isApplicationSaved = true
       // Leave the drawer open to allow user to create an account if they don't have one
       if (this.authStore.propIsAuthenticated) {
@@ -160,8 +176,11 @@ export default {
         }
       })
     }
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
     return {
-      authStore: useAuthStore(),
+      authStore,
+      user,
       openLoginModal
     }
   }

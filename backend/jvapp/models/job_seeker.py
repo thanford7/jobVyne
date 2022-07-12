@@ -3,6 +3,12 @@ from django.db import models
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePermissionsMixin
 
+__all__ = ('JobApplication', 'JobApplicationTemplate')
+
+
+def getUserUploadLocation(instance, filename):
+    return f'resumes/{instance.email}/{filename}'
+
 
 class JobApplicationFields(AuditFields):
     first_name = models.CharField(max_length=150)
@@ -11,7 +17,7 @@ class JobApplicationFields(AuditFields):
     phone_number = models.CharField(max_length=25, null=True, blank=True)
     linkedin_url = models.CharField(max_length=75, null=True, blank=True)
     resume = models.FileField(
-        upload_to='resumes',
+        upload_to=getUserUploadLocation,
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_FILE)]
     )
 
@@ -34,7 +40,7 @@ class JobApplication(JobApplicationFields):
 
 class JobApplicationTemplate(JobApplicationFields, JobVynePermissionsMixin):
     
-    owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, unique=True)
+    owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, unique=True, related_name='application_template')
     
     def _jv_can_create(self, user):
         return self.owner_id == user.id

@@ -5,10 +5,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.user import UserView
 from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.job_seeker import JobApplication
+from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
+from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.utils.data import set_object_attributes
+
+__all__ = ('ApplicationView', 'ApplicationTemplateView')
 
 APPLICATION_SAVE_CFG = {
     'first_name': None,
@@ -22,6 +26,27 @@ APPLICATION_SAVE_CFG = {
 class ApplicationView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
+    def get(self, request, application_id=None):
+        if application_id:
+            data = get_serialized_job_application(self.get_applications(application_id=application_id))
+        elif user_id := self.query_params.get('user_id'):
+            user = UserView.get_user(user_id=user_id)
+            application_filter = Q(email=user.email)
+            data = [
+                get_serialized_job_application(ja)
+                for ja in self.get_applications(application_filter=application_filter)
+            ]
+        elif employer_id := self.query_params.get('employer_id'):
+            application_filter = Q(employer_job__employer_id=employer_id)
+            data = [
+                get_serialized_job_application(ja)
+                for ja in self.get_applications(application_filter=application_filter)
+            ]
+        else:
+            return Response('Unrecognized job application filter', status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(status=status.HTTP_200_OK, data=data)
+    
     @atomic
     def post(self, request):
         email = self.data.get('email')
@@ -30,7 +55,6 @@ class ApplicationView(JobVyneAPIView):
             return Response('Email and job ID are required', status=status.HTTP_400_BAD_REQUEST)
         
         # Check if the user has an account, but is not logged in
-        
         if not self.user.is_authenticated:
             try:
                 user = JobVyneUser.objects.get(email=email)
@@ -39,7 +63,6 @@ class ApplicationView(JobVyneAPIView):
         else:
             user = self.user
         
-        
         # Check if this person has already applied
         applications = self.get_applications(application_filter=Q(email=email, employer_job_id=job_id))
         if len(applications):
@@ -47,11 +70,19 @@ class ApplicationView(JobVyneAPIView):
         
         # Save application to Django model
         application = JobApplication()
-        self.create_application(application, self.data, self.files['resume'][0])
+        resume = self.files['resume'][0] if self.files.get('resume') else None
+        self.create_application(application, self.data, resume)
         
         if user:
             # Save or update application template to Django model
-            # TODO
+            application_template = ApplicationTemplateView.get_application_template(user.id) or JobApplicationTemplate()
+            self.data['owner_id'] = user.id
+            ApplicationTemplateView.create_or_update_application_template(
+                application_template,
+                self.data,
+                resume,
+                user
+            )
             
             # Update user if they don't have the candidate bit set
             if not user.is_candidate:
@@ -79,7 +110,7 @@ class ApplicationView(JobVyneAPIView):
             **APPLICATION_SAVE_CFG
         }
         set_object_attributes(application, data, cfg)
-        application.resume = resume
+        application.resume = resume or data.get('resume_url')
         application.save()
     
     @staticmethod
@@ -119,8 +150,15 @@ class ApplicationTemplateView(JobVyneAPIView):
             cfg['owner_id'] = None
         
         set_object_attributes(application_template, data, cfg)
-        if resume:
-            application_template.resume = resume
+        if resume or (resume_url := data.get('resume_url')):
+            application_template.resume = resume or resume_url
         permission_type = PermissionTypes.EDIT.value if application_template.id else PermissionTypes.CREATE.value
         application_template.jv_check_permission(permission_type, user)
         application_template.save()
+        
+    @staticmethod
+    def get_application_template(owner_id):
+        try:
+            return JobApplicationTemplate.objects.get(owner_id=owner_id)
+        except JobApplicationTemplate.DoesNotExist:
+            return None
