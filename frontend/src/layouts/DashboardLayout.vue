@@ -4,14 +4,14 @@
     <q-drawer
       v-if="!utilStore.isMobile"
       :breakpoint="0"
-      :width="200"
+      :width="250"
       side="left"
       show-if-above
       :mini="!isLeftDrawerOpen"
       bordered
     >
-      <q-scroll-area class="fit">
-        <q-list class="text-gray-500">
+      <q-scroll-area class="fit text-gray-500">
+        <q-list>
           <q-item
             v-if="isLeftDrawerOpen"
             class="items-end bg-gray-100"
@@ -26,7 +26,24 @@
               <img src="../assets/jobVyneLogoOnly.png" alt="Logo" style="height: 30px; object-fit: scale-down">
             </q-item-section>
           </q-item>
-          <template v-for="(menuItem, index) in menuList" :key="index">
+          <template v-if="isLeftDrawerOpen">
+            <q-btn-dropdown
+              flat unelevated
+              :label="`View mode: ${userCfgMap[viewerModeBit].viewLabel}`"
+              align="around"
+              class="w-100 text-bold"
+            >
+              <q-list>
+                <q-item v-for="viewOption in userViewOptions" clickable @click="viewerModeBit = viewOption.userBit">
+                  <q-item-section>
+                    <q-item-label>{{ viewOption.label }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+            <q-separator/>
+          </template>
+          <template v-for="(menuItem, index) in menuList">
             <q-item
               clickable
               :active="menuItem.key === pageKey"
@@ -80,10 +97,29 @@
     </q-page-container>
 
     <q-footer v-if="utilStore.isMobile" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow-x">
+      <q-btn-dropdown
+        flat unelevated stack
+        icon="fas fa-caret-up"
+        dropdown-icon="none"
+        class="border-right-1-white"
+        style="margin-bottom: -20px;"
+      >
+        <template v-slot:label>
+          <div class="text-small">View mode</div>
+          <div class="text-bold">{{ userCfgMap[viewerModeBit].viewLabel }}</div>
+        </template>
+        <q-list>
+          <q-item v-for="viewOption in userViewOptions" clickable @click="viewerModeBit = viewOption.userBit">
+            <q-item-section>
+              <q-item-label>{{ viewOption.label }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
       <div
         v-for="menuItem in menuList"
         class="col-3 q-py-sm"
-        :class="(menuItem.key === pageKey) ? 'text-primary q-active' : ''"
+        :class="getMobileMenuItemClasses(menuItem)"
         @click="redirectUrl(menuItem.key)"
         v-ripple
       >
@@ -106,46 +142,10 @@
 <script>
 import BannerMessage from 'components/BannerMessage.vue'
 import { useUtilStore } from 'stores/utility-store'
-import { useAuthStore } from 'stores/auth-store'
+import { USER_TYPES, useAuthStore } from 'stores/auth-store'
 import { Loading } from 'quasar'
 
-const menuList = [
-  {
-    icon: 'home',
-    key: 'dashboard',
-    label: 'Dashboard',
-    separator: false
-  },
-  {
-    icon: 'link',
-    key: 'links',
-    label: 'Referral Links',
-    separator: false
-  },
-  {
-    icon: 'person',
-    key: 'profile',
-    label: 'Profile',
-    separator: false
-  },
-  {
-    icon: 'share',
-    key: 'social-accounts',
-    label: 'Social Accounts',
-    separator: false
-  },
-  {
-    icon: 'message',
-    key: 'messages',
-    label: 'Messages',
-    separator: false
-  },
-  {
-    icon: 'dynamic_feed',
-    key: 'content',
-    label: 'Content',
-    separator: true
-  },
+const generalMenuList = [
   {
     icon: 'settings',
     key: 'settings',
@@ -166,6 +166,66 @@ const menuList = [
   }
 ]
 
+const userCfgMap = {
+  [USER_TYPES.USER_TYPE_ADMIN]: {
+    viewLabel: 'Admin',
+    menuItems: []
+  },
+  [USER_TYPES.USER_TYPE_CANDIDATE]: {
+    viewLabel: 'Job seeker',
+    menuItems: []
+  },
+  [USER_TYPES.USER_TYPE_EMPLOYEE]: {
+    viewLabel: 'Employee',
+    menuItems: [
+      {
+        icon: 'home',
+        key: 'dashboard',
+        label: 'Dashboard',
+        separator: false
+      },
+      {
+        icon: 'link',
+        key: 'links',
+        label: 'Referral Links',
+        separator: false
+      },
+      {
+        icon: 'person',
+        key: 'profile',
+        label: 'Profile',
+        separator: false
+      },
+      {
+        icon: 'share',
+        key: 'social-accounts',
+        label: 'Social Accounts',
+        separator: false
+      },
+      {
+        icon: 'message',
+        key: 'messages',
+        label: 'Messages',
+        separator: false
+      },
+      {
+        icon: 'dynamic_feed',
+        key: 'content',
+        label: 'Content',
+        separator: true
+      }
+    ]
+  },
+  [USER_TYPES.USER_TYPE_INFLUENCER]: {
+    viewLabel: 'Influencer',
+    menuItems: []
+  },
+  [USER_TYPES.USER_TYPE_EMPLOYER]: {
+    viewLabel: 'Employer',
+    menuItems: []
+  }
+}
+
 export default {
   components: { BannerMessage },
   data () {
@@ -173,10 +233,34 @@ export default {
       isLeftDrawerOpen: true,
       isRightDrawerOpen: false,
       pageKey: null,
-      menuList
+      viewerModeBit: null,
+      userCfgMap
+    }
+  },
+  computed: {
+    menuList () {
+      return [...userCfgMap[this.viewerModeBit].menuItems, ...generalMenuList]
+    },
+    userViewOptions () {
+      return this.authStore.propUserTypeBitsList.map((userBit) => {
+        return {
+          label: userCfgMap[userBit].viewLabel,
+          userBit
+        }
+      })
     }
   },
   methods: {
+    getMobileMenuItemClasses (menuItem) {
+      let classTxt = ''
+      if (menuItem.key === this.pageKey) {
+        classTxt += 'text-primary q-active'
+      }
+      if (menuItem.separator) {
+        classTxt += ' border-right-1-white'
+      }
+      return classTxt
+    },
     getPageKey () {
       /**
        * Get the last part of the page path which will align with the page key
@@ -194,9 +278,6 @@ export default {
         return pathParts[pathParts.length - 2]
       }
     },
-    toggleDrawerOpen () {
-      this.isRightDrawerOpen = !this.isRightDrawerOpen
-    },
     redirectUrl (key) {
       const url = (key === 'dashboard') ? `/${key}` : `/dashboard/${key}`
       this.pageKey = key
@@ -212,6 +293,22 @@ export default {
     return {
       authStore: useAuthStore(),
       utilStore: useUtilStore()
+    }
+  },
+  created () {
+    // Set the starting view for the user
+    const viewModePrioritized = [
+      USER_TYPES.USER_TYPE_ADMIN,
+      USER_TYPES.USER_TYPE_EMPLOYER,
+      USER_TYPES.USER_TYPE_INFLUENCER,
+      USER_TYPES.USER_TYPE_EMPLOYEE,
+      USER_TYPES.USER_TYPE_CANDIDATE
+    ]
+    for (const userBit of viewModePrioritized) {
+      if (userBit & this.authStore.propUserTypeBits) {
+        this.viewerModeBit = userBit
+        return
+      }
     }
   },
   mounted () {

@@ -26,11 +26,21 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     propIsAuthenticated: (state) => state.user && !dataUtil.isEmpty(state.user),
     propUser: (state) => state.user,
+    propUserTypeBits: (state) => state?.user?.user_type_bits,
     propIsAdmin: (state) => state?.user?.user_type_bits & USER_TYPES.USER_TYPE_ADMIN,
     propIsCandidate: (state) => state?.user?.user_type_bits & USER_TYPES.USER_TYPE_CANDIDATE,
     propIsEmployee: (state) => state?.user?.user_type_bits & USER_TYPES.USER_TYPE_EMPLOYEE,
     propIsInfluencer: (state) => state?.user?.user_type_bits & USER_TYPES.USER_TYPE_INFLUENCER,
-    propIsEmployer: (state) => state?.user?.user_type_bits & USER_TYPES.USER_TYPE_EMPLOYER
+    propIsEmployer: (state) => state?.user?.user_type_bits & USER_TYPES.USER_TYPE_EMPLOYER,
+    propUserTypeBitsList: (state) => {
+      return Object.values(USER_TYPES).reduce((userBitsList, userBit) => {
+        const flippedBit = userBit & state?.user?.user_type_bits
+        if (flippedBit) {
+          userBitsList.push(flippedBit)
+        }
+        return userBitsList
+      }, [])
+    }
   },
   actions: {
     async logout () {

@@ -1,6 +1,6 @@
 <template>
   <q-list>
-    <q-item v-for="(item, idx) in items" :key="idx">
+    <q-item v-for="item in items">
       <q-item-section avatar>
         <q-icon :color="getColor(item)" :name="getIcon(item)"/>
       </q-item-section>
