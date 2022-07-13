@@ -53,7 +53,7 @@ class JobVyneUser(AbstractUser):
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
     user_type_bits = models.SmallIntegerField()
-    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True)
+    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
     created_dt = models.DateTimeField(_("date created"), default=timezone.now)
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
 

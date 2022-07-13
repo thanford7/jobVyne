@@ -34,8 +34,23 @@ const routes = [
     path: '/dashboard',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
-      { path: '', name: 'dashboard', component: () => import('pages/DashboardPage.vue') },
-      { path: 'links', name: 'dashboard-links', component: () => import('pages/ReferralLinksPage.vue') }
+      {
+        path: ':namespace(admin|candidate|employee|influencer|employer)?',
+        name: 'dashboard',
+        component: () => import('pages/DashboardPage.vue')
+      },
+      // employee pages
+      {
+        path: ':namespace(employee)/:key(links)',
+        name: 'dashboard-links',
+        component: () => import('pages/employee/ReferralLinksPage.vue')
+      },
+      // employer pages
+      {
+        path: ':namespace(employer)/:key(user-management)',
+        name: 'dashboard-links',
+        component: () => import('pages/employer/UserManagementPage.vue')
+      }
     ]
   },
 

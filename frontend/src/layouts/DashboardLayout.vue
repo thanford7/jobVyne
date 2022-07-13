@@ -34,7 +34,10 @@
               class="w-100 text-bold"
             >
               <q-list>
-                <q-item v-for="viewOption in userViewOptions" clickable @click="viewerModeBit = viewOption.userBit">
+                <q-item v-for="viewOption in userViewOptions" clickable @click="changeViewMode(viewOption.userBit)">
+                  <q-item-section avatar>
+                    <q-icon :name="viewOption.icon"/>
+                  </q-item-section>
                   <q-item-section>
                     <q-item-label>{{ viewOption.label }}</q-item-label>
                   </q-item-section>
@@ -109,7 +112,10 @@
           <div class="text-bold">{{ userCfgMap[viewerModeBit].viewLabel }}</div>
         </template>
         <q-list>
-          <q-item v-for="viewOption in userViewOptions" clickable @click="viewerModeBit = viewOption.userBit">
+          <q-item v-for="viewOption in userViewOptions" clickable @click="changeViewMode(viewOption.userBit)">
+            <q-item-section avatar>
+              <q-icon :name="viewOption.icon"/>
+            </q-item-section>
             <q-item-section>
               <q-item-label>{{ viewOption.label }}</q-item-label>
             </q-item-section>
@@ -169,14 +175,34 @@ const generalMenuList = [
 const userCfgMap = {
   [USER_TYPES.USER_TYPE_ADMIN]: {
     viewLabel: 'Admin',
-    menuItems: []
+    viewIcon: 'admin_panel_settings',
+    namespace: 'admin',
+    menuItems: [
+      {
+        icon: 'home',
+        key: 'dashboard',
+        label: 'Dashboard',
+        separator: false
+      }
+    ]
   },
   [USER_TYPES.USER_TYPE_CANDIDATE]: {
     viewLabel: 'Job seeker',
-    menuItems: []
+    viewIcon: 'fa-solid fa-binoculars',
+    namespace: 'candidate',
+    menuItems: [
+      {
+        icon: 'home',
+        key: 'dashboard',
+        label: 'Dashboard',
+        separator: false
+      }
+    ]
   },
   [USER_TYPES.USER_TYPE_EMPLOYEE]: {
     viewLabel: 'Employee',
+    viewIcon: 'work',
+    namespace: 'employee',
     menuItems: [
       {
         icon: 'home',
@@ -218,11 +244,47 @@ const userCfgMap = {
   },
   [USER_TYPES.USER_TYPE_INFLUENCER]: {
     viewLabel: 'Influencer',
-    menuItems: []
+    viewIcon: 'groups_3',
+    namespace: 'influencer',
+    menuItems: [
+      {
+        icon: 'home',
+        key: 'dashboard',
+        label: 'Dashboard',
+        separator: false
+      }
+    ]
   },
   [USER_TYPES.USER_TYPE_EMPLOYER]: {
     viewLabel: 'Employer',
-    menuItems: []
+    viewIcon: 'business',
+    namespace: 'employer',
+    menuItems: [
+      {
+        icon: 'home',
+        key: 'dashboard',
+        label: 'Dashboard',
+        separator: false
+      },
+      {
+        icon: 'groups',
+        key: 'user-management',
+        label: 'Users',
+        separator: false
+      },
+      {
+        icon: 'message',
+        key: 'messages',
+        label: 'Messages',
+        separator: false
+      },
+      {
+        icon: 'dynamic_feed',
+        key: 'content',
+        label: 'Content',
+        separator: true
+      }
+    ]
   }
 }
 
@@ -232,8 +294,6 @@ export default {
     return {
       isLeftDrawerOpen: true,
       isRightDrawerOpen: false,
-      pageKey: null,
-      viewerModeBit: null,
       userCfgMap
     }
   },
@@ -241,16 +301,47 @@ export default {
     menuList () {
       return [...userCfgMap[this.viewerModeBit].menuItems, ...generalMenuList]
     },
+    pageKey () {
+      return this.$route.params.key || 'dashboard'
+    },
+    viewerModeBit () {
+      const viewerModeBit = Object.entries(userCfgMap).reduce((matchedUserBit, [userBit, cfg]) => {
+        if (cfg.namespace === this.$route.params.namespace) {
+          return userBit
+        }
+        return matchedUserBit
+      })
+      return viewerModeBit || this.getDefaultUserModeBit()
+    },
     userViewOptions () {
       return this.authStore.propUserTypeBitsList.map((userBit) => {
         return {
           label: userCfgMap[userBit].viewLabel,
+          icon: userCfgMap[userBit].viewIcon,
           userBit
         }
       })
     }
   },
   methods: {
+    changeViewMode (viewModeBit) {
+      const namespace = userCfgMap[viewModeBit].namespace
+      this.redirectUrl('dashboard', namespace)
+    },
+    getDefaultUserModeBit () {
+      const viewModePrioritized = [
+        USER_TYPES.USER_TYPE_ADMIN,
+        USER_TYPES.USER_TYPE_EMPLOYER,
+        USER_TYPES.USER_TYPE_INFLUENCER,
+        USER_TYPES.USER_TYPE_EMPLOYEE,
+        USER_TYPES.USER_TYPE_CANDIDATE
+      ]
+      for (const userBit of viewModePrioritized) {
+        if (userBit & this.authStore.propUserTypeBits) {
+          return userBit
+        }
+      }
+    },
     getMobileMenuItemClasses (menuItem) {
       let classTxt = ''
       if (menuItem.key === this.pageKey) {
@@ -261,26 +352,10 @@ export default {
       }
       return classTxt
     },
-    getPageKey () {
-      /**
-       * Get the last part of the page path which will align with the page key
-       * @type {string}
-       */
-      let path = window.location.pathname
-      path = path.split('?')[0] // Remove any params
-      const pathParts = path.split('/')
-      const lastVal = pathParts[pathParts.length - 1]
-
-      // The last part of the path could be a slash, so we need to protect against that
-      if (lastVal) {
-        return lastVal
-      } else {
-        return pathParts[pathParts.length - 2]
-      }
-    },
-    redirectUrl (key) {
-      const url = (key === 'dashboard') ? `/${key}` : `/dashboard/${key}`
-      this.pageKey = key
+    redirectUrl (key, namespace = null) {
+      namespace = namespace || userCfgMap[this.viewerModeBit].namespace
+      const baseUrl = `/dashboard/${namespace}`
+      const url = (key === 'dashboard') ? baseUrl : `${baseUrl}/${key}`
       this.$router.push(url)
     }
   },
@@ -294,25 +369,6 @@ export default {
       authStore: useAuthStore(),
       utilStore: useUtilStore()
     }
-  },
-  created () {
-    // Set the starting view for the user
-    const viewModePrioritized = [
-      USER_TYPES.USER_TYPE_ADMIN,
-      USER_TYPES.USER_TYPE_EMPLOYER,
-      USER_TYPES.USER_TYPE_INFLUENCER,
-      USER_TYPES.USER_TYPE_EMPLOYEE,
-      USER_TYPES.USER_TYPE_CANDIDATE
-    ]
-    for (const userBit of viewModePrioritized) {
-      if (userBit & this.authStore.propUserTypeBits) {
-        this.viewerModeBit = userBit
-        return
-      }
-    }
-  },
-  mounted () {
-    this.pageKey = this.getPageKey()
   }
 }
 </script>

@@ -1,15 +1,12 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <div class="row q-pb-sm border-bottom-2-gray-300">
-        <h5 class="text-gray-900">Referral links</h5>
-        <p class="text-gray-500 q-mt-none">
-          Add one or more referral links to your social media accounts. Anyone that visits your page can click on the
-          link
-          and will be directed to a webpage with all open jobs at your company. If they apply and work at your company,
-          you can collect a referral bonus!
-        </p>
-      </div>
+      <PageHeader title="Referral links">
+        Add one or more referral links to your social media accounts. Anyone that visits your page can click on the
+        link
+        and will be directed to a webpage with all open jobs at your company. If they apply and work at your company,
+        you can collect a referral bonus!
+      </PageHeader>
       <q-tabs
         v-model="tab"
         dense
@@ -299,6 +296,7 @@ import dateTimeUtil from 'src/utils/datetime'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import { useGlobalStore } from 'stores/global-store'
 import { Loading, useMeta } from 'quasar'
+import PageHeader from 'components/PageHeader.vue'
 
 const jobColumns = [
   { name: 'job_title', field: 'job_title', align: 'left', label: 'Title', sortable: true },
@@ -345,7 +343,7 @@ const formDataTemplate = {
 }
 
 export default {
-  components: { CustomTooltip },
+  components: { PageHeader, CustomTooltip },
   data () {
     return {
       formData: { ...formDataTemplate },
