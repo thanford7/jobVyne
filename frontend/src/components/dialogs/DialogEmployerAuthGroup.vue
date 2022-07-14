@@ -1,0 +1,61 @@
+<template>
+  <DialogBase
+    title-text="Create new group"
+    primary-button-text="Create"
+    @ok="saveGroup"
+  >
+    <q-input
+      filled
+      v-model="formData.name"
+      label="Group name"
+      lazy-rules
+      :rules="[
+        val => val && val.length > 0 || 'Group name is required',
+        val => !existingGroupNames.includes(val) || 'There is already a group with this name'
+      ]"
+    />
+  </DialogBase>
+</template>
+
+<script>
+import DialogBase from 'components/dialogs/DialogBase.vue'
+import { useEmployerStore } from 'stores/employer-store'
+import { useAuthStore } from 'stores/auth-store'
+import { getAjaxFormData } from 'src/utils/requests'
+
+export default {
+  name: 'DialogEmployerAuthGroup',
+  extends: DialogBase,
+  inheritAttrs: false,
+  components: { DialogBase },
+  data () {
+    return {
+      formData: {
+        name: null
+      }
+    }
+  },
+  computed: {
+    existingGroupNames () {
+      return this.employerStore.permissionGroups.map((group) => group.name)
+    }
+  },
+  methods: {
+    async saveGroup () {
+      const data = {
+        name: this.formData.name,
+        employer_id: this.authStore.user.employer_id
+      }
+      await this.$api.post('employer/permission/', getAjaxFormData(data))
+      this.employerStore.setEmployerPermissions()
+    }
+  },
+  preFetch () {
+    const employerStore = useEmployerStore()
+    return employerStore.setEmployerPermissions()
+  },
+  setup () {
+    return { authStore: useAuthStore(), employerStore: useEmployerStore() }
+  }
+}
+</script>

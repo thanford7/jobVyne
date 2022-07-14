@@ -14,3 +14,13 @@ class IsAdminOrEmployerOrReadOnlyPermission(permissions.BasePermission):
             user.user_type_bits & JobVyneUser.USER_TYPE_ADMIN,
             user.user_type_bits & JobVyneUser.USER_TYPE_EMPLOYER,
         ))
+
+
+class IsAdminOrEmployerPermission(permissions.BasePermission):
+    
+    def has_permission(self, request, view):
+        user = request.user
+        return any((
+            user.user_type_bits & JobVyneUser.USER_TYPE_ADMIN,
+            user.user_type_bits & JobVyneUser.USER_TYPE_EMPLOYER,
+        ))

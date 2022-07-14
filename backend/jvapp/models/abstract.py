@@ -1,9 +1,6 @@
 from enum import Enum
 
 from django.db import models
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-from django.utils import timezone
 
 from jvapp.utils.logger import getLogger
 
@@ -14,15 +11,6 @@ logger = getLogger()
 
 
 ALLOWED_UPLOADS_FILE = ['doc', 'docx', 'pdf', 'pages', 'gdoc']
-
-
-@receiver(pre_save)
-def add_audit_fields(sender, instance, *args, **kwargs):
-    if hasattr(instance, 'created_dt') and not instance.created_dt:
-        instance.created_dt = timezone.now()
-    
-    if hasattr(instance, 'modified_dt'):
-        instance.modified_dt = timezone.now()
 
 
 class AuditFields(models.Model):

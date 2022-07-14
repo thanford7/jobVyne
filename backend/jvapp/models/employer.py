@@ -1,10 +1,10 @@
 from django.db import models
 
-from jvapp.models.abstract import AuditFields
+from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
 from jvapp.models.location import Country, State
 
 
-__all__ = ('Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment')
+__all__ = ('Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment', 'EmployerAuthGroup', 'EmployerPermission')
 
 
 class Employer(AuditFields):
@@ -41,6 +41,37 @@ class EmployerJob(AuditFields):
     
     class Meta:
         unique_together = ('employer', 'jobTitle', 'location')
+        
+        
+class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
+    name = models.CharField(max_length=150)
+    is_default = models.BooleanField(default=False)
+    user_type_bit = models.SmallIntegerField()
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, null=True, blank=True)
+    permissions = models.ManyToManyField('EmployerPermission')
+    
+    class Meta:
+        unique_together = ('name', 'employer')
+        
+    def _jv_can_create(self, user):
+        from jvapp.models import PermissionName  # Avoid circular import
+        
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_PERMISSION_GROUPS.value)
+            )
+        )
+    
+    
+class EmployerPermission(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True)
+    user_type_bits = models.SmallIntegerField()
+    
+    def __str__(self):
+        return self.name
 
 
 class EmployerSize(models.Model):

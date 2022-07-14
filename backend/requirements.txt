@@ -1,4 +1,5 @@
 asgiref==3.5.2
+cachetools==5.2.0
 certifi==2022.6.15
 cffi==1.15.0
 charset-normalizer==2.0.12

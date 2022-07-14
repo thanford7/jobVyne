@@ -4,7 +4,8 @@ import dataUtil from 'src/utils/data'
 export const useEmployerStore = defineStore('employer', {
   state: () => ({
     employers: {}, // employerId: {<employer>}
-    employerJobs: {} // employerId: [<job1>, <job2>, ...]
+    employerJobs: {}, // employerId: [<job1>, <job2>, ...]
+    permissionGroups: []
   }),
 
   actions: {
@@ -23,6 +24,12 @@ export const useEmployerStore = defineStore('employer', {
           }
         )
         this.employerJobs[employerId] = resp.data
+      }
+    },
+    async setEmployerPermissions (isForceRefresh = false) {
+      if (!this.permissionGroups.length || isForceRefresh) {
+        const resp = await this.$api.get('employer/permission/')
+        this.permissionGroups = resp.data
       }
     },
     getEmployer (employerId) {

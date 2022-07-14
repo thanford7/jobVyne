@@ -34,7 +34,9 @@ class UserView(JobVyneAPIView):
         if user_id:
             user_filter = Q(id=user_id)
     
-        users = JobVyneUser.objects.prefetch_related('application_template').filter(user_filter)
+        users = JobVyneUser.objects\
+            .prefetch_related('application_template', 'permission_groups')\
+            .filter(user_filter)
     
         if user_id:
             if not users:

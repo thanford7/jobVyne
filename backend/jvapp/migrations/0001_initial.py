@@ -4,15 +4,108 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
 
+from jvapp.models import Country, EmployerSize, SocialPlatform, State
+
+COUNTRIES = [
+    'United States',
+    'Canada',
+    'United Kingdom'
+]
+
+EMPLOYER_SIZES = [
+    '1-10',
+    '11-50',
+    '51-100',
+    '101-500',
+    '501-1000',
+    '1001-5000',
+    '5000+'
+]
+
+SOCIAL_PLATFORMS = [
+    'LinkedIn',
+    'Facebook',
+    'Twitter',
+    'Instagram',
+    'TikTok',
+    'YouTube'
+]
+
+STATES = [
+    'Alabama',
+    'Alaska',
+    'Arizona',
+    'Arkansas',
+    'California',
+    'Colorado',
+    'Connecticut',
+    'Delaware',
+    'Florida',
+    'Georgia',
+    'Hawaii',
+    'Idaho',
+    'Illinois',
+    'Indiana',
+    'Iowa',
+    'Kansas',
+    'Kentucky',
+    'Louisiana',
+    'Maine',
+    'Maryland',
+    'Massachusetts',
+    'Michigan',
+    'Minnesota',
+    'Mississippi',
+    'Missouri',
+    'Montana',
+    'Nebraska',
+    'Nevada',
+    'New Hampshire',
+    'New Jersey',
+    'New Mexico',
+    'New York',
+    'North Carolina',
+    'North Dakota',
+    'Ohio',
+    'Oklahoma',
+    'Oregon',
+    'Pennsylvania',
+    'Rhode Island',
+    'South Carolina',
+    'South Dakota',
+    'Tennessee',
+    'Texas',
+    'Utah',
+    'Vermont',
+    'Virginia',
+    'Washington',
+    'West Virginia',
+    'Wisconsin',
+    'Wyoming'
+]
+
+
+def create_initial_values(apps, schema_editor):
+    for country in COUNTRIES:
+        Country(countryName=country).save()
+    
+    for size in EMPLOYER_SIZES:
+        EmployerSize(size=size).save()
+        
+    for platform in SOCIAL_PLATFORMS:
+        SocialPlatform(name=platform).save()
+        
+    for state in STATES:
+        State(stateName=state).save()
+
 
 class Migration(migrations.Migration):
-
     initial = True
-
+    
     dependencies = [
         ('auth', '0012_alter_user_first_name_max_length'),
     ]
-
+    
     operations = [
         migrations.CreateModel(
             name='Country',
@@ -54,7 +147,8 @@ class Migration(migrations.Migration):
                 ('employerName', models.CharField(max_length=150, unique=True)),
                 ('logo', models.ImageField(null=True, upload_to='logos')),
                 ('description', models.TextField(null=True)),
-                ('employerSize', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.employersize')),
+                ('employerSize',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.employersize')),
             ],
             options={
                 'abstract': False,
@@ -66,18 +160,30 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('password', models.CharField(max_length=128, verbose_name='password')),
                 ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
+                ('is_superuser', models.BooleanField(default=False,
+                                                     help_text='Designates that this user has all permissions without explicitly assigning them.',
+                                                     verbose_name='superuser status')),
                 ('first_name', models.CharField(blank=True, max_length=150, verbose_name='first name')),
                 ('last_name', models.CharField(blank=True, max_length=150, verbose_name='last name')),
-                ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
-                ('is_active', models.BooleanField(default=True, help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', verbose_name='active')),
+                ('is_staff', models.BooleanField(default=False,
+                                                 help_text='Designates whether the user can log into this admin site.',
+                                                 verbose_name='staff status')),
+                ('is_active', models.BooleanField(default=True,
+                                                  help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.',
+                                                  verbose_name='active')),
                 ('email', models.EmailField(max_length=254, unique=True, verbose_name='email address')),
                 ('user_type_bits', models.SmallIntegerField()),
                 ('created_dt', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date created')),
                 ('modified_dt', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date modified')),
-                ('employer', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.employer')),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
-                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+                ('employer',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.employer')),
+                ('groups', models.ManyToManyField(blank=True,
+                                                  help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+                                                  related_name='user_set', related_query_name='user', to='auth.group',
+                                                  verbose_name='groups')),
+                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.',
+                                                            related_name='user_set', related_query_name='user',
+                                                            to='auth.permission', verbose_name='user permissions')),
             ],
             options={
                 'verbose_name': 'user',
@@ -103,12 +209,15 @@ class Migration(migrations.Migration):
                 ('isRemote', models.BooleanField(null=True)),
                 ('location', models.CharField(max_length=100, null=True)),
                 ('city', models.CharField(max_length=50, null=True)),
-                ('country', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.country')),
-                ('employer', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='employerJob', to='jvapp.employer')),
+                ('country',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.country')),
+                ('employer', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='employerJob',
+                                               to='jvapp.employer')),
                 ('state', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.state')),
             ],
             options={
                 'unique_together': {('employer', 'jobTitle', 'location')},
             },
         ),
+        migrations.RunPython(create_initial_values, atomic=True)
     ]

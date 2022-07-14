@@ -10,7 +10,7 @@
       <q-tabs
         v-model="tab"
         dense
-        class="text-grey"
+        class="text-grey q-mt-md"
         active-color="primary"
         indicator-color="primary"
         align="left"
@@ -482,7 +482,7 @@ export default {
     Loading.show()
 
     return authStore.setUser().then(() => {
-      Promise.all([
+      return Promise.all([
         socialStore.setPlatforms(),
         socialStore.setSocialLinkFilters(),
         employerStore.setEmployer(authStore.propUser.employer_id),

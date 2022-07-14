@@ -1,12 +1,16 @@
 from django.db.models import Q
+from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import *
-from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission
-from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
+from jvapp.models.employer import EmployerAuthGroup
+from jvapp.models.user import USER_MANAGEMENT_PERMISSIONS
+from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
+from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_job
 
 
 class EmployerView(JobVyneAPIView):
@@ -15,6 +19,7 @@ class EmployerView(JobVyneAPIView):
     def get(self, request, employer_id=None):
         if employer_id:
             employer = self.get_employers(employer_id=employer_id)
+            can_view_users = self.user.has_employer_permission(USER_MANAGEMENT_PERMISSIONS, is_all_true=False)
             data = get_serialized_employer(employer)
         else:
             employers = self.get_employers(employer_filter=Q())
@@ -27,7 +32,10 @@ class EmployerView(JobVyneAPIView):
         if employer_id:
             employer_filter = Q(id=employer_id)
         
-        employers = Employer.objects.select_related('employerSize').filter(employer_filter)
+        employers = Employer.objects\
+            .select_related('employerSize')\
+            .prefetch_related('employee', 'employee__permission_groups')\
+            .filter(employer_filter)
         
         if employer_id:
             if not employers:
@@ -73,3 +81,40 @@ class EmployerJobView(JobVyneAPIView):
             return jobs[0]
         
         return jobs
+
+
+class EmployerAuthGroupView(JobVyneAPIView):
+    
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def get(self, request):
+        auth_groups = self.get_auth_groups(employer_id=self.user.employer_id)
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[get_serialized_auth_group(ag) for ag in auth_groups]
+        )
+    
+    @atomic
+    def post(self, request):
+        auth_group = EmployerAuthGroup(
+            name=self.data['name'],
+            employer_id=self.data['employer_id']
+        )
+        auth_group.jv_check_permission(PermissionTypes.CREATE.value, self.user)
+        auth_group.save()
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                SUCCESS_MESSAGE_KEY: f'{auth_group.name} group saved'
+            }
+        )
+        
+    
+    @staticmethod
+    def get_auth_groups(auth_group_filter=None, employer_id=None):
+        auth_group_filter = auth_group_filter or Q()
+        if employer_id:
+            auth_group_filter &= (Q(employer_id=employer_id) | Q(employer_id__isnull=True))
+        return EmployerAuthGroup.objects.prefetch_related('permissions').filter(auth_group_filter)
+    
+    

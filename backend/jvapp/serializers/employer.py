@@ -18,6 +18,7 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
             'first_name': e.first_name,
             'last_name': e.last_name,
             'user_type_bits': e.user_type_bits,
+            'permission_groups': [pg.name for pg in e.permission_groups.all()],
             'created_dt': get_datetime_format_or_none(e.created_dt),
         } for e in employer.employee.all()]
     
@@ -45,4 +46,21 @@ def get_serialized_employer_job(employer_job: EmployerJob):
         'state_id': employer_job.state_id,
         'country': employer_job.country.countryName,
         'country_id': employer_job.country_id
+    }
+
+
+def get_serialized_auth_group(auth_group: EmployerAuthGroup):
+    all_permissions = EmployerPermission.objects.all()
+    employer_permissions = {ag.id: ag for ag in auth_group.permissions.all()}
+    return {
+        'id': auth_group.id,
+        'name': auth_group.name,
+        'is_default': auth_group.is_default,
+        'employer_id': auth_group.employer_id,
+        'permissions': [{
+            'id': p.id,
+            'name': p.name,
+            'description': p.description,
+            'is_permitted': p.id in employer_permissions
+        } for p in all_permissions]
     }

@@ -1,11 +1,35 @@
+from enum import Enum
+
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.utils import crypto, timezone
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 
-__all__ = ('CustomUserManager', 'JobVyneUser',)
+__all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName')
+
+
+class PermissionName(Enum):
+    ADD_ADMIN_USER = 'Add admin users'
+    ADD_EMPLOYEE_USER = 'Add employees'
+    CHANGE_ADMIN_USER_PERMISSIONS = 'Change admin user permissions'
+    CHANGE_EMPLOYEE_PERMISSIONS = 'Change employee permissions'
+    MANAGE_PERMISSION_GROUPS = 'Manage custom permission groups'
+    MANAGE_EMPLOYER_CONTENT = 'Manage employer content'
+    MANAGE_EMPLOYER_JOBS = 'Manage employer jobs'
+    MANAGE_REFERRAL_BONUSES = 'Manage employee referral bonuses'
+    ADD_EMPLOYEE_CONTENT = 'Add personal employee content'
+    MANAGE_BILLING_SETTINGS = 'Add personal employee content'
+    
+
+USER_MANAGEMENT_PERMISSIONS = [
+    PermissionName.ADD_ADMIN_USER.value,
+    PermissionName.ADD_EMPLOYEE_USER.value,
+    PermissionName.CHANGE_ADMIN_USER_PERMISSIONS.value,
+    PermissionName.CHANGE_EMPLOYEE_PERMISSIONS.value
+]
 
 
 class CustomUserManager(BaseUserManager):
@@ -54,6 +78,7 @@ class JobVyneUser(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
     user_type_bits = models.SmallIntegerField()
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
+    permission_groups = models.ManyToManyField('EmployerAuthGroup', related_name='user')
     created_dt = models.DateTimeField(_("date created"), default=timezone.now)
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
 
@@ -64,6 +89,22 @@ class JobVyneUser(AbstractUser):
 
     def __str__(self):
         return self.email
+    
+    def has_employer_permission(self, permission_name: str or list, is_all_true: bool = True):
+        """Check if user has the specified permission
+        :param permission_name: A property of PermissionName class
+        :param is_all_true: If true, all permissions must be true.
+            Otherwise if one permission is true, the func will return true
+        """
+        if isinstance(permission_name, str):
+            permission_name = [permission_name]
+        check_method = all if is_all_true else any
+        return check_method((self.permissions.get(p) for p in permission_name))
+        
+    @cached_property
+    def permissions(self):
+        permission_groups = self.permission_groups.prefetch_related('permissions').all()
+        return {permission.name: permission for group in permission_groups for permission in group.permissions.all()}
     
     @property
     def is_admin(self):
