@@ -27,7 +27,7 @@
                   <div class="q-mb-sm flex">
                     <div class="text-h6">Groups</div>
                     <q-space/>
-                    <q-btn color="accent" icon="add" label="Add Group" @click="openEmployerAuthGroupDialog"/>
+                    <q-btn v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_PERMISSION_GROUPS)" color="accent" icon="add" label="Add Group" @click="openEmployerAuthGroupDialog"/>
                   </div>
                   <q-separator/>
                   <q-scroll-area class="q-mt-sm" style="height: 20vh;">
@@ -43,13 +43,15 @@
                           @click="selectedGroupId = group.id"
                         >
                           <span :class="(selectedGroupId === group.id) ? 'text-bold' : ''">{{ group.name }}</span>
-                          <q-chip v-if="!group.employer_id" color="grey-7" text-color="white" size="sm">
+                          <q-chip v-if="getIsGroupReadOnly(group)" color="grey-7" text-color="white" size="sm">
                             Read Only
                           </q-chip>
-                          <q-chip v-if="group.is_default" color="grey-7" text-color="white" size="sm" icon-right="help_outline">
+                          <q-chip v-if="group.is_default" color="grey-7" text-color="white" size="sm"
+                                  icon-right="help_outline">
                             Default
                             <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
-                              When a new {{ userGroup.name }} user joins JobVyne, they will be added to this permission group
+                              When a new {{ userGroup.name }} user joins JobVyne, they will be added to this permission
+                              group
                             </q-tooltip>
                           </q-chip>
                         </q-item>
@@ -63,17 +65,35 @@
               <q-card v-if="selectedGroup">
                 <q-card-section>
                   <div class="q-mb-sm">
-                    <div class="text-h6">
-                      Permissions for {{ selectedGroup.name }} Group
+                    <div class="flex q-mb-sm">
+                      <div class="text-h6">
+                        Permissions for {{ selectedGroup.name }} Group
+                      </div>
+                      <q-space/>
+                      <div>
+                        <q-btn v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)" dense color="primary" icon="star" label="Make default group" @click="setDefaultGroup"/>
+                        <q-chip v-if="selectedGroup.is_default" color="grey-7" text-color="white" size="md" icon-right="help_outline">
+                          Default
+                        </q-chip>
+                        <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                          When a new {{ getUserTypeNameFromBit(selectedGroup.user_type_bit) }} user joins JobVyne, they will be added to this permission
+                          group
+                        </q-tooltip>
+                      </div>
                     </div>
-                    <div v-if="!selectedGroup.employer_id" class="bg-warning q-pl-sm">
+                    <div v-if="getIsGroupReadOnly(selectedGroup)" class="bg-warning q-pl-sm">
                       Read Only
                       <CustomTooltip :is_include_space="false">
                         <template v-slot:icon>
                           <q-icon class="self-center" name="info" size="18px" color="grey-8"/>
                         </template>
-                        General permission groups can't be edited. Create a new custom permission group if you want to
-                        make changes.
+                        <span v-if="selectedGroup.can_edit">
+                          General permission groups can't be edited. Create a new custom permission group if you want to
+                          make changes.
+                        </span>
+                        <span v-else>
+                          You do not have the appropriate permissions to edit this group
+                        </span>
                       </CustomTooltip>
                     </div>
                   </div>
@@ -82,15 +102,15 @@
                     <q-item
                       v-for="perm in selectedGroupPermissions"
                       tag="label"
-                      :v-ripple="selectedGroup.employer_id"
-                      :clickable="selectedGroup.employer_id"
+                      :v-ripple="selectedGroup.can_edit"
+                      :clickable="selectedGroup.can_edit"
                     >
                       <q-item-section>
                         <q-item-label>{{ perm.name }}</q-item-label>
                         <q-item-label caption>{{ perm.description }}</q-item-label>
                       </q-item-section>
                       <q-item-section avatar>
-                        <q-toggle :disable="!selectedGroup.employer_id" v-model="perm.is_permitted"/>
+                        <q-toggle :disable="!selectedGroup.can_edit" v-model="perm.is_permitted"/>
                       </q-item-section>
                     </q-item>
                   </q-list>
@@ -113,6 +133,7 @@
 import PageHeader from 'components/PageHeader.vue'
 import { useEmployerStore } from 'stores/employer-store'
 import {
+  PERMISSION_NAMES,
   useAuthStore,
   USER_TYPE_EMPLOYEE,
   USER_TYPE_EMPLOYER,
@@ -135,7 +156,8 @@ export default {
           name: userType,
           user_type_bit: USER_TYPES[userType]
         }
-      })
+      }),
+      PERMISSION_NAMES
     }
   },
   computed: {
@@ -150,6 +172,21 @@ export default {
         return null
       }
       return this.selectedGroup.permissions.filter((p) => p.user_type_bits & this.selectedGroup.user_type_bit)
+    }
+  },
+  methods: {
+    getIsGroupReadOnly (group) {
+      return !group.employer_id || !group.can_edit
+    },
+    getUserTypeNameFromBit (userTypeBit) {
+      for (const [name, bit] of Object.entries(USER_TYPES)) {
+        if (bit === userTypeBit) {
+          return name
+        }
+      }
+    },
+    setDefaultGroup () {
+      // TODO
     }
   },
   preFetch () {

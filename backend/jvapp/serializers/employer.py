@@ -50,7 +50,7 @@ def get_serialized_employer_job(employer_job: EmployerJob):
     }
 
 
-def get_serialized_auth_group(auth_group: EmployerAuthGroup, all_permissions, auth_groups):
+def get_serialized_auth_group(auth_group: EmployerAuthGroup, all_permissions, auth_groups, user):
     employer_permissions = {ag.id: ag for ag in auth_group.permissions.all()}
     return {
         'id': auth_group.id,
@@ -58,6 +58,7 @@ def get_serialized_auth_group(auth_group: EmployerAuthGroup, all_permissions, au
         'is_default': is_default_auth_group(auth_group, auth_groups),
         'employer_id': auth_group.employer_id,
         'user_type_bit': auth_group.user_type_bit,
+        'can_edit': auth_group.jv_can_update_permissions(user),
         'permissions': [{
             'id': p.id,
             'name': p.name,

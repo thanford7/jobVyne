@@ -11,6 +11,7 @@ from jvapp.models.employer import EmployerAuthGroup
 from jvapp.models.user import USER_MANAGEMENT_PERMISSIONS
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_job
+from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 
 class EmployerView(JobVyneAPIView):
@@ -92,13 +93,14 @@ class EmployerAuthGroupView(JobVyneAPIView):
         all_permissions = EmployerPermission.objects.all()
         return Response(
             status=status.HTTP_200_OK,
-            data=[get_serialized_auth_group(ag, all_permissions, auth_groups) for ag in auth_groups]
+            data=[get_serialized_auth_group(ag, all_permissions, auth_groups, self.user) for ag in auth_groups]
         )
     
     @atomic
     def post(self, request):
         auth_group = EmployerAuthGroup(
             name=self.data['name'],
+            user_type_bit=self.data['user_type_bit'],
             employer_id=self.data['employer_id']
         )
         auth_group.jv_check_permission(PermissionTypes.CREATE.value, self.user)
@@ -109,7 +111,24 @@ class EmployerAuthGroupView(JobVyneAPIView):
                 SUCCESS_MESSAGE_KEY: f'{auth_group.name} group saved'
             }
         )
+    
+    @atomic
+    def put(self, request, auth_group_id):
+        auth_group = EmployerAuthGroup.objects.get(id=auth_group_id)
+        set_object_attributes(auth_group, self.data, {
+            'name': None,
+            'user_type_bit': None,
+            'is_default': None
+        })
+        auth_group.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        auth_group.save()
         
+        if permissions := self.data.get('permissions'):
+            auth_group.jv_check_can_update_permissions(self.user)
+            auth_group.permissions.clear()
+            for permission in permissions:
+                if permission['is_permitted']:
+                    auth_group.permissions.add(permission['id'])
     
     @staticmethod
     def get_auth_groups(auth_group_filter=None, employer_id=None):

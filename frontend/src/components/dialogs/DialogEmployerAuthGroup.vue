@@ -14,13 +14,23 @@
         val => !existingGroupNames.includes(val) || 'There is already a group with this name'
       ]"
     />
+    <q-select
+      filled
+      v-model="formData.user_type_bit"
+      :options="userGroups"
+      autocomplete="name"
+      option-value="user_type_bit"
+      option-label="name"
+      label="User type"
+      :rules="[val => val && val.length > 0 || 'User type is required',]"
+    />
   </DialogBase>
 </template>
 
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import { useEmployerStore } from 'stores/employer-store'
-import { useAuthStore } from 'stores/auth-store'
+import { useAuthStore, USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER, USER_TYPES } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
 
 export default {
@@ -31,8 +41,15 @@ export default {
   data () {
     return {
       formData: {
-        name: null
-      }
+        name: null,
+        user_type_bit: null
+      },
+      userGroups: [USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE].map((userType) => {
+        return {
+          name: userType,
+          user_type_bit: USER_TYPES[userType]
+        }
+      })
     }
   },
   computed: {
@@ -43,7 +60,7 @@ export default {
   methods: {
     async saveGroup () {
       const data = {
-        name: this.formData.name,
+        ...this.formData,
         employer_id: this.authStore.user.employer_id
       }
       await this.$api.post('employer/permission/', getAjaxFormData(data))

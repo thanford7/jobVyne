@@ -68,9 +68,12 @@ class JobVynePermissionsMixin:
             raise ValueError('Unknown permission type')
         
         if not has_permission:
-            raise PermissionError(f'You do not have {permission_type} permission for this object')
+            self._raise_permission_error(permission_type)
         
         return True
+    
+    def _raise_permission_error(self, permission_type):
+        raise PermissionError(f'You do not have {permission_type} permission for this object')
     
     def _jv_can_create(self, user):
         return True

@@ -14,5 +14,6 @@ def get_serialized_user(user: JobVyneUser):
         'employer_id': user.employer_id,
         'created_dt': get_datetime_format_or_none(user.created_dt),
         'modified_dt': get_datetime_format_or_none(user.modified_dt),
-        'application_template': base_application_serializer(application_template) if application_template else None
+        'application_template': base_application_serializer(application_template) if application_template else None,
+        'permissions': list(user.permissions.keys())
     }

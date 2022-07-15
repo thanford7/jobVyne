@@ -10,7 +10,7 @@ from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
 from jvapp.serializers.job_seeker import get_serialized_job_application
-from jvapp.utils.data import set_object_attributes
+from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 __all__ = ('ApplicationView', 'ApplicationTemplateView')
 
@@ -105,8 +105,8 @@ class ApplicationView(JobVyneAPIView):
     @atomic
     def create_application(application, data, resume):
         cfg = {
-            'employer_job_id': {'form_name': 'job_id'},
-            'social_link_filter_id': {'form_name': 'filter_id'},
+            'employer_job_id': AttributeCfg(form_name='job_id'),
+            'social_link_filter_id': AttributeCfg(form_name='filter_id'),
             **APPLICATION_SAVE_CFG
         }
         set_object_attributes(application, data, cfg)

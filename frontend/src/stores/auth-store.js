@@ -16,6 +16,20 @@ export const USER_TYPES = {
   [USER_TYPE_EMPLOYER]: 0x10
 }
 
+// Keep in sync with backend user model
+export const PERMISSION_NAMES = {
+  ADD_ADMIN_USER: 'Add admin users',
+  ADD_EMPLOYEE_USER: 'Add employees',
+  CHANGE_ADMIN_USER_PERMISSIONS: 'Change admin user permissions',
+  CHANGE_EMPLOYEE_PERMISSIONS: 'Change employee permissions',
+  MANAGE_PERMISSION_GROUPS: 'Manage custom permission groups',
+  MANAGE_EMPLOYER_CONTENT: 'Manage employer content',
+  MANAGE_EMPLOYER_JOBS: 'Manage employer jobs',
+  MANAGE_REFERRAL_BONUSES: 'Manage employee referral bonuses',
+  ADD_EMPLOYEE_CONTENT: 'Add personal employee content',
+  MANAGE_BILLING_SETTINGS: 'Add personal employee content'
+}
+
 /**
  * The bulk of authentication is handled in router-guards.js where:
  * (1) Check if user is authenticated
@@ -73,6 +87,9 @@ export const useAuthStore = defineStore('auth', {
         })
         this.applications = resp.data
       }
+    },
+    getHasPermission (permissionName) {
+      return this.user.permissions.includes(permissionName)
     }
   }
 })

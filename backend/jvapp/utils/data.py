@@ -1,23 +1,25 @@
+from collections import Callable, namedtuple
+from dataclasses import dataclass
 
 
-def set_object_attributes(obj, data: dict, key_func_dict: dict):
-    for key, prop_helpers in key_func_dict.items():
-        form_name = None
-        prop_func = None
-        is_protect_existing = False
-        is_ignore_excluded = False
-        if prop_helpers:
-            form_name = prop_helpers.get('form_name')
-            prop_func = prop_helpers.get('prop_func')
-            is_protect_existing = prop_helpers.get('is_protect_existing')
-            is_ignore_excluded = prop_helpers.get('is_ignore_excluded')
+@dataclass
+class AttributeCfg:
+    form_name: str = None  # If the data field key is different from the object attribute name
+    prop_func: Callable = None  # A function that processes the raw form value
+    is_protect_existing: bool = False  # If true, prevents setting the object attribute to None
+    is_ignore_excluded: bool = True  # If true, doesn't modify the attribute if it's not included in the form data
 
-        if is_ignore_excluded and (form_name or key) not in data:
+
+def set_object_attributes(obj, data: dict, form_cfg: dict):
+    for key, attribute_cfg in form_cfg.items():
+        attribute_cfg = attribute_cfg or AttributeCfg()
+        
+        if attribute_cfg.is_ignore_excluded and (attribute_cfg.form_name or key) not in data:
             continue
-
-        val = data.get(form_name or key)
-        if prop_func:
-            val = prop_func(val)
-        if val is None and is_protect_existing:
+        
+        val = data.get(attribute_cfg.form_name or key)
+        if attribute_cfg.prop_func:
+            val = attribute_cfg.prop_func(val)
+        if val is None and attribute_cfg.is_protect_existing:
             continue
         setattr(obj, key, val)
