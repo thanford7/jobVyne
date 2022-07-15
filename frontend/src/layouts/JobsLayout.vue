@@ -173,7 +173,7 @@ export default {
   preFetch () {
     const authStore = useAuthStore()
     Loading.show()
-    authStore.setUser().finally(() => Loading.hide())
+    return authStore.setUser().finally(() => Loading.hide())
   },
   setup () {
     const isRightDrawerOpen = ref(false)

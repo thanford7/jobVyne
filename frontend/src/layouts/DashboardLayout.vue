@@ -310,7 +310,7 @@ export default {
           return userBit
         }
         return matchedUserBit
-      })
+      }, 0)
       return viewerModeBit || this.getDefaultUserModeBit()
     },
     userViewOptions () {
@@ -362,7 +362,7 @@ export default {
   preFetch () {
     const authStore = useAuthStore()
     Loading.show()
-    authStore.setUser().finally(() => Loading.hide())
+    return authStore.setUser().finally(() => Loading.hide())
   },
   setup () {
     return {

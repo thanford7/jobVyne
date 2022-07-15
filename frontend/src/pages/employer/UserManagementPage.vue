@@ -67,7 +67,7 @@
                   <q-separator/>
                   <q-list>
                     <q-item
-                      v-for="perm in selectedGroup.permissions"
+                      v-for="perm in selectedGroupPermissions"
                       tag="label"
                       :v-ripple="!selectedGroup.is_default"
                       :clickable="!selectedGroup.is_default"
@@ -120,6 +120,12 @@ export default {
         return null
       }
       return this.employerStore.permissionGroups.find((group) => group.id === this.selectedGroupId)
+    },
+    selectedGroupPermissions () {
+      if (!this.selectedGroup) {
+        return null
+      }
+      return this.selectedGroup.permissions.filter((p) => p.user_type_bits & this.selectedGroup.user_type_bit)
     },
     authGroupScrollAreaHeight () {
       const width = window.innerWidth

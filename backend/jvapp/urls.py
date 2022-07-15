@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from jvapp.apis import auth, employer, job_seeker, social, user
 
-apiPath = 'api/v1/'
+api_path = 'api/v1/'
 
 urlpatterns = [
     # Data

@@ -57,10 +57,12 @@ def get_serialized_auth_group(auth_group: EmployerAuthGroup):
         'name': auth_group.name,
         'is_default': auth_group.is_default,
         'employer_id': auth_group.employer_id,
+        'user_type_bit': auth_group.user_type_bit,
         'permissions': [{
             'id': p.id,
             'name': p.name,
             'description': p.description,
+            'user_type_bits': p.user_type_bits,
             'is_permitted': p.id in employer_permissions
         } for p in all_permissions]
     }

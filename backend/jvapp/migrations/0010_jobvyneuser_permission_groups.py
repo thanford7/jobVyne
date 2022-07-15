@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jvapp', '0009_add_permissions'),
+        ('jvapp', '0008_employerauthgroup_employer_and_more'),
     ]
 
     operations = [

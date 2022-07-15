@@ -32,6 +32,13 @@ USER_MANAGEMENT_PERMISSIONS = [
 ]
 
 
+class DefaultPermissionGroups(Enum):
+    ADMIN = 'Admin'
+    HR = 'HR Professional'
+    EMPLOYEE = 'Employee'
+    INFLUENCER = 'Influencer'
+
+
 class CustomUserManager(BaseUserManager):
     """
     Custom user model manager where email is the unique identifier
@@ -72,7 +79,15 @@ class JobVyneUser(AbstractUser):
     USER_TYPE_EMPLOYEE = 0x4
     USER_TYPE_INFLUENCER = 0x8
     USER_TYPE_EMPLOYER = 0x10
-
+    
+    ALL_USER_TYPES = [
+        USER_TYPE_ADMIN,
+        USER_TYPE_CANDIDATE,
+        USER_TYPE_EMPLOYEE,
+        USER_TYPE_INFLUENCER,
+        USER_TYPE_EMPLOYER
+    ]
+    
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)

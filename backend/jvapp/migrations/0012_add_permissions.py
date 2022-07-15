@@ -2,9 +2,7 @@
 
 from django.db import migrations
 
-from jvapp.models.employer import EmployerAuthGroup, EmployerPermission
-
-GROUPS = (('Admin', 16), ('HR Professional', 16), ('Employee', 4), ('Influencer', 8))
+GROUPS = (('Admin', 16, 0), ('HR Professional', 16, 1), ('Employee', 4, 0), ('Influencer', 8, 0))
 PERMISSIONS = (
     ('Add admin users', '', ['Admin'], 16),
     ('Add employees', '', ['Admin', 'HR Professional'], 16),
@@ -19,7 +17,8 @@ PERMISSIONS = (
      'Allows the user to create, edit, and delete. For most employers, most job data will automatically be pulled from your ATS.',
      ['Admin', 'HR Professional'], 16),
     ('Manage employee referral bonuses',
-     'Allows user to set and modify the referral bonus for any job or groups of jobs.', ['Admin', 'HR Professional'], 16),
+     'Allows user to set and modify the referral bonus for any job or groups of jobs.', ['Admin', 'HR Professional'],
+     16),
     ('Add personal employee content',
      'Allows employees to add text and video content about their job which is displayed for any of their unique job links.',
      ['Employee'], 4),
@@ -28,14 +27,17 @@ PERMISSIONS = (
 
 
 def add_permissions(apps, schema_editor):
+    EmployerAuthGroup = apps.get_model('jvapp', 'EmployerAuthGroup')
+    EmployerPermission = apps.get_model('jvapp', 'EmployerPermission')
+    
     auth_groups = {}
-    for name, user_type_bit in GROUPS:
-        new_group = EmployerAuthGroup(name=name, is_default=1, user_type_bit=user_type_bit)
+    for name, user_type_bit, is_default in GROUPS:
+        new_group = EmployerAuthGroup(name=name, is_default=is_default, user_type_bit=user_type_bit)
         new_group.save()
         auth_groups[name] = new_group
     
-    for name, description, group_names in PERMISSIONS:
-        new_permission = EmployerPermission(name=name, description=description)
+    for name, description, group_names, user_type_bit in PERMISSIONS:
+        new_permission = EmployerPermission(name=name, description=description, user_type_bits=user_type_bit)
         new_permission.save()
         
         for group_name in group_names:
@@ -44,7 +46,7 @@ def add_permissions(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('jvapp', '0008_employerauthgroup_employer_and_more'),
+        ('jvapp', '0012_employerauthgroup_user_type_bit'),
     ]
     
     operations = [

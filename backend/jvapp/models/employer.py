@@ -45,6 +45,11 @@ class EmployerJob(AuditFields):
         
 class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     name = models.CharField(max_length=150)
+    # If true, this auth group will be automatically added to users with the associated user_type_bit
+    # Only one auth group will be automatically added per user_type_bit. If multiple records have
+    # is_default = True, tie break will go to:
+    # (1) employer is not null
+    # (2) the greatest id
     is_default = models.BooleanField(default=False)
     user_type_bit = models.SmallIntegerField()
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, null=True, blank=True)
