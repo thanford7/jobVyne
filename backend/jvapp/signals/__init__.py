@@ -9,6 +9,8 @@ from jvapp.models import EmployerAuthGroup, JobVyneUser
 
 __all__ = ('add_audit_fields', 'update_user_types_on_group_save', 'update_user_types_on_group_delete')
 
+from jvapp.models.employer import is_default_auth_group
+
 
 def _reduce_user_type_bits(permission_groups):
     return functools.reduce(
@@ -69,13 +71,17 @@ def set_user_type_on_save(sender, instance, *args, **kwargs):
         Q(is_default=True)
         & (Q(employer_id__isnull=True) | Q(employer_id=instance.employer_id))
     )
-    # Order by descending employer_id to make sure employer groups come before
-    # non-employer groups (those that are applicable to all employers)
-    # Order by descending id to make sure the result is deterministic
-    default_permission_groups = EmployerAuthGroup.objects.filter(group_filter).order_by('-employer_id', '-id')
+    
+    default_permission_groups = EmployerAuthGroup.objects.filter(group_filter)
     for user_type_bit in JobVyneUser.ALL_USER_TYPES:
         if instance.user_type_bits & user_type_bit:
-            default_permission_group = next((g for g in default_permission_groups if g.user_type_bit & user_type_bit), None)
+            default_permission_group = next(
+                (
+                    g for g in default_permission_groups
+                    if g.user_type_bit & user_type_bit and is_default_auth_group(g, default_permission_groups))
+                ,
+                None
+            )
             if default_permission_group:
                 instance.permission_groups.add(default_permission_group)
     

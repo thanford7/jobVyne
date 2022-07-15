@@ -1,4 +1,5 @@
 from jvapp.models.employer import *
+from jvapp.models.employer import is_default_auth_group
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -49,13 +50,12 @@ def get_serialized_employer_job(employer_job: EmployerJob):
     }
 
 
-def get_serialized_auth_group(auth_group: EmployerAuthGroup):
-    all_permissions = EmployerPermission.objects.all()
+def get_serialized_auth_group(auth_group: EmployerAuthGroup, all_permissions, auth_groups):
     employer_permissions = {ag.id: ag for ag in auth_group.permissions.all()}
     return {
         'id': auth_group.id,
         'name': auth_group.name,
-        'is_default': auth_group.is_default,
+        'is_default': is_default_auth_group(auth_group, auth_groups),
         'employer_id': auth_group.employer_id,
         'user_type_bit': auth_group.user_type_bit,
         'permissions': [{

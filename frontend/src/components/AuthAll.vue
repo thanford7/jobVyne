@@ -34,7 +34,7 @@ export default {
     },
     userTypeBit: {
       type: Number,
-      default: USER_TYPES.USER_TYPE_EMPLOYEE
+      default: USER_TYPES.Employee
     },
     redirectPageUrl: {
       type: [String, null]

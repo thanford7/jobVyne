@@ -173,7 +173,7 @@ const generalMenuList = [
 ]
 
 const userCfgMap = {
-  [USER_TYPES.USER_TYPE_ADMIN]: {
+  [USER_TYPES.Admin]: {
     viewLabel: 'Admin',
     viewIcon: 'admin_panel_settings',
     namespace: 'admin',
@@ -186,7 +186,7 @@ const userCfgMap = {
       }
     ]
   },
-  [USER_TYPES.USER_TYPE_CANDIDATE]: {
+  [USER_TYPES.Candidate]: {
     viewLabel: 'Job seeker',
     viewIcon: 'fa-solid fa-binoculars',
     namespace: 'candidate',
@@ -199,7 +199,7 @@ const userCfgMap = {
       }
     ]
   },
-  [USER_TYPES.USER_TYPE_EMPLOYEE]: {
+  [USER_TYPES.Employee]: {
     viewLabel: 'Employee',
     viewIcon: 'work',
     namespace: 'employee',
@@ -242,7 +242,7 @@ const userCfgMap = {
       }
     ]
   },
-  [USER_TYPES.USER_TYPE_INFLUENCER]: {
+  [USER_TYPES.Influencer]: {
     viewLabel: 'Influencer',
     viewIcon: 'groups_3',
     namespace: 'influencer',
@@ -255,7 +255,7 @@ const userCfgMap = {
       }
     ]
   },
-  [USER_TYPES.USER_TYPE_EMPLOYER]: {
+  [USER_TYPES.Employer]: {
     viewLabel: 'Employer',
     viewIcon: 'business',
     namespace: 'employer',
@@ -330,11 +330,11 @@ export default {
     },
     getDefaultUserModeBit () {
       const viewModePrioritized = [
-        USER_TYPES.USER_TYPE_ADMIN,
-        USER_TYPES.USER_TYPE_EMPLOYER,
-        USER_TYPES.USER_TYPE_INFLUENCER,
-        USER_TYPES.USER_TYPE_EMPLOYEE,
-        USER_TYPES.USER_TYPE_CANDIDATE
+        USER_TYPES.Admin,
+        USER_TYPES.Employer,
+        USER_TYPES.Influencer,
+        USER_TYPES.Employee,
+        USER_TYPES.Candidate
       ]
       for (const userBit of viewModePrioritized) {
         if (userBit & this.authStore.propUserTypeBits) {

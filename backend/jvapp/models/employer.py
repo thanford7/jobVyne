@@ -1,3 +1,5 @@
+import math
+
 from django.db import models
 
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
@@ -41,15 +43,24 @@ class EmployerJob(AuditFields):
     
     class Meta:
         unique_together = ('employer', 'jobTitle', 'location')
-        
-        
+
+
+#If multiple records have is_default = True, tie break will go to:
+# (1) employer is not null
+# (2) the greatest id
+def is_default_auth_group(auth_group, auth_groups):
+    if not auth_group.is_default:
+        return False
+    
+    potential_defaults = [g for g in auth_groups if g.is_default and g.user_type_bit == auth_group.user_type_bit]
+    potential_defaults.sort(key=lambda group: (-bool(group.employer_id), -group.id))
+    return potential_defaults[0].id == auth_group.id
+    
+    
 class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     name = models.CharField(max_length=150)
     # If true, this auth group will be automatically added to users with the associated user_type_bit
-    # Only one auth group will be automatically added per user_type_bit. If multiple records have
-    # is_default = True, tie break will go to:
-    # (1) employer is not null
-    # (2) the greatest id
+    # Only one auth group will be automatically added per user_type_bit
     is_default = models.BooleanField(default=False)
     user_type_bit = models.SmallIntegerField()
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, null=True, blank=True)

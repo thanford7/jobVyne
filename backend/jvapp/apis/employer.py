@@ -89,9 +89,10 @@ class EmployerAuthGroupView(JobVyneAPIView):
     
     def get(self, request):
         auth_groups = self.get_auth_groups(employer_id=self.user.employer_id)
+        all_permissions = EmployerPermission.objects.all()
         return Response(
             status=status.HTTP_200_OK,
-            data=[get_serialized_auth_group(ag) for ag in auth_groups]
+            data=[get_serialized_auth_group(ag, all_permissions, auth_groups) for ag in auth_groups]
         )
     
     @atomic

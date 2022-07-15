@@ -22,6 +22,7 @@ class EmployerGroupPermissionsTestCase(BaseTestCase):
 
         # New employer users should now default to finance
         new_user_employer = self.create_user(JobVyneUser.USER_TYPE_EMPLOYER, employer_id=self.employer.id)
+        new_user_employer = JobVyneUser.objects.prefetch_related('permission_groups').get(id=new_user_employer.id)
         perm_groups = new_user_employer.permission_groups.all()
         self.assertEqual(perm_groups[0].id, new_auth_group.id)
     
