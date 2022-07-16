@@ -16,7 +16,7 @@
 
 <script>
 import { useSocialAuthStore } from 'stores/social-auth-store'
-import { USER_TYPES } from 'stores/auth-store'
+import { USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthSocialButtons',

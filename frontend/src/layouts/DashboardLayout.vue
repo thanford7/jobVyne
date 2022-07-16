@@ -26,7 +26,7 @@
               <img src="../assets/jobVyneLogoOnly.png" alt="Logo" style="height: 30px; object-fit: scale-down">
             </q-item-section>
           </q-item>
-          <template v-if="isLeftDrawerOpen">
+          <template v-if="isLeftDrawerOpen && userViewOptions.length > 1">
             <q-btn-dropdown
               flat unelevated
               :label="`View mode: ${userCfgMap[viewerModeBit].viewLabel}`"
@@ -101,6 +101,7 @@
 
     <q-footer v-if="utilStore.isMobile" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow-x">
       <q-btn-dropdown
+        v-if="userViewOptions.length > 1"
         flat unelevated stack
         icon="fas fa-caret-up"
         dropdown-icon="none"
@@ -148,8 +149,9 @@
 <script>
 import BannerMessage from 'components/BannerMessage.vue'
 import { useUtilStore } from 'stores/utility-store'
-import { USER_TYPES, useAuthStore } from 'stores/auth-store'
+import { useAuthStore } from 'stores/auth-store'
 import { Loading } from 'quasar'
+import { USER_TYPES } from 'src/utils/user-types'
 
 const generalMenuList = [
   {
@@ -299,6 +301,9 @@ export default {
   },
   computed: {
     menuList () {
+      if (!this.viewerModeBit) {
+        return []
+      }
       return [...userCfgMap[this.viewerModeBit].menuItems, ...generalMenuList]
     },
     pageKey () {

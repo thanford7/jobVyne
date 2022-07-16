@@ -32,3 +32,25 @@ export const getAjaxFormData = (data, mediaFields = null) => {
   })
   return ajaxData
 }
+
+export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) => {
+  return $q.dialog({
+    title: 'Confirm',
+    message,
+    cancel: true,
+    persistent: true
+  }).onOk(() => {
+    if (okFn) {
+      okFn()
+    }
+  }).onCancel(() => {
+    if (cancelFn) {
+      cancelFn()
+    }
+  }).onDismiss(() => {
+    // triggered on both OK and Cancel
+    if (dismissFn) {
+      dismissFn()
+    }
+  })
+}

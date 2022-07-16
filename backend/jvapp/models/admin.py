@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.employer import *
+from jvapp.models.job_seeker import *
 from jvapp.models.location import *
 from jvapp.models.social import *
 
@@ -12,7 +13,7 @@ __all__ = ('JobVyneUserAdmin',)
 class JobVyneUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        (_("Personal info"), {"fields": ("first_name", "last_name", "email")}),
+        (_("Personal info"), {"fields": ("first_name", "last_name", "email", "employer")}),
         (
             _("Permissions"),
             {
@@ -20,8 +21,9 @@ class JobVyneUserAdmin(UserAdmin):
                     "is_active",
                     "is_staff",
                     "is_superuser",
-                    "groups",
-                    "user_permissions",
+                    "user_type_bits",
+                    "is_employer_deactivated",
+                    "permission_groups"
                 ),
             },
         ),
@@ -41,8 +43,13 @@ class JobVyneUserAdmin(UserAdmin):
     ordering = ("last_name", "first_name")
 
 
-@admin.register(Employer, EmployerJob, EmployerSize, JobDepartment)
+@admin.register(Employer, EmployerJob, EmployerAuthGroup, EmployerPermission, EmployerSize, JobDepartment)
 class EmployerAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(JobApplication, JobApplicationTemplate)
+class JobSeekerAdmin(admin.ModelAdmin):
     pass
 
 

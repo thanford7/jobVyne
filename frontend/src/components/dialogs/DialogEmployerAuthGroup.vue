@@ -15,14 +15,14 @@
       ]"
     />
     <q-select
-      filled
+      filled emit-value map-options
       v-model="formData.user_type_bit"
       :options="userGroups"
       autocomplete="name"
       option-value="user_type_bit"
       option-label="name"
       label="User type"
-      :rules="[val => val && val.length > 0 || 'User type is required',]"
+      :rules="[val => val || 'User type is required',]"
     />
   </DialogBase>
 </template>
@@ -30,8 +30,9 @@
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import { useEmployerStore } from 'stores/employer-store'
-import { useAuthStore, USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER, USER_TYPES } from 'stores/auth-store'
+import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
+import { USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER, USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'DialogEmployerAuthGroup',
@@ -64,7 +65,7 @@ export default {
         employer_id: this.authStore.user.employer_id
       }
       await this.$api.post('employer/permission/', getAjaxFormData(data))
-      this.employerStore.setEmployerPermissions()
+      this.employerStore.setEmployerPermissions(true)
     }
   },
   preFetch () {

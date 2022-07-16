@@ -335,6 +335,13 @@ class DataUtil {
     return currentTarget
   }
 
+  getArrayIntersection (array1, array2) {
+    if (!array1 || !array2) {
+      return []
+    }
+    return array1.filter(value => array2.includes(value))
+  }
+
   getFromArrayOrNone (array, idx) {
     if (!array) {
       return null
@@ -352,7 +359,7 @@ class DataUtil {
   groupBy (targetArray, key) {
     return targetArray.reduce((groupedObj, obj) => {
       const keyVal = (this.isString(key)) ? obj[key] : key(obj)
-      if (!groupedObj.get(keyVal)) {
+      if (!groupedObj[keyVal]) {
         groupedObj[keyVal] = [obj]
       } else {
         groupedObj[keyVal].push(obj)

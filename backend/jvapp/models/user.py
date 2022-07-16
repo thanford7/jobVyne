@@ -10,12 +10,12 @@ from django.utils.translation import gettext_lazy as _
 
 __all__ = ('CustomUserManager', 'JobVyneUser')
 
+from jvapp.models.abstract import JobVynePermissionsMixin
+
 
 class PermissionName(Enum):
-    ADD_ADMIN_USER = 'Add admin users'
-    ADD_EMPLOYEE_USER = 'Add employees'
-    CHANGE_ADMIN_USER_PERMISSIONS = 'Change admin user permissions'
-    CHANGE_EMPLOYEE_PERMISSIONS = 'Change employee permissions'
+    MANAGE_USER = 'Manage users'
+    CHANGE_PERMISSIONS = 'Change user permissions'
     MANAGE_PERMISSION_GROUPS = 'Manage custom permission groups'
     MANAGE_EMPLOYER_CONTENT = 'Manage employer content'
     MANAGE_EMPLOYER_JOBS = 'Manage employer jobs'
@@ -25,10 +25,8 @@ class PermissionName(Enum):
     
 
 USER_MANAGEMENT_PERMISSIONS = [
-    PermissionName.ADD_ADMIN_USER.value,
-    PermissionName.ADD_EMPLOYEE_USER.value,
-    PermissionName.CHANGE_ADMIN_USER_PERMISSIONS.value,
-    PermissionName.CHANGE_EMPLOYEE_PERMISSIONS.value
+    PermissionName.MANAGE_USER.value,
+    PermissionName.CHANGE_PERMISSIONS.value,
 ]
 
 
@@ -72,7 +70,7 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
-class JobVyneUser(AbstractUser):
+class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     # Keep in sync with frontend auth-store
     USER_TYPE_ADMIN = 0x1
     USER_TYPE_CANDIDATE = 0x2  # Allows users to save their info so they can apply to jobs with existing info
@@ -93,6 +91,7 @@ class JobVyneUser(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
     user_type_bits = models.SmallIntegerField()
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
+    is_employer_deactivated = models.BooleanField(default=False, blank=True)
     permission_groups = models.ManyToManyField('EmployerAuthGroup', related_name='user')
     created_dt = models.DateTimeField(_("date created"), default=timezone.now)
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
@@ -115,6 +114,15 @@ class JobVyneUser(AbstractUser):
             permission_name = [permission_name]
         check_method = all if is_all_true else any
         return check_method((self.permissions.get(p) for p in permission_name))
+    
+    def _jv_can_create(self, user):
+        return user.is_admin or (
+            user.has_employer_permission(PermissionName.MANAGE_USER.value)
+            and self.employer_id == user.employer_id
+        )
+    
+    def _jv_can_delete(self, user):
+        return user.is_admin or self.id == user.id
         
     @cached_property
     def permissions(self):

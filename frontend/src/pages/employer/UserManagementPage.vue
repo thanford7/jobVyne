@@ -15,10 +15,66 @@
         align="left"
         narrow-indicator
       >
-        <q-tab name="groups" label="Group permissions"/>
         <q-tab name="users" label="Users"/>
+        <q-tab name="groups" label="Group permissions"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
+        <q-tab-panel name="users">
+          <div class="row">
+            <div class="col-12">
+              <q-table
+                :rows="employees || []"
+                :columns="userColumns"
+                row-key="id"
+                selection="multiple"
+                v-model:selected="selectedUsers"
+                :rows-per-page-options="[25, 50, 100]"
+              >
+                <template v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)" v-slot:top>
+                  <q-btn class="q-mr-sm" color="primary" icon="add" label="Add user" @click="openUserModal()"/>
+                  <div v-if="selectedUsers && selectedUsers.length" class="q-gutter-x-sm">
+                    <q-btn color="primary" icon="edit"
+                           :label="`Modify ${dataUtil.pluralize('user', selectedUsers.length)}`"
+                           @click="openUserModal(selectedUsers)"/>
+                    <q-btn v-if="deactivatedUserCount" color="primary" icon="power"
+                           :label="`Re-activate ${dataUtil.pluralize('user', deactivatedUserCount)}`"
+                           @click="activateUsers(false)"/>
+                    <div v-if="activatedUserCount" style="display: inline-block;">
+                      <q-btn color="negative" icon="power_off"
+                             :label="`De-activate ${dataUtil.pluralize('user', activatedUserCount)}`"
+                             @click="activateUsers(true)"/>
+                      <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                        User(s) will no longer be able to create links for your company. Any current links will be
+                        re-directed
+                        to a general company page with all open jobs shown.
+                      </q-tooltip>
+                    </div>
+                  </div>
+                </template>
+                <template v-slot:body-cell-userTypeBits="props">
+                  <q-td key="user_type_bits">
+                    <q-chip
+                      v-for="userTypeName in userTypeUtil.getUserTypeList(props.row.user_type_bits)"
+                      color="grey-7"
+                      text-color="white"
+                    >{{ userTypeName }}
+                    </q-chip>
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-permissionGroups="props">
+                  <q-td key="permission_groups">
+                    <q-chip
+                      v-for="group in props.row.permission_groups"
+                      color="grey-7"
+                      text-color="white"
+                    >{{ group.name }}
+                    </q-chip>
+                  </q-td>
+                </template>
+              </q-table>
+            </div>
+          </div>
+        </q-tab-panel>
         <q-tab-panel name="groups">
           <div class="row">
             <div class="col-12">
@@ -27,7 +83,8 @@
                   <div class="q-mb-sm flex">
                     <div class="text-h6">Groups</div>
                     <q-space/>
-                    <q-btn v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_PERMISSION_GROUPS)" color="accent" icon="add" label="Add Group" @click="openEmployerAuthGroupDialog"/>
+                    <q-btn v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_PERMISSION_GROUPS)" color="accent"
+                           icon="add" label="Add Group" @click="openEmployerAuthGroupDialog"/>
                   </div>
                   <q-separator/>
                   <q-scroll-area class="q-mt-sm" style="height: 20vh;">
@@ -70,32 +127,48 @@
                         Permissions for {{ selectedGroup.name }} Group
                       </div>
                       <q-space/>
-                      <div>
-                        <q-btn v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)" dense color="primary" icon="star" label="Make default group" @click="setDefaultGroup"/>
-                        <q-chip v-if="selectedGroup.is_default" color="grey-7" text-color="white" size="md" icon-right="help_outline">
-                          Default
-                        </q-chip>
-                        <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
-                          When a new {{ getUserTypeNameFromBit(selectedGroup.user_type_bit) }} user joins JobVyne, they will be added to this permission
-                          group
-                        </q-tooltip>
+                      <div class="q-gutter-x-sm">
+                        <q-btn
+                          v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
+                          dense
+                          color="negative" icon="delete_outline" title="Delete group"
+                          @click="deleteGroup"
+                        >Delete group</q-btn>
+                        <div style="display: inline-block;">
+                          <q-btn
+                            v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
+                            dense
+                            color="primary" icon="star" label="Make default group"
+                            @click="setDefaultGroup"
+                          />
+                          <q-chip v-if="selectedGroup.is_default" color="grey-7" text-color="white" size="md"
+                                  icon-right="help_outline">
+                            Default
+                          </q-chip>
+                          <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                            When a new {{ userTypeUtil.getUserTypeNameFromBit(selectedGroup.user_type_bit) }} user joins
+                            JobVyne, they
+                            will be added to this permission
+                            group
+                          </q-tooltip>
+                        </div>
                       </div>
                     </div>
                     <div v-if="getIsGroupReadOnly(selectedGroup)" class="bg-warning q-pl-sm">
-                      Read Only
-                      <CustomTooltip :is_include_space="false">
-                        <template v-slot:icon>
-                          <q-icon class="self-center" name="info" size="18px" color="grey-8"/>
-                        </template>
-                        <span v-if="selectedGroup.can_edit">
+                        Read Only
+                        <CustomTooltip :is_include_space="false">
+                          <template v-slot:icon>
+                            <q-icon class="self-center" name="info" size="18px" color="grey-8"/>
+                          </template>
+                          <span v-if="selectedGroup.can_edit">
                           General permission groups can't be edited. Create a new custom permission group if you want to
                           make changes.
                         </span>
-                        <span v-else>
+                          <span v-else>
                           You do not have the appropriate permissions to edit this group
                         </span>
-                      </CustomTooltip>
-                    </div>
+                        </CustomTooltip>
+                      </div>
                   </div>
                   <q-separator/>
                   <q-list>
@@ -119,11 +192,6 @@
             </div>
           </div>
         </q-tab-panel>
-        <q-tab-panel name="users">
-          <div class="row">
-            <div class="col-12"></div>
-          </div>
-        </q-tab-panel>
       </q-tab-panels>
     </div>
   </q-page>
@@ -132,35 +200,73 @@
 <script>
 import PageHeader from 'components/PageHeader.vue'
 import { useEmployerStore } from 'stores/employer-store'
-import {
-  PERMISSION_NAMES,
-  useAuthStore,
-  USER_TYPE_EMPLOYEE,
-  USER_TYPE_EMPLOYER,
-  USER_TYPES
-} from 'stores/auth-store'
+import { useAuthStore } from 'stores/auth-store'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import { useGlobalStore } from 'stores/global-store'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogEmployerAuthGroup from 'components/dialogs/DialogEmployerAuthGroup.vue'
+import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests'
+import userTypeUtil, {
+  PERMISSION_NAMES,
+  USER_TYPE_EMPLOYEE,
+  USER_TYPE_EMPLOYER,
+  USER_TYPES
+} from 'src/utils/user-types'
+import dateTimeUtil from 'src/utils/datetime'
+import dataUtil from 'src/utils/data'
+import DialogUser from 'components/dialogs/DialogUser.vue'
+
+const userColumns = [
+  {
+    name: 'is_employer_deactivated',
+    field: 'is_employer_deactivated',
+    align: 'center',
+    label: 'Active',
+    format: (val) => (val) ? 'No' : 'Yes',
+    sortable: true
+  },
+  { name: 'first_name', field: 'first_name', align: 'left', label: 'First name', sortable: true },
+  { name: 'last_name', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
+  { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
+  { name: 'userTypeBits', field: 'user_type_bits', align: 'left', label: 'User types' },
+  { name: 'permissionGroups', field: 'permission_groups', align: 'left', label: 'Permission groups' },
+  { name: 'created_dt', field: 'created_dt', align: 'left', label: 'Joined date', format: dateTimeUtil.getShortDate }
+]
 
 export default {
   name: 'UserManagementPage',
   components: { CustomTooltip, PageHeader },
   data () {
     return {
-      tab: 'groups',
+      tab: 'users',
       selectedGroupId: null,
+      selectedUsers: [],
       userGroups: [USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE].map((userType) => {
         return {
           name: userType,
           user_type_bit: USER_TYPES[userType]
         }
       }),
+      userColumns,
+      dataUtil,
+      userTypeUtil,
+      dateTimeUtil,
       PERMISSION_NAMES
     }
   },
   computed: {
+    activatedUserCount () {
+      if (!this.selectedUsers) {
+        return
+      }
+      return this.selectedUsers.filter((user) => !user.is_employer_deactivated).length
+    },
+    deactivatedUserCount () {
+      if (!this.selectedUsers) {
+        return
+      }
+      return this.selectedUsers.filter((user) => user.is_employer_deactivated).length
+    },
     selectedGroup () {
       if (!this.selectedGroupId) {
         return null
@@ -172,21 +278,59 @@ export default {
         return null
       }
       return this.selectedGroup.permissions.filter((p) => p.user_type_bits & this.selectedGroup.user_type_bit)
+    },
+    employees () {
+      return this.employerStore.employers[this.authStore.user.employer_id].employees
     }
   },
   methods: {
     getIsGroupReadOnly (group) {
       return !group.employer_id || !group.can_edit
     },
-    getUserTypeNameFromBit (userTypeBit) {
-      for (const [name, bit] of Object.entries(USER_TYPES)) {
-        if (bit === userTypeBit) {
-          return name
+    deleteGroup () {
+      const userType = userTypeUtil.getUserTypeNameFromBit(this.selectedGroup.user_type_bit)
+      openConfirmDialog(
+        this.$q,
+        `Any ${userType} users that are part of the ${this.selectedGroup.name} group will be moved to the default group for ${userType} users. Are you sure you wish to proceed?`,
+        {
+          okFn: async () => {
+            await this.$api.delete(`employer/permission/${this.selectedGroupId}/`)
+            this.employerStore.setEmployer(this.authStore.user.employer_id, true)
+            this.employerStore.setEmployerPermissions(true)
+            this.authStore.setUser(true)
+          }
         }
-      }
+      )
     },
-    setDefaultGroup () {
-      // TODO
+    unselectUsers () {
+      this.selectedUsers = []
+    },
+    async activateUsers (isDeactivate) {
+      await this.$api.put('employer/user/activate/', getAjaxFormData(
+        { is_deactivate: isDeactivate, user_ids: this.selectedUsers.map((u) => u.id) }
+      ))
+      this.employerStore.setEmployer(this.authStore.user.employer_id, true)
+      this.unselectUsers()
+    },
+    async setDefaultGroup () {
+      await this.$api.put(
+        `employer/permission/${this.selectedGroupId}/`,
+        getAjaxFormData({ is_default: true })
+      )
+      this.employerStore.setEmployerPermissions(true)
+      this.authStore.setUser(true)
+    },
+    openEmployerAuthGroupDialog () {
+      return this.$q.dialog({
+        component: DialogEmployerAuthGroup
+      })
+    },
+    openUserModal (users) {
+      const cfg = {
+        component: DialogUser,
+        componentProps: { users }
+      }
+      return this.$q.dialog(cfg).onOk(() => this.unselectUsers())
     }
   },
   preFetch () {
@@ -215,15 +359,9 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-
     const $q = useQuasar()
-    const openEmployerAuthGroupDialog = () => {
-      return $q.dialog({
-        component: DialogEmployerAuthGroup
-      })
-    }
 
-    return { employerStore, authStore, globalStore, openEmployerAuthGroupDialog }
+    return { employerStore, authStore, globalStore, $q }
   },
   mounted () {
     this.selectedGroupId = this.employerStore.permissionGroups[0].id

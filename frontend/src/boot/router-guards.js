@@ -21,13 +21,17 @@ export default boot(({ app, router }) => {
       return { path: redirectPageUrl || '/dashboard', query: redirectParams }
     }
 
-    // Redirect if unauthenticated user is trying to access a page that requires authentication
+    // Redirect if user doesn't have access to a specific page
     try {
       const resp = await $api.get('auth/check-auth/')
-      const isAuthenticated = resp.data && !dataUtil.isEmptyOrNil(resp.data)
+      const user = resp.data
+      const isAuthenticated = user && !dataUtil.isEmptyOrNil(user)
       if (!isAuthenticated && !to.meta.isNoAuth) {
         // redirect the user to the login page
         return { name: 'login' }
+      }
+      if (to.meta.userTypeBits && !(to.meta.userTypeBits & user.user_type_bits)) {
+        return { name: 'dashboard' }
       }
     } catch (e) {
       return { name: 'error' }

@@ -1,3 +1,5 @@
+import { USER_TYPES } from 'src/utils/user-types'
+
 const routes = [
   {
     path: '/login',
@@ -43,12 +45,14 @@ const routes = [
       {
         path: ':namespace(employee)/:key(links)',
         name: 'dashboard-links',
+        meta: { userTypeBits: USER_TYPES.Employee },
         component: () => import('pages/employee/ReferralLinksPage.vue')
       },
       // employer pages
       {
         path: ':namespace(employer)/:key(user-management)',
         name: 'dashboard-links',
+        meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/UserManagementPage.vue')
       }
     ]

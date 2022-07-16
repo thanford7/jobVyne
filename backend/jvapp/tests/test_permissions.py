@@ -39,6 +39,8 @@ class EmployerGroupPermissionsTestCase(BaseTestCase):
             'Super Influencer', JobVyneUser.USER_TYPE_INFLUENCER
         )
         new_user_employer.permission_groups.add(super_influencer_group)
+        # Refetch to get model updates
+        new_user_employer = JobVyneUser.objects.prefetch_related('permission_groups').get(id=new_user_employer.id)
         self.assertEqual(
             JobVyneUser.USER_TYPE_INFLUENCER,
             new_user_employer.user_type_bits & JobVyneUser.USER_TYPE_INFLUENCER
@@ -48,18 +50,22 @@ class EmployerGroupPermissionsTestCase(BaseTestCase):
         super_influencer_group.save()
         
         # Refetch to get model updates
-        new_user_employer = JobVyneUser.objects.get(id=new_user_employer.id)
+        new_user_employer = JobVyneUser.objects.prefetch_related('permission_groups').get(id=new_user_employer.id)
         
-        # Influencer type should be removed because the influencer group is now an employee type
-        self.assertEqual(0, new_user_employer.user_type_bits & JobVyneUser.USER_TYPE_INFLUENCER)
+        # Influencer type should be preserved
+        self.assertEqual(
+            JobVyneUser.USER_TYPE_INFLUENCER,
+            new_user_employer.user_type_bits & JobVyneUser.USER_TYPE_INFLUENCER
+        )
+        
+        # But the permission group for the influencer user type should be changed to the default
+        self.assertIn(
+            DefaultPermissionGroups.INFLUENCER.value,
+            (pg.name for pg in new_user_employer.permission_groups.all())
+        )
+        
+        # The new user type should be added
         self.assertEqual(
             JobVyneUser.USER_TYPE_EMPLOYEE,
             new_user_employer.user_type_bits & JobVyneUser.USER_TYPE_EMPLOYEE
         )
-        
-        # Employee user type should be removed when influencer group is deleted
-        super_influencer_group.delete()
-
-        # Refetch to get model updates
-        new_user_employer = JobVyneUser.objects.get(id=new_user_employer.id)
-        self.assertEqual(0, new_user_employer.user_type_bits & JobVyneUser.USER_TYPE_EMPLOYEE)

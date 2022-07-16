@@ -15,7 +15,7 @@
 import AuthEmailForm from 'components/AuthEmailForm.vue'
 import AuthSocialButtons from 'components/AuthSocialButtons.vue'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
-import { USER_TYPES } from 'stores/auth-store'
+import { USER_TYPES } from 'src/utils/user-types'
 export default {
   name: 'AuthAll',
   components: {

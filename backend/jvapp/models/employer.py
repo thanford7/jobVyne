@@ -8,7 +8,7 @@ from jvapp.models.location import Country, State
 
 __all__ = ('Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment', 'EmployerAuthGroup', 'EmployerPermission')
 
-from jvapp.models.user import JobVyneUser, PermissionName
+from jvapp.models.user import PermissionName
 
 
 class Employer(AuditFields):
@@ -71,22 +71,15 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     class Meta:
         unique_together = ('name', 'employer')
         
+    def __str__(self):
+        return f'{self.employer.employerName if self.employer else "<General>"}-{self.name}'
+        
     def jv_check_can_update_permissions(self, user):
-        permission_name = (
-            PermissionName.CHANGE_ADMIN_USER_PERMISSIONS.value
-            if self.user_type_bit == JobVyneUser.USER_TYPE_ADMIN
-            else PermissionName.CHANGE_EMPLOYEE_PERMISSIONS.value
-        )
         if not self.jv_can_update_permissions(user):
-            self._raise_permission_error(permission_name)
+            self._raise_permission_error(PermissionName.CHANGE_PERMISSIONS.value)
             
     def jv_can_update_permissions(self, user):
-        permission_name = (
-            PermissionName.CHANGE_ADMIN_USER_PERMISSIONS.value
-            if self.user_type_bit == JobVyneUser.USER_TYPE_ADMIN
-            else PermissionName.CHANGE_EMPLOYEE_PERMISSIONS.value
-        )
-        return user.has_employer_permission(permission_name)
+        return user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value)
         
     def _jv_can_create(self, user):
         return (

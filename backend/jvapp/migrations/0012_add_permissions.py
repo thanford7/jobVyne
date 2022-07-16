@@ -2,12 +2,10 @@
 
 from django.db import migrations
 
-GROUPS = (('Admin', 16, 0), ('HR Professional', 16, 1), ('Employee', 4, 0), ('Influencer', 8, 0))
+GROUPS = (('Admin', 16, 0), ('HR Professional', 16, 1), ('Employee', 4, 1), ('Influencer', 8, 1))
 PERMISSIONS = (
-    ('Add admin users', '', ['Admin'], 16),
-    ('Add employees', '', ['Admin', 'HR Professional'], 16),
-    ('Change admin user permissions', '', ['Admin'], 16),
-    ('Change employee permissions', 'Covers all users except admin users.', ['Admin', 'HR Professional'], 16),
+    ('Manage users', 'Allows the user to create and edit new users.', ['Admin'], 16),
+    ('Change user permissions', '', ['Admin'], 16),
     ('Manage custom permission groups', 'Allows the user to create, edit, and delete custom permission groups.',
      ['Admin'], 16),
     ('Manage employer content',

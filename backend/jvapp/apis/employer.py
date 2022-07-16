@@ -5,13 +5,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup
-from jvapp.models.user import USER_MANAGEMENT_PERMISSIONS
+from jvapp.models.user import JobVyneUser, USER_MANAGEMENT_PERMISSIONS
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_job
-from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.data import set_object_attributes
 
 
 class EmployerView(JobVyneAPIView):
@@ -19,13 +20,17 @@ class EmployerView(JobVyneAPIView):
     
     def get(self, request, employer_id=None):
         if employer_id:
+            employer_id = int(employer_id)
             employer = self.get_employers(employer_id=employer_id)
             can_view_users = self.user.has_employer_permission(USER_MANAGEMENT_PERMISSIONS, is_all_true=False)
-            data = get_serialized_employer(employer)
+            data = get_serialized_employer(
+                employer,
+                is_include_employees=(self.user.is_admin or self.user.employer_id == employer_id)
+            )
         else:
             employers = self.get_employers(employer_filter=Q())
             data = [get_serialized_employer(e) for e in employers]
-
+        
         return Response(status=status.HTTP_200_OK, data=data)
     
     @staticmethod
@@ -33,9 +38,9 @@ class EmployerView(JobVyneAPIView):
         if employer_id:
             employer_filter = Q(id=employer_id)
         
-        employers = Employer.objects\
-            .select_related('employerSize')\
-            .prefetch_related('employee', 'employee__permission_groups')\
+        employers = Employer.objects \
+            .select_related('employerSize') \
+            .prefetch_related('employee', 'employee__permission_groups') \
             .filter(employer_filter)
         
         if employer_id:
@@ -68,12 +73,12 @@ class EmployerJobView(JobVyneAPIView):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
         
-        jobs = EmployerJob.objects\
+        jobs = EmployerJob.objects \
             .select_related(
-                'jobDepartment',
-                'state',
-                'country'
-            )\
+            'jobDepartment',
+            'state',
+            'country'
+        ) \
             .filter(employer_job_filter)
         
         if employer_job_id:
@@ -85,7 +90,6 @@ class EmployerJobView(JobVyneAPIView):
 
 
 class EmployerAuthGroupView(JobVyneAPIView):
-    
     permission_classes = [IsAdminOrEmployerPermission]
     
     def get(self, request):
@@ -129,6 +133,20 @@ class EmployerAuthGroupView(JobVyneAPIView):
             for permission in permissions:
                 if permission['is_permitted']:
                     auth_group.permissions.add(permission['id'])
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{auth_group.name} group saved'
+        })
+    
+    @atomic
+    def delete(self, request, auth_group_id):
+        auth_group = EmployerAuthGroup.objects.get(id=auth_group_id)
+        auth_group.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+        auth_group.delete()
+
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{auth_group.name} group deleted'
+        })
     
     @staticmethod
     def get_auth_groups(auth_group_filter=None, employer_id=None):
@@ -136,5 +154,71 @@ class EmployerAuthGroupView(JobVyneAPIView):
         if employer_id:
             auth_group_filter &= (Q(employer_id=employer_id) | Q(employer_id__isnull=True))
         return EmployerAuthGroup.objects.prefetch_related('permissions').filter(auth_group_filter)
+
+
+class EmployerUserView(JobVyneAPIView):
     
+    @atomic
+    def post(self, request):
+        user = JobVyneUser.objects.create_user(
+            self.data['email'],
+            first_name=self.data['first_name'],
+            last_name=self.data['last_name'],
+            employer_id=self.data['employer_id'],
+            user_type_bits=-1  # This is just a placeholder. The actual value is derived from the permission groups
+        )
+        
+        for group_id in self.data['permission_group_ids']:
+            user.permission_groups.add(group_id)
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Account created for {user.first_name} {user.last_name}'
+        })
     
+    @atomic
+    def put(self, request):
+        users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
+        for user in users:
+            set_object_attributes(user, self.data, {
+                'first_name': None,
+                'last_name': None
+            })
+            user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+            
+            # TODO: See if there is a way to do this in one database call (not per user)
+            if permission_group_ids := self.data.get('permission_group_ids'):
+                user.permission_groups.clear()
+                for group_id in permission_group_ids:
+                    user.permission_groups.add(group_id)
+            
+            if add_permission_group_ids := self.data.get('add_permission_group_ids'):
+                for group_id in add_permission_group_ids:
+                    user.permission_groups.add(group_id)
+            
+            if remove_permission_group_ids := self.data.get('remove_permission_group_ids'):
+                for group_id in remove_permission_group_ids:
+                    user.permission_groups.remove(group_id)
+        
+        JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name'])
+        userCount = len(users)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} updated'
+        })
+
+
+class EmployerUserActivateView(JobVyneAPIView):
+    
+    @atomic
+    def put(self, request):
+        is_deactivate = self.data['is_deactivate']
+        users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
+        for user in users:
+            user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+            user.is_employer_deactivated = is_deactivate
+        
+        JobVyneUser.objects.bulk_update(users, ['is_employer_deactivated'])
+        userCount = len(users)
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} {"deactivated" if is_deactivate else "activated"}'
+        })

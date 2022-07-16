@@ -19,9 +19,15 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
             'first_name': e.first_name,
             'last_name': e.last_name,
             'user_type_bits': e.user_type_bits,
-            'permission_groups': [pg.name for pg in e.permission_groups.all()],
+            'is_employer_deactivated': e.is_employer_deactivated,
+            'permission_groups': [{
+                'id': pg.id,
+                'name': pg.name,
+                'user_type_bit': pg.user_type_bit,
+                'employer_id': pg.employer_id
+            } for pg in e.permission_groups.all()],
             'created_dt': get_datetime_format_or_none(e.created_dt),
-        } for e in employer.employee.all()]
+        } for e in employer.employee.all().order_by('-id')]
     
     return data
 

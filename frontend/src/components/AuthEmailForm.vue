@@ -34,8 +34,9 @@
 
 <script>
 import formUtil from 'src/utils/form'
-import { useAuthStore, USER_TYPES } from 'stores/auth-store'
+import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
+import { USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthEmailForm',
