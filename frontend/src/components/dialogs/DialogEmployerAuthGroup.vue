@@ -51,8 +51,9 @@ export default {
         ...this.formData,
         employer_id: this.authStore.user.employer_id
       }
-      await this.$api.post('employer/permission/', getAjaxFormData(data))
-      this.employerStore.setEmployerPermissions(true)
+      const resp = await this.$api.post('employer/permission/', getAjaxFormData(data))
+      await this.employerStore.setEmployerPermissions(true)
+      this.$emit('ok', resp.data.auth_group_id)
     }
   },
   preFetch () {

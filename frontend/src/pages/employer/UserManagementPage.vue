@@ -176,17 +176,16 @@
                       <q-space/>
                       <div class="q-gutter-x-sm">
                         <q-btn
-                          v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
+                          v-if="!getIsGroupReadOnly(selectedGroup) && hasSelectedGroupPermissionsChanged"
                           dense
-                          color="negative" icon="delete_outline" title="Delete group"
-                          @click="deleteGroup"
-                        >Delete group
-                        </q-btn>
+                          color="primary" icon="save" label="Save changes"
+                          @click="saveGroup"
+                        />
                         <div style="display: inline-block;">
                           <q-btn
                             v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
                             dense
-                            color="primary" icon="star" label="Make default group"
+                            color="primary" icon="star" label="Make default"
                             @click="setDefaultGroup"
                           />
                           <q-chip v-if="selectedGroup.is_default" color="grey-7" text-color="white" size="md"
@@ -200,6 +199,13 @@
                             group
                           </q-tooltip>
                         </div>
+                        <q-btn
+                          v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
+                          dense
+                          color="negative" icon="delete_outline" title="Delete group"
+                          @click="deleteGroup"
+                        >Delete
+                        </q-btn>
                       </div>
                     </div>
                     <div v-if="getIsGroupReadOnly(selectedGroup)" class="bg-warning q-pl-sm">
@@ -335,7 +341,26 @@ export default {
       if (!this.selectedGroup) {
         return null
       }
-      return this.selectedGroup.permissions.filter((p) => p.user_type_bits & this.selectedGroup.user_type_bit)
+      const relevantPermissions = this.selectedGroup.permissions.filter((p) => p.user_type_bits & this.selectedGroup.user_type_bit)
+
+      // Copy the starting permissions so we can check for changes
+      if (!this.selectedGroup.currentPermissions) {
+        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+        this.selectedGroup.currentPermissions = dataUtil.deepCopy(relevantPermissions)
+      }
+      return relevantPermissions
+    },
+    hasSelectedGroupPermissionsChanged () {
+      if (!this.selectedGroup || !this.selectedGroup.currentPermissions) {
+        return false
+      }
+      for (const permission of this.selectedGroup.currentPermissions) {
+        const comparisonPermission = this.selectedGroup.permissions.find((p) => p.id === permission.id)
+        if (permission.is_permitted !== comparisonPermission.is_permitted) {
+          return true
+        }
+      }
+      return false
     },
     employees () {
       return this.employerStore.employers[this.authStore.user.employer_id].employees
@@ -378,9 +403,19 @@ export default {
       this.employerStore.setEmployerPermissions(true)
       this.authStore.setUser(true)
     },
+    async saveGroup () {
+      await this.$api.put(
+        `employer/permission/${this.selectedGroupId}/`,
+        getAjaxFormData({ permissions: this.selectedGroup.permissions })
+      )
+      this.employerStore.setEmployerPermissions(true)
+      this.authStore.setUser(true)
+    },
     openEmployerAuthGroupDialog () {
       return this.$q.dialog({
         component: DialogEmployerAuthGroup
+      }).onOk((groupId) => {
+        this.selectedGroupId = groupId
       })
     },
     openUserModal (users) {

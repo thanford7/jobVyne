@@ -61,7 +61,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     getHasPermission (permissionName) {
-      return this.user.permissions.includes(permissionName)
+      return this?.user?.permissions?.includes(permissionName)
     }
   }
 })

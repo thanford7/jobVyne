@@ -112,6 +112,7 @@ class EmployerAuthGroupView(JobVyneAPIView):
         return Response(
             status=status.HTTP_200_OK,
             data={
+                'auth_group_id': auth_group.id,
                 SUCCESS_MESSAGE_KEY: f'{auth_group.name} group saved'
             }
         )
