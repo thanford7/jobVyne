@@ -7,13 +7,13 @@
           <img :src="employer?.logo" alt="Logo" style="height: 40px; object-fit: scale-down">
         </q-toolbar-title>
       </q-toolbar>
-      <div class="col-12 col-md-11 col-lg-8 justify-center">
+      <ResponsiveWidth class="justify-center">
         <q-tabs align="center" v-model="tab">
           <q-tab name="jobs" label="Jobs"/>
           <q-tab name="company" :label="`About ${employer?.name}`"/>
           <q-tab name="me" :label="`About ${profile?.first_name}`"/>
         </q-tabs>
-      </div>
+      </ResponsiveWidth>
     </q-header>
 
     <q-drawer
@@ -27,9 +27,7 @@
       <FormJobApplication :job-application="jobApplication" @closeApplication="closeApplication"/>
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
         <q-btn
-          dense
-          round
-          unelevated
+          dense round unelevated
           color="grey-5"
           icon="chevron_right"
           @click="closeApplication()"
@@ -38,7 +36,7 @@
     </q-drawer>
 
     <q-page-container class="row justify-center">
-      <div class="col-12 col-md-11 col-lg-8">
+      <ResponsiveWidth>
         <BannerMessage/>
         <q-page v-if="!isLoading" padding>
           <q-tab-panels v-model="tab" animated>
@@ -48,8 +46,8 @@
                   <div v-for="job in jobs" :key="job.id" class="q-mb-md">
                     <q-card :class="(jobApplication && jobApplication.id === job.id) ? 'q-card--selected' : ''">
                       <div v-if="getJobApplication(job.id)" class="application-date">
-                          Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
-                        </div>
+                        Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
+                      </div>
                       <q-card-section>
                         <h6>{{ job.job_title }}</h6>
                         <div>
@@ -79,7 +77,7 @@
                       </q-card-section>
                       <q-separator dark/>
                       <q-card-actions v-if="!getJobApplication(job.id)">
-                        <q-btn unelevated color="accent" label="Apply" @click="openApplication(job.id)"/>
+                        <q-btn ripple unelevated color="accent" label="Apply" @click="openApplication(job.id)"/>
                       </q-card-actions>
                     </q-card>
                   </div>
@@ -98,7 +96,7 @@
             </q-tab-panel>
           </q-tab-panels>
         </q-page>
-      </div>
+      </ResponsiveWidth>
     </q-page-container>
 
     <CustomFooter/>
@@ -118,6 +116,7 @@ import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import dateTimeUtil from 'src/utils/datetime'
 import { storeToRefs } from 'pinia/dist/pinia'
+import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 
 export default {
   data () {
@@ -131,7 +130,7 @@ export default {
       dateTimeUtil
     }
   },
-  components: { FormJobApplication, CustomFooter, BannerMessage },
+  components: { ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),

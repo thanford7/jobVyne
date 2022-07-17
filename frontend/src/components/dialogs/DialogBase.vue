@@ -6,7 +6,7 @@
           {{titleText}}
         </div>
         <q-btn
-          flat unelevated
+          flat unelevated ripple
           icon="close"
           text-color="grey-5"
           @click="onDialogCancel"
@@ -23,8 +23,8 @@
 
       <q-card-actions v-if="isIncludeButtons" align="right" class="text-primary">
         <slot name="buttons">
-          <q-btn class="bg-grey-7" flat text-color="white" label="Cancel" @click="onDialogCancel" />
-          <q-btn class="bg-accent" flat text-color="white" :label="primaryButtonText" @click="onDialogOK"/>
+          <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel" />
+          <q-btn class="bg-accent" flat ripple text-color="white" :label="primaryButtonText" @click="onDialogOK"/>
         </slot>
       </q-card-actions>
     </q-card>

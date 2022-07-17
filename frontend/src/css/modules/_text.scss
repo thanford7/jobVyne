@@ -1,4 +1,5 @@
 @use '../quasar.variables' as *;
+@import "../../../node_modules/rfs/scss";
 
 @each $name, $color in $gray-color-map {
   .text-#{$name} {
@@ -20,4 +21,21 @@
 
 a.no-decoration {
   text-decoration: none;
+}
+
+$responsive-font-size-map: (
+  'h1': 4rem,
+  'h2': 3.5rem,
+  'h3': 3rem,
+  'h4': 2.5rem,
+  'h5': 2rem,
+  'h6': 1.5rem
+);
+
+.rfs {
+  @each $font-name, $font-size in $responsive-font-size-map {
+    &-#{$font-name} {
+      @include font-size($font-size)
+    }
+  }
 }

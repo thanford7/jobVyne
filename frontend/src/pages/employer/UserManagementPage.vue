@@ -28,8 +28,7 @@
                   <q-space/>
                   <q-btn
                     color="grey-7"
-                    flat
-                    dense
+                    flat dense
                     :icon="isUserFilterExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
                     @click="isUserFilterExpanded = !isUserFilterExpanded"
                   />
@@ -78,16 +77,16 @@
                 :rows-per-page-options="[25, 50, 100]"
               >
                 <template v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)" v-slot:top>
-                  <q-btn class="q-mr-sm" color="primary" icon="add" label="Add user" @click="openUserModal()"/>
+                  <q-btn ripple class="q-mr-sm" color="primary" icon="add" label="Add user" @click="openUserModal()"/>
                   <div v-if="selectedUsers && selectedUsers.length" class="q-gutter-x-sm">
-                    <q-btn color="primary" icon="edit"
+                    <q-btn color="primary" icon="edit" ripple
                            :label="`Modify ${dataUtil.pluralize('user', selectedUsers.length)}`"
                            @click="openUserModal(selectedUsers)"/>
-                    <q-btn v-if="deactivatedUserCount" color="primary" icon="power"
+                    <q-btn v-if="deactivatedUserCount" color="primary" icon="power" ripple
                            :label="`Re-activate ${dataUtil.pluralize('user', deactivatedUserCount)}`"
                            @click="activateUsers(false)"/>
                     <div v-if="activatedUserCount" style="display: inline-block;">
-                      <q-btn color="negative" icon="power_off"
+                      <q-btn color="negative" icon="power_off" ripple
                              :label="`De-activate ${dataUtil.pluralize('user', activatedUserCount)}`"
                              @click="activateUsers(true)"/>
                       <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
@@ -131,7 +130,7 @@
                     <div class="text-h6">Groups</div>
                     <q-space/>
                     <q-btn v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_PERMISSION_GROUPS)" color="accent"
-                           icon="add" label="Add Group" @click="openEmployerAuthGroupDialog"/>
+                           icon="add" ripple label="Add Group" @click="openEmployerAuthGroupDialog"/>
                   </div>
                   <q-separator/>
                   <q-scroll-area class="q-mt-sm" style="height: 20vh;">
@@ -177,14 +176,14 @@
                       <div class="q-gutter-x-sm">
                         <q-btn
                           v-if="!getIsGroupReadOnly(selectedGroup) && hasSelectedGroupPermissionsChanged"
-                          dense
+                          dense ripple
                           color="primary" icon="save" label="Save changes"
                           @click="saveGroup"
                         />
                         <div style="display: inline-block;">
                           <q-btn
                             v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
-                            dense
+                            dense ripple
                             color="primary" icon="star" label="Make default"
                             @click="setDefaultGroup"
                           />
@@ -201,7 +200,7 @@
                         </div>
                         <q-btn
                           v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
-                          dense
+                          dense ripple
                           color="negative" icon="delete_outline" title="Delete group"
                           @click="deleteGroup"
                         >Delete

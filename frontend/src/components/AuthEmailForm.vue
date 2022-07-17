@@ -27,7 +27,7 @@
     </q-input>
 
     <div class="q-mt-md">
-      <q-btn :label="(isCreate) ? createText : loginText" type="submit" color="accent" class="w-100"/>
+      <q-btn :label="(isCreate) ? createText : loginText" type="submit" ripple color="accent" class="w-100"/>
     </div>
   </q-form>
 </template>

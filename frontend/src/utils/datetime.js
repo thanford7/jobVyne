@@ -8,6 +8,14 @@ class DateTimeUtil {
   getLongDate (dateStr) {
     return date.formatDate(dateStr, 'MMMM D, YYYY')
   }
+
+  today () {
+    return new Date()
+  }
+
+  getCurrentYear () {
+    return this.today().getFullYear()
+  }
 }
 
 const dateTimeUtil = new DateTimeUtil()

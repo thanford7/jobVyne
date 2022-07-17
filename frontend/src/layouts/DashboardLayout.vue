@@ -80,9 +80,7 @@
       </q-scroll-area>
       <div class="absolute" style="top: 10px; right: -16px">
         <q-btn
-          dense
-          round
-          unelevated
+          dense round unelevated
           color="accent"
           :icon="(isLeftDrawerOpen) ? 'chevron_left' : 'chevron_right'"
           @click="isLeftDrawerOpen=!isLeftDrawerOpen"

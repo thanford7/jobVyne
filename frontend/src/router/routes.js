@@ -21,6 +21,7 @@ const routes = [
         component: () => import('pages/TermsOfServicePage.vue')
       },
       { path: 'privacy', name: 'privacy', meta: { isNoAuth: true }, component: () => import('pages/PrivacyPage.vue') },
+      { path: 'credits', name: 'credits', meta: { isNoAuth: true }, component: () => import('pages/CreditsPage.vue') },
       {
         // This is a "fake" page. We need a route to catch the redirect after social authentication
         // This route is redirected in router-guard.js

@@ -30,7 +30,7 @@
                 :rows-per-page-options="[5, 10, 15]"
               >
                 <template v-slot:top>
-                  <q-btn color="primary" label="Create new link" @click="tab = 'create'"/>
+                  <q-btn ripple color="primary" label="Create new link" @click="tab = 'create'"/>
                 </template>
                 <template v-slot:body="props">
                   <q-tr :props="props">
@@ -101,7 +101,7 @@
                   <div class="q-table__title">Job applications</div>
                   <q-space/>
                   <q-btn
-                    flat unelevated
+                    flat unelevated ripple
                     icon="close"
                     text-color="grey-7"
                     size="md"
@@ -242,7 +242,7 @@
             </div>
             <div class="row">
               <div class="col-12">
-                <q-btn color="primary" label="Generate link" size="lg" @click="saveLink"/>
+                <q-btn ripple color="primary" label="Generate link" size="lg" @click="saveLink"/>
               </div>
             </div>
           </div>

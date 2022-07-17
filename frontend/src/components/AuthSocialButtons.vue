@@ -3,6 +3,7 @@
     <q-btn
       type="div"
       class="w-100 btn-bordered"
+      ripple
       :flat="true"
       :unelevated="true"
       @click="redirectAuthUrl('facebook')"

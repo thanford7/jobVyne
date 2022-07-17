@@ -76,7 +76,7 @@
           </div>
 
           <div>
-            <q-btn label="Submit application" type="submit" color="accent"/>
+            <q-btn ripple label="Submit application" type="submit" color="accent"/>
           </div>
         </q-form>
       </div>
