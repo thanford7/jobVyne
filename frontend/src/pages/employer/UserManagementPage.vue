@@ -20,12 +20,59 @@
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="users">
-          <div class="row">
+          <div class="row q-gutter-y-md">
+            <div class="col-12">
+              <q-card>
+                <div class="row q-ml-sm q-py-sm q-pr-md">
+                  <div class="text-h6">User filters</div>
+                  <q-space/>
+                  <q-btn
+                    color="grey-7"
+                    flat
+                    dense
+                    :icon="isUserFilterExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
+                    @click="isUserFilterExpanded = !isUserFilterExpanded"
+                  />
+                </div>
+                <q-slide-transition>
+                  <div v-show="isUserFilterExpanded" class="row">
+                    <div class="col-12 col-md-4 q-pa-sm">
+                      <q-input filled borderless debounce="300" v-model="userFilter.searchText" placeholder="Search">
+                        <template v-slot:append>
+                          <q-icon name="search"/>
+                          <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                            Search by first name, last name, or email
+                          </q-tooltip>
+                        </template>
+                      </q-input>
+                    </div>
+                    <div class="col-12 col-md-4 q-pa-sm">
+                      <SelectUserType
+                        v-model="userFilter.userTypeBitsList"
+                        :is-multi="true"
+                        :is-required="false"
+                      />
+                    </div>
+                    <div class="col-12 col-md-4 q-pa-sm">
+                      <SelectPermissionGroup
+                        v-model="userFilter.permissionGroupIds"
+                        :is-required="false"
+                      />
+                    </div>
+                    <div class="q-pa-sm">
+                      <a href="#" @click="clearUserFilter">Clear all</a>
+                    </div>
+                  </div>
+                </q-slide-transition>
+              </q-card>
+            </div>
             <div class="col-12">
               <q-table
                 :rows="employees || []"
                 :columns="userColumns"
                 row-key="id"
+                :filter-method="employeeDataFilter"
+                filter="userFilter"
                 selection="multiple"
                 v-model:selected="selectedUsers"
                 :rows-per-page-options="[25, 50, 100]"
@@ -133,7 +180,8 @@
                           dense
                           color="negative" icon="delete_outline" title="Delete group"
                           @click="deleteGroup"
-                        >Delete group</q-btn>
+                        >Delete group
+                        </q-btn>
                         <div style="display: inline-block;">
                           <q-btn
                             v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
@@ -155,20 +203,20 @@
                       </div>
                     </div>
                     <div v-if="getIsGroupReadOnly(selectedGroup)" class="bg-warning q-pl-sm">
-                        Read Only
-                        <CustomTooltip :is_include_space="false">
-                          <template v-slot:icon>
-                            <q-icon class="self-center" name="info" size="18px" color="grey-8"/>
-                          </template>
-                          <span v-if="selectedGroup.can_edit">
+                      Read Only
+                      <CustomTooltip :is_include_space="false">
+                        <template v-slot:icon>
+                          <q-icon class="self-center" name="info" size="18px" color="grey-8"/>
+                        </template>
+                        <span v-if="selectedGroup.can_edit">
                           General permission groups can't be edited. Create a new custom permission group if you want to
                           make changes.
                         </span>
-                          <span v-else>
+                        <span v-else>
                           You do not have the appropriate permissions to edit this group
                         </span>
-                        </CustomTooltip>
-                      </div>
+                      </CustomTooltip>
+                    </div>
                   </div>
                   <q-separator/>
                   <q-list>
@@ -215,6 +263,8 @@ import userTypeUtil, {
 import dateTimeUtil from 'src/utils/datetime'
 import dataUtil from 'src/utils/data'
 import DialogUser from 'components/dialogs/DialogUser.vue'
+import SelectUserType from 'components/inputs/SelectUserType.vue'
+import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
 
 const userColumns = [
   {
@@ -233,9 +283,15 @@ const userColumns = [
   { name: 'created_dt', field: 'created_dt', align: 'left', label: 'Joined date', format: dateTimeUtil.getShortDate }
 ]
 
+const userFilterTemplate = {
+  searchText: null,
+  userTypeBitsList: null,
+  permissionGroupIds: null
+}
+
 export default {
   name: 'UserManagementPage',
-  components: { CustomTooltip, PageHeader },
+  components: { SelectPermissionGroup, SelectUserType, CustomTooltip, PageHeader },
   data () {
     return {
       tab: 'users',
@@ -248,6 +304,8 @@ export default {
         }
       }),
       userColumns,
+      userFilter: { ...userFilterTemplate },
+      isUserFilterExpanded: true,
       dataUtil,
       userTypeUtil,
       dateTimeUtil,
@@ -331,6 +389,34 @@ export default {
         componentProps: { users }
       }
       return this.$q.dialog(cfg).onOk(() => this.unselectUsers())
+    },
+    employeeDataFilter (rows) {
+      const searchRegex = (this.userFilter.searchText && this.userFilter.searchText.length) ? new RegExp(`.*?${this.userFilter.searchText}.*?`, 'i') : null
+      return rows.filter((employee) => {
+        if (searchRegex && !(employee.first_name.match(searchRegex) || employee.last_name.match(searchRegex) || employee.email.match(searchRegex))) {
+          return false
+        }
+        if (this.userFilter?.userTypeBitsList?.length) {
+          const matchedBits = this.userFilter.userTypeBitsList.reduce((matchedBits, userTypeBit) => {
+            matchedBits += userTypeBit & employee.user_type_bits
+            return matchedBits
+          }, 0)
+          if (!matchedBits) {
+            return false
+          }
+        }
+        if (this.userFilter?.permissionGroupIds?.length) {
+          const employeePermissionGroupIds = employee.permission_groups.map((p) => p.id)
+          const intersection = dataUtil.getArrayIntersection(employeePermissionGroupIds, this.userFilter.permissionGroupIds)
+          if (!intersection.length) {
+            return false
+          }
+        }
+        return true
+      })
+    },
+    clearUserFilter () {
+      this.userFilter = { ...userFilterTemplate }
     }
   },
   preFetch () {

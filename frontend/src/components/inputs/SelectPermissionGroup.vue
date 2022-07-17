@@ -41,7 +41,10 @@ import userTypeUtil from 'src/utils/user-types'
 export default {
   name: 'SelectPermissionGroup',
   props: {
-    label: String,
+    label: {
+      type: String,
+      default: 'Permission group'
+    },
     isRequired: {
       type: Boolean,
       default: true

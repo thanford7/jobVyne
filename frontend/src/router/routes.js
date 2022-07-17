@@ -51,7 +51,7 @@ const routes = [
       // employer pages
       {
         path: ':namespace(employer)/:key(user-management)',
-        name: 'dashboard-links',
+        name: 'user-management',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/UserManagementPage.vue')
       }

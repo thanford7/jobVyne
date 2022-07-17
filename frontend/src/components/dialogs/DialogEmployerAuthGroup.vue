@@ -14,15 +14,8 @@
         val => !existingGroupNames.includes(val) || 'There is already a group with this name'
       ]"
     />
-    <q-select
-      filled emit-value map-options
+    <SelectUserType
       v-model="formData.user_type_bit"
-      :options="userGroups"
-      autocomplete="name"
-      option-value="user_type_bit"
-      option-label="name"
-      label="User type"
-      :rules="[val => val || 'User type is required',]"
     />
   </DialogBase>
 </template>
@@ -32,25 +25,19 @@ import DialogBase from 'components/dialogs/DialogBase.vue'
 import { useEmployerStore } from 'stores/employer-store'
 import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
-import { USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER, USER_TYPES } from 'src/utils/user-types'
+import SelectUserType from 'components/inputs/SelectUserType.vue'
 
 export default {
   name: 'DialogEmployerAuthGroup',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { DialogBase },
+  components: { SelectUserType, DialogBase },
   data () {
     return {
       formData: {
         name: null,
         user_type_bit: null
-      },
-      userGroups: [USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE].map((userType) => {
-        return {
-          name: userType,
-          user_type_bit: USER_TYPES[userType]
-        }
-      })
+      }
     }
   },
   computed: {
