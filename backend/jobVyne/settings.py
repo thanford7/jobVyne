@@ -132,8 +132,7 @@ else:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -183,6 +182,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Email
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST_USER = 'apikey'  # Exactly that.
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_PORT = 587  # 25 or 587 (for unencrypted/TLS connections).
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'no-reply@jobvyne.com'
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -196,7 +205,10 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
-
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'jvapp/static'),
+# ]
+STATIC_ROOT = '/static/'
 if IS_LOCAL:
     logger.info('Using local static storage')
     STATIC_URL = '/static/'

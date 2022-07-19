@@ -13,7 +13,7 @@ const routes = [
     path: '/',
     component: () => import('layouts/LandingLayout.vue'),
     children: [
-      { path: '', name: 'landing', meta: { isNoAuth: true }, component: () => import('pages/IndexPage.vue') },
+      { path: '', name: 'landing', meta: { isNoAuth: true }, component: () => import('pages/index-page/IndexPage.vue') },
       {
         path: 'terms-of-service',
         name: 'tos',

@@ -1,0 +1,15 @@
+{% extends 'emails/base_email.html' %}
+
+{% block body %}
+    {{ body_content }}
+{% endblock body %}
+
+{% block final_message %}
+    {% if is_internal %}
+    {% else %}
+    <p style="text-align:left">If you did not make this request, please ignore this email.</p>
+    <p style="text-align:left">Sincerely,</p>
+    <p style="text-align:left">JobVyne Team</p>
+    <p style="text-align:left">Questions or need help? Email us at {{ support_email }}</p>
+    {% endif %}
+{% endblock final_message %}
