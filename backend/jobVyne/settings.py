@@ -11,9 +11,10 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import logging
 import os
+import sys
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import dj_database_url
 from django.core.management.utils import get_random_secret_key
 
 from jvapp.utils.logger import setLogger
@@ -26,7 +27,7 @@ def get_boolean_env_variable(key, default=False):
     if var is not None:
         return any([var.lower() == 'true', var == '1', var == 1, var == True])
     return default
-    
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -42,6 +43,7 @@ logger.info(f'Base directory is: {BASE_DIR}')
 
 PREPEND_WWW = False
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0').split(',')
+logger.info(f'Allowed hosts: {ALLOWED_HOSTS}')
 
 # Application definition
 
@@ -151,18 +153,28 @@ WSGI_APPLICATION = 'jobVyne.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('MYSQL_DATABASE', 'jobvyne'),
-        # 'USER': os.environ.get('MYSQL_USER', 'todd'),
-        # 'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
-        'USER': 'root',
-        'PASSWORD': os.environ.get('MYSQL_ROOT_PASSWORD'),
-        'HOST': os.environ.get('MYSQL_DATABASE_HOST', 'db'),
-        'PORT': os.environ.get('MYSQL_DATABASE_PORT', 3306),
-    }
+db_config = {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': os.environ.get('MYSQL_DATABASE', 'jobvyne'),
+    # 'USER': os.environ.get('MYSQL_USER', 'todd'),
+    # 'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
+    'HOST': os.environ.get('MYSQL_DATABASE_HOST', 'db'),
+    'PORT': os.environ.get('MYSQL_DATABASE_PORT', 3306),
 }
+if IS_LOCAL:
+    db_config['USER'] = 'root'
+    db_config['PASSWORD'] = os.environ.get('MYSQL_ROOT_PASSWORD')
+    DATABASES = {
+        'default': db_config
+    }
+else:
+    logger.info('CURRENTLY IN PRODUCTION MODE')
+    db_config['USER'] = os.environ.get('MYSQL_USER', 'jobvyne')
+    db_config['PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
+    DATABASES = {
+        'default': db_config
+    }
+    
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -212,13 +224,32 @@ STATIC_ROOT = '/static/'
 if IS_LOCAL:
     logger.info('Using local static storage')
     STATIC_URL = '/static/'
-
+    
     DEFAULT_FILE_STORAGE = 'jobVyne.customStorage.OverwriteStorage'
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
-    # TODO: Update this for S3 storage once setup
-    pass
+    logger.info('Using S3 static storage')
+    AWS_QUERYSTRING_AUTH = False
+    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = 'jobvyne'
+    AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_IS_GZIPPED = True
+    
+    AWS_LOCATION = 'static-files'
+    STATIC_URL = f'https://{AWS_S3_ENDPOINT_URL}/{AWS_LOCATION}/'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    # Media file storage
+    DEFAULT_FILE_STORAGE = 'jobVyne.customStorage.MediaStorage'
+    MEDIA_LOCATION = 'media'
+    MEDIA_URL = f'https://{AWS_S3_ENDPOINT_URL}/{MEDIA_LOCATION}/'
+    MEDIA_BASE = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/{MEDIA_LOCATION}/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field

@@ -13,7 +13,7 @@ const path = require('path')
 const fs = require('fs')
 
 module.exports = configure(function (ctx) {
-  return {
+  const cfg = {
     eslint: {
       // fix: true,
       // include = [],
@@ -71,7 +71,7 @@ module.exports = configure(function (ctx) {
       // publicPath: '/',
       // analyze: true,
       env: {
-        API_URL: '/api/v1/'
+        API_URL: (ctx.dev) ? '/api/v1/' : 'backend/api/v1'
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
@@ -91,20 +91,6 @@ module.exports = configure(function (ctx) {
           include: path.resolve(__dirname, './src/i18n/**')
         }]
       ]
-    },
-
-    // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
-    devServer: {
-      https: {
-        cert: fs.readFileSync('/run/secrets/https_cert'),
-        key: fs.readFileSync('/run/secrets/https_key')
-      },
-      // proxy: {
-      //   '!/static': {
-      //     target: 'http://backend:8000'
-      //   }
-      // },
-      open: true // opens browser window automatically
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
@@ -242,4 +228,22 @@ module.exports = configure(function (ctx) {
       // extendBexManifestJson (json) {}
     }
   }
+
+  if (ctx.dev) {
+    // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
+    cfg.devServer = {
+      https: {
+        cert: fs.readFileSync('/run/secrets/https_cert'),
+        key: fs.readFileSync('/run/secrets/https_key')
+      },
+      // proxy: {
+      //   '!/static': {
+      //     target: 'http://backend:8000'
+      //   }
+      // },
+      open: true // opens browser window automatically
+    }
+  }
+
+  return cfg
 })
