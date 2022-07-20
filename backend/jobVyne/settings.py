@@ -11,10 +11,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import logging
 import os
-import sys
 from pathlib import Path
 
-import dj_database_url
 from django.core.management.utils import get_random_secret_key
 
 from jvapp.utils.logger import setLogger
