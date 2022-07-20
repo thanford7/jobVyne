@@ -1,5 +1,5 @@
 <template>
-  <q-intersection style="min-height: 150px" transition="scale" :threshold="0.8"
+  <q-intersection once style="min-height: 150px" transition="scale" :threshold="0.8"
                   transition-duration="700">
     <q-card>
       <q-card-section>
