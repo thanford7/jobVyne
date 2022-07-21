@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import dataUtil from 'src/utils/data'
 import { USER_TYPES } from 'src/utils/user-types'
+import { getAjaxFormData } from 'src/utils/requests'
 
 /**
  * The bulk of authentication is handled in router-guards.js where:
@@ -62,6 +63,22 @@ export const useAuthStore = defineStore('auth', {
     },
     getHasPermission (permissionName) {
       return this?.user?.permissions?.includes(permissionName)
+    },
+    executeIfCaptchaValid (action, successFn, failureFn, alwaysFn = null) {
+      // eslint-disable-next-line no-undef
+      grecaptcha.enterprise.ready(async () => {
+        // eslint-disable-next-line no-undef
+        const token = await grecaptcha.enterprise.execute(process.env.GOOGLE_CAPTCHA_KEY, { action })
+        const resp = await this.$api.post('auth/validate-captcha', getAjaxFormData({ token, action }))
+        if (resp?.data?.score) {
+          successFn()
+        } else {
+          failureFn()
+        }
+        if (alwaysFn) {
+          alwaysFn()
+        }
+      })
     }
   }
 })

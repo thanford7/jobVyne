@@ -35,6 +35,13 @@
 
     gtag('config', 'G-1VJBZYVTK6')
   </script>
+
+  <!-- Load reCAPTCHA -->
+  <% if (ctx.dev) { %>
+    <script src="https://www.google.com/recaptcha/enterprise.js?render=6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp"></script>
+  <% } else { %>
+    <script src="https://www.google.com/recaptcha/enterprise.js?render=6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl"></script>
+  <% } %>
 </head>
 <body>
 <!-- quasar:entry-point -->

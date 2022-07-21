@@ -22,6 +22,8 @@
 <script>
 import { getAjaxFormData } from 'src/utils/requests'
 import formUtil from 'src/utils/form'
+import { useAuthStore } from 'stores/auth-store'
+import { msgClassCfgs, useAjaxStore } from 'stores/ajax-store'
 
 export default {
   name: 'WaitlistSignUp',
@@ -38,11 +40,22 @@ export default {
         return
       }
       this.isSavingWaitlist = true
-      await this.$api.post('waitlist/', getAjaxFormData({ email: this.email }))
-      this.isSavingWaitlist = false
-      this.email = null
-      this.$refs.emailInput.blur()
+      this.authStore.executeIfCaptchaValid(
+        'WAITLIST',
+        async () => {
+          await this.$api.post('waitlist/', getAjaxFormData({ email: this.email }))
+        },
+        () => this.ajaxStore.addMsg('Unable to complete waitlist sign up. reCAPTCHA authentication failed', msgClassCfgs.ERROR),
+        () => {
+          this.isSavingWaitlist = false
+          this.email = null
+          this.$refs.emailInput.blur()
+        }
+      )
     }
+  },
+  setup () {
+    return { ajaxStore: useAjaxStore(), authStore: useAuthStore() }
   }
 }
 </script>

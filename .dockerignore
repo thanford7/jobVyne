@@ -4,3 +4,4 @@ docker_secrets
 docker-compose*
 Dockerfile*
 *.crt
+backend/secret/

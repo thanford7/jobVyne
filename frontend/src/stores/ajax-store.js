@@ -31,25 +31,22 @@ export const useAjaxStore = defineStore('ajax', {
       } else {
         msg = error.message
       }
-
-      this.msgIdx++
-      this.messages.push({
-        msg,
-        classStr: msgClassCfgs.ERROR,
-        idx: this.msgIdx
-      })
+      this.addMsg(msg, msgClassCfgs.ERROR)
     },
     addSuccessMsg (msg) {
+      const msgIdx = this.addMsg(msg, msgClassCfgs.SUCCESS)
+      setTimeout(() => {
+        this.removeMsg(msgIdx)
+      }, 10000)
+    },
+    addMsg (msg, severity) {
       this.msgIdx++
-      const idx = this.msgIdx
       this.messages.push({
         msg,
-        classStr: msgClassCfgs.SUCCESS,
-        idx
+        classStr: severity,
+        idx: this.msgIdx
       })
-      setTimeout(() => {
-        this.removeMsg(idx)
-      }, 10000)
+      return this.msgIdx
     },
     removeMsg (msgIdx) {
       this.messages = this.messages.filter((msg) => msg.idx !== msgIdx)

@@ -264,3 +264,7 @@ if get_boolean_env_variable('SQL_LOG'):
             }
         }
     }
+    
+# reCAPTCHA
+GOOGLE_CAPTCHA_SITE_KEY = os.getenv('GOOGLE_CAPTCHA_SITE_KEY')
+GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID')

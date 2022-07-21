@@ -11,10 +11,10 @@
         <q-space/>
         <q-tabs class="gt-sm" align="right" shrink>
           <template v-if="authStore.propIsAuthenticated">
-            <q-route-tab to="/dashboard" label="Dashboard"/>
+            <q-route-tab :to="{ name: 'dashboard' }" label="Dashboard"/>
             <q-tab label="Logout" @click="authStore.logout"/>
           </template>
-          <q-route-tab v-else to="/login" label="Login"/>
+          <q-route-tab v-else :to="{ name: 'login' }" label="Login"/>
         </q-tabs>
         <div class="lt-md q-pa-md" style="max-width: 250px">
           <q-btn-dropdown
@@ -32,7 +32,7 @@
                   exact clickable v-close-popup
                   v-ripple
                   label="Dashboard"
-                  to="/dashboard"
+                  :to="{ name: 'dashboard' }"
                 >
                   <q-item-section>
                     Dashboard
@@ -53,7 +53,7 @@
                 v-else
                 exact clickable v-close-popup
                 v-ripple
-                to="/login"
+                :to="{ name: 'login' }"
                 label="Login"
               >
                 <q-item-section>
