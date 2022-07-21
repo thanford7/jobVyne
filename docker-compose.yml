@@ -76,6 +76,7 @@ services:
       - https_cert
       - https_key
       - google_key
+      - google_key_prod
     env_file:
       - ./backend/.env
     depends_on:
@@ -95,3 +96,5 @@ secrets:
     file: frontend/localhost-key.pem
   google_key:
     file: backend/secret/google-captcha-local.json
+  google_key_prod:
+    file: backend/secret/google-captcha-prod.json
