@@ -126,7 +126,7 @@ REST_FRAMEWORK = {
 ROOT_URLCONF = 'jobVyne.urls'
 
 IS_LOCAL = get_boolean_env_variable('IS_LOCAL')
-if frontend_url_override := env('FRONTEND_URL_OVERRIDE'):
+if frontend_url_override := env('FRONTEND_URL_OVERRIDE', default=None):
     FRONTEND_URL = frontend_url_override
 elif IS_LOCAL:
     FRONTEND_URL = 'https://localhost/'
