@@ -9,15 +9,20 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
+import json
 import logging
 import os
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
+import environ
 
 from jvapp.utils.logger import setLogger
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env(DEBUG=(bool, False))
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 def get_boolean_env_variable(key, default=False):
@@ -31,9 +36,9 @@ def get_boolean_env_variable(key, default=False):
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY') or get_random_secret_key()
+SECRET_KEY = env('DJANGO_SECRET_KEY', default=get_random_secret_key())
 
-DEBUG = get_boolean_env_variable('DEBUG')
+DEBUG = env('DEBUG', cast=bool, default=False)
 
 LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
 logger = setLogger(LOG_LEVEL)
@@ -41,7 +46,6 @@ logger.info(f'Base directory is: {BASE_DIR}')
 
 PREPEND_WWW = False
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0').split(',')
-logger.info(f'Allowed hosts: {ALLOWED_HOSTS}')
 
 # Application definition
 
@@ -92,9 +96,9 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.user.user_details',
 )
 
-AUTH_STATE = os.environ.get('AUTH_STATE')
-SOCIAL_AUTH_FACEBOOK_KEY = os.environ.get('FACEBOOK_KEY')
-SOCIAL_AUTH_FACEBOOK_SECRET = os.environ.get('FACEBOOK_SECRET')
+AUTH_STATE = env('AUTH_STATE')
+SOCIAL_AUTH_FACEBOOK_KEY = env('FACEBOOK_KEY')
+SOCIAL_AUTH_FACEBOOK_SECRET = env('FACEBOOK_SECRET')
 
 # this is needed to get a user's email from Facebook. See:
 # https://stackoverflow.com/questions/32024327/facebook-doesnt-return-email-python-social-auth
@@ -122,7 +126,7 @@ REST_FRAMEWORK = {
 ROOT_URLCONF = 'jobVyne.urls'
 
 IS_LOCAL = get_boolean_env_variable('IS_LOCAL')
-if frontend_url_override := os.environ.get('FRONTEND_URL_OVERRIDE'):
+if frontend_url_override := env('FRONTEND_URL_OVERRIDE'):
     FRONTEND_URL = frontend_url_override
 elif IS_LOCAL:
     FRONTEND_URL = 'https://localhost/'
@@ -153,22 +157,20 @@ WSGI_APPLICATION = 'jobVyne.wsgi.application'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 db_config = {
     'ENGINE': 'django.db.backends.mysql',
-    'NAME': os.environ.get('MYSQL_DATABASE', 'jobvyne'),
-    # 'USER': os.environ.get('MYSQL_USER', 'todd'),
-    # 'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
-    'HOST': os.environ.get('MYSQL_DATABASE_HOST', 'db'),
-    'PORT': os.environ.get('MYSQL_DATABASE_PORT', 3306),
+    'NAME': env('MYSQL_DATABASE', default='jobvyne'),
+    'HOST': env('MYSQL_DATABASE_HOST', default='db'),
+    'PORT': env('MYSQL_DATABASE_PORT', default=3306),
 }
 if IS_LOCAL:
     db_config['USER'] = 'root'
-    db_config['PASSWORD'] = os.environ.get('MYSQL_ROOT_PASSWORD')
+    db_config['PASSWORD'] = env('MYSQL_ROOT_PASSWORD')
     DATABASES = {
         'default': db_config
     }
 else:
     logger.info('CURRENTLY IN PRODUCTION MODE')
-    db_config['USER'] = os.environ.get('MYSQL_USER', 'jobvyne')
-    db_config['PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
+    db_config['USER'] = env('MYSQL_USER', default='jobvyne')
+    db_config['PASSWORD'] = env('MYSQL_PASSWORD')
     DATABASES = {
         'default': db_config
     }
@@ -268,3 +270,12 @@ if get_boolean_env_variable('SQL_LOG'):
 # reCAPTCHA
 GOOGLE_CAPTCHA_SITE_KEY = os.getenv('GOOGLE_CAPTCHA_SITE_KEY')
 GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID')
+
+# Set Google Env variable from string (needs to be a path to a file)
+google_credentials = json.loads(env('GOOGLE_APPLICATION_CREDENTIALS_STR').replace('\'', '"'), strict=False)
+
+os.makedirs(f'{BASE_DIR}/secure', exist_ok=True)
+file_path = f'{BASE_DIR}/secure/google-captcha.json'
+with open(file_path, 'w') as outfile:
+    json.dump(google_credentials, outfile)
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = file_path
