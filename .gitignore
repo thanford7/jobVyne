@@ -4,3 +4,4 @@ node_modules
 media
 /docker_secrets
 backend/secret
+backend/secure
