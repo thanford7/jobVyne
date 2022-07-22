@@ -67,7 +67,6 @@ class CheckAuthView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
-        logger.info('Checking authorization')
         if not all((request.user, request.user.is_authenticated)):
             return Response(status=status.HTTP_200_OK, data=False)
         
@@ -146,10 +145,11 @@ class SocialAuthCredentialsView(APIView):
 @permission_classes([AllowAny])
 def validate_recaptcha(request):
     data = request.data
-    logger.info('About to check risk score')
-    logger.info(f'Token = {data.get("token")}')
-    risk_score = create_assessment(settings.GOOGLE_PROJECT_ID, settings.GOOGLE_CAPTCHA_SITE_KEY, data.get('token'),
-                             data.get('action'))
+    try:
+        risk_score = create_assessment(settings.GOOGLE_PROJECT_ID, settings.GOOGLE_CAPTCHA_SITE_KEY, data.get('token'),
+                                 data.get('action'))
+    except Exception as e:
+        logger.info(e)
     if not risk_score:
         raise PermissionError('reCAPTCHA authentication failed')
     
