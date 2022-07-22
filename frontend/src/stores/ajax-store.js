@@ -54,7 +54,11 @@ export const useAjaxStore = defineStore('ajax', {
     parseHtmlMessage (htmlText) {
       const parser = new DOMParser()
       const htmlDoc = parser.parseFromString(htmlText, 'text/html')
-      return htmlDoc.querySelector('.detail .errormsg').textContent
+      const errorMsg = htmlDoc.querySelector('.detail .errormsg')
+      if (errorMsg) {
+        return errorMsg.textContent
+      }
+      return htmlDoc.textContent
     }
   }
 })

@@ -69,7 +69,7 @@ export const useAuthStore = defineStore('auth', {
       grecaptcha.enterprise.ready(async () => {
         // eslint-disable-next-line no-undef
         const token = await grecaptcha.enterprise.execute(process.env.GOOGLE_CAPTCHA_KEY, { action })
-        const resp = await this.$api.post('auth/validate-captcha', getAjaxFormData({ token, action }))
+        const resp = await this.$api.post('auth/validate-captcha/', getAjaxFormData({ token, action }))
         if (resp?.data?.score) {
           successFn()
         } else {

@@ -23,7 +23,7 @@ urlpatterns = [
     path('auth/login-set-cookie/', auth.LoginSetCookieView.as_view()),
     path('auth/logout/', auth.LogoutView.as_view()),
     path('auth/check-auth/', auth.CheckAuthView.as_view()),
-    path('auth/validate-captcha', auth.validate_recaptcha),
+    path('auth/validate-captcha/', auth.validate_recaptcha),
     
     # Social auth
     path('social/<backend>/', auth.social_auth),

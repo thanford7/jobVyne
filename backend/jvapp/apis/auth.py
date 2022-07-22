@@ -190,7 +190,7 @@ def create_assessment(
             + "invalid for for the following reasons: "
             + str(response.token_properties.invalid_reason)
         )
-        print(errorMsg)
+        logger.error(errorMsg)
         raise PermissionError(errorMsg)
     
     # Check if the expected action was executed.
@@ -199,21 +199,21 @@ def create_assessment(
             "The action attribute in your reCAPTCHA tag does"
             + "not match the action you are expecting to score"
         )
-        print(errorMsg)
+        logger.error(errorMsg)
         raise PermissionError(errorMsg)
     else:
         # Get the risk score and the reason(s)
         # For more information on interpreting the assessment,
         # see: https://cloud.google.com/recaptcha-enterprise/docs/interpret-assessment
         for reason in response.risk_analysis.reasons:
-            print(reason)
-        print(
+            logger.error(reason)
+        logger.error(
             "The reCAPTCHA score for this token is: "
             + str(response.risk_analysis.score)
         )
         # Get the assessment name (id). Use this to annotate the assessment.
         assessment_name = client.parse_assessment_path(response.name).get("assessment")
-        print(f"Assessment name: {assessment_name}")
+        logger.error(f"Assessment name: {assessment_name}")
         if response.risk_analysis.score < ALLOWABLE_CAPTCHA_RISK_SCORE:
             raise PermissionError('Failed reCAPTCHA validation')
     return response.risk_analysis.score
