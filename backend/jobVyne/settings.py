@@ -272,7 +272,6 @@ GOOGLE_CAPTCHA_SITE_KEY = os.getenv('GOOGLE_CAPTCHA_SITE_KEY')
 GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID')
 
 # Set Google Env variable from string (needs to be a path to a file)
-logger.info(env('GOOGLE_APPLICATION_CREDENTIALS_STR').replace('\'', '"'))
 google_credentials = json.loads(env('GOOGLE_APPLICATION_CREDENTIALS_STR').replace('\'', '"'), strict=False)
 
 os.makedirs(f'{BASE_DIR}/secure', exist_ok=True)
