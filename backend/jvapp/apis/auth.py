@@ -19,6 +19,8 @@ from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.logger import getLogger
 from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
 
+__all__ = ('LoginView', 'LoginSetCookieView', 'LogoutView', 'CheckAuthView', 'SocialAuthCredentialsView')
+
 logger = getLogger()
 
 # https://cloud.google.com/recaptcha-enterprise/docs/interpret-assessment

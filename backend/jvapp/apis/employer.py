@@ -14,6 +14,8 @@ from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, Is
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_job
 from jvapp.utils.data import set_object_attributes
 
+__all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
+
 
 class EmployerView(JobVyneAPIView):
     permission_classes = [IsAuthenticated, IsAdminOrEmployerOrReadOnlyPermission]

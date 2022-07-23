@@ -279,3 +279,6 @@ file_path = f'{BASE_DIR}/secure/google-captcha.json'
 with open(file_path, 'w') as outfile:
     json.dump(google_credentials, outfile)
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = file_path
+
+# Geolocation
+GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'

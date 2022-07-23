@@ -16,6 +16,8 @@ from jvapp.serializers.social import *
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import set_object_attributes
 
+__all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView')
+
 
 class SocialPlatformView(JobVyneAPIView):
     
@@ -112,7 +114,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             .select_related('employer', 'platform')\
             .prefetch_related(
                 'departments', 'states', 'countries', 'jobs',
-                'job_application', 'job_application__employer_job'
+                'job_application', 'job_application__employer_job', 'page_view'
             )\
             .filter(link_filter_filter)
         

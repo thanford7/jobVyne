@@ -7,6 +7,8 @@ from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.models.user import JobVyneUser
 from jvapp.serializers.user import get_serialized_user
 
+__all__ = ('UserView',)
+
 
 class UserView(JobVyneAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]

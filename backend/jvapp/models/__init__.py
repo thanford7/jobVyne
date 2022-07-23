@@ -2,6 +2,7 @@ from .job_seeker import *
 from .location import *
 from .employer import *
 from .social import *
+from .tracking import *
 from .user import *
 from .waitlist import *
 

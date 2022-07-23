@@ -29,7 +29,13 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
     }
     
     if is_include_performance:
+        views = link_filter.page_view.all()
+        unique_views = {view.ip_address for view in views}
         data['performance'] = {
+            'views': {
+                'total': len(views),
+                'unique': len(unique_views)
+            },
             'applications': [{
                 'id': app.id,
                 'first_name': app.first_name,

@@ -21,6 +21,14 @@ export default boot(({ app, router }) => {
       return { path: redirectPageUrl || '/dashboard', query: redirectParams }
     }
 
+    // Capture page view
+    if (to.meta.trackRoute) {
+      $api.post('/page-view/', getAjaxFormData({
+        relative_url: to.path,
+        filter_id: to.params.filterId
+      }))
+    }
+
     // Redirect if user doesn't have access to a specific page
     try {
       const resp = await $api.get('auth/check-auth/')

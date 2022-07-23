@@ -5,3 +5,5 @@ media
 /docker_secrets
 backend/secret
 backend/secure
+*.pem
+*.crt

@@ -62,7 +62,7 @@ const routes = [
   {
     path: '/jobs-link/:filterId',
     name: 'jobs-link',
-    meta: { isNoAuth: true },
+    meta: { isNoAuth: true, trackRoute: true },
     component: () => import('layouts/JobsLayout.vue')
   },
 

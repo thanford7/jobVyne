@@ -7,6 +7,8 @@ from jvapp.apis._apiBase import SUCCESS_MESSAGE_KEY
 from jvapp.models import Waitlist
 from jvapp.utils.email import send_email, EMAIL_ADDRESS_SALES
 
+__all__ = ('WaitlistView', )
+
 
 class WaitlistView(APIView):
     permission_classes = [AllowAny]

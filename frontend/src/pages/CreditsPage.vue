@@ -31,7 +31,8 @@ export default {
       credits: [
         { name: 'Quasar', href: 'https://quasar.dev/' },
         { name: 'Freepik', href: 'https://www.freepik.com/' },
-        { name: 'Artist: pch.vector', href: 'https://www.freepik.com/author/pch-vector', insetLevel: 1 }
+        { name: 'Artist: pch.vector', href: 'https://www.freepik.com/author/pch-vector', insetLevel: 1 },
+        { name: 'GeoLite2 Data created by MaxMind', href: 'https://www.maxmind.com/' }
       ]
     }
   }

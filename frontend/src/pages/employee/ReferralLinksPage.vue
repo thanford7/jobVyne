@@ -34,7 +34,7 @@
                 </template>
                 <template v-slot:body="props">
                   <q-tr :props="props">
-                    <q-td key="platform_name" :props="props">
+                    <q-td key="platformName" :props="props">
                       {{ props.row.platform_name || globalStore.nullValueStr }}
                     </q-td>
                     <q-td key="departments" :props="props">
@@ -66,6 +66,12 @@
                       <span v-if="!getLocations(props.row).length">
                         {{ globalStore.nullValueAnyStr }}
                       </span>
+                    </q-td>
+                    <q-td key="views" :props="props">
+                      {{ props.row.performance.views.total }}
+                    </q-td>
+                    <q-td key="uniqueViews" :props="props">
+                      {{ props.row.performance.views.unique }}
                     </q-td>
                     <q-td key="applications" :props="props">
                       <span v-if="props.row.performance.applications.length">
@@ -357,9 +363,11 @@ export default {
   computed: {
     linkColumns () {
       return [
-        { name: 'platform_name', field: 'platform_name', align: 'left', label: 'Platform', sortable: true },
+        { name: 'platformName', field: 'platform_name', align: 'left', label: 'Platform', sortable: true },
         { name: 'departments', field: 'departments', align: 'left', label: 'Departments' },
         { name: 'locations', field: this.getLocations, align: 'left', label: 'Locations' },
+        { name: 'views', field: 'performance.views.total', align: 'center', label: 'Views' },
+        { name: 'uniqueViews', field: 'performance.views.unique', align: 'center', label: 'Unique views' },
         { name: 'applications', field: 'performance.applications', align: 'center', label: 'Applications' },
         { name: 'link', field: this.getJobLinkUrl, align: 'left', label: 'Link' }
       ]
