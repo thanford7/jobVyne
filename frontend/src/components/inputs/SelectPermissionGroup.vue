@@ -18,7 +18,7 @@
           v-for="child in opt.child_options"
           v-bind="getOptionProps(itemProps)"
           :active="selected"
-          class="background-hover"
+          class="bg-hover"
           @click="toggleOption(child)"
         >
           <q-item-section>
@@ -76,9 +76,6 @@ export default {
     }
   },
   methods: {
-    log (val) {
-      return console.log(val)
-    },
     getOptionProps (itemProps) {
       return dataUtil.omit(itemProps, ['id', 'onClick', 'onMousemove'])
     },

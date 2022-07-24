@@ -97,7 +97,7 @@
       <router-view/>
     </q-page-container>
 
-    <q-footer v-if="utilStore.isMobile" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow-x">
+    <q-footer v-if="utilStore.isMobile" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow">
       <q-btn-dropdown
         v-if="userViewOptions.length > 1"
         flat unelevated stack
@@ -264,6 +264,12 @@ const userCfgMap = {
         icon: 'home',
         key: 'dashboard',
         label: 'Dashboard',
+        separator: false
+      },
+      {
+        icon: 'web',
+        key: 'employer-profile-page',
+        label: 'Profile Page',
         separator: false
       },
       {

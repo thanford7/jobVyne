@@ -55,6 +55,12 @@ const routes = [
         name: 'user-management',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/UserManagementPage.vue')
+      },
+      {
+        path: ':namespace(employer)/:key(employer-profile-page)',
+        name: 'employer-profile-page',
+        meta: { userTypeBits: USER_TYPES.Employer },
+        component: () => import('pages/employer/EmployerProfilePage.vue')
       }
     ]
   },

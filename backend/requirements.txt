@@ -3,6 +3,7 @@ aiosignal==1.2.0
 asgiref==3.5.2
 async-timeout==4.0.2
 attrs==21.4.0
+beautifulsoup4==4.11.1
 boto3==1.24.33
 botocore==1.27.33
 cachetools==5.2.0
@@ -55,6 +56,7 @@ sendgrid==6.9.7
 six==1.16.0
 social-auth-app-django==5.0.0
 social-auth-core==4.3.0
+soupsieve==2.3.2.post1
 sqlparse==0.4.2
 starkbank-ecdsa==2.0.3
 ua-parser==0.15.0

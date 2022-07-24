@@ -438,8 +438,13 @@ class DataUtil {
     return visibleEls[0].el
   }
 
-  removeItemFromList (targetList, itemFindFn) {
-    const listIdx = targetList.findIndex(itemFindFn)
+  /**
+   * @param targetList: The list that the item should be removed from
+   * @param itemFindFn: (Optional) The function to find the item.
+   * @param listIdx: (Optional) The index of the item to be removed.
+   */
+  removeItemFromList (targetList, { itemFindFn, listIdx }) {
+    listIdx = this.isNil(listIdx) ? targetList.findIndex(itemFindFn) : listIdx
     if (listIdx !== -1) {
       targetList.splice(listIdx, 1)
     }
