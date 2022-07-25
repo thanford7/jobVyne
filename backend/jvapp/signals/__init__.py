@@ -6,10 +6,10 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from jvapp.models import EmployerAuthGroup, JobVyneUser
+from jvapp.models.employer import is_default_auth_group
 
 __all__ = ('add_audit_fields', 'update_user_types_on_group_save', 'update_user_types_on_group_delete')
 
-from jvapp.models.employer import is_default_auth_group
 
 def _get_default_user_groups(employer_id):
     # Get the default permission groups for each user type

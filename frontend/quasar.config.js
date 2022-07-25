@@ -104,6 +104,9 @@ module.exports = configure(function (ctx) {
           spinnerColor: 'accent',
           spinnerSize: '100',
           messageColor: 'accent'
+        },
+        notify: {
+          position: 'bottom'
         }
       },
 
@@ -125,8 +128,9 @@ module.exports = configure(function (ctx) {
         'Dialog',
         'Loading',
         'LocalStorage',
-        'SessionStorage',
-        'Meta'
+        'Meta',
+        'Notify',
+        'SessionStorage'
       ]
     },
 

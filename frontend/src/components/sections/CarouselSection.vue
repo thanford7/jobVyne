@@ -3,6 +3,11 @@
     <div class="col-12">
       <q-carousel
         swipeable animated thumbnails infinite
+        :autoplay="isAllowAutoplay && autoplay"
+        transition-prev="slide-right"
+        transition-next="slide-left"
+        @mouseenter="autoplay = false"
+        @mouseleave="autoplay = true"
         v-model="slide"
       >
         <q-carousel-slide :name="1" img-src="https://cdn.quasar.dev/img/mountains.jpg"/>
@@ -19,9 +24,16 @@ import { ref } from 'vue'
 
 export default {
   name: 'CarouselSection',
+  props: {
+    isAllowAutoplay: {
+      type: Boolean,
+      default: false
+    }
+  },
   setup () {
     return {
-      slide: ref(1)
+      slide: ref(1),
+      autoplay: ref(true)
     }
   }
 }

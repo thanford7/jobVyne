@@ -1,6 +1,9 @@
 <template>
   <div style="display: inline-block;">
-    <span v-if="is_include_space">&nbsp;</span><slot name="icon"/>
+    <span v-if="is_include_space">&nbsp;</span>
+    <slot name="icon">
+      <q-icon class="text-gray-500" tag="span" name="help_outline" size="24px"/>
+    </slot>
     <q-tooltip :class="color_class" style="font-size: 14px;" max-width="500px">
       <slot/>
     </q-tooltip>

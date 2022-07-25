@@ -73,3 +73,21 @@ def get_serialized_auth_group(auth_group: EmployerAuthGroup, all_permissions, au
             'is_permitted': p.id in employer_permissions
         } for p in all_permissions]
     }
+
+
+def get_serialized_employer_file(employer_file: EmployerFile):
+    return {
+        'id': employer_file.id,
+        'employer_id': employer_file.employer_id,
+        'url': employer_file.file.url,
+        'title': employer_file.title,
+        'tags': [get_serialized_employer_file_tag(t) for t in employer_file.tags.all()]
+    }
+
+
+def get_serialized_employer_file_tag(tag: EmployerFileTag):
+    return {
+        'id': tag.id,
+        'employer_id': tag.employer_id,
+        'name': tag.name
+    }

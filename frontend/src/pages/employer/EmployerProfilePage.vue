@@ -77,16 +77,21 @@
               />
               <div v-if="section.type === sectionTypes.CAROUSEL.key" class="col-12">
                 <div class="row">
-                  <div class="col-12">
-                    <q-file
-                      v-model="section.pictures"
-                      label="Pick files"
-                      filled use-chips counter multiple append
+                  <div class="col-12 col-md-6">
+                    <q-btn
+                      ripple color="primary"
+                      @click="openEmployerFileModal()"
+                    >Add new image</q-btn>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <q-toggle
+                      v-model="section.section_parts[0].isAllowAutoplay"
+                      label="Auto-scroll"
                     />
                   </div>
                   <div class="col-12">
                     <LiveView>
-                      <CarouselSection/>
+                      <CarouselSection :is-allow-autoplay="section.section_parts[0].isAllowAutoplay"/>
                     </LiveView>
                   </div>
                 </div>
@@ -106,6 +111,9 @@ import dataUtil from 'src/utils/data'
 import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import LiveView from 'components/sections/LiveView.vue'
 import CarouselSection from 'components/sections/CarouselSection.vue'
+import DialogEmployerFile from 'components/dialogs/DialogEmployerFile.vue'
+import { useQuasar } from 'quasar'
+import { FILE_TYPES } from 'src/utils/form'
 
 export default {
   name: 'EmployerProfilePage',
@@ -127,7 +135,7 @@ export default {
         CAROUSEL: {
           key: 'CAROUSEL',
           label: 'Picture carousel section',
-          defaultData: { header: null, pictures: [] }
+          defaultData: { header: null, pictures: [], isAllowAutoplay: false }
         },
         ACCORDION: {
           key: 'ACCORDION',
@@ -170,6 +178,18 @@ export default {
       const part = dataUtil.deepCopy(this.sections[sectionIdx].section_parts[partIdx])
       this.removeSectionPart(sectionIdx, partIdx)
       this.sections[sectionIdx].section_parts.splice(newIdx, 0, part)
+    },
+    openEmployerFileModal (file) {
+      const cfg = {
+        component: DialogEmployerFile,
+        componentProps: { file, fileTypeKeys: [FILE_TYPES.IMAGE.key] }
+      }
+      return this.$q.dialog(cfg)
+    }
+  },
+  setup () {
+    return {
+      $q: useQuasar()
     }
   }
 }

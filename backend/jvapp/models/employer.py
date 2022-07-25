@@ -1,14 +1,20 @@
-import math
-
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
+from jvapp.models._customDjangoField import LowercaseCharField
+from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
 from jvapp.models.location import Country, State
-
-
-__all__ = ('Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment', 'EmployerAuthGroup', 'EmployerPermission')
-
 from jvapp.models.user import PermissionName
+
+
+__all__ = (
+    'Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment',
+    'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag'
+)
+
+
+def getEmployerUploadLocation(instance, filename):
+    return f'employers/{instance.employer_id}/{filename}'
 
 
 class Employer(AuditFields):
@@ -107,6 +113,24 @@ class EmployerPermission(models.Model):
     
     def __str__(self):
         return self.name
+    
+    
+class EmployerFile(AuditFields):
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file')
+    file = models.FileField(
+        upload_to=getEmployerUploadLocation,
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_ALL)]
+    )
+    title = models.CharField(max_length=100)
+    tags = models.ManyToManyField('EmployerFileTag')
+    
+    
+class EmployerFileTag(models.Model):
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file_tag')
+    name = LowercaseCharField(max_length=100)
+    
+    class Meta:
+        unique_together = ('employer', 'name')
 
 
 class EmployerSize(models.Model):

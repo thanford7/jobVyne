@@ -56,7 +56,7 @@
             label="resume"
             :file-url="formData.resume_url"
             :new-file="formData.resume"
-            new-file-key="resume"
+            :new-file-key="newResumeKey"
             file-url-key="resume_url"
           >
             <template v-slot:fileInput>
@@ -135,6 +135,7 @@ export default {
         (this.user) ? dataUtil.pick(this.user, ['first_name', 'last_name', 'email']) : {},
         this?.user?.application_template || {}
       ),
+      newResumeKey: 'resume',
       isApplicationSaved: false,
       formUtil
     }
@@ -157,7 +158,7 @@ export default {
         this.$refs.resumeUpload.getValues(),
         { job_id: this.jobApplication.id, filter_id: this.$route.params.filterId }
       )
-      await this.$api.post('job-application/', getAjaxFormData(data, ['resume']))
+      await this.$api.post('job-application/', getAjaxFormData(data, [this.newResumeKey]))
       await this.authStore.setUser(true) // Update user applications and application template
       this.isApplicationSaved = true
       // Leave the drawer open to allow user to create an account if they don't have one

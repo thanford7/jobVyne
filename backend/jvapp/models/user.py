@@ -8,7 +8,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 
-__all__ = ('CustomUserManager', 'JobVyneUser')
+__all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName')
 
 from jvapp.models.abstract import JobVynePermissionsMixin
 

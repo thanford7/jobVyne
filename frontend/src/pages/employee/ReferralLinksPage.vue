@@ -132,9 +132,6 @@
                     (Optional) Select the platform where you will display the link
                   </h6>
                   <CustomTooltip>
-                    <template v-slot:icon>
-                      <q-icon class="text-gray-500" tag="span" name="help_outline" size="24px"/>
-                    </template>
                     Selecting a platform allows you to analyze the performance of each of your links based on each
                     platform
                   </CustomTooltip>
@@ -173,9 +170,6 @@
                     (Optional) Add filters for the jobs to display when the link is clicked
                   </h6>
                   <CustomTooltip>
-                    <template v-slot:icon>
-                      <q-icon class="text-gray-500" tag="span" name="help_outline" size="24px"/>
-                    </template>
                     Leave blank if you wish to display all jobs. Keep in mind that your link will perform better if the
                     filtered jobs are relevant to your connections/audience
                   </CustomTooltip>

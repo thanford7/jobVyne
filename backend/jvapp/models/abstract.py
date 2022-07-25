@@ -4,13 +4,19 @@ from django.db import models
 
 from jvapp.utils.logger import getLogger
 
-__all__ = ('ALLOWED_UPLOADS_FILE', 'AuditFields', 'JobVynePermissionsMixin')
+__all__ = (
+    'ALLOWED_UPLOADS_FILE', 'ALLOWED_UPLOADS_VIDEO', 'ALLOWED_UPLOADS_IMAGE', 'ALLOWED_UPLOADS_ALL',
+    'AuditFields', 'JobVynePermissionsMixin'
+)
 
 
 logger = getLogger()
 
 
 ALLOWED_UPLOADS_FILE = ['doc', 'docx', 'pdf', 'pages', 'gdoc']
+ALLOWED_UPLOADS_VIDEO = ['mp4', 'm4v', 'mov', 'wmv', 'avi', 'mpg', 'webm']
+ALLOWED_UPLOADS_IMAGE = ['png', 'jpeg', 'jpg', 'gif']
+ALLOWED_UPLOADS_ALL = ALLOWED_UPLOADS_IMAGE + ALLOWED_UPLOADS_VIDEO + ALLOWED_UPLOADS_FILE
 
 
 class AuditFields(models.Model):

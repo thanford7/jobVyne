@@ -5,6 +5,8 @@ export const useEmployerStore = defineStore('employer', {
   state: () => ({
     employers: {}, // employerId: {<employer>}
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
+    employerFiles: {}, // employerId: [<file1>, <file2>, ...],
+    employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
     permissionGroups: []
   }),
 
@@ -32,8 +34,36 @@ export const useEmployerStore = defineStore('employer', {
         this.permissionGroups = resp.data
       }
     },
+    async setEmployerFiles (employerId, isForceRefresh = false) {
+      if (!this.employerFiles[employerId] || isForceRefresh) {
+        const resp = await this.$api.get(
+          'employer/file/',
+          {
+            params: { employer_id: employerId }
+          }
+        )
+        this.employerFiles[employerId] = resp.data
+      }
+    },
+    async setEmployerFileTags (employerId, isForceRefresh = false) {
+      if (!this.employerFileTags[employerId] || isForceRefresh) {
+        const resp = await this.$api.get(
+          'employer/file-tag/',
+          {
+            params: { employer_id: employerId }
+          }
+        )
+        this.employerFileTags[employerId] = resp.data
+      }
+    },
     getEmployer (employerId) {
       return this.employers[employerId]
+    },
+    getEmployerFiles (employerId) {
+      return this.employerFiles[employerId]
+    },
+    getEmployerFileTags (employerId) {
+      return dataUtil.sortBy(this.employerFileTags[employerId] || [], 'name')
     },
     getEmployerJobs (employerId) {
       return dataUtil.sortBy(this.employerJobs[employerId] || [], 'job_title')

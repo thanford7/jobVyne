@@ -11,7 +11,8 @@ from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup
 from jvapp.models.user import JobVyneUser, USER_MANAGEMENT_PERMISSIONS
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
-from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_job
+from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_file, \
+    get_serialized_employer_file_tag, get_serialized_employer_job
 from jvapp.utils.data import set_object_attributes
 
 __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
@@ -225,3 +226,109 @@ class EmployerUserActivateView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} {"deactivated" if is_deactivate else "activated"}'
         })
+    
+    
+class EmployerFileView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (employer_id := self.data['employer_id']):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        files = self.get_employer_files(employer_id=employer_id)
+        return Response(status=status.HTTP_200_OK, data=[get_serialized_employer_file(f) for f in files])
+    
+    @atomic
+    def post(self, request):
+        if not self.data['employer_id']:
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        employer_file = EmployerFile()
+        file = self.files['file'][0] if self.files.get('file') else None
+        self.update_employer_file(employer_file, self.data, file=file)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f''
+        })
+        
+    @atomic
+    def put(self, request, file_id):
+        if not self.data['employer_id']:
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        employer_file = self.get_employer_files(file_id=file_id)
+        self.update_employer_file(employer_file, self.data)
+
+    @staticmethod
+    @atomic
+    def update_employer_file(employer_file, data, file=None):
+        set_object_attributes(employer_file, data, {
+            'employer_id': None,
+            'title': None
+        })
+        
+        if file:
+            employer_file.file = file
+
+        employer_file.title = (
+            employer_file.title
+            or (file['name'] if file else None)
+            or employer_file.file.name.split('/')[-1]
+        )
+        
+        # TODO: Check permissions
+        employer_file.save()
+        
+        employer_file.tags.clear()
+        for tag in data.get('tags') or []:
+            if isinstance(tag, str):
+                tag = EmployerFileTagView.get_or_create_tag(tag, data['employer_id'])
+            employer_file.tags.add(tag['id'])
+        
+    @staticmethod
+    def get_employer_files(file_id=None, employer_id=None, file_filter=None):
+        file_filter = file_filter or Q()
+        if file_id:
+            file_filter &= Q(id=file_id)
+        if employer_id:
+            file_filter &= Q(employer_id=employer_id)
+
+        files = EmployerFile.objects.prefetch_related('tags').filter(file_filter)
+        if file_id:
+            if not files:
+                raise EmployerFile.DoesNotExist
+            return files[0]
+        
+        return files
+
+
+class EmployerFileTagView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (employer_id := self.data['employer_id']):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        tags = self.get_employer_file_tags(employer_id)
+        return Response(status=status.HTTP_200_OK, data=[get_serialized_employer_file_tag(t) for t in tags])
+    
+    @atomic
+    def delete(self, request, tag_id):
+        tag = EmployerFileTag.objects.get(id=tag_id)
+        # TODO: Check permissions
+        tag.delete()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{tag.name} tag was deleted'
+        })
+
+    @staticmethod
+    @atomic
+    def get_or_create_tag(tag_name, employer_id):
+        try:
+            return EmployerFileTag.objects.get(name=tag_name, employer_id=employer_id)
+        except EmployerFileTag.DoesNotExist:
+            tag = EmployerFileTag(name=tag_name, employer_id=employer_id)
+            tag.save()
+            return tag
+
+    @staticmethod
+    def get_employer_file_tags(employer_id):
+        return EmployerFileTag.objects.filter(employer_id=employer_id)
+
