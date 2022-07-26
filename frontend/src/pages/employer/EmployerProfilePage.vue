@@ -9,16 +9,23 @@
           <q-btn-dropdown icon="add" label="Add section" color="primary">
             <q-list>
               <q-item
-                v-for="section in [
-                  {name: sectionTypes.TEXT.label, value: sectionTypes.TEXT.key},
-                  {name: sectionTypes.ICON.label, value: sectionTypes.ICON.key},
-                  {name: sectionTypes.CAROUSEL.label, value: sectionTypes.CAROUSEL.key},
-                  {name: sectionTypes.ACCORDION.label, value: sectionTypes.ACCORDION.key}
-                ]"
-                clickable v-close-popup @click="addSectionItem(section.value)"
+                v-for="section in Object.values(sectionTypes)"
+                clickable v-close-popup @click="addSectionItem(section.key)"
               >
                 <q-item-section>
-                  <q-item-label>{{ section.name }}</q-item-label>
+                  <q-item-label>
+                    {{ section.label }}
+                  </q-item-label>
+                </q-item-section>
+                <q-item-section avatar>
+                  <CustomTooltip>
+                    Ideal for:
+                    <ul>
+                      <li v-for="item in section.usedFor">
+                        {{ item }}
+                      </li>
+                    </ul>
+                  </CustomTooltip>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -111,6 +118,15 @@
                   </div>
                 </div>
               </div>
+              <AccordionSectionCfg
+                :section="section"
+                :section-idx="sectionIdx"
+                class="col-12"
+                @moveUp="moveSectionPart(sectionIdx, $event, true)"
+                @moveDown="moveSectionPart(sectionIdx, $event, false)"
+                @remove="removeSectionPart(sectionIdx, $event)"
+                @add="addSectionPart(sectionIdx)"
+              />
             </div>
           </q-expansion-item>
         </div>
@@ -133,10 +149,12 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import EmployerFilesSelector from 'components/inputs/EmployerFilesSelector.vue'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
+import AccordionSectionCfg from 'components/sections/AccordionSectionCfg.vue'
 
 export default {
   name: 'EmployerProfilePage',
   components: {
+    AccordionSectionCfg,
     EmployerFilesSelector,
     CustomTooltip,
     CarouselSection,
@@ -152,22 +170,26 @@ export default {
         TEXT: {
           key: 'TEXT',
           label: 'Text section',
-          defaultData: { html_content: '' }
+          defaultData: { html_content: '' },
+          usedFor: ['About us', 'Why work for us']
         },
         ICON: {
           key: 'ICON',
           label: 'Icons section',
-          defaultData: { header: null, html_content: '', icon: null }
+          defaultData: { header: null, html_content: '', icon: null },
+          usedFor: ['Benefits', 'Hiring process']
         },
         CAROUSEL: {
           key: 'CAROUSEL',
           label: 'Picture carousel section',
-          defaultData: { header: null, pictures: [], isAllowAutoplay: false }
+          defaultData: { header: null, pictures: [], isAllowAutoplay: false },
+          usedFor: ['Company culture', 'Faces of employees']
         },
         ACCORDION: {
           key: 'ACCORDION',
           label: 'Accordion list section',
-          defaultData: { header: null, html_content: '' }
+          defaultData: { header: null, html_content: '' },
+          usedFor: ['FAQ']
         }
       },
       FILE_TYPES
