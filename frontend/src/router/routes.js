@@ -60,7 +60,7 @@ const routes = [
         path: ':namespace(employer)/:key(employer-profile-page)',
         name: 'employer-profile-page',
         meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/EmployerProfilePage.vue')
+        component: () => import('pages/employer/EmployerProfileCfgPage.vue')
       }
     ]
   },

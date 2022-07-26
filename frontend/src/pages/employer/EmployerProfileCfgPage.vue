@@ -4,7 +4,18 @@
       <PageHeader title="Profile page">
         This content is displayed on every jobs page from employee social links.
       </PageHeader>
-      <div class="row q-mt-md">
+      <div class="row q-mt-md q-gutter-x-md">
+        <q-toggle
+          v-model="isViewable"
+          color="primary"
+          @update:model-value="savePage"
+        >
+          Is viewable
+          <CustomTooltip :is_include_space="false">
+            When off, the employer page will not be shown on any job pages. It is recommended to turn on page viewing
+            so job seekers can learn more about your company. Turn off, if the page is still a work in progress.
+          </CustomTooltip>
+        </q-toggle>
         <q-btn-dropdown icon="add" label="Add section" color="primary">
           <q-list>
             <q-item
@@ -33,10 +44,13 @@
         <q-btn
           v-if="sections.length && hasSectionsChanged"
           ripple label="Undo" color="grey-6" icon="undo"
+          class="q-mr-sm"
+          @click="undoChanges"
         />
         <q-btn
           v-if="sections.length && hasSectionsChanged"
           ripple label="Save" color="accent" icon="save"
+          @click="savePage"
         />
       </div>
       <div class="row q-mt-md">
@@ -69,7 +83,14 @@
               <div class="col-12">
                 <div class="row">
                   <div class="col-12 col-md-6">
-                    <q-input filled v-model="section.header" label="Section header" class="w-100"/>
+                    <q-input filled v-model="section.header" label="Section header" class="w-100">
+                      <template v-slot:append>
+                        <CustomTooltip>
+                          Optional. When populated the header will be displayed at the top of the section and
+                          also included as a link which will scroll to this section when clicked.
+                        </CustomTooltip>
+                      </template>
+                    </q-input>
                   </div>
                 </div>
               </div>
@@ -127,6 +148,7 @@
                 </div>
               </div>
               <AccordionSectionCfg
+                v-if="section.type === sectionTypes.ACCORDION.key"
                 :section="section"
                 :section-idx="sectionIdx"
                 class="col-12"
@@ -161,7 +183,7 @@ import AccordionSectionCfg from 'components/sections/AccordionSectionCfg.vue'
 import { getAjaxFormData } from 'src/utils/requests'
 
 export default {
-  name: 'EmployerProfilePage',
+  name: 'EmployerProfileCfgPage',
   components: {
     AccordionSectionCfg,
     EmployerFilesSelector,
@@ -180,8 +202,9 @@ export default {
   data () {
     return {
       // Update this when sections is saved. Used to determine if there have been changes
-      currentSections: (this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) ? dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) : [],
-      sections: (this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) ? dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) : [],
+      isViewable: this.getEmployerPageData().is_viewable || false,
+      currentSections: this.getSectionsCopy(),
+      sections: this.getSectionsCopy(),
       sectionTypes: {
         TEXT: {
           key: 'TEXT',
@@ -259,15 +282,26 @@ export default {
         this.$refs[refKey][0].addFile(pictureFile)
       })
     },
+    getEmployerPageData () {
+      return this.employerStore.getEmployerPage(this.authStore.propUser.employer_id) || {}
+    },
+    getSectionsCopy () {
+      const employerPage = this.getEmployerPageData()
+      return (dataUtil.isEmptyOrNil(employerPage)) ? [] : dataUtil.deepCopy(employerPage.sections)
+    },
     async savePage () {
       const data = {
+        is_viewable: this.isViewable,
         sections: this.sections,
         employer_id: this.authStore.propUser.employer_id
       }
       await this.$api.put('employer/page/', getAjaxFormData(data))
-      this.employerStore.setEmployerPage(this.authStore.propUser.employer_id, true)
-      this.sections = dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id))
-      this.currentSections = dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id))
+      await this.employerStore.setEmployerPage(this.authStore.propUser.employer_id, true)
+      this.sections = this.getSectionsCopy()
+      this.currentSections = this.getSectionsCopy()
+    },
+    undoChanges () {
+      this.sections = dataUtil.deepCopy(this.currentSections)
     }
   },
   preFetch () {

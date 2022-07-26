@@ -1,5 +1,4 @@
 import { useUtilStore } from 'stores/utility-store'
-import * as assert from 'assert'
 import clone from 'just-clone'
 import pluralize from 'pluralize'
 
@@ -344,12 +343,7 @@ class DataUtil {
   }
 
   isDeepEqual (a, b) {
-    try {
-      assert.deepStrictEqual(a, b)
-      return true
-    } catch (e) {
-      return false
-    }
+    return JSON.stringify(a) === JSON.stringify(b)
   }
 
   isEmpty (obj) {

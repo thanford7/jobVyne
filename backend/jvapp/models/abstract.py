@@ -28,8 +28,8 @@ class AuditFields(models.Model):
         
         
 class OwnerFields(models.Model):
-    created_user = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True)
-    modified_user = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True)
+    created_user = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='%(class)s_created_user')
+    modified_user = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='%(class)s_modified_user')
     
     class Meta:
         abstract = True

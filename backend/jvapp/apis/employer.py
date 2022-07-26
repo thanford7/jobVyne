@@ -359,14 +359,19 @@ class EmployerPageView(JobVyneAPIView):
         if not (employer_id := self.data['employer_id']):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        employer_page = self.get_employer_page(employer_id) or EmployerPage(employer_id=employer_id)
-        currentSections = {ci.id: ci for ci in employer_page.content_item.all()}
+        employer_page = self.get_employer_page(employer_id)
+        if employer_page:
+            current_sections = {ci.id: ci for ci in employer_page.content_item.all()}
+        else:
+            employer_page = EmployerPage(employer_id=employer_id)
+            employer_page.save()
+            current_sections = {}
         sections = self.data['sections']
         for sectionIdx, sectionData in enumerate(sections):
             section = None
             if sectionId := sectionData.get('id'):
                 # Remove the section from the dict so we know it has been used
-                section = currentSections.pop(sectionId, None)
+                section = current_sections.pop(sectionId, None)
             if not section:
                 section = ContentItem(type=sectionData['type'])
             section.orderIdx = sectionIdx
@@ -376,7 +381,7 @@ class EmployerPageView(JobVyneAPIView):
             employer_page.content_item.add(section)
         
         # Any sections still in the dict are not used and should be removed
-        for content_item_id, content_item in currentSections.items():
+        for content_item_id, content_item in current_sections.items():
             employer_page.content_item.remove(content_item_id)
             content_item.delete()
             
