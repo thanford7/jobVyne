@@ -372,7 +372,7 @@ export default {
     deleteGroup () {
       const userType = userTypeUtil.getUserTypeNameFromBit(this.selectedGroup.user_type_bit)
       openConfirmDialog(
-        this.$q,
+        this.q,
         `Any ${userType} users that are part of the ${this.selectedGroup.name} group will be moved to the default group for ${userType} users. Are you sure you wish to proceed?`,
         {
           okFn: async () => {
@@ -411,7 +411,7 @@ export default {
       this.authStore.setUser(true)
     },
     openEmployerAuthGroupDialog () {
-      return this.$q.dialog({
+      return this.q.dialog({
         component: DialogEmployerAuthGroup
       }).onOk((groupId) => {
         this.selectedGroupId = groupId
@@ -422,7 +422,7 @@ export default {
         component: DialogUser,
         componentProps: { users }
       }
-      return this.$q.dialog(cfg).onOk(() => this.unselectUsers())
+      return this.q.dialog(cfg).onOk(() => this.unselectUsers())
     },
     employeeDataFilter (rows) {
       const searchRegex = (this.userFilter.searchText && this.userFilter.searchText.length) ? new RegExp(`.*?${this.userFilter.searchText}.*?`, 'i') : null
@@ -479,9 +479,9 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-    const $q = useQuasar()
+    const q = useQuasar()
 
-    return { employerStore, authStore, globalStore, $q }
+    return { employerStore, authStore, globalStore, q }
   },
   mounted () {
     this.selectedGroupId = this.employerStore.permissionGroups[0].id

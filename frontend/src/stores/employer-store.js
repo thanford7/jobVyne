@@ -59,8 +59,15 @@ export const useEmployerStore = defineStore('employer', {
     getEmployer (employerId) {
       return this.employers[employerId]
     },
-    getEmployerFiles (employerId) {
-      return this.employerFiles[employerId]
+    getEmployerFiles (employerId, fileId = null) {
+      const files = this.employerFiles[employerId]
+      if (fileId) {
+        if (!files || !files.length) {
+          return files
+        }
+        return files.find((f) => f.id === fileId)
+      }
+      return files
     },
     getEmployerFileTags (employerId) {
       return dataUtil.sortBy(this.employerFileTags[employerId] || [], 'name')

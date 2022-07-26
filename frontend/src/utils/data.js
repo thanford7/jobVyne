@@ -51,14 +51,6 @@ class DataUtil {
     }, 3000)
   }
 
-  getFileNameFromUrl (fileUrl) {
-    if (!fileUrl) {
-      return null
-    }
-    const [fileName] = fileUrl.split('/').slice(-1)
-    return fileName
-  }
-
   getUrlWithoutQueryParams () {
     return window.location.origin + window.location.pathname
   }
@@ -176,42 +168,6 @@ class DataUtil {
       console.log('Error', error.message)
     }
     console.log(error.config)
-  }
-
-  /**
-   * We can't add meta data directly onto file objects and order is not guaranteed when pairing files with
-   * their respective meta data. To handle this, file objects and file meta data are processed into a dictionary
-   * where the lookup value is based on the file object's name. This is the only "unique" key that the file object
-   * possesses. It is possible for a file object to have the same name as another, so duplicate file names should
-   * be guarded against when testing for good form data
-   * @param files {Object|Array} Values are objects which contain meta data and a file
-   * @param metaDataKey {string} The dictionary key which all meta data is assigned to
-   * @param dataKey {string} The dictionary key which all file objects are assigned
-   * @param fileKey {string} The dictionary key to get the file from each respective file object
-   * @returns {Object}
-   */
-  getFileFormatForAjaxRequest (files, metaDataKey, dataKey, fileKey) {
-    if (!Array.isArray(files)) {
-      files = Object.values(files)
-    }
-    files = files.filter((file) => !this.isNil(file[fileKey]))
-    return {
-      [metaDataKey]: files.map((file) => {
-        return Object.assign(
-          this.omit(file, [fileKey]),
-          { fileKey: this.isString(file[fileKey]) ? null : file[fileKey].name }
-        )
-      }),
-      [dataKey]: files.map((file) => file[fileKey])
-    }
-  }
-
-  getFileType (fileName) {
-    if (!fileName) {
-      return null
-    }
-    const [fileType] = fileName.split('.').slice(-1)
-    return fileType
   }
 
   /**
@@ -378,7 +334,7 @@ class DataUtil {
     a = [...a]
     b = [...b]
     a.sort()
-    a.sort()
+    b.sort()
 
     for (let i = 0; i < a.length; ++i) {
       if (a[i] !== b[i]) return false

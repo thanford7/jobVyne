@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    :title-text="titleText"
+    :base-title-text="titleText"
     :primary-button-text="(!this.user_ids) ? 'Create' : 'Update'"
     @ok="saveUser"
   >

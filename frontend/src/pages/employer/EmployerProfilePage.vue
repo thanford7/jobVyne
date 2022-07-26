@@ -77,21 +77,36 @@
               />
               <div v-if="section.type === sectionTypes.CAROUSEL.key" class="col-12">
                 <div class="row">
-                  <div class="col-12 col-md-6">
-                    <q-btn
-                      ripple color="primary"
-                      @click="openEmployerFileModal()"
-                    >Add new image</q-btn>
-                  </div>
-                  <div class="col-12 col-md-6">
+                  <div class="col-12">
+                    <EmployerFilesSelector
+                      :ref="`employerFilesSelector-${sectionIdx}`"
+                      :file-type-keys="[FILE_TYPES.IMAGE.key]"
+                      v-model="section.section_parts[0].pictures"
+                    >
+                      <template v-slot:after>
+                        <q-btn
+                          unelevated ripple color="primary"
+                          class="h-100"
+                          @click="openEmployerFileModal(sectionIdx)"
+                        >Add new image
+                        </q-btn>
+                      </template>
+                    </EmployerFilesSelector>
                     <q-toggle
                       v-model="section.section_parts[0].isAllowAutoplay"
                       label="Auto-scroll"
-                    />
+                    >
+                      <CustomTooltip>
+                        When on, pictures will automatically scroll from one to the next
+                      </CustomTooltip>
+                    </q-toggle>
                   </div>
                   <div class="col-12">
                     <LiveView>
-                      <CarouselSection :is-allow-autoplay="section.section_parts[0].isAllowAutoplay"/>
+                      <CarouselSection
+                        :pictures="section.section_parts[0].pictures"
+                        :is-allow-autoplay="section.section_parts[0].isAllowAutoplay"
+                      />
                     </LiveView>
                   </div>
                 </div>
@@ -111,13 +126,25 @@ import dataUtil from 'src/utils/data'
 import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import LiveView from 'components/sections/LiveView.vue'
 import CarouselSection from 'components/sections/CarouselSection.vue'
-import DialogEmployerFile from 'components/dialogs/DialogEmployerFile.vue'
+import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
 import { useQuasar } from 'quasar'
-import { FILE_TYPES } from 'src/utils/form'
+import { FILE_TYPES } from 'src/utils/file'
+import CustomTooltip from 'components/CustomTooltip.vue'
+import EmployerFilesSelector from 'components/inputs/EmployerFilesSelector.vue'
+import { useAuthStore } from 'stores/auth-store'
+import { useEmployerStore } from 'stores/employer-store'
 
 export default {
   name: 'EmployerProfilePage',
-  components: { CarouselSection, LiveView, IconSectionCfg, PageHeader, WysiwygEditor },
+  components: {
+    EmployerFilesSelector,
+    CustomTooltip,
+    CarouselSection,
+    LiveView,
+    IconSectionCfg,
+    PageHeader,
+    WysiwygEditor
+  },
   data () {
     return {
       sections: [],
@@ -142,7 +169,8 @@ export default {
           label: 'Accordion list section',
           defaultData: { header: null, html_content: '' }
         }
-      }
+      },
+      FILE_TYPES
     }
   },
   methods: {
@@ -179,17 +207,26 @@ export default {
       this.removeSectionPart(sectionIdx, partIdx)
       this.sections[sectionIdx].section_parts.splice(newIdx, 0, part)
     },
-    openEmployerFileModal (file) {
+    async openEmployerFileModal (sectionIdx) {
+      await loadDialogEmployerFileDataFn()
       const cfg = {
         component: DialogEmployerFile,
-        componentProps: { file, fileTypeKeys: [FILE_TYPES.IMAGE.key] }
+        componentProps: { fileTypeKeys: [FILE_TYPES.IMAGE.key] }
       }
-      return this.$q.dialog(cfg)
+      return this.q.dialog(cfg).onOk((pictureId) => {
+        const pictureFile = this.employerStore.getEmployerFiles(
+          this.authStore.propUser.employer_id, pictureId
+        )
+        const refKey = `employerFilesSelector-${sectionIdx}`
+        this.$refs[refKey][0].addFile(pictureFile)
+      })
     }
   },
   setup () {
     return {
-      $q: useQuasar()
+      authStore: useAuthStore(),
+      employerStore: useEmployerStore(),
+      q: useQuasar()
     }
   }
 }

@@ -8,6 +8,7 @@
     new-value-mode="add-unique"
     use-input input-debounce="0"
     autocomplete="name"
+    @filter="filterTags"
     option-value="id"
     option-label="name"
     label="Select tags or start typing..."
@@ -36,18 +37,29 @@ export default {
   },
   data () {
     return {
-      tags: null
+      tags: null,
+      filterTxt: null
     }
   },
   computed: {
     tagOptions () {
-      return this.employerStore.getEmployerFileTags(this.authStore.propUser.employer_id)
+      const options = this.employerStore.getEmployerFileTags(this.authStore.propUser.employer_id)
+      if (!this.filterTxt || this.filterTxt === '') {
+        return options
+      }
+      const filterRegex = new RegExp(`.*?${this.filterTxt}.*?`, 'i')
+      return options.filter((opt) => opt.name.match(filterRegex))
     }
   },
   methods: {
     createValue (val, done) {
       val = (val) ? val.toLowerCase() : val
       done(val, 'add-unique')
+    },
+    filterTags (filterTxt, update) {
+      update(() => {
+        this.filterTxt = filterTxt
+      })
     }
   },
   preFetch () {

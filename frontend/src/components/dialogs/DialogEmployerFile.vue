@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    :title-text="titleText"
+    :base-title-text="titleText"
     :primary-button-text="(!this.file) ? 'Create' : 'Update'"
     @ok="confirmAndSaveFile"
   >
@@ -18,7 +18,6 @@
             v-model="formData.file"
             label="Pick file"
             :accept="allowedFileExtensionsStr"
-            @rejected="onFileRejected"
             filled
           >
             <template v-slot:append>
@@ -42,16 +41,26 @@
 </template>
 
 <script>
-import { FILE_TYPES } from 'src/utils/form'
+import fileUtil, { FILE_TYPES } from 'src/utils/file'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
-import { Loading, useQuasar } from 'quasar'
+import { useQuasar } from 'quasar'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import { useEmployerStore } from 'stores/employer-store'
 import { useAuthStore } from 'stores/auth-store'
 import EmployerFileTagsSelector from 'components/inputs/EmployerFileTagsSelector.vue'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests'
-import dataUtil from 'src/utils/data'
+
+export const loadDialogEmployerFileDataFn = () => {
+  const employerStore = useEmployerStore()
+  const authStore = useAuthStore()
+  return authStore.setUser().then(() => {
+    return Promise.all([
+      employerStore.setEmployerFiles(authStore.propUser.employer_id),
+      employerStore.setEmployerFileTags(authStore.propUser.employer_id)
+    ])
+  })
+}
 
 export default {
   name: 'DialogEmployerFile',
@@ -64,15 +73,12 @@ export default {
     },
     fileTypeKeys: {
       type: [Array, null],
-      default: () => [FILE_TYPES.FILE.key, FILE_TYPES.VIDEO.key, FILE_TYPES.IMAGE.key]
+      default: () => Object.keys(FILE_TYPES)
     }
   },
   computed: {
     fileLabel () {
-      if (this.fileTypeKeys.length > 1) {
-        return 'file'
-      }
-      return FILE_TYPES[this.fileTypeKeys[0]].title
+      return fileUtil.getFileLabel(this.fileTypeKeys)
     },
     titleText () {
       if (!this.file) {
@@ -81,17 +87,14 @@ export default {
       return `Update ${this.fileLabel}`
     },
     allowedFileExtensions () {
-      return this.fileTypeKeys.reduce((allExtensions, fileTypeKey) => {
-        allExtensions = [...allExtensions, ...FILE_TYPES[fileTypeKey].allowedExtensions]
-        return allExtensions
-      }, [])
+      return fileUtil.getAllowedFileExtensions(this.fileTypeKeys)
     },
     allowedFileExtensionsStr () {
       return this.allowedFileExtensions.map((ext) => `.${ext}`).join(', ')
     },
     currentFileNames () {
       const employerFiles = this.employerStore.getEmployerFiles(this.authStore.propUser.employer_id)
-      return employerFiles.map((f) => dataUtil.getFileNameFromUrl(f.url))
+      return employerFiles.map((f) => fileUtil.getFileNameFromUrl(f.url))
     }
   },
   data () {
@@ -106,17 +109,11 @@ export default {
     }
   },
   methods: {
-    onFileRejected (rejectedFile) {
-      this.$q.notify({
-        type: 'negative',
-        message: 'This file extension type is not supported'
-      })
-    },
     async confirmAndSaveFile () {
       const newFile = this.$refs.fileUpload.getValues()[this.newFileKey]
       if (newFile && this.currentFileNames.includes(newFile.name)) {
         openConfirmDialog(
-          this.$q,
+          this.q,
           `A file named ${newFile.name} already exists. Do you want to proceed and overwrite the existing file?`,
           {
             okFn: async () => {
@@ -137,34 +134,24 @@ export default {
         { employer_id: employerId }
       )
       const ajaxData = getAjaxFormData(data, [this.newFileKey])
+      let resp
       if (!this.file) {
-        await this.$api.post('employer/file/', ajaxData)
+        resp = await this.$api.post('employer/file/', ajaxData)
       } else {
-        await this.$api.put(`employer/file/${this.file.id}`, ajaxData)
+        resp = await this.$api.put(`employer/file/${this.file.id}`, ajaxData)
       }
       await Promise.all([
         this.employerStore.setEmployerFiles(employerId, true),
         this.employerStore.setEmployerFileTags(employerId, true)
       ])
+      this.$emit('ok', resp.data.id)
     }
-  },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    const authStore = useAuthStore()
-    Loading.show()
-
-    return authStore.setUser().then(() => {
-      return Promise.all([
-        employerStore.setEmployerFiles(authStore.propUser.employer_id),
-        employerStore.setEmployerFileTags(authStore.propUser.employer_id)
-      ])
-    }).finally(() => Loading.hide())
   },
   setup () {
     return {
       authStore: useAuthStore(),
       employerStore: useEmployerStore(),
-      $q: useQuasar()
+      q: useQuasar()
     }
   }
 }

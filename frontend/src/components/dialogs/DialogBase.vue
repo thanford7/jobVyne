@@ -2,8 +2,8 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin">
       <q-card-section>
-        <div v-if="titleText" class="text-h6">
-          {{titleText}}
+        <div v-if="baseTitleText" class="text-h6">
+          {{baseTitleText}}
         </div>
         <q-btn
           flat unelevated ripple
@@ -41,7 +41,7 @@ export default {
       type: String,
       default: 'Submit'
     },
-    titleText: {
+    baseTitleText: {
       type: [String, null]
     },
     isIncludeButtons: {
@@ -56,6 +56,8 @@ export default {
   ],
 
   setup () {
+    // !NOTE!! prefetch method doesn't work with dialogs. See DialogEmployerFile for an
+    // example of handling async data
     // https://quasar.dev/quasar-plugins/dialog#invoking-custom-component
     // REQUIRED; must be called inside of setup()
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginComponent()

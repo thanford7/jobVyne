@@ -7,7 +7,7 @@
       <q-input
         filled
         readonly
-        :model-value="dataUtil.getFileNameFromUrl(fileUrl)"
+        :model-value="fileUtil.getFileNameFromUrl(fileUrl)"
         :label="`Current ${label}`"
       />
       <span class="text-small">
@@ -15,7 +15,7 @@
           <q-icon name="file_download"/>&nbsp;
         </span>
         <a :href="fileUrl" class="no-decoration" target="_blank">
-          {{ dataUtil.getFileNameFromUrl(fileUrl) }}
+          {{ fileUtil.getFileNameFromUrl(fileUrl) }}
         </a>
       </span>
     </div>
@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import dataUtil from 'src/utils/data'
+import fileUtil from 'src/utils/file'
 
 export default {
   name: 'FileDisplayOrUpload',
@@ -53,7 +53,7 @@ export default {
   data () {
     return {
       isUpload: true,
-      dataUtil
+      fileUtil
     }
   },
   methods: {

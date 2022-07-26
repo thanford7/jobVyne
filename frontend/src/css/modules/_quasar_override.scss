@@ -1,0 +1,9 @@
+
+.q-carousel {
+  &.q-carousel--no-stretch {
+    .q-carousel__slide {
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+  }
+}

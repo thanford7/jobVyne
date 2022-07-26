@@ -231,7 +231,7 @@ class EmployerUserActivateView(JobVyneAPIView):
 class EmployerFileView(JobVyneAPIView):
     
     def get(self, request):
-        if not (employer_id := self.data['employer_id']):
+        if not (employer_id := self.query_params['employer_id']):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
         files = self.get_employer_files(employer_id=employer_id)
@@ -246,7 +246,8 @@ class EmployerFileView(JobVyneAPIView):
         file = self.files['file'][0] if self.files.get('file') else None
         self.update_employer_file(employer_file, self.data, file=file)
         return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: f''
+            'id': employer_file.id,
+            SUCCESS_MESSAGE_KEY: f'Created a new file titled {employer_file.title}'
         })
         
     @atomic
@@ -256,6 +257,10 @@ class EmployerFileView(JobVyneAPIView):
         
         employer_file = self.get_employer_files(file_id=file_id)
         self.update_employer_file(employer_file, self.data)
+        return Response(status=status.HTTP_200_OK, data={
+            'id': employer_file.id,
+            SUCCESS_MESSAGE_KEY: f'Updated file titled {employer_file.title}'
+        })
 
     @staticmethod
     @atomic
@@ -270,7 +275,7 @@ class EmployerFileView(JobVyneAPIView):
 
         employer_file.title = (
             employer_file.title
-            or (file['name'] if file else None)
+            or getattr(file, 'name', None)
             or employer_file.file.name.split('/')[-1]
         )
         
@@ -281,7 +286,9 @@ class EmployerFileView(JobVyneAPIView):
         for tag in data.get('tags') or []:
             if isinstance(tag, str):
                 tag = EmployerFileTagView.get_or_create_tag(tag, data['employer_id'])
-            employer_file.tags.add(tag['id'])
+                employer_file.tags.add(tag)
+            else:
+                employer_file.tags.add(tag['id'])
         
     @staticmethod
     def get_employer_files(file_id=None, employer_id=None, file_filter=None):
@@ -303,7 +310,7 @@ class EmployerFileView(JobVyneAPIView):
 class EmployerFileTagView(JobVyneAPIView):
     
     def get(self, request):
-        if not (employer_id := self.data['employer_id']):
+        if not (employer_id := self.query_params['employer_id']):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
         tags = self.get_employer_file_tags(employer_id)
