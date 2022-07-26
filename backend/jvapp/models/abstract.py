@@ -6,7 +6,7 @@ from jvapp.utils.logger import getLogger
 
 __all__ = (
     'ALLOWED_UPLOADS_FILE', 'ALLOWED_UPLOADS_VIDEO', 'ALLOWED_UPLOADS_IMAGE', 'ALLOWED_UPLOADS_ALL',
-    'AuditFields', 'JobVynePermissionsMixin'
+    'AuditFields', 'OwnerFields', 'JobVynePermissionsMixin'
 )
 
 
@@ -23,6 +23,14 @@ class AuditFields(models.Model):
     created_dt = models.DateTimeField()
     modified_dt = models.DateTimeField()
 
+    class Meta:
+        abstract = True
+        
+        
+class OwnerFields(models.Model):
+    created_user = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True)
+    modified_user = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True)
+    
     class Meta:
         abstract = True
  

@@ -1,4 +1,5 @@
 import { useUtilStore } from 'stores/utility-store'
+import * as assert from 'assert'
 import clone from 'just-clone'
 import pluralize from 'pluralize'
 
@@ -340,6 +341,15 @@ class DataUtil {
       if (a[i] !== b[i]) return false
     }
     return true
+  }
+
+  isDeepEqual (a, b) {
+    try {
+      assert.deepStrictEqual(a, b)
+      return true
+    } catch (e) {
+      return false
+    }
   }
 
   isEmpty (obj) {

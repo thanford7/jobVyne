@@ -5,32 +5,39 @@
         This content is displayed on every jobs page from employee social links.
       </PageHeader>
       <div class="row q-mt-md">
-        <div class="col-12 col-md-4 col-lg-3">
-          <q-btn-dropdown icon="add" label="Add section" color="primary">
-            <q-list>
-              <q-item
-                v-for="section in Object.values(sectionTypes)"
-                clickable v-close-popup @click="addSectionItem(section.key)"
-              >
-                <q-item-section>
-                  <q-item-label>
-                    {{ section.label }}
-                  </q-item-label>
-                </q-item-section>
-                <q-item-section avatar>
-                  <CustomTooltip>
-                    Ideal for:
-                    <ul>
-                      <li v-for="item in section.usedFor">
-                        {{ item }}
-                      </li>
-                    </ul>
-                  </CustomTooltip>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
-        </div>
+        <q-btn-dropdown icon="add" label="Add section" color="primary">
+          <q-list>
+            <q-item
+              v-for="section in Object.values(sectionTypes)"
+              clickable v-close-popup @click="addSectionItem(section.key)"
+            >
+              <q-item-section>
+                <q-item-label>
+                  {{ section.label }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section avatar>
+                <CustomTooltip>
+                  Ideal for:
+                  <ul>
+                    <li v-for="item in section.usedFor">
+                      {{ item }}
+                    </li>
+                  </ul>
+                </CustomTooltip>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+        <q-space/>
+        <q-btn
+          v-if="sections.length && hasSectionsChanged"
+          ripple label="Undo" color="grey-6" icon="undo"
+        />
+        <q-btn
+          v-if="sections.length && hasSectionsChanged"
+          ripple label="Save" color="accent" icon="save"
+        />
       </div>
       <div class="row q-mt-md">
         <div v-for="(section, sectionIdx) in sections" class="col-12 border-bottom-1-gray-100 border-top-1-gray-100">
@@ -68,7 +75,7 @@
               </div>
               <div v-if="section.type === sectionTypes.TEXT.key" class="col-12">
                 <WysiwygEditor
-                  v-model="section.section_parts[0].html_content"
+                  v-model="section.item_parts[0].html_content"
                   placeholder="Section text..."
                 />
               </div>
@@ -88,7 +95,8 @@
                     <EmployerFilesSelector
                       :ref="`employerFilesSelector-${sectionIdx}`"
                       :file-type-keys="[FILE_TYPES.IMAGE.key]"
-                      v-model="section.section_parts[0].pictures"
+                      :is-emit-id-only="true"
+                      v-model="section.item_parts[0].picture_ids"
                     >
                       <template v-slot:after>
                         <q-btn
@@ -100,7 +108,7 @@
                       </template>
                     </EmployerFilesSelector>
                     <q-toggle
-                      v-model="section.section_parts[0].isAllowAutoplay"
+                      v-model="section.item_parts[0].isAllowAutoplay"
                       label="Auto-scroll"
                     >
                       <CustomTooltip>
@@ -111,8 +119,8 @@
                   <div class="col-12">
                     <LiveView>
                       <CarouselSection
-                        :pictures="section.section_parts[0].pictures"
-                        :is-allow-autoplay="section.section_parts[0].isAllowAutoplay"
+                        :picture-ids="section.item_parts[0].picture_ids"
+                        :is-allow-autoplay="section.item_parts[0].isAllowAutoplay"
                       />
                     </LiveView>
                   </div>
@@ -143,13 +151,14 @@ import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import LiveView from 'components/sections/LiveView.vue'
 import CarouselSection from 'components/sections/CarouselSection.vue'
 import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
-import { useQuasar } from 'quasar'
+import { Loading, useQuasar } from 'quasar'
 import { FILE_TYPES } from 'src/utils/file'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmployerFilesSelector from 'components/inputs/EmployerFilesSelector.vue'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
 import AccordionSectionCfg from 'components/sections/AccordionSectionCfg.vue'
+import { getAjaxFormData } from 'src/utils/requests'
 
 export default {
   name: 'EmployerProfilePage',
@@ -163,26 +172,33 @@ export default {
     PageHeader,
     WysiwygEditor
   },
+  computed: {
+    hasSectionsChanged () {
+      return !dataUtil.isDeepEqual(this.currentSections, this.sections)
+    }
+  },
   data () {
     return {
-      sections: [],
+      // Update this when sections is saved. Used to determine if there have been changes
+      currentSections: (this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) ? dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) : [],
+      sections: (this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) ? dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id)) : [],
       sectionTypes: {
         TEXT: {
           key: 'TEXT',
           label: 'Text section',
           defaultData: { html_content: '' },
-          usedFor: ['About us', 'Why work for us']
+          usedFor: ['About us', 'Why work for us', 'Diversity & Inclusion']
         },
         ICON: {
           key: 'ICON',
           label: 'Icons section',
           defaultData: { header: null, html_content: '', icon: null },
-          usedFor: ['Benefits', 'Hiring process']
+          usedFor: ['Benefits', 'Values', 'Hiring process']
         },
         CAROUSEL: {
           key: 'CAROUSEL',
           label: 'Picture carousel section',
-          defaultData: { header: null, pictures: [], isAllowAutoplay: false },
+          defaultData: { header: null, picture_ids: [], isAllowAutoplay: false },
           usedFor: ['Company culture', 'Faces of employees']
         },
         ACCORDION: {
@@ -200,7 +216,7 @@ export default {
       this.sections.push({
         type: sectionType,
         header: null,
-        section_parts: [
+        item_parts: [
           dataUtil.deepCopy(this.sectionTypes[sectionType].defaultData)
         ]
       })
@@ -216,18 +232,18 @@ export default {
     },
     addSectionPart (sectionIdx) {
       const sectionType = this.sections[sectionIdx].type
-      this.sections[sectionIdx].section_parts.push(
+      this.sections[sectionIdx].item_parts.push(
         dataUtil.deepCopy(this.sectionTypes[sectionType].defaultData)
       )
     },
     removeSectionPart (sectionIdx, partIdx) {
-      dataUtil.removeItemFromList(this.sections[sectionIdx].section_parts, { listIdx: partIdx })
+      dataUtil.removeItemFromList(this.sections[sectionIdx].item_parts, { listIdx: partIdx })
     },
     moveSectionPart (sectionIdx, partIdx, isUp) {
       const newIdx = partIdx + (isUp) ? -1 : 1
-      const part = dataUtil.deepCopy(this.sections[sectionIdx].section_parts[partIdx])
+      const part = dataUtil.deepCopy(this.sections[sectionIdx].item_parts[partIdx])
       this.removeSectionPart(sectionIdx, partIdx)
-      this.sections[sectionIdx].section_parts.splice(newIdx, 0, part)
+      this.sections[sectionIdx].item_parts.splice(newIdx, 0, part)
     },
     async openEmployerFileModal (sectionIdx) {
       await loadDialogEmployerFileDataFn()
@@ -242,7 +258,30 @@ export default {
         const refKey = `employerFilesSelector-${sectionIdx}`
         this.$refs[refKey][0].addFile(pictureFile)
       })
+    },
+    async savePage () {
+      const data = {
+        sections: this.sections,
+        employer_id: this.authStore.propUser.employer_id
+      }
+      await this.$api.put('employer/page/', getAjaxFormData(data))
+      this.employerStore.setEmployerPage(this.authStore.propUser.employer_id, true)
+      this.sections = dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id))
+      this.currentSections = dataUtil.deepCopy(this.employerStore.getEmployerPage(this.authStore.propUser.employer_id))
     }
+  },
+  preFetch () {
+    const employerStore = useEmployerStore()
+    const authStore = useAuthStore()
+    Loading.show()
+
+    return authStore.setUser().then(() => {
+      return Promise.all([
+        employerStore.setEmployerPage(authStore.propUser.employer_id)
+      ])
+    }).finally(() => {
+      Loading.hide()
+    })
   },
   setup () {
     return {

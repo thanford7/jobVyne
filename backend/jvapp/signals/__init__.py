@@ -72,6 +72,15 @@ def add_audit_fields(sender, instance, *args, **kwargs):
         instance.modified_dt = timezone.now()
 
 
+@receiver(pre_save)
+def add_owner_fields(sender, instance, *args, **kwargs):
+    if hasattr(instance, 'created_user') and not instance.id:
+        instance.created_dt = timezone.now()
+    
+    if hasattr(instance, 'modified_user'):
+        instance.modified_dt = timezone.now()
+
+
 @receiver(post_save, sender=EmployerAuthGroup)
 def update_user_types_on_group_save(sender, instance, *args, **kwargs):
     _update_user_types_on_group_change(instance, False)

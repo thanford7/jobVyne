@@ -2,14 +2,15 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from jvapp.models._customDjangoField import LowercaseCharField
-from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
+from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
 from jvapp.models.location import Country, State
 from jvapp.models.user import PermissionName
 
 
 __all__ = (
     'Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment',
-    'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag'
+    'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
+    'EmployerPage'
 )
 
 
@@ -17,7 +18,7 @@ def getEmployerUploadLocation(instance, filename):
     return f'employers/{instance.employer_id}/{filename}'
 
 
-class Employer(AuditFields):
+class Employer(AuditFields, OwnerFields):
     employerName = models.CharField(max_length=150, unique=True)
     logo = models.ImageField(upload_to='logos', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -27,7 +28,7 @@ class Employer(AuditFields):
         return self.employerName
     
     
-class EmployerJob(AuditFields):
+class EmployerJob(AuditFields, OwnerFields):
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employerJob')
     jobTitle = models.CharField(max_length=100)
     jobDescription = models.TextField()
@@ -115,7 +116,7 @@ class EmployerPermission(models.Model):
         return self.name
     
     
-class EmployerFile(AuditFields):
+class EmployerFile(AuditFields, OwnerFields):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file')
     file = models.FileField(
         upload_to=getEmployerUploadLocation,
@@ -131,6 +132,12 @@ class EmployerFileTag(models.Model):
     
     class Meta:
         unique_together = ('employer', 'name')
+        
+        
+class EmployerPage(AuditFields, OwnerFields):
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='profile_page', unique=True)
+    is_viewable = models.BooleanField(default=False)
+    content_item = models.ManyToManyField('ContentItem')
 
 
 class EmployerSize(models.Model):

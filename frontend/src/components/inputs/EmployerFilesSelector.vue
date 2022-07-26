@@ -4,7 +4,7 @@
     ref="select"
     filled use-chips multiple
     v-model="files"
-    @update:model-value="$emit('update:model-value', $event)"
+    @update:model-value="emitModelValue"
     :options="fileOptions"
     autocomplete="title"
     use-input
@@ -29,6 +29,10 @@ export default {
   props: {
     modelValue: {
       type: [Array, null]
+    },
+    isEmitIdOnly: {
+      type: Boolean,
+      default: false
     },
     fileTypeKeys: {
       type: [Array, null],
@@ -71,6 +75,12 @@ export default {
       update(() => {
         this.filterTxt = filterTxt
       })
+    },
+    emitModelValue (value) {
+      if (this.isEmitIdOnly) {
+        value = (value && value.length) ? value.map(v => v.id) : value
+      }
+      this.$emit('update:model-value', value)
     }
   },
   async mounted () {

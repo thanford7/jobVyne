@@ -7,12 +7,13 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup
 from jvapp.models.user import JobVyneUser, USER_MANAGEMENT_PERMISSIONS
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_file, \
-    get_serialized_employer_file_tag, get_serialized_employer_job
+    get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
 from jvapp.utils.data import set_object_attributes
 
 __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
@@ -338,4 +339,54 @@ class EmployerFileTagView(JobVyneAPIView):
     @staticmethod
     def get_employer_file_tags(employer_id):
         return EmployerFileTag.objects.filter(employer_id=employer_id)
+    
+    
+class EmployerPageView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
 
+    def get(self, request):
+        if not (employer_id := self.query_params['employer_id']):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        employer_page = self.get_employer_page(employer_id)
+        return Response(
+            status=status.HTTP_200_OK,
+            data=get_serialized_employer_page(employer_page) if employer_page else None
+        )
+    
+    @atomic
+    def put(self, request):
+        if not (employer_id := self.data['employer_id']):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        employer_page = self.get_employer_page(employer_id) or EmployerPage(employer_id=employer_id)
+        currentSections = {ci.id: ci for ci in employer_page.content_item.all()}
+        sections = self.data['sections']
+        for sectionIdx, sectionData in enumerate(sections):
+            section = None
+            if sectionId := sectionData.get('id'):
+                # Remove the section from the dict so we know it has been used
+                section = currentSections.pop(sectionId, None)
+            if not section:
+                section = ContentItem(type=sectionData['type'])
+            section.orderIdx = sectionIdx
+            section.header = sectionData['header']
+            section.item_parts = sectionData['item_parts']
+            section.save()
+            employer_page.content_item.add(section)
+        
+        # Any sections still in the dict are not used and should be removed
+        for content_item_id, content_item in currentSections.items():
+            employer_page.content_item.remove(content_item_id)
+            content_item.delete()
+            
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Updated the profile page'
+        })
+        
+    @staticmethod
+    def get_employer_page(employer_id):
+        try:
+            return EmployerPage.objects.prefetch_related('content_item').get(employer_id=employer_id)
+        except EmployerPage.DoesNotExist:
+            return None
