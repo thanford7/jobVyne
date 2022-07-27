@@ -10,7 +10,7 @@
       <ResponsiveWidth class="justify-center">
         <q-tabs align="center" v-model="tab">
           <q-tab name="jobs" label="Jobs"/>
-          <q-tab name="company" :label="`About ${employer?.name}`"/>
+          <q-tab v-if="employerPage && employerPage.is_viewable" name="company" :label="`About ${employer?.name}`"/>
           <q-tab name="me" :label="`About ${profile?.first_name}`"/>
         </q-tabs>
       </ResponsiveWidth>
@@ -84,9 +84,11 @@
                 </div>
               </div>
             </q-tab-panel>
-            <q-tab-panel name="company">
+            <q-tab-panel v-if="employerPage && employerPage.is_viewable" name="company">
               <div class="row">
-                <div class="col-12">Company placeholder</div>
+                <div class="col-12">
+                  <EmployerProfile/>
+                </div>
               </div>
             </q-tab-panel>
             <q-tab-panel name="me">
@@ -104,6 +106,8 @@
 </template>
 
 <script>
+import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
+import { useEmployerStore } from 'stores/employer-store.js'
 import { ref } from 'vue'
 import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
@@ -130,7 +134,12 @@ export default {
       dateTimeUtil
     }
   },
-  components: { ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
+  components: { EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
+  computed: {
+    employerPage () {
+      return this.employerStore.getEmployerPage(this.user.employer_id)
+    }
+  },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
@@ -171,8 +180,16 @@ export default {
   },
   preFetch () {
     const authStore = useAuthStore()
+    const employerStore = useEmployerStore()
     Loading.show()
-    return authStore.setUser().finally(() => Loading.hide())
+
+    return authStore.setUser().then(() => {
+      return Promise.all([
+        employerStore.setEmployerPage(authStore.propUser.employer_id)
+      ])
+    }).finally(() => {
+      Loading.hide()
+    })
   },
   setup () {
     const isRightDrawerOpen = ref(false)
@@ -199,7 +216,8 @@ export default {
       user,
       applications,
       isRightDrawerOpen,
-      openJobAppModal
+      openJobAppModal,
+      employerStore: useEmployerStore()
     }
   }
 }

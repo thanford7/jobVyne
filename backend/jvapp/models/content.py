@@ -22,4 +22,4 @@ class ContentItem(AuditFields):
     item_parts = models.JSONField()
     
     class Meta:
-        ordering = ('-orderIdx', )
+        ordering = ('orderIdx', )

@@ -1,10 +1,12 @@
 <template>
   <div>
     <q-expansion-item
-      v-for="part in section.section_parts"
-      default-opened dense expand-separator
+      v-for="part in section.item_parts"
+      expand-separator
       :label="part.header"
-      :header-class="['bg-primary', 'text-white']"
+      :header-class="['bg-primary', 'text-white', 'text-h6']"
+      expand-icon-class="text-white"
+      class="border-bottom-1-gray-100"
     >
       <div class="q-pa-md" v-html="part.html_content"/>
     </q-expansion-item>

@@ -1,10 +1,11 @@
 <template>
   <div>
     <q-expansion-item
-      v-for="(part, partIdx) in section.section_parts"
+      v-for="(part, partIdx) in section.item_parts"
       :group="`section-${sectionIdx}-parts`"
       default-opened dense expand-separator
       :header-class="['bg-grey-3']"
+      class="border-bottom-1-gray-300"
     >
       <template v-slot:header>
         <span class="q-pt-xs" style="font-size: 1.2em">
@@ -17,7 +18,7 @@
             flat dense icon="arrow_upward"
             @click="$emit('moveUp', partIdx)"/>
           <q-btn
-            v-if="partIdx !== section.section_parts.length - 1"
+            v-if="partIdx !== section.item_parts.length - 1"
             flat dense icon="arrow_downward"
             @click="$emit('moveDown', partIdx)"/>
           <q-btn
@@ -26,7 +27,8 @@
         </div>
       </template>
       <div class="row q-gutter-y-sm q-mt-sm q-px-sm">
-        <slot :part="part"/>
+        <IconSectionCfgForm v-if="section.type === SECTION_TYPES.ICON.key" :part="part"/>
+        <AccordionSectionCfgForm v-if="section.type === SECTION_TYPES.ACCORDION.key" :part="part"/>
       </div>
     </q-expansion-item>
     <div class="q-mt-md">
@@ -45,7 +47,10 @@
 </template>
 
 <script>
+import AccordionSectionCfgForm from 'components/sections/AccordionSectionCfgForm.vue'
+import IconSectionCfgForm from 'components/sections/IconSectionCfgForm.vue'
 import LiveView from 'components/sections/LiveView.vue'
+import { SECTION_TYPES } from 'components/sections/sectionTypes.js'
 import dataUtil from 'src/utils/data'
 
 export default {
@@ -55,10 +60,11 @@ export default {
     sectionIdx: Number,
     partLabel: String
   },
-  components: { LiveView },
+  components: { AccordionSectionCfgForm, IconSectionCfgForm, LiveView },
   data () {
     return {
-      dataUtil
+      dataUtil,
+      SECTION_TYPES
     }
   }
 }

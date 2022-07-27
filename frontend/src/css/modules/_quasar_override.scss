@@ -7,3 +7,7 @@
     }
   }
 }
+
+.q-page-sticky {
+  z-index: 1000; // Make sure the floating content appears above all other content
+}

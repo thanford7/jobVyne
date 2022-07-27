@@ -1,6 +1,6 @@
 <template>
-  <div class="row q-gutter-y-md">
-    <div v-for="part in section.section_parts" class="col-12 col-sm-6 col-md-4 col-lg-3 q-px-sm">
+  <div class="row q-gutter-y-md justify-center">
+    <div v-for="part in section.item_parts" class="col-12 col-sm-6 col-md-4 col-lg-3 q-px-sm">
       <q-card class="h-100">
         <q-card-section>
           <div class="flex items-center justify-center">

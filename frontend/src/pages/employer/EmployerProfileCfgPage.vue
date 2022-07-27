@@ -29,12 +29,18 @@
               </q-item-section>
               <q-item-section avatar>
                 <CustomTooltip>
-                  Ideal for:
+                  <div class="q-mb-sm text-bold">Ideal for:</div>
                   <ul>
                     <li v-for="item in section.usedFor">
                       {{ item }}
                     </li>
                   </ul>
+                  <template v-if="section.exampleImagePath">
+                    <div class="q-mb-sm text-bold">Example:</div>
+                    <div class="flex justify-center">
+                      <img :src="section.exampleImagePath" alt="Example for section type" style="max-height: 150px">
+                    </div>
+                  </template>
                 </CustomTooltip>
               </q-item-section>
             </q-item>
@@ -44,7 +50,6 @@
         <q-btn
           v-if="sections.length && hasSectionsChanged"
           ripple label="Undo" color="grey-6" icon="undo"
-          class="q-mr-sm"
           @click="undoChanges"
         />
         <q-btn
@@ -110,43 +115,12 @@
                 @remove="removeSectionPart(sectionIdx, $event)"
                 @add="addSectionPart(sectionIdx)"
               />
-              <div v-if="section.type === sectionTypes.CAROUSEL.key" class="col-12">
-                <div class="row">
-                  <div class="col-12">
-                    <EmployerFilesSelector
-                      :ref="`employerFilesSelector-${sectionIdx}`"
-                      :file-type-keys="[FILE_TYPES.IMAGE.key]"
-                      :is-emit-id-only="true"
-                      v-model="section.item_parts[0].picture_ids"
-                    >
-                      <template v-slot:after>
-                        <q-btn
-                          unelevated ripple color="primary"
-                          class="h-100"
-                          @click="openEmployerFileModal(sectionIdx)"
-                        >Add new image
-                        </q-btn>
-                      </template>
-                    </EmployerFilesSelector>
-                    <q-toggle
-                      v-model="section.item_parts[0].isAllowAutoplay"
-                      label="Auto-scroll"
-                    >
-                      <CustomTooltip>
-                        When on, pictures will automatically scroll from one to the next
-                      </CustomTooltip>
-                    </q-toggle>
-                  </div>
-                  <div class="col-12">
-                    <LiveView>
-                      <CarouselSection
-                        :picture-ids="section.item_parts[0].picture_ids"
-                        :is-allow-autoplay="section.item_parts[0].isAllowAutoplay"
-                      />
-                    </LiveView>
-                  </div>
-                </div>
-              </div>
+              <CarouselSectionCfg
+                v-if="section.type === sectionTypes.CAROUSEL.key"
+                :section="section"
+                :section-idx="sectionIdx"
+                class="col-12"
+              />
               <AccordionSectionCfg
                 v-if="section.type === sectionTypes.ACCORDION.key"
                 :section="section"
@@ -168,28 +142,25 @@
 <script>
 import PageHeader from 'components/PageHeader.vue'
 import WysiwygEditor from 'components/section-editors/WysiwygEditor.vue'
+import { SECTION_TYPES } from 'components/sections/sectionTypes.js'
 import dataUtil from 'src/utils/data'
 import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
-import LiveView from 'components/sections/LiveView.vue'
-import CarouselSection from 'components/sections/CarouselSection.vue'
-import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
-import { Loading, useQuasar } from 'quasar'
+import { Loading, useMeta } from 'quasar'
 import { FILE_TYPES } from 'src/utils/file'
 import CustomTooltip from 'components/CustomTooltip.vue'
-import EmployerFilesSelector from 'components/inputs/EmployerFilesSelector.vue'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
 import AccordionSectionCfg from 'components/sections/AccordionSectionCfg.vue'
 import { getAjaxFormData } from 'src/utils/requests'
+import CarouselSectionCfg from 'components/sections/CarouselSectionCfg.vue'
+import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'EmployerProfileCfgPage',
   components: {
+    CarouselSectionCfg,
     AccordionSectionCfg,
-    EmployerFilesSelector,
     CustomTooltip,
-    CarouselSection,
-    LiveView,
     IconSectionCfg,
     PageHeader,
     WysiwygEditor
@@ -205,32 +176,7 @@ export default {
       isViewable: this.getEmployerPageData().is_viewable || false,
       currentSections: this.getSectionsCopy(),
       sections: this.getSectionsCopy(),
-      sectionTypes: {
-        TEXT: {
-          key: 'TEXT',
-          label: 'Text section',
-          defaultData: { html_content: '' },
-          usedFor: ['About us', 'Why work for us', 'Diversity & Inclusion']
-        },
-        ICON: {
-          key: 'ICON',
-          label: 'Icons section',
-          defaultData: { header: null, html_content: '', icon: null },
-          usedFor: ['Benefits', 'Values', 'Hiring process']
-        },
-        CAROUSEL: {
-          key: 'CAROUSEL',
-          label: 'Picture carousel section',
-          defaultData: { header: null, picture_ids: [], isAllowAutoplay: false },
-          usedFor: ['Company culture', 'Faces of employees']
-        },
-        ACCORDION: {
-          key: 'ACCORDION',
-          label: 'Accordion list section',
-          defaultData: { header: null, html_content: '' },
-          usedFor: ['FAQ']
-        }
-      },
+      sectionTypes: SECTION_TYPES,
       FILE_TYPES
     }
   },
@@ -248,7 +194,7 @@ export default {
       dataUtil.removeItemFromList(this.sections, { listIdx: sectionIdx })
     },
     moveSectionItem (sectionIdx, isUp) {
-      const newIdx = sectionIdx + (isUp) ? -1 : 1
+      const newIdx = sectionIdx + ((isUp) ? -1 : 1)
       const section = dataUtil.deepCopy(this.sections[sectionIdx])
       this.removeSectionItem(sectionIdx)
       this.sections.splice(newIdx, 0, section)
@@ -267,20 +213,6 @@ export default {
       const part = dataUtil.deepCopy(this.sections[sectionIdx].item_parts[partIdx])
       this.removeSectionPart(sectionIdx, partIdx)
       this.sections[sectionIdx].item_parts.splice(newIdx, 0, part)
-    },
-    async openEmployerFileModal (sectionIdx) {
-      await loadDialogEmployerFileDataFn()
-      const cfg = {
-        component: DialogEmployerFile,
-        componentProps: { fileTypeKeys: [FILE_TYPES.IMAGE.key] }
-      }
-      return this.q.dialog(cfg).onOk((pictureId) => {
-        const pictureFile = this.employerStore.getEmployerFiles(
-          this.authStore.propUser.employer_id, pictureId
-        )
-        const refKey = `employerFilesSelector-${sectionIdx}`
-        this.$refs[refKey][0].addFile(pictureFile)
-      })
     },
     getEmployerPageData () {
       return this.employerStore.getEmployerPage(this.authStore.propUser.employer_id) || {}
@@ -318,10 +250,17 @@ export default {
     })
   },
   setup () {
+    const globalStore = useGlobalStore()
+    const pageTitle = 'Profile Page'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle
+    }
+    useMeta(metaData)
+
     return {
       authStore: useAuthStore(),
-      employerStore: useEmployerStore(),
-      q: useQuasar()
+      employerStore: useEmployerStore()
     }
   }
 }

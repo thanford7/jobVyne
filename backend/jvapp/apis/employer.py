@@ -364,8 +364,10 @@ class EmployerPageView(JobVyneAPIView):
             current_sections = {ci.id: ci for ci in employer_page.content_item.all()}
         else:
             employer_page = EmployerPage(employer_id=employer_id)
-            employer_page.save()
             current_sections = {}
+        employer_page.is_viewable = self.data['is_viewable']
+        employer_page.save()
+        
         sections = self.data['sections']
         for sectionIdx, sectionData in enumerate(sections):
             section = None
