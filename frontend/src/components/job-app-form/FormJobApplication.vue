@@ -65,7 +65,7 @@
                 v-model="formData.resume"
                 label="Resume"
                 class="q-mb-none"
-                accept=".pdf,.doc,.docx,.pages,.gdoc"
+                :accept="allowedResumeExtensionsStr"
                 max-file-size="1000000"
                 :rules="[ val => val || 'A resume is required']"
               />
@@ -104,6 +104,7 @@
 </template>
 
 <script>
+import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
 import { useQuasar } from 'quasar'
@@ -143,6 +144,11 @@ export default {
   props: {
     jobApplication: {
       type: [Object, null]
+    }
+  },
+  computed: {
+    allowedResumeExtensionsStr () {
+      return fileUtil.getAllowedFileExtensionsStr([FILE_TYPES.FILE.key])
     }
   },
   watch: {

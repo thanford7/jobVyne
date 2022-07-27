@@ -245,7 +245,7 @@ class EmployerFileView(JobVyneAPIView):
         
         employer_file = EmployerFile()
         file = self.files['file'][0] if self.files.get('file') else None
-        self.update_employer_file(employer_file, self.data, file=file)
+        self.update_employer_file(employer_file, self.data, self.user, file=file)
         return Response(status=status.HTTP_200_OK, data={
             'id': employer_file.id,
             SUCCESS_MESSAGE_KEY: f'Created a new file titled {employer_file.title}'
@@ -257,7 +257,7 @@ class EmployerFileView(JobVyneAPIView):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
         employer_file = self.get_employer_files(file_id=file_id)
-        self.update_employer_file(employer_file, self.data)
+        self.update_employer_file(employer_file, self.data, self.user)
         return Response(status=status.HTTP_200_OK, data={
             'id': employer_file.id,
             SUCCESS_MESSAGE_KEY: f'Updated file titled {employer_file.title}'
@@ -265,7 +265,7 @@ class EmployerFileView(JobVyneAPIView):
 
     @staticmethod
     @atomic
-    def update_employer_file(employer_file, data, file=None):
+    def update_employer_file(employer_file, data, user, file=None):
         set_object_attributes(employer_file, data, {
             'employer_id': None,
             'title': None
@@ -280,7 +280,8 @@ class EmployerFileView(JobVyneAPIView):
             or employer_file.file.name.split('/')[-1]
         )
         
-        # TODO: Check permissions
+        permission_type = PermissionTypes.EDIT.value if employer_file.id else PermissionTypes.CREATE.value
+        employer_file.jv_check_permission(permission_type, user)
         employer_file.save()
         
         employer_file.tags.clear()
@@ -320,7 +321,7 @@ class EmployerFileTagView(JobVyneAPIView):
     @atomic
     def delete(self, request, tag_id):
         tag = EmployerFileTag.objects.get(id=tag_id)
-        # TODO: Check permissions
+        tag.jv_check_permission(PermissionTypes.DELETE.value, self.user)
         tag.delete()
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{tag.name} tag was deleted'
@@ -366,6 +367,7 @@ class EmployerPageView(JobVyneAPIView):
             employer_page = EmployerPage(employer_id=employer_id)
             current_sections = {}
         employer_page.is_viewable = self.data['is_viewable']
+        employer_page.jv_check_permission(PermissionTypes.EDIT.value, self.user)
         employer_page.save()
         
         sections = self.data['sections']

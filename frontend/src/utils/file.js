@@ -14,7 +14,7 @@ export const FILE_TYPES = {
   FILE: {
     key: 'FILE',
     title: 'file',
-    allowedExtensions: ['doc', 'docx', 'pdf', 'pages', 'gdoc']
+    allowedExtensions: ['doc', 'docx', 'pdf', 'txt', 'rtf']
   }
 }
 
@@ -24,6 +24,10 @@ class FileUtil {
       allExtensions = [...allExtensions, ...FILE_TYPES[fileTypeKey].allowedExtensions]
       return allExtensions
     }, [])
+  }
+
+  getAllowedFileExtensionsStr (fileTypeKeys) {
+    return this.getAllowedFileExtensions(fileTypeKeys).map((ext) => `.${ext}`).join(', ')
   }
 
   getFileNameFromUrl (fileUrl) {

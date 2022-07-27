@@ -4,7 +4,7 @@
       <PageHeader title="Profile page">
         This content is displayed on every jobs page from employee social links.
       </PageHeader>
-      <div class="row q-mt-md q-gutter-x-md">
+      <div v-if="canEdit" class="row q-mt-md q-gutter-x-md">
         <q-toggle
           v-model="isViewable"
           color="primary"
@@ -58,7 +58,7 @@
           @click="savePage"
         />
       </div>
-      <div class="row q-mt-md">
+      <div v-if="canEdit" class="row q-mt-md">
         <div v-for="(section, sectionIdx) in sections" class="col-12 border-bottom-1-gray-100 border-top-1-gray-100">
           <q-expansion-item
             group="group-sections"
@@ -148,6 +148,7 @@ import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import { Loading, useMeta } from 'quasar'
 import { FILE_TYPES } from 'src/utils/file'
 import CustomTooltip from 'components/CustomTooltip.vue'
+import { PERMISSION_NAMES } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
 import AccordionSectionCfg from 'components/sections/AccordionSectionCfg.vue'
@@ -166,6 +167,9 @@ export default {
     WysiwygEditor
   },
   computed: {
+    canEdit () {
+      return this.authStore.getHasPermission(PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
+    },
     hasSectionsChanged () {
       return !dataUtil.isDeepEqual(this.currentSections, this.sections)
     }

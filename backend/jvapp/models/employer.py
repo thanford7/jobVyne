@@ -116,7 +116,7 @@ class EmployerPermission(models.Model):
         return self.name
     
     
-class EmployerFile(AuditFields, OwnerFields):
+class EmployerFile(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file')
     file = models.FileField(
         upload_to=getEmployerUploadLocation,
@@ -125,19 +125,49 @@ class EmployerFile(AuditFields, OwnerFields):
     title = models.CharField(max_length=100)
     tags = models.ManyToManyField('EmployerFileTag')
     
+    def __str__(self):
+        return self.title
     
-class EmployerFileTag(models.Model):
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value)
+            )
+        )
+    
+    
+class EmployerFileTag(models.Model, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file_tag')
     name = LowercaseCharField(max_length=100)
     
     class Meta:
         unique_together = ('employer', 'name')
         
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value)
+            )
+        )
         
-class EmployerPage(AuditFields, OwnerFields):
+        
+class EmployerPage(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='profile_page', unique=True)
     is_viewable = models.BooleanField(default=False)
     content_item = models.ManyToManyField('ContentItem')
+    
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value)
+            )
+        )
 
 
 class EmployerSize(models.Model):

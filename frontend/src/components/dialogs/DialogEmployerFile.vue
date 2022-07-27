@@ -90,7 +90,7 @@ export default {
       return fileUtil.getAllowedFileExtensions(this.fileTypeKeys)
     },
     allowedFileExtensionsStr () {
-      return this.allowedFileExtensions.map((ext) => `.${ext}`).join(', ')
+      return fileUtil.getAllowedFileExtensionsStr(this.fileTypeKeys)
     },
     currentFileNames () {
       const employerFiles = this.employerStore.getEmployerFiles(this.authStore.propUser.employer_id)
