@@ -38,7 +38,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     def _jv_can_edit(self, user):
         return (
             user.is_admin
-            or (user.employer_id == self.id and user.has_employer_permission())
+            or (user.employer_id == self.id and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value))
         )
     
     def _jv_can_delete(self, user):

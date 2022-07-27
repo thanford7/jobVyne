@@ -61,12 +61,14 @@
           >
             <template v-slot:fileInput>
               <q-file
+                ref="newResumeUpload"
                 filled bottom-slots clearable
                 v-model="formData.resume"
                 label="Resume"
                 class="q-mb-none"
                 :accept="allowedResumeExtensionsStr"
                 max-file-size="1000000"
+                lazy-rules="ondemand"
                 :rules="[ val => val || 'A resume is required']"
               />
             </template>
@@ -164,6 +166,12 @@ export default {
         this.$refs.resumeUpload.getValues(),
         { job_id: this.jobApplication.id, filter_id: this.$route.params.filterId }
       )
+
+      // Make sure a resume is uploaded if existing resume is not being used
+      if (this.$refs.resumeUpload.isUpload && !this.$refs.newResumeUpload.validate()) {
+        return
+      }
+
       await this.$api.post('job-application/', getAjaxFormData(data, [this.newResumeKey]))
       await this.authStore.setUser(true) // Update user applications and application template
       this.isApplicationSaved = true

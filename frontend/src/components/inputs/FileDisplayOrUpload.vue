@@ -9,7 +9,11 @@
         readonly
         :model-value="fileUtil.getFileNameFromUrl(fileUrl)"
         :label="`Current ${label}`"
-      />
+      >
+        <template v-if="fileUtil.isImage(fileUrl)" v-slot:after>
+          <img :src="fileUrl" alt="Sample view of image" style="max-height: 56px">
+        </template>
+      </q-input>
       <span class="text-small">
         <span class="text-gray-3">
           <q-icon name="file_download"/>&nbsp;

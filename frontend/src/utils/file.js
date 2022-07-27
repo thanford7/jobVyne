@@ -53,6 +53,21 @@ class FileUtil {
     return fileType
   }
 
+  isImage (fileName) {
+    const fileType = this.getFileType(fileName)
+    return FILE_TYPES.IMAGE.allowedExtensions.includes(fileType)
+  }
+
+  isVideo (fileName) {
+    const fileType = this.getFileType(fileName)
+    return FILE_TYPES.VIDEO.allowedExtensions.includes(fileType)
+  }
+
+  isFile (fileName) {
+    const fileType = this.getFileType(fileName)
+    return FILE_TYPES.FILE.allowedExtensions.includes(fileType)
+  }
+
   filterFilesByTypes (files, fileTypeKeys) {
     // No need to filter if all file types are allowed
     if (dataUtil.isArraysEqual(fileTypeKeys, Object.keys(FILE_TYPES))) {

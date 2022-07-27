@@ -20,7 +20,7 @@ __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'Employer
 
 
 class EmployerView(JobVyneAPIView):
-    permission_classes = [IsAuthenticated, IsAdminOrEmployerOrReadOnlyPermission]
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request, employer_id=None):
         if employer_id:
@@ -55,7 +55,11 @@ class EmployerView(JobVyneAPIView):
             }
         )
         
-        employer.jv
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        employer.save()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Updated employer data'
+        })
     
     @staticmethod
     def get_employers(employer_id=None, employer_filter=None):
