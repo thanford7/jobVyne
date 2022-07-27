@@ -1,3 +1,4 @@
+from .content import *
 from .job_seeker import *
 from .location import *
 from .employer import *

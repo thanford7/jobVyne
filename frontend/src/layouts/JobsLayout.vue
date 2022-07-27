@@ -4,7 +4,7 @@
     <q-header elevated class="bg-white text-primary justify-center row">
       <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md justify-center">
         <q-toolbar-title shrink>
-          <img :src="employer?.logo" alt="Logo" style="height: 40px; object-fit: scale-down">
+          <img :src="employer?.logo_url" alt="Logo" style="height: 40px; object-fit: scale-down">
         </q-toolbar-title>
       </q-toolbar>
       <ResponsiveWidth class="justify-center">

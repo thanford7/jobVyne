@@ -13,6 +13,8 @@ __all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName')
 from jvapp.models.abstract import JobVynePermissionsMixin
 
 
+# Keep in sync with frontend user-types
+# Update migration_permissions.py and add a new migration
 class PermissionName(Enum):
     MANAGE_USER = 'Manage users'
     CHANGE_PERMISSIONS = 'Change user permissions'
@@ -21,7 +23,8 @@ class PermissionName(Enum):
     MANAGE_EMPLOYER_JOBS = 'Manage employer jobs'
     MANAGE_REFERRAL_BONUSES = 'Manage employee referral bonuses'
     ADD_EMPLOYEE_CONTENT = 'Add personal employee content'
-    MANAGE_BILLING_SETTINGS = 'Add personal employee content'
+    MANAGE_BILLING_SETTINGS = 'Manage billing settings'
+    MANAGE_EMPLOYER_SETTINGS = 'Manage employer settings'
     
 
 USER_MANAGEMENT_PERMISSIONS = [
@@ -30,6 +33,7 @@ USER_MANAGEMENT_PERMISSIONS = [
 ]
 
 
+# Update migration_permissions.py and add a new migration
 class DefaultPermissionGroups(Enum):
     ADMIN = 'Admin'
     HR = 'HR Professional'

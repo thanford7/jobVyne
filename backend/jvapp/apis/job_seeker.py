@@ -97,7 +97,7 @@ class ApplicationView(JobVyneAPIView):
         return Response(
             status=status.HTTP_200_OK,
             data={
-                SUCCESS_MESSAGE_KEY: f'Your application to {application.employer_job.employer.employerName} for the {application.employer_job.jobTitle} position was submitted'
+                SUCCESS_MESSAGE_KEY: f'Your application to {application.employer_job.employer.employer_name} for the {application.employer_job.jobTitle} position was submitted'
             }
         )
     

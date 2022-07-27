@@ -15,17 +15,34 @@ __all__ = (
 
 
 def getEmployerUploadLocation(instance, filename):
-    return f'employers/{instance.employer_id}/{filename}'
+    employer_id = instance.employer_id if hasattr(instance, 'employer_id') else instance.id
+    return f'employers/{employer_id}/{filename}'
 
 
-class Employer(AuditFields, OwnerFields):
-    employerName = models.CharField(max_length=150, unique=True)
-    logo = models.ImageField(upload_to='logos', null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
-    employerSize = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
+class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
+    employer_name = models.CharField(max_length=150, unique=True)
+    logo = models.ImageField(upload_to=getEmployerUploadLocation, null=True, blank=True)
+    employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
+    
+    # Brand colors - saved in hex form (e.g. #32a852)
+    color_primary = models.CharField(max_length=9, null=True, blank=True)
+    color_secondary = models.CharField(max_length=9, null=True, blank=True)
+    color_accent = models.CharField(max_length=9, null=True, blank=True)
     
     def __str__(self):
-        return self.employerName
+        return self.employer_name
+    
+    def _jv_can_create(self, user):
+        return user.is_admin
+    
+    def _jv_can_edit(self, user):
+        return (
+            user.is_admin
+            or (user.employer_id == self.id and user.has_employer_permission())
+        )
+    
+    def _jv_can_delete(self, user):
+        return user.is_admin
     
     
 class EmployerJob(AuditFields, OwnerFields):
@@ -48,7 +65,7 @@ class EmployerJob(AuditFields, OwnerFields):
     country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.SET_NULL)
     
     def __str__(self):
-        return f'{self.employer.employerName}-{self.jobTitle}-{self.location}'
+        return f'{self.employer.employer_name}-{self.jobTitle}-{self.location}'
     
     class Meta:
         unique_together = ('employer', 'jobTitle', 'location')
@@ -79,7 +96,7 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
         unique_together = ('name', 'employer')
         
     def __str__(self):
-        return f'{self.employer.employerName if self.employer else "<General>"}-{self.name}'
+        return f'{self.employer.employer_name if self.employer else "<General>"}-{self.name}'
         
     def jv_check_can_update_permissions(self, user):
         if not self.jv_can_update_permissions(user):

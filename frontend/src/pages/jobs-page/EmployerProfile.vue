@@ -7,7 +7,7 @@
         </template>
       </q-btn-group>
     </q-page-sticky>
-    <div v-for="(section, idx) in sections" class="q-mb-xl">
+    <div v-for="(section, idx) in sections" class="q-mb-xl q-py-md">
       <h4 v-if="section.header" class="q-mb-lg" :id="`employer-${idx}`">{{ section.header }}</h4>
       <div v-if="section.type === SECTION_TYPES.TEXT.key" v-html="section.item_parts[0].html_content"/>
       <AccordionSection

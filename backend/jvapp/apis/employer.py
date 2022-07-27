@@ -10,11 +10,11 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup
-from jvapp.models.user import JobVyneUser, USER_MANAGEMENT_PERMISSIONS
+from jvapp.models.user import JobVyneUser
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
-from jvapp.utils.data import set_object_attributes
+from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
 
@@ -26,10 +26,12 @@ class EmployerView(JobVyneAPIView):
         if employer_id:
             employer_id = int(employer_id)
             employer = self.get_employers(employer_id=employer_id)
-            can_view_users = self.user.has_employer_permission(USER_MANAGEMENT_PERMISSIONS, is_all_true=False)
             data = get_serialized_employer(
                 employer,
-                is_include_employees=(self.user.is_admin or self.user.employer_id == employer_id)
+                is_include_employees=(
+                    self.user.is_admin
+                    or (self.user.employer_id == employer_id and self.user.is_employer)
+                )
             )
         else:
             employers = self.get_employers(employer_filter=Q())
@@ -37,13 +39,31 @@ class EmployerView(JobVyneAPIView):
         
         return Response(status=status.HTTP_200_OK, data=data)
     
+    @atomic
+    def put(self, request, employer_id):
+        employer = self.get_employers(employer_id=employer_id)
+        if logo := self.files.get('logo'):
+            employer.logo = logo[0]
+        
+        set_object_attributes(
+            employer,
+            self.data,
+            {
+                'color_primary': AttributeCfg(is_protect_existing=True),
+                'color_secondary': AttributeCfg(is_protect_existing=True),
+                'color_accent': AttributeCfg(is_protect_existing=True),
+            }
+        )
+        
+        employer.jv
+    
     @staticmethod
     def get_employers(employer_id=None, employer_filter=None):
         if employer_id:
             employer_filter = Q(id=employer_id)
         
         employers = Employer.objects \
-            .select_related('employerSize') \
+            .select_related('employer_size') \
             .prefetch_related('employee', 'employee__permission_groups') \
             .filter(employer_filter)
         

@@ -21,7 +21,7 @@ def get_serialized_job_application(job_application: JobApplication):
         'social_link_filter_id': job_application.social_link_filter_id,
         'employer_job': {
             'id': job_application.employer_job_id,
-            'employer_name': job_application.employer_job.employer.employerName,
+            'employer_name': job_application.employer_job.employer.employer_name,
             'employer_id': job_application.employer_job.employer_id,
             'title': job_application.employer_job.jobTitle
         }

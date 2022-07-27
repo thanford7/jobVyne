@@ -17,7 +17,7 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
     data = {
         'id': link_filter.id,
         'owner_id': link_filter.owner_id,
-        'employer_name': link_filter.employer.employerName,
+        'employer_name': link_filter.employer.employer_name,
         'employer_id': link_filter.employer_id,
         'platform_name': link_filter.platform.name if link_filter.platform else None,
         'platform_id': link_filter.platform_id,

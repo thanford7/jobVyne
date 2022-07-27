@@ -23,7 +23,8 @@ export const PERMISSION_NAMES = {
   MANAGE_EMPLOYER_JOBS: 'Manage employer jobs',
   MANAGE_REFERRAL_BONUSES: 'Manage employee referral bonuses',
   ADD_EMPLOYEE_CONTENT: 'Add personal employee content',
-  MANAGE_BILLING_SETTINGS: 'Add personal employee content'
+  MANAGE_BILLING_SETTINGS: 'Manage billing settings',
+  MANAGE_EMPLOYER_SETTINGS: 'Manage employer settings'
 }
 
 class UserTypeUtil {

@@ -7,10 +7,12 @@ from jvapp.utils.datetime import get_datetime_format_or_none
 def get_serialized_employer(employer: Employer, is_include_employees: bool = False):
     data = {
         'id': employer.id,
-        'name': employer.employerName,
-        'logo': employer.logo.url if employer.logo else None,
-        'description': employer.description,
-        'size': employer.employerSize.size
+        'name': employer.employer_name,
+        'logo_url': employer.logo.url if employer.logo else None,
+        'size': employer.employer_size.size,
+        'color_primary': employer.color_primary,
+        'color_secondary': employer.color_secondary,
+        'color_accent': employer.color_accent
     }
     
     if is_include_employees:

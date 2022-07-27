@@ -43,7 +43,7 @@ class BaseTestCase(TestCase):
             return self.client.put(url, data=data)
     
     def create_employer(self, name):
-        employer = Employer(employerName=name)
+        employer = Employer(employer_name=name)
         employer.save()
         return employer
     
