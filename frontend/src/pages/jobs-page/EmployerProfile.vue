@@ -8,7 +8,7 @@
       </q-btn-group>
     </q-page-sticky>
     <div v-for="(section, idx) in sections" class="q-mb-xl q-py-md">
-      <h4 v-if="section.header" class="q-mb-lg" :id="`employer-${idx}`">{{ section.header }}</h4>
+      <SectionHeader :section="section" :section-idx="idx" :is-include-el-id="true"/>
       <div v-if="section.type === SECTION_TYPES.TEXT.key" v-html="section.item_parts[0].html_content"/>
       <AccordionSection
         v-if="section.type === SECTION_TYPES.ACCORDION.key"
@@ -28,6 +28,7 @@
 </template>
 
 <script>
+import SectionHeader from 'components/sections/SectionHeader.vue'
 import { SECTION_TYPES } from 'components/sections/sectionTypes.js'
 import { storeToRefs } from 'pinia/dist/pinia'
 import scrollUtil from 'src/utils/scroll.js'
@@ -39,7 +40,7 @@ import IconSection from 'components/sections/IconSection.vue'
 
 export default {
   name: 'EmployerProfile',
-  components: { AccordionSection, CarouselSection, IconSection },
+  components: { SectionHeader, AccordionSection, CarouselSection, IconSection },
   data () {
     return {
       tab: 'tab-0',

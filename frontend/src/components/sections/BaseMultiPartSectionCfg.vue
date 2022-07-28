@@ -40,7 +40,8 @@
         Add {{ partLabel }} item
       </q-btn>
     </div>
-    <LiveView>
+    <LiveView :section="section">
+      <SectionHeader :section="section"/>
       <slot name="liveView"/>
     </LiveView>
   </div>
@@ -50,6 +51,7 @@
 import AccordionSectionCfgForm from 'components/sections/AccordionSectionCfgForm.vue'
 import IconSectionCfgForm from 'components/sections/IconSectionCfgForm.vue'
 import LiveView from 'components/sections/LiveView.vue'
+import SectionHeader from 'components/sections/SectionHeader.vue'
 import { SECTION_TYPES } from 'components/sections/sectionTypes.js'
 import dataUtil from 'src/utils/data'
 
@@ -60,7 +62,7 @@ export default {
     sectionIdx: Number,
     partLabel: String
   },
-  components: { AccordionSectionCfgForm, IconSectionCfgForm, LiveView },
+  components: { SectionHeader, AccordionSectionCfgForm, IconSectionCfgForm, LiveView },
   data () {
     return {
       dataUtil,

@@ -24,7 +24,8 @@
         When on, pictures will automatically scroll from one to the next
       </CustomTooltip>
     </q-toggle>
-    <LiveView>
+    <LiveView :section="section">
+      <SectionHeader :section="section"/>
       <CarouselSection
         :picture-ids="section.item_parts[0].picture_ids"
         :is-allow-autoplay="section.item_parts[0].is_allow_autoplay"
@@ -38,6 +39,7 @@ import CarouselSection from 'components/sections/CarouselSection.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmployerFilesSelector from 'components/inputs/EmployerFilesSelector.vue'
 import LiveView from 'components/sections/LiveView.vue'
+import SectionHeader from 'components/sections/SectionHeader.vue'
 import { FILE_TYPES } from 'src/utils/file'
 import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
 import { useAuthStore } from 'stores/auth-store'
@@ -46,7 +48,7 @@ import { useQuasar } from 'quasar'
 
 export default {
   name: 'CarouselSectionCfg',
-  components: { CarouselSection, CustomTooltip, EmployerFilesSelector, LiveView },
+  components: { SectionHeader, CarouselSection, CustomTooltip, EmployerFilesSelector, LiveView },
   props: {
     section: Object,
     sectionIdx: Number

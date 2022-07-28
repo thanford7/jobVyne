@@ -4,16 +4,18 @@
       v-for="part in section.item_parts"
       expand-separator
       :label="part.header"
-      :header-class="['bg-primary', 'text-white', 'text-h6']"
-      expand-icon-class="text-white"
-      class="border-bottom-1-gray-100"
+      :header-class="['text-h6']"
+      :header-style="accordionStyle"
+      class="border-bottom-1-gray-100 inherit-text-color"
     >
-      <div class="q-pa-md" v-html="part.html_content"/>
+      <div class="q-pa-md bg-white" v-html="part.html_content"/>
     </q-expansion-item>
   </div>
 </template>
 
 <script>
+import colorUtil from 'src/utils/color.js'
+
 let idx = 0
 export default {
   name: 'AccordionSection',
@@ -30,6 +32,21 @@ export default {
     idx++
     return {
       accordionIdx: idx
+    }
+  },
+  computed: {
+    accordionStyle () {
+      const style = {}
+      const styleOptions = [
+        // cfgKey, styleKey, defaultVal
+        ['accordion_header_color', 'color', colorUtil.getPaletteColor('white')],
+        ['accordion_background_color', 'backgroundColor', colorUtil.getPaletteColor('primary')]
+      ]
+      styleOptions.forEach(([cfgKey, styleKey, defaultVal]) => {
+        const val = this.section.config[cfgKey]
+        style[styleKey] = val || defaultVal
+      })
+      return style
     }
   }
 }

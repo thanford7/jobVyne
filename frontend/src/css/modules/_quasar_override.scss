@@ -11,3 +11,9 @@
 .q-page-sticky {
   z-index: 1000; // Make sure the floating content appears above all other content
 }
+
+.inherit-text-color {
+  .q-item .q-item__section--side {
+    color: inherit  // Used to make sure q-expansion-item icons get the same color as the rest of the text
+  }
+}

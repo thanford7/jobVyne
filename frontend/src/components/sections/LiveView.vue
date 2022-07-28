@@ -9,7 +9,7 @@
           Live view
         </q-item-section>
       </template>
-      <div class="q-pa-sm">
+      <div class="q-pa-sm" :style="sectionStyle">
         <slot/>
       </div>
     </q-expansion-item>
@@ -18,6 +18,18 @@
 
 <script>
 export default {
-  name: 'LiveView'
+  name: 'LiveView',
+  props: {
+    section: Object
+  },
+  computed: {
+    sectionStyle () {
+      const backgroundColor = this.section.config.background_color
+      if (backgroundColor) {
+        return { backgroundColor }
+      }
+      return {}
+    }
+  }
 }
 </script>

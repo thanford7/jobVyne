@@ -4,7 +4,7 @@
       <PageHeader title="Profile page">
         This content is displayed on every jobs page from employee social links.
       </PageHeader>
-      <div v-if="canEdit" class="row q-mt-md q-gutter-x-md">
+      <div v-if="canEdit" class="row q-mt-md q-gutter-x-sm">
         <q-toggle
           v-model="isViewable"
           color="primary"
@@ -85,7 +85,7 @@
               </div>
             </template>
             <div class="row q-gutter-y-md q-mt-xs q-mb-md">
-              <div class="col-12">
+              <div class="col-12 q-gutter-y-sm">
                 <div class="row">
                   <div class="col-12 col-md-6">
                     <q-input filled v-model="section.header" label="Section header" class="w-100">
@@ -97,6 +97,40 @@
                       </template>
                     </q-input>
                   </div>
+                </div>
+                <div class="row q-gutter-x-sm">
+                  <ColorPicker
+                    v-model="section.config.background_color"
+                    label="Background color"
+                    :is-include-employer-colors="true"
+                    class="q-pb-sm"
+                  />
+                  <ColorPicker
+                    v-model="section.config.header_color"
+                    label="Header color"
+                    :is-include-employer-colors="true"
+                    class="q-pb-sm"
+                  />
+                  <ColorPicker
+                    v-model="section.config.text_color"
+                    label="Text color"
+                    :is-include-employer-colors="true"
+                    class="q-pb-sm"
+                  />
+                  <template v-if="section.type === sectionTypes.ACCORDION.key">
+                    <ColorPicker
+                      v-model="section.config.accordion_background_color"
+                      label="Accordion background color"
+                      :is-include-employer-colors="true"
+                      class="q-pb-sm"
+                    />
+                    <ColorPicker
+                      v-model="section.config.accordion_header_color"
+                      label="Accordion header color"
+                      :is-include-employer-colors="true"
+                      class="q-pb-sm"
+                    />
+                  </template>
                 </div>
               </div>
               <div v-if="section.type === sectionTypes.TEXT.key" class="col-12">
@@ -140,9 +174,10 @@
 </template>
 
 <script>
+import ColorPicker from 'components/inputs/ColorPicker.vue'
 import PageHeader from 'components/PageHeader.vue'
 import WysiwygEditor from 'components/section-editors/WysiwygEditor.vue'
-import { SECTION_TYPES } from 'components/sections/sectionTypes.js'
+import sectionUtil, { SECTION_TYPES } from 'components/sections/sectionTypes.js'
 import dataUtil from 'src/utils/data'
 import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import { Loading, useMeta } from 'quasar'
@@ -159,6 +194,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 export default {
   name: 'EmployerProfileCfgPage',
   components: {
+    ColorPicker,
     CarouselSectionCfg,
     AccordionSectionCfg,
     CustomTooltip,
@@ -186,13 +222,7 @@ export default {
   },
   methods: {
     addSectionItem (sectionType) {
-      this.sections.push({
-        type: sectionType,
-        header: null,
-        item_parts: [
-          dataUtil.deepCopy(this.sectionTypes[sectionType].defaultData)
-        ]
-      })
+      sectionUtil.addSectionItem(this.sections, sectionType)
     },
     removeSectionItem (sectionIdx) {
       dataUtil.removeItemFromList(this.sections, { listIdx: sectionIdx })
@@ -206,7 +236,7 @@ export default {
     addSectionPart (sectionIdx) {
       const sectionType = this.sections[sectionIdx].type
       this.sections[sectionIdx].item_parts.push(
-        dataUtil.deepCopy(this.sectionTypes[sectionType].defaultData)
+        dataUtil.deepCopy(this.sectionTypes[sectionType].sectionPartConfig)
       )
     },
     removeSectionPart (sectionIdx, partIdx) {

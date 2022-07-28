@@ -404,6 +404,7 @@ class EmployerPageView(JobVyneAPIView):
                 section = ContentItem(type=sectionData['type'])
             section.orderIdx = sectionIdx
             section.header = sectionData['header']
+            section.config = sectionData.get('config')
             section.item_parts = sectionData['item_parts']
             section.save()
             employer_page.content_item.add(section)
