@@ -3,7 +3,11 @@
     :is-include-buttons="false"
   >
     <template v-slot:fullWidthBody>
-      <FormJobApplication :job-application="jobApplication" @closeApplication="onDialogHide"/>
+      <FormJobApplication
+        :job-application="jobApplication"
+        :employer="employer"
+        @closeApplication="onDialogHide"
+      />
     </template>
   </DialogBase>
 </template>
@@ -19,7 +23,8 @@ export default {
   props: {
     jobApplication: {
       type: [Object, null]
-    }
+    },
+    employer: Object
   }
 }
 </script>

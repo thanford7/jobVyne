@@ -133,12 +133,10 @@
                   </template>
                 </div>
               </div>
-              <div v-if="section.type === sectionTypes.TEXT.key" class="col-12">
-                <WysiwygEditor
-                  v-model="section.item_parts[0].html_content"
-                  placeholder="Section text..."
-                />
-              </div>
+              <TextSectionCfg
+                v-if="section.type === sectionTypes.TEXT.key"
+                :section="section"
+              />
               <IconSectionCfg
                 v-if="section.type === sectionTypes.ICON.key"
                 :section="section"
@@ -176,8 +174,8 @@
 <script>
 import ColorPicker from 'components/inputs/ColorPicker.vue'
 import PageHeader from 'components/PageHeader.vue'
-import WysiwygEditor from 'components/section-editors/WysiwygEditor.vue'
 import sectionUtil, { SECTION_TYPES } from 'components/sections/sectionTypes.js'
+import TextSectionCfg from 'components/sections/TextSectionCfg.vue'
 import dataUtil from 'src/utils/data'
 import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import { Loading, useMeta } from 'quasar'
@@ -194,13 +192,13 @@ import { useGlobalStore } from 'stores/global-store.js'
 export default {
   name: 'EmployerProfileCfgPage',
   components: {
+    TextSectionCfg,
     ColorPicker,
     CarouselSectionCfg,
     AccordionSectionCfg,
     CustomTooltip,
     IconSectionCfg,
-    PageHeader,
-    WysiwygEditor
+    PageHeader
   },
   computed: {
     canEdit () {

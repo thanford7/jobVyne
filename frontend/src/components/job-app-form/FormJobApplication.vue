@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div v-if="employer">
     <template v-if="!isApplicationSaved">
-      <div class="q-pa-sm bg-primary text-white">
+      <div class="q-pa-sm" :style="getHeaderStyle()">
         <div class="text-h6 text-center">Apply to {{ jobApplication.job_title }}</div>
       </div>
       <div v-if="!authStore.propIsAuthenticated" class="q-pa-sm">
@@ -78,7 +78,7 @@
           </div>
 
           <div>
-            <q-btn ripple label="Submit application" type="submit" color="accent"/>
+            <q-btn ripple label="Submit application" :style="getButtonStyle()" type="submit"/>
           </div>
         </q-form>
       </div>
@@ -106,6 +106,7 @@
 </template>
 
 <script>
+import colorUtil from 'src/utils/color.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
@@ -146,7 +147,8 @@ export default {
   props: {
     jobApplication: {
       type: [Object, null]
-    }
+    },
+    employer: Object
   },
   computed: {
     allowedResumeExtensionsStr () {
@@ -159,6 +161,20 @@ export default {
     }
   },
   methods: {
+    getHeaderStyle () {
+      const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
+      return {
+        backgroundColor: primaryColor,
+        color: colorUtil.getInvertedColor(primaryColor)
+      }
+    },
+    getButtonStyle () {
+      const accentColor = colorUtil.getEmployerAccentColor(this.employer)
+      return {
+        backgroundColor: accentColor,
+        color: colorUtil.getInvertedColor(accentColor)
+      }
+    },
     async saveApplication () {
       const data = Object.assign(
         {},

@@ -17,6 +17,8 @@
 </template>
 
 <script>
+import sectionUtil from 'components/sections/sectionTypes.js'
+
 export default {
   name: 'LiveView',
   props: {
@@ -24,11 +26,7 @@ export default {
   },
   computed: {
     sectionStyle () {
-      const backgroundColor = this.section.config.background_color
-      if (backgroundColor) {
-        return { backgroundColor }
-      }
-      return {}
+      return sectionUtil.getBackgroundStyle(this.section)
     }
   }
 }

@@ -8,12 +8,13 @@
       :header-style="accordionStyle"
       class="border-bottom-1-gray-100 inherit-text-color"
     >
-      <div class="q-pa-md bg-white" v-html="part.html_content"/>
+      <div class="q-pa-md bg-white" v-html="part.html_content" :style="bodyStyle"/>
     </q-expansion-item>
   </div>
 </template>
 
 <script>
+import sectionUtil from 'components/sections/sectionTypes.js'
 import colorUtil from 'src/utils/color.js'
 
 let idx = 0
@@ -47,6 +48,9 @@ export default {
         style[styleKey] = val || defaultVal
       })
       return style
+    },
+    bodyStyle () {
+      return sectionUtil.getTextStyle(this.section)
     }
   }
 }

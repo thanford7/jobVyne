@@ -1,14 +1,14 @@
 <template>
   <q-layout view="hHr lpR fFf">
 
-    <q-header elevated class="bg-white text-primary justify-center row">
-      <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md justify-center">
+    <q-header v-if="isLoaded" elevated class="bg-white text-primary justify-center row">
+      <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
         <q-toolbar-title shrink>
           <img :src="employer?.logo_url" alt="Logo" style="height: 40px; object-fit: scale-down">
         </q-toolbar-title>
       </q-toolbar>
       <ResponsiveWidth class="justify-center">
-        <q-tabs align="center" v-model="tab">
+        <q-tabs align="center" v-model="tab" :style="getTabStyle()">
           <q-tab name="jobs" label="Jobs"/>
           <q-tab v-if="employerPage && employerPage.is_viewable" name="company" :label="`About ${employer?.name}`"/>
           <q-tab name="me" :label="`About ${profile?.first_name}`"/>
@@ -24,7 +24,11 @@
       :width="400"
       overlay bordered persistent
     >
-      <FormJobApplication :job-application="jobApplication" @closeApplication="closeApplication"/>
+      <FormJobApplication
+        :job-application="jobApplication"
+        :employer="employer"
+        @closeApplication="closeApplication"
+      />
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
         <q-btn
           dense round unelevated
@@ -38,14 +42,17 @@
     <q-page-container class="row justify-center">
       <ResponsiveWidth>
         <BannerMessage/>
-        <q-page v-if="!isLoading" padding>
-          <q-tab-panels v-model="tab" animated>
-            <q-tab-panel name="jobs">
-              <div class="row">
+      </ResponsiveWidth>
+      <q-page v-if="isLoaded">
+        <q-tab-panels v-model="tab" animated>
+          <q-tab-panel name="jobs">
+            <ResponsiveWidth>
+              <q-page padding>
+                <div class="row">
                 <div class="col-12">
                   <div v-for="job in jobs" :key="job.id" class="q-mb-md">
-                    <q-card :class="(jobApplication && jobApplication.id === job.id) ? 'q-card--selected' : ''">
-                      <div v-if="getJobApplication(job.id)" class="application-date">
+                    <q-card :style="getSelectedCardStyle(job)">
+                      <div v-if="getJobApplication(job.id)" class="application-date" :style="getHeaderStyle()">
                         Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
                       </div>
                       <q-card-section>
@@ -77,28 +84,38 @@
                       </q-card-section>
                       <q-separator dark/>
                       <q-card-actions v-if="!getJobApplication(job.id)">
-                        <q-btn ripple unelevated color="accent" label="Apply" @click="openApplication(job.id)"/>
+                        <q-btn
+                          ripple unelevated
+                          label="Apply"
+                          :style="getButtonStyle()"
+                          @click="openApplication(job.id)"
+                        />
                       </q-card-actions>
                     </q-card>
                   </div>
                 </div>
               </div>
-            </q-tab-panel>
-            <q-tab-panel v-if="employerPage && employerPage.is_viewable" name="company">
-              <div class="row">
-                <div class="col-12">
-                  <EmployerProfile/>
-                </div>
+              </q-page>
+            </ResponsiveWidth>
+          </q-tab-panel>
+          <q-tab-panel
+            v-if="employerPage && employerPage.is_viewable"
+            name="company"
+            class="q-pa-none"
+          >
+            <div class="row">
+              <div class="col-12">
+                <EmployerProfile :employer-id="employer.id"/>
               </div>
-            </q-tab-panel>
-            <q-tab-panel name="me">
-              <div class="row">
-                <div class="col-12">Me placeholder</div>
-              </div>
-            </q-tab-panel>
-          </q-tab-panels>
-        </q-page>
-      </ResponsiveWidth>
+            </div>
+          </q-tab-panel>
+          <q-tab-panel name="me">
+            <div class="row">
+              <div class="col-12">Me placeholder</div>
+            </div>
+          </q-tab-panel>
+        </q-tab-panels>
+      </q-page>
     </q-page-container>
 
     <CustomFooter/>
@@ -107,6 +124,7 @@
 
 <script>
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
+import colorUtil from 'src/utils/color.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { ref } from 'vue'
 import BannerMessage from 'components/BannerMessage.vue'
@@ -128,18 +146,14 @@ export default {
       tab: 'jobs',
       jobs: null,
       employer: null,
+      employerPage: null,
       profile: null,
-      isLoading: true,
+      isLoaded: false,
       jobApplication: null,
       dateTimeUtil
     }
   },
   components: { EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
-  computed: {
-    employerPage () {
-      return this.employerStore.getEmployerPage(this.user.employer_id)
-    }
-  },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
@@ -162,6 +176,40 @@ export default {
         return null
       }
       return this.applications.find((app) => app.employer_job.id === jobId)
+    },
+    getTabStyle () {
+      const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
+      return { color: primaryColor }
+    },
+    getButtonStyle () {
+      const accentColor = colorUtil.getEmployerAccentColor(this.employer)
+      return {
+        backgroundColor: accentColor,
+        color: colorUtil.getInvertedColor(accentColor)
+      }
+    },
+    getHeaderStyle () {
+      const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
+      return {
+        backgroundColor: primaryColor,
+        color: colorUtil.getInvertedColor(primaryColor)
+      }
+    },
+    getSelectedCardStyle (job) {
+      if (!this.jobApplication || this.jobApplication.id !== job.id) {
+        return {}
+      }
+      const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
+      return {
+        boxShadow: `0 0 5px 2px ${primaryColor}`
+      }
+    },
+    openJobAppModal (jobApplication) {
+      return this.q.dialog({
+        component: DialogJobApp,
+        componentProps: { jobApplication, employer: this.employer },
+        noRouteDismiss: true
+      })
     }
   },
   async mounted () {
@@ -171,23 +219,21 @@ export default {
     this.employer = employer
     this.profile = profile
 
+    await this.employerStore.setEmployerPage(this.employer.id)
+    this.employerPage = this.employerStore.getEmployerPage(this.employer.id)
+
     const { jobId } = dataUtil.getQueryParams()
     if (jobId) {
       this.openApplication(parseInt(jobId))
     }
 
-    this.isLoading = false
+    this.isLoaded = true
   },
   preFetch () {
     const authStore = useAuthStore()
-    const employerStore = useEmployerStore()
     Loading.show()
 
-    return authStore.setUser().then(() => {
-      return Promise.all([
-        employerStore.setEmployerPage(authStore.propUser.employer_id)
-      ])
-    }).finally(() => {
+    return authStore.setUser().finally(() => {
       Loading.hide()
     })
   },
@@ -203,21 +249,13 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-    const $q = useQuasar()
-    const openJobAppModal = (jobApplication) => {
-      return $q.dialog({
-        component: DialogJobApp,
-        componentProps: { jobApplication },
-        noRouteDismiss: true
-      })
-    }
 
     return {
       user,
       applications,
       isRightDrawerOpen,
-      openJobAppModal,
-      employerStore: useEmployerStore()
+      employerStore: useEmployerStore(),
+      q: useQuasar()
     }
   }
 }
@@ -226,7 +264,5 @@ export default {
 <style lang="scss" scoped>
 .application-date {
   padding: 8px;
-  color: $white;
-  background-color: map-get($brand-color-map, 'primary');
 }
 </style>

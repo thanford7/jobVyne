@@ -53,6 +53,22 @@ class SectionUtil {
       ]
     })
   }
+
+  getBackgroundStyle (section) {
+    const backgroundColor = section.config.background_color
+    if (backgroundColor) {
+      return { backgroundColor }
+    }
+    return {}
+  }
+
+  getTextStyle (section) {
+    const textColor = section.config.text_color
+    if (textColor) {
+      return { color: textColor }
+    }
+    return {}
+  }
 }
 
 const sectionUtil = new SectionUtil()
