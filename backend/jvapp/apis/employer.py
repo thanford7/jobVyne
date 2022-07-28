@@ -18,6 +18,8 @@ from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
 
+from jvapp.utils.sanitize import sanitizer
+
 
 class EmployerView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
@@ -405,7 +407,11 @@ class EmployerPageView(JobVyneAPIView):
             section.orderIdx = sectionIdx
             section.header = sectionData['header']
             section.config = sectionData.get('config')
-            section.item_parts = sectionData['item_parts']
+            item_parts = sectionData['item_parts']
+            for part in item_parts:
+                if html_content := part.get('html_content'):
+                    part['html_content'] = sanitizer.clean(html_content)
+            section.item_parts = item_parts
             section.save()
             employer_page.content_item.add(section)
         

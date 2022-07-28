@@ -4,6 +4,7 @@ asgiref==3.5.2
 async-timeout==4.0.2
 attrs==21.4.0
 beautifulsoup4==4.11.1
+bleach==5.0.1
 boto3==1.24.33
 botocore==1.27.33
 cachetools==5.2.0
@@ -59,8 +60,10 @@ social-auth-core==4.3.0
 soupsieve==2.3.2.post1
 sqlparse==0.4.2
 starkbank-ecdsa==2.0.3
+tinycss2==1.1.1
 ua-parser==0.15.0
 urllib3==1.26.9
 user-agents==2.2.0
+webencodings==0.5.1
 Werkzeug==2.1.2
 yarl==1.7.2

@@ -174,7 +174,6 @@ else:
     DATABASES = {
         'default': db_config
     }
-    
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -266,7 +265,7 @@ if get_boolean_env_variable('SQL_LOG'):
             }
         }
     }
-    
+
 # reCAPTCHA
 GOOGLE_CAPTCHA_SITE_KEY = os.getenv('GOOGLE_CAPTCHA_SITE_KEY')
 GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID')
