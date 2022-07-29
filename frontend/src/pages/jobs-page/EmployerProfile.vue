@@ -15,7 +15,7 @@
     </q-page-sticky>
     <div
       v-for="(section, idx) in sections"
-      class="q-px-xl"
+      class="row justify-center q-px-xl"
       :class="(idx === 0) ? 'q-pt-lg' : ''"
       :style="sectionUtil.getBackgroundStyle(section)"
     >

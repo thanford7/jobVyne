@@ -3,19 +3,31 @@
     <div class="q-ml-sm">
       <PageHeader title="Profile page">
         This content is displayed on every jobs page from employee social links.
+        <div class="col-12 q-mt-sm">
+          <q-btn
+            type="a"
+            color="primary"
+            :to="{ name: 'jobs-link-example', params: { employerId: user.employer_id} }"
+            target="_blank"
+          >
+            <q-icon name="launch"/>
+            &nbsp;Live site view
+          </q-btn>
+          <q-toggle
+            v-if="canEdit"
+            v-model="isViewable"
+            color="primary"
+            @update:model-value="savePage"
+          >
+            Is viewable
+            <CustomTooltip :is_include_space="false">
+              When off, the employer page will not be shown on any job pages. It is recommended to turn on page viewing
+              so job seekers can learn more about your company. Turn off if the page is still a work in progress.
+            </CustomTooltip>
+          </q-toggle>
+        </div>
       </PageHeader>
       <div v-if="canEdit" class="row q-mt-md q-gutter-x-sm">
-        <q-toggle
-          v-model="isViewable"
-          color="primary"
-          @update:model-value="savePage"
-        >
-          Is viewable
-          <CustomTooltip :is_include_space="false">
-            When off, the employer page will not be shown on any job pages. It is recommended to turn on page viewing
-            so job seekers can learn more about your company. Turn off, if the page is still a work in progress.
-          </CustomTooltip>
-        </q-toggle>
         <q-btn-dropdown icon="add" label="Add section" color="primary">
           <q-list>
             <q-item
@@ -176,6 +188,7 @@ import ColorPicker from 'components/inputs/ColorPicker.vue'
 import PageHeader from 'components/PageHeader.vue'
 import sectionUtil, { SECTION_TYPES } from 'components/sections/sectionTypes.js'
 import TextSectionCfg from 'components/sections/TextSectionCfg.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
 import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import { Loading, useMeta } from 'quasar'
@@ -247,7 +260,7 @@ export default {
       this.sections[sectionIdx].item_parts.splice(newIdx, 0, part)
     },
     getEmployerPageData () {
-      return this.employerStore.getEmployerPage(this.authStore.propUser.employer_id) || {}
+      return this.employerStore.getEmployerPage(this.user.employer_id) || {}
     },
     getSectionsCopy () {
       const employerPage = this.getEmployerPageData()
@@ -257,10 +270,10 @@ export default {
       const data = {
         is_viewable: this.isViewable,
         sections: this.sections,
-        employer_id: this.authStore.propUser.employer_id
+        employer_id: this.user.employer_id
       }
       await this.$api.put('employer/page/', getAjaxFormData(data))
-      await this.employerStore.setEmployerPage(this.authStore.propUser.employer_id, true)
+      await this.employerStore.setEmployerPage(this.user.employer_id, true)
       this.sections = this.getSectionsCopy()
       this.currentSections = this.getSectionsCopy()
     },
@@ -283,6 +296,9 @@ export default {
   },
   setup () {
     const globalStore = useGlobalStore()
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
+
     const pageTitle = 'Profile Page'
     const metaData = {
       title: pageTitle,
@@ -291,8 +307,9 @@ export default {
     useMeta(metaData)
 
     return {
-      authStore: useAuthStore(),
-      employerStore: useEmployerStore()
+      authStore,
+      employerStore: useEmployerStore(),
+      user
     }
   }
 }
