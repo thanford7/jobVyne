@@ -147,10 +147,6 @@ class SocialAuthCredentialsView(APIView):
 @permission_classes([AllowAny])
 def validate_recaptcha(request):
     data = request.data
-    project_id = settings.GOOGLE_PROJECT_ID
-    logger.info('Got project ID')
-    site_key = settings.GOOGLE_CAPTCHA_SITE_KEY
-    logger.info('Got site key')
     risk_score = create_assessment(settings.GOOGLE_PROJECT_ID, settings.GOOGLE_CAPTCHA_SITE_KEY, data.get('token'),
                              data.get('action'))
     if not risk_score:
@@ -171,29 +167,23 @@ def create_assessment(
     """
     
     client = recaptchaenterprise_v1.RecaptchaEnterpriseServiceClient()
-    logger.info('Got client')
     
     # Set the properties of the event to be tracked.
     event = recaptchaenterprise_v1.Event()
-    logger.info('Created event')
     event.site_key = recaptcha_site_key
     event.token = token
     
     assessment = recaptchaenterprise_v1.Assessment()
-    logger.info('Created assessment')
     assessment.event = event
     
     project_name = f"projects/{project_id}"
     
     # Build the assessment request.
     request = recaptchaenterprise_v1.CreateAssessmentRequest()
-    logger.info('Created request')
     request.assessment = assessment
     request.parent = project_name
     
     response = client.create_assessment(request)
-    logger.info('Got client response')
-    logger.info(f'Response: {response}')
     
     # Check if the token is valid.
     if not response.token_properties.valid:
@@ -228,5 +218,4 @@ def create_assessment(
         logger.error(f"Assessment name: {assessment_name}")
         if response.risk_analysis.score < ALLOWABLE_CAPTCHA_RISK_SCORE:
             raise PermissionError('Failed reCAPTCHA validation')
-    logger.info('Made it to end')
     return response.risk_analysis.score

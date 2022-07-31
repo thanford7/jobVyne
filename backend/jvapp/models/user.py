@@ -10,6 +10,8 @@ from django.utils.translation import gettext_lazy as _
 
 __all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName')
 
+from pip._internal.utils.misc import enum
+
 from jvapp.models.abstract import JobVynePermissionsMixin
 
 

@@ -1,17 +1,19 @@
 <template>
-  <div>
+  <div class="q-gutter-y-sm">
     <q-btn
+      v-for="platform in AUTH_PLATFORMS"
       type="div"
       class="w-100 btn-bordered"
       ripple
       :flat="true"
       :unelevated="true"
-      @click="redirectAuthUrl('facebook')"
+      @click="redirectAuthUrl(platform.redirectProvider)"
     >
-      <q-icon id="facebook-logo" name="fa-brands fa-facebook-square"/>
-      &nbsp;{{ (isCreate) ? createText : loginText }}Facebook
-    </q-btn
-    >
+      <q-icon tag="div" :name="`fa-brands ${platform.icon}`" class="q-mr-sm"/>
+      <div class="text-center">
+        {{ (isCreate) ? createText : loginText }}{{ platform.name }}
+      </div>
+    </q-btn>
   </div>
 </template>
 
@@ -19,12 +21,31 @@
 import { useSocialAuthStore } from 'stores/social-auth-store'
 import { USER_TYPES } from 'src/utils/user-types'
 
+const AUTH_PLATFORMS = [
+  {
+    name: 'LinkedIn',
+    icon: 'fa-linkedin-in',
+    redirectProvider: 'linkedin-oauth2'
+  },
+  {
+    name: 'Google',
+    icon: 'fa-google',
+    redirectProvider: 'google-oauth2'
+  },
+  {
+    name: 'Facebook',
+    icon: 'fa-facebook-f',
+    redirectProvider: 'facebook'
+  }
+]
+
 export default {
   name: 'AuthSocialButtons',
   data () {
     return {
       createText: 'Create account with ',
-      loginText: 'Login with '
+      loginText: 'Login with ',
+      AUTH_PLATFORMS
     }
   },
   props: {
@@ -45,7 +66,7 @@ export default {
   },
   methods: {
     async redirectAuthUrl (provider) {
-      const url = await this.socialStore.getOauthUrl(
+      const url = await this.socialAuthStore.getOauthUrl(
         provider,
         { redirectPageUrl: this.redirectPageUrl, redirectParams: this.redirectParams }
       )
@@ -56,14 +77,8 @@ export default {
     this.$api.get('auth/login-set-cookie/')
   },
   setup () {
-    const socialStore = useSocialAuthStore()
-    return { socialStore }
+    const socialAuthStore = useSocialAuthStore()
+    return { socialAuthStore }
   }
 }
 </script>
-
-<style lang="scss" scoped>
-#facebook-logo {
-  color: $facebook
-}
-</style>
