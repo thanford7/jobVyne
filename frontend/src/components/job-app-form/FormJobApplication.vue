@@ -103,6 +103,7 @@
           :is-create="true"
           :style-override="getButtonStyle()"
           :user-type-bit="USER_TYPES[USER_TYPE_CANDIDATE]"
+          :default-email="formData.email"
         />
       </div>
     </template>

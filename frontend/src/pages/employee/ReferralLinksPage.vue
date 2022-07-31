@@ -24,7 +24,7 @@
           <div class="row">
             <div class="col-12">
               <q-table
-                :rows="socialStore.socialLinkFilters || []"
+                :rows="socialStore.getOwnSocialLinkFilters()"
                 :columns="linkColumns"
                 row-key="id"
                 :rows-per-page-options="[5, 10, 15]"
@@ -276,6 +276,9 @@
                     Click to copy
                   </span>
                 </div>
+                <div class="q-mt-md">
+                  <q-btn ripple color="primary" label="Create another link" @click="resetLinkForm()"/>
+                </div>
               </div>
             </div>
           </div>
@@ -468,13 +471,17 @@ export default {
         owner_id: user.id,
         employer_id: user.employer_id,
         platform_id: this.formData?.platform?.id,
-        department_ids: this.formData?.departments?.map((dept) => dept.id),
-        cities: (this.formData.cities) ? this.formData.cities : null,
-        state_ids: this.formData?.states?.map((state) => state.id),
-        country_ids: this.formData?.countries?.map((country) => country.id)
+        department_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.departments?.map((dept) => dept.id)),
+        cities: dataUtil.getArrayWithValuesOrNone(this.formData.cities),
+        state_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.states?.map((state) => state.id)),
+        country_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.countries?.map((country) => country.id))
       }
       const resp = await this.$api.post('social-link-filter/', getAjaxFormData(data))
       this.linkId = resp.data.id
+      this.socialStore.setSocialLinkFilters(true)
+    },
+    resetLinkForm () {
+      this.formData = { ...formDataTemplate }
     }
   },
   preFetch () {

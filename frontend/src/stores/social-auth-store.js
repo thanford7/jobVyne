@@ -16,7 +16,7 @@ export const useSocialAuthStore = defineStore('social-auth', {
   }),
 
   actions: {
-    async getOauthUrl (provider, { redirectPageUrl, redirectParams } = {}) {
+    async getOauthUrl (provider, { redirectPageUrl, redirectParams, userTypeBit } = {}) {
       if (!this.socialCfgs) {
         const resp = await this.$api.get('social-credentials/')
         this.socialCfgs = resp.data
@@ -26,7 +26,8 @@ export const useSocialAuthStore = defineStore('social-auth', {
       providerCfg.auth_params.state = JSON.stringify({
         state: providerCfg.auth_params.state,
         redirectPageUrl,
-        redirectParams
+        redirectParams,
+        userTypeBit
       })
       return buildURL(providerCfg.auth_url, providerCfg.auth_params)
     }

@@ -192,19 +192,21 @@ class EmployerUserView(JobVyneAPIView):
     
     @atomic
     def post(self, request):
-        user = JobVyneUser.objects.create_user(
-            self.data['email'],
-            first_name=self.data['first_name'],
-            last_name=self.data['last_name'],
-            employer_id=self.data['employer_id'],
-            user_type_bits=-1  # This is just a placeholder. The actual value is derived from the permission groups
-        )
+        user, is_new = UserView.get_or_create_user(self.data)
+        if not user.employer_id:
+            user.employer_id = self.data['employer_id']
+            user.save()
+        elif user.employer_id != self.data['employer_id']:
+            return Response('This user already exists and is associated with a different employer')
         
         for group_id in self.data['permission_group_ids']:
             user.permission_groups.add(group_id)
         
+        user_full_name = f'{user.first_name} {user.last_name}'
+        success_message = f'Account created for {user_full_name}' if is_new else f'Account already exists for {user_full_name}. Permissions were updated.'
+        
         return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: f'Account created for {user.first_name} {user.last_name}'
+            SUCCESS_MESSAGE_KEY: success_message
         })
     
     @atomic

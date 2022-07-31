@@ -15,7 +15,10 @@ export const useSocialStore = defineStore('social', {
         this.platforms = dataUtil.sortBy(resp.data, 'name')
       }
     },
-    async setSocialLinkFilters () {
+    async setSocialLinkFilters (isForceRefresh = false) {
+      if (!isForceRefresh && !dataUtil.isNil(this.socialLinkFilters)) {
+        return
+      }
       const authStore = useAuthStore()
       const params = {}
       if (authStore.propIsEmployer) {
@@ -29,6 +32,16 @@ export const useSocialStore = defineStore('social', {
         { params }
       )
       this.socialLinkFilters = resp.data
+    },
+    getOwnSocialLinkFilters () {
+      if (dataUtil.isNil(this.socialLinkFilters)) {
+        return []
+      }
+      const authStore = useAuthStore()
+      return this.socialLinkFilters.filter((f) => f.owner_id === authStore.propUser.id)
+    },
+    getEmployerSocialLinkFilters () {
+      return this.socialLinkFilters
     }
   }
 })

@@ -298,6 +298,13 @@ class DataUtil {
     return array1.filter(value => array2.includes(value))
   }
 
+  getArrayWithValuesOrNone (array) {
+    if (!array || !array.length) {
+      return null
+    }
+    return array
+  }
+
   getFromArrayOrNone (array, idx) {
     if (!array) {
       return null

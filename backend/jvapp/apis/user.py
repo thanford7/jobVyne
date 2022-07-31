@@ -28,21 +28,38 @@ class UserView(JobVyneAPIView):
             user_filter |= Q(email__iregex=f'^.*{search_text}.*$')
             users = self.get_user(user_filter=user_filter)
             return Response(status=status.HTTP_200_OK, data=[get_serialized_user(u) for u in users])
-
+        
         return Response('Please provide a user ID or search text', status=status.HTTP_400_BAD_REQUEST)
-
+    
     @staticmethod
-    def get_user(user_id=None, user_filter=None):
+    def get_user(user_id=None, user_email=None, user_filter=None):
         if user_id:
             user_filter = Q(id=user_id)
-    
-        users = JobVyneUser.objects\
-            .prefetch_related('application_template', 'permission_groups')\
+        elif user_email:
+            user_filter = Q(email=user_email)
+        
+        users = JobVyneUser.objects \
+            .prefetch_related('application_template', 'permission_groups') \
             .filter(user_filter)
-    
-        if user_id:
+        
+        if user_id or user_email:
             if not users:
                 raise JobVyneUser.DoesNotExist
             return users[0]
-    
+        
         return users
+    
+    @staticmethod
+    def get_or_create_user(data):
+        """
+            :return {tuple}: (user, is_new)
+        """
+        try:
+            return UserView.get_user(user_email=data['email']), False
+        except JobVyneUser.DoesNotExist:
+            return JobVyneUser.objects.create_user(
+                data['email'],
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                employer_id=data['employer_id'],
+            ), True

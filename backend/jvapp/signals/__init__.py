@@ -110,7 +110,7 @@ def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
     
     default_permission_groups = _get_default_user_groups(instance.employer_id)
     for user_type_bit in JobVyneUser.ALL_USER_TYPES:
-        if instance.user_type_bits & user_type_bit:
+        if instance.user_type_bits and (instance.user_type_bits & user_type_bit):
             default_permission_group = default_permission_groups.get(user_type_bit)
             if default_permission_group:
                 instance.permission_groups.add(default_permission_group)
