@@ -19,7 +19,6 @@
 
 <script>
 import { useSocialAuthStore } from 'stores/social-auth-store'
-import { USER_TYPES } from 'src/utils/user-types'
 
 const AUTH_PLATFORMS = [
   {
@@ -43,7 +42,7 @@ export default {
   name: 'AuthSocialButtons',
   data () {
     return {
-      createText: 'Create account with ',
+      createText: 'Create with ',
       loginText: 'Login with ',
       AUTH_PLATFORMS
     }
@@ -54,8 +53,7 @@ export default {
       default: false
     },
     userTypeBit: {
-      type: Number,
-      default: USER_TYPES.Employee
+      type: [Number, null]
     },
     redirectPageUrl: {
       type: [String, null]
@@ -68,7 +66,7 @@ export default {
     async redirectAuthUrl (provider) {
       const url = await this.socialAuthStore.getOauthUrl(
         provider,
-        { redirectPageUrl: this.redirectPageUrl, redirectParams: this.redirectParams }
+        { redirectPageUrl: this.redirectPageUrl, redirectParams: this.redirectParams, userTypeBit: this.userTypeBit }
       )
       window.location.href = url
     }

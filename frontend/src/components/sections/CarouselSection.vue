@@ -36,20 +36,19 @@ export default {
     isAllowAutoplay: {
       type: Boolean,
       default: false
+    },
+    employerId: {
+      type: Number
     }
   },
   computed: {
     pictures () {
-      const files = this.employerStore.getEmployerFiles(this.authStore.propUser.employer_id)
+      const files = this.employerStore.getEmployerFiles(this.employerId)
       return files.filter((f) => this.pictureIds.includes(f.id))
     }
   },
   async mounted () {
-    await this.authStore.setUser().then(() => {
-      return Promise.all([
-        this.employerStore.setEmployerFiles(this.authStore.propUser.employer_id)
-      ])
-    })
+    await this.employerStore.setEmployerFiles(this.employerId)
     this.isLoaded = true
   },
   setup () {

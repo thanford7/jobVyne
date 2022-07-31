@@ -38,6 +38,7 @@
           v-if="section.type === SECTION_TYPES.CAROUSEL.key"
           :picture-ids="section.item_parts[0].picture_ids"
           :is-allow-autoplay="section.item_parts[0].is_allow_autoplay"
+          :employer-id="employerId"
         />
         <IconSection
           v-if="section.type === SECTION_TYPES.ICON.key"

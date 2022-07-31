@@ -29,6 +29,7 @@
       <CarouselSection
         :picture-ids="section.item_parts[0].picture_ids"
         :is-allow-autoplay="section.item_parts[0].is_allow_autoplay"
+        :employer-id="user.employer_id"
       />
     </LiveView>
   </div>
@@ -40,6 +41,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import EmployerFilesSelector from 'components/inputs/EmployerFilesSelector.vue'
 import LiveView from 'components/sections/LiveView.vue'
 import SectionHeader from 'components/sections/SectionHeader.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import { FILE_TYPES } from 'src/utils/file'
 import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
 import { useAuthStore } from 'stores/auth-store'
@@ -68,7 +70,7 @@ export default {
       }
       return this.q.dialog(cfg).onOk((pictureId) => {
         const pictureFile = this.employerStore.getEmployerFiles(
-          this.authStore.propUser.employer_id, pictureId
+          this.user.employer_id, pictureId
         )
         const refKey = `employerFilesSelector-${sectionIdx}`
         this.$refs[refKey].addFile(pictureFile)
@@ -78,16 +80,19 @@ export default {
   async mounted () {
     await this.authStore.setUser().then(() => {
       return Promise.all([
-        this.employerStore.setEmployerFiles(this.authStore.propUser.employer_id)
+        this.employerStore.setEmployerFiles(this.user.employer_id)
       ])
     })
     this.isLoaded = true
   },
   setup () {
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
     return {
-      authStore: useAuthStore(),
+      authStore,
       employerStore: useEmployerStore(),
-      q: useQuasar()
+      q: useQuasar(),
+      user
     }
   }
 }

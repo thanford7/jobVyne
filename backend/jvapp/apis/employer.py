@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from django.db.transaction import atomic
 from rest_framework import status
@@ -30,7 +31,7 @@ class EmployerView(JobVyneAPIView):
             employer = self.get_employers(employer_id=employer_id)
             data = get_serialized_employer(
                 employer,
-                is_include_employees=(
+                is_include_employees=(not isinstance(self.user, AnonymousUser)) and (
                     self.user.is_admin
                     or (self.user.employer_id == employer_id and self.user.is_employer)
                 )
@@ -256,9 +257,10 @@ class EmployerUserActivateView(JobVyneAPIView):
     
     
 class EmployerFileView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request):
-        if not (employer_id := self.query_params['employer_id']):
+        if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
         files = self.get_employer_files(employer_id=employer_id)

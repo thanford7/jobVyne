@@ -15,7 +15,7 @@
 import AuthEmailForm from 'components/AuthEmailForm.vue'
 import AuthSocialButtons from 'components/AuthSocialButtons.vue'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
-import { USER_TYPES } from 'src/utils/user-types'
+
 export default {
   name: 'AuthAll',
   components: {
@@ -33,8 +33,7 @@ export default {
       default: false
     },
     userTypeBit: {
-      type: Number,
-      default: USER_TYPES.Employee
+      type: [Number, null]
     },
     redirectPageUrl: {
       type: [String, null]

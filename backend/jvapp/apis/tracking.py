@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib.gis.geoip2 import GeoIP2
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from user_agents import parse
@@ -20,6 +21,7 @@ UNIQUE_VIEW_LOOKBACK_MINUTES = 30
 
 
 class PageTrackView(APIView):
+    permission_classes = [AllowAny]
     
     def post(self, request):
         meta = request.META

@@ -8,10 +8,18 @@
             <div class="flex justify-center">
               <img src="../assets/jobVyneLogoOnly.png" alt="Logo" style="height: 70px; object-fit: scale-down">
             </div>
-            <h5 class="text-center">Welcome back!</h5>
+            <h5 class="text-center">{{ (isCreate) ? newUserHeader : currentUserHeader }}</h5>
           </q-card-section>
           <q-card-section>
-            <AuthAll/>
+            <AuthAll :is-create="isCreate"/>
+            <div class="q-mt-md">
+              <div v-if="isCreate">
+                Current user? <a href="#" @click="isCreate=false">Login here</a>
+              </div>
+              <div v-else>
+                New user? <a href="#" @click="isCreate=true">Sign up here</a>
+              </div>
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -20,16 +28,24 @@
 </template>
 
 <script>
-import BannerMessage from 'components/BannerMessage.vue'
+import { USER_TYPES, USER_TYPE_EMPLOYEE } from 'src/utils/user-types.js'
 import { useGlobalStore } from 'stores/global-store'
 import { useMeta } from 'quasar'
 import AuthAll from 'components/AuthAll.vue'
+import BannerMessage from 'components/BannerMessage.vue'
 
-// TODO: Add functionality to switch between user types (this could be a unique link for each - employer, influencer, etc)
-// TODO: Add functionality to switch between sign up vs login
 export default {
   name: 'PageName',
   components: { AuthAll, BannerMessage },
+  data () {
+    return {
+      isCreate: false,
+      newUserHeader: 'Join JobVyne!',
+      currentUserHeader: 'Welcome back!',
+      USER_TYPES,
+      USER_TYPE_EMPLOYEE
+    }
+  },
   setup () {
     const globalStore = useGlobalStore()
 

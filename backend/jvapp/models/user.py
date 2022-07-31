@@ -7,12 +7,10 @@ from django.utils import crypto, timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
+from jvapp.models.abstract import JobVynePermissionsMixin
+
 
 __all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName')
-
-from pip._internal.utils.misc import enum
-
-from jvapp.models.abstract import JobVynePermissionsMixin
 
 
 # Keep in sync with frontend user-types
@@ -95,7 +93,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
-    user_type_bits = models.SmallIntegerField()
+    user_type_bits = models.SmallIntegerField(null=True, blank=True)
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
     is_employer_deactivated = models.BooleanField(default=False, blank=True)
     permission_groups = models.ManyToManyField('EmployerAuthGroup', related_name='user')
@@ -103,7 +101,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['user_type_bits']
+    REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
 

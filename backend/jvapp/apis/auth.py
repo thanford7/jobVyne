@@ -102,11 +102,12 @@ def social_auth(request, backend):
         - `access_token`: The OAuth2 access token provided by the provider
         """
     
-    code = request.data.get('code', '').strip()
+    data = request.data
+    code = data.get('code', '').strip()
     if not code:
         return Response('An auth token is required', status=status.HTTP_400_BAD_REQUEST)
     
-    state = request.data.get('state', '').strip()
+    state = data.get('state', '').strip()
     if state != settings.AUTH_STATE:
         return Response('Request state is not the same as the callback state', status=status.HTTP_401_UNAUTHORIZED)
     
@@ -116,7 +117,7 @@ def social_auth(request, backend):
         # this line, plus the psa decorator above, are all that's
         # necessary to get and populate a user object for any properly
         # enabled/configured backend which python-social-auth can handle.
-        user = request.backend.do_auth(access_token, user_type_bits=JobVyneUser.USER_TYPE_EMPLOYEE)
+        user = request.backend.do_auth(access_token, user_type_bits=data.get('userTypeBit'))
     except HTTPError as e:
         # An HTTPError bubbled up from the request to the social
         # auth provider. This happens, at least in Google's case, every time you

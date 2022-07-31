@@ -1,7 +1,6 @@
 <template>
   <q-form
     @submit="login"
-    class="q-gutter-xs"
   >
     <q-input
       filled
