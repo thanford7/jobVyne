@@ -38,23 +38,10 @@
 
   <!-- Load reCAPTCHA -->
   <% if (ctx.dev) { %>
-    <script src="https://www.google.com/recaptcha/enterprise.js?render=6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp"></script>
+  <script src="https://www.google.com/recaptcha/enterprise.js?render=6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp"></script>
   <% } else { %>
-    <script src="https://www.google.com/recaptcha/enterprise.js?render=6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl"></script>
+  <script src="https://www.google.com/recaptcha/enterprise.js?render=6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl"></script>
   <% } %>
-
-  <!-- Load Google API for OAuth -->
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
-  </script>
-  <script src="https://apis.google.com/js/client:platform.js?onload=start" async defer>
-  </script>
-  <script>
-    function start() {
-      gapi.load('auth2', function() {
-        auth2 = gapi.auth2.init({ client_id: '550309429268-h5hlu95faefr5kagortjv1sha6d5tb09.apps.googleusercontent.com' });
-      });
-    }
-  </script>
 </head>
 <body>
 <!-- quasar:entry-point -->

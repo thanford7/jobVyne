@@ -26,12 +26,18 @@
     </q-input>
 
     <div class="q-mt-md">
-      <q-btn :label="(isCreate) ? createText : loginText" type="submit" ripple color="accent" class="w-100"/>
+      <q-btn
+        :label="(isCreate) ? createText : loginText"
+        type="submit" ripple
+        :style="styleOverride"
+        class="w-100"
+      />
     </div>
   </q-form>
 </template>
 
 <script>
+import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form'
 import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
@@ -60,6 +66,13 @@ export default {
     userTypeBit: {
       type: Number,
       default: USER_TYPES.Employee
+    },
+    styleOverride: {
+      type: Object,
+      default: () => {
+        const backgroundColor = colorUtil.getPaletteColor('accent')
+        return { backgroundColor, color: colorUtil.getInvertedColor(backgroundColor) }
+      }
     }
   },
   methods: {

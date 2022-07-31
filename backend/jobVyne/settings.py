@@ -304,13 +304,5 @@ with open(file_path, 'w') as outfile:
     json.dump(google_credentials, outfile)
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = file_path
 
-# Set Google OAuth Env variable from string (needs to be a path to a file)
-google_secret = json.loads(env('GOOGLE_SECRET_JSON_STR').replace('\'', '"'), strict=False)
-
-file_path = f'{BASE_DIR}/secure/google-oauth-secret.json'
-with open(file_path, 'w') as outfile:
-    json.dump(google_credentials, outfile)
-os.environ['GOOGLE_SECRET_JSON'] = file_path
-
 # Geolocation
 GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'

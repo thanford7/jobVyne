@@ -84,13 +84,12 @@
       </div>
     </template>
     <template v-else-if="!authStore.propIsAuthenticated">
-      <div class="q-pa-sm bg-primary text-white">
+      <div class="q-pa-sm" :style="getHeaderStyle()">
         <div class="text-h6 text-center">Create an account</div>
       </div>
-      <div class="q-pa-sm q-mt-sm">
+      <div class="q-pa-sm q-mt-sm" :style="getTextStyle()">
         <div class="text-bold">Create an account and save time</div>
         <ListIcon
-          color="primary"
           icon-name="thumb_up"
           :items="[
               'One click application submission',
@@ -99,7 +98,12 @@
             ]"
         />
         <q-separator/>
-        <AuthAll class="q-mt-md" :is-create="true"/>
+        <AuthAll
+          class="q-mt-md"
+          :is-create="true"
+          :style-override="getButtonStyle()"
+          :user-type-bit="USER_TYPES[USER_TYPE_CANDIDATE]"
+        />
       </div>
     </template>
   </div>
@@ -109,6 +113,7 @@
 import colorUtil from 'src/utils/color.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests'
+import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store'
 import { useQuasar } from 'quasar'
 import AuthAll from 'components/AuthAll.vue'
@@ -141,7 +146,9 @@ export default {
       ),
       newResumeKey: 'resume',
       isApplicationSaved: false,
-      formUtil
+      formUtil,
+      USER_TYPES,
+      USER_TYPE_CANDIDATE
     }
   },
   props: {
@@ -167,6 +174,10 @@ export default {
         backgroundColor: primaryColor,
         color: colorUtil.getInvertedColor(primaryColor)
       }
+    },
+    getTextStyle () {
+      const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
+      return { color: primaryColor }
     },
     getButtonStyle () {
       const accentColor = colorUtil.getEmployerAccentColor(this.employer)

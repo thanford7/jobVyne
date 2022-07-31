@@ -1,6 +1,11 @@
 <template>
   <div>
-    <AuthEmailForm :is-create="isCreate" :default-email="defaultEmail" :user-type-bit="userTypeBit"/>
+    <AuthEmailForm
+      :is-create="isCreate"
+      :default-email="defaultEmail"
+      :user-type-bit="userTypeBit"
+      :style-override="styleOverride"
+    />
     <SeparatorWithText>or</SeparatorWithText>
     <AuthSocialButtons
       :is-create="isCreate"
@@ -39,6 +44,9 @@ export default {
       type: [String, null]
     },
     redirectParams: {
+      type: [Object, null]
+    },
+    styleOverride: {
       type: [Object, null]
     }
   }
