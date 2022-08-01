@@ -2,7 +2,10 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.views import PasswordResetConfirmView
 from django.utils.decorators import method_decorator
+from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from google.cloud import recaptchaenterprise_v1
 from google.cloud.recaptchaenterprise_v1 import Assessment
@@ -14,8 +17,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from social_django.utils import psa
 
+from jvapp.apis._apiBase import SUCCESS_MESSAGE_KEY
+from jvapp.apis.user import UserView
 from jvapp.models import JobVyneUser
 from jvapp.serializers.user import get_serialized_user
+from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
 from jvapp.utils.logger import getLogger
 from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
 
@@ -220,3 +226,45 @@ def create_assessment(
         if response.risk_analysis.score < ALLOWABLE_CAPTCHA_RISK_SCORE:
             raise PermissionError('Failed reCAPTCHA validation')
     return response.risk_analysis.score
+
+
+class PasswordResetGenerateView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data['email']
+        UserView.send_password_reset_email(request, email, {
+            'extra_email_context': {
+                'supportEmail': EMAIL_ADDRESS_SUPPORT,
+            }
+        })
+        return Response(status=HTTPStatus.OK, data={
+            SUCCESS_MESSAGE_KEY: f'Password reset email sent to {email}'
+        })
+
+
+class PasswordResetFromEmailView(APIView):
+    permission_classes = [AllowAny]
+    token_generator = PasswordResetTokenGenerator()
+    
+    def put(self, request):
+        data = request.data
+        if not (uid := data.get('uid')) or not (token := data.get('token')):
+            return Response('A uid and token are required', status=status.HTTP_400_BAD_REQUEST)
+        
+        if not (password := data.get('password')):
+            return Response('A password is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        user_id = urlsafe_base64_decode(uid).decode()
+        user = JobVyneUser.objects.get(id=user_id)
+        is_valid = self.token_generator.check_token(user, token)
+        if not is_valid:
+            return Response(
+                'This reset link has expired or is invalid. Go to the login page to request a new reset email.',
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user.set_password(password)
+        user.save()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Password successfully reset'
+        })

@@ -46,6 +46,7 @@ logger.info(f'Base directory is: {BASE_DIR}')
 
 PREPEND_WWW = False
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0').split(',')
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 # Application definition
 

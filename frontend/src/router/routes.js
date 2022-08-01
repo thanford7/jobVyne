@@ -5,7 +5,23 @@ const routes = [
     path: '/login',
     component: () => import('layouts/HeaderlessLayout.vue'),
     children: [
-      { path: '', name: 'login', meta: { isNoAuth: true }, component: () => import('pages/LoginPage.vue') }
+      { path: '', name: 'login', meta: { isNoAuth: true }, component: () => import('pages/auth/LoginPage.vue') }
+    ]
+  },
+
+  {
+    path: '/password-reset-generate',
+    component: () => import('layouts/HeaderlessLayout.vue'),
+    children: [
+      { path: '', name: 'password-reset-generate', meta: { isNoAuth: true }, component: () => import('pages/auth/GenerateResetPasswordPage.vue') }
+    ]
+  },
+
+  {
+    path: '/password-reset/:uid(\\S+)/:token(\\S+)',
+    component: () => import('layouts/HeaderlessLayout.vue'),
+    children: [
+      { path: '', name: 'password-reset', meta: { isNoAuth: true }, component: () => import('pages/auth/ResetPasswordPage.vue') }
     ]
   },
 

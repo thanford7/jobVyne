@@ -29,6 +29,10 @@ urlpatterns = [
     path('auth/check-auth/', auth.CheckAuthView.as_view()),
     path('auth/validate-captcha/', auth.validate_recaptcha),
     
+    # Password (re)set
+    path('password-reset-generate/', auth.PasswordResetGenerateView.as_view()),
+    path('password-reset-from-email/', auth.PasswordResetFromEmailView.as_view()),
+    
     # Social auth
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view())

@@ -2,30 +2,10 @@
   <q-form
     @submit="login"
   >
-    <q-input
-      filled
-      v-model="email"
-      label="Email *"
-      lazy-rules
-      :rules="[ val => val && val.length > 0 && isGoodEmail(val) || 'Please enter a valid email']"
-    />
+    <EmailInput v-model="email"/>
+    <PasswordInput v-model="password"/>
 
-    <q-input
-      v-model="password"
-      filled
-      :type="isPwdShown ? 'text' : 'password'"
-      label="Password *"
-    >
-      <template v-slot:append>
-        <q-icon
-          :name="isPwdShown ? 'visibility' : 'visibility_off'"
-          class="cursor-pointer"
-          @click="isPwdShown = !isPwdShown"
-        />
-      </template>
-    </q-input>
-
-    <div class="q-mt-md">
+    <div>
       <q-btn
         :label="(isCreate) ? createText : loginText"
         type="submit" ripple
@@ -37,6 +17,8 @@
 </template>
 
 <script>
+import EmailInput from 'components/inputs/EmailInput.vue'
+import PasswordInput from 'components/inputs/PasswordInput.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form'
 import { useAuthStore } from 'stores/auth-store'
@@ -45,6 +27,7 @@ import { USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthEmailForm',
+  components: { EmailInput, PasswordInput },
   data () {
     return {
       createText: 'Create account',

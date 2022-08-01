@@ -1,3 +1,4 @@
+from django.contrib.auth.forms import PasswordResetForm
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -8,6 +9,8 @@ from jvapp.models.user import JobVyneUser
 from jvapp.serializers.user import get_serialized_user
 
 __all__ = ('UserView',)
+
+from jvapp.utils.email import send_email
 
 
 class UserView(JobVyneAPIView):
@@ -63,3 +66,27 @@ class UserView(JobVyneAPIView):
                 last_name=data['last_name'],
                 employer_id=data['employer_id'],
             ), True
+
+    @staticmethod
+    def send_password_reset_email(request, email, email_cfg):
+        reset_form = JobVynePasswordResetForm({'email': email})
+        assert reset_form.is_valid()
+        reset_form.save(
+            request=request,
+            **email_cfg
+        )
+
+
+class JobVynePasswordResetForm(PasswordResetForm):
+
+    def send_mail(self, subject_template_name, email_template_name,
+                  context, from_email, to_email, html_email_template_name=None):
+        subject = context.get('subject', 'JobVyne | Reset Password')
+        subject = ''.join(subject.splitlines())
+        context['protocol'] = 'https'  # Overwrite protocol to always use https
+        send_email(
+            subject,
+            to_email,
+            django_context=context,
+            django_email_body_template='emails/new_user_set_password_email.html'
+        )
