@@ -26,6 +26,14 @@ const routes = [
   },
 
   {
+    path: '/onboard',
+    component: () => import('layouts/HeaderlessLayout.vue'),
+    children: [
+      { path: '', name: 'onboard', component: () => import('pages/onboard-page/OnboardPage.vue') }
+    ]
+  },
+
+  {
     path: '/',
     component: () => import('layouts/LandingLayout.vue'),
     children: [

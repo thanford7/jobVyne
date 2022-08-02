@@ -9,7 +9,8 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
         'id': employer.id,
         'name': employer.employer_name,
         'logo_url': employer.logo.url if employer.logo else None,
-        'size': employer.employer_size.size,
+        'size': employer.employer_size.size if employer.employer_size else None,
+        'email_domains': employer.email_domains,
         'color_primary': employer.color_primary,
         'color_secondary': employer.color_secondary,
         'color_accent': employer.color_accent

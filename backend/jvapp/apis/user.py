@@ -1,14 +1,18 @@
 from django.contrib.auth.forms import PasswordResetForm
 from django.db.models import Q
+from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models.user import JobVyneUser
+from jvapp.models.abstract import PermissionTypes
+from jvapp.models.user import JobVyneUser, UserUnknownEmployer
 from jvapp.serializers.user import get_serialized_user
 
 __all__ = ('UserView',)
+
+from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 from jvapp.utils.email import send_email
 
@@ -33,6 +37,22 @@ class UserView(JobVyneAPIView):
             return Response(status=status.HTTP_200_OK, data=[get_serialized_user(u) for u in users])
         
         return Response('Please provide a user ID or search text', status=status.HTTP_400_BAD_REQUEST)
+    
+    @atomic
+    def put(self, request, user_id):
+        user = self.get_user(user_id=user_id)
+        user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        set_object_attributes(user, self.data, {
+            'business_email': AttributeCfg(is_protect_existing=True),
+            'user_type_bits': None,
+            'employer_id': AttributeCfg(is_protect_existing=True)
+        })
+        user.save()
+        
+        if unknown_employer_name := self.data.get('unknown_employer_name'):
+            UserUnknownEmployer(user=user, employer_name=unknown_employer_name).save()
+        
+        return Response(status=status.HTTP_200_OK)
     
     @staticmethod
     def get_user(user_id=None, user_email=None, user_filter=None):

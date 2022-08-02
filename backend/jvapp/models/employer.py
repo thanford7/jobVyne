@@ -23,6 +23,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer_name = models.CharField(max_length=150, unique=True)
     logo = models.ImageField(upload_to=getEmployerUploadLocation, null=True, blank=True)
     employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
+    email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
     
     # Brand colors - saved in hex form (e.g. #32a852)
     color_primary = models.CharField(max_length=9, null=True, blank=True)

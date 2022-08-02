@@ -8,7 +8,8 @@ export const useEmployerStore = defineStore('employer', {
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
     employerPage: {}, // employerId: {<employerPage>}
-    permissionGroups: []
+    permissionGroups: [],
+    employersFromEmail: {} // email: {<employer>}
   }),
 
   actions: {
@@ -67,6 +68,23 @@ export const useEmployerStore = defineStore('employer', {
         )
         this.employerPage[employerId] = resp.data
       }
+    },
+    async getEmployersFromDomain (email) {
+      if (!email) {
+        return null
+      }
+      const employer = this.employersFromEmail[email]
+      if (employer) {
+        return employer
+      }
+      const resp = await this.$api.get(
+        'employer-from-domain/',
+        {
+          params: { email }
+        }
+      )
+      this.employersFromEmail[email] = resp.data // Cache the response
+      return resp.data
     },
     getEmployer (employerId) {
       return this.employers[employerId]

@@ -1,3 +1,5 @@
+import re
+
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from django.db.transaction import atomic
@@ -52,6 +54,7 @@ class EmployerView(JobVyneAPIView):
             employer,
             self.data,
             {
+                'email_domains': None,
                 'color_primary': AttributeCfg(is_protect_existing=True),
                 'color_secondary': AttributeCfg(is_protect_existing=True),
                 'color_accent': AttributeCfg(is_protect_existing=True),
@@ -434,3 +437,35 @@ class EmployerPageView(JobVyneAPIView):
             return EmployerPage.objects.prefetch_related('content_item').get(employer_id=employer_id)
         except EmployerPage.DoesNotExist:
             return None
+
+
+class EmployerFromDomainView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (email := self.query_params.get('email')):
+            return Response('An email address is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        if not (email_domain := self.get_domain_from_email(email)):
+            return Response(f'Could not parse email domain for {email}', status=status.HTTP_400_BAD_REQUEST)
+        
+        employers = {e.email_domains: e for e in Employer.objects.all()}
+        matched_employers = []
+        for domains, employer in employers.items():
+            if not domains:
+                continue
+            if email_domain in domains:
+                matched_employers.append({'id': employer.id, 'name': employer.employer_name})
+        
+        return Response(
+            status=status.HTTP_200_OK,
+            data=matched_employers
+        )
+    
+    @staticmethod
+    def get_domain_from_email(email):
+        email = email.strip()
+        domain_regex = re.compile('(?P<domain>[0-9a-z-]+?\.[0-9a-z-]+$)', re.I)
+        email_match = re.search(domain_regex, email)
+        if not email_match:
+            return None
+        return email_match.group('domain')

@@ -7,10 +7,14 @@ from django.utils import crypto, timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
-from jvapp.models.abstract import JobVynePermissionsMixin
+from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
 
 
-__all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName')
+__all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer')
+
+
+def generate_password():
+    return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')
 
 
 # Keep in sync with frontend user-types
@@ -54,8 +58,9 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_('Email must be set'))
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
+        if not user.is_email_verified:
+            pass  # TODO: Send verification email
         user.set_password(password or generate_password())
-        # TODO: If not password, send password reset email
         user.save()
         return user
 
@@ -93,6 +98,9 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
+    is_email_verified = models.BooleanField(default=False)
+    business_email = models.EmailField(_('business email address'), unique=True, null=True, blank=True)
+    is_business_email_verified = models.BooleanField(default=False)
     user_type_bits = models.SmallIntegerField(null=True, blank=True)
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
     is_employer_deactivated = models.BooleanField(default=False, blank=True)
@@ -125,6 +133,9 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
             and self.employer_id == user.employer_id
         )
     
+    def _jv_can_edit(self, user):
+        return self._jv_can_create(user) or self.id == user.id
+    
     def _jv_can_delete(self, user):
         return user.is_admin or self.id == user.id
         
@@ -154,5 +165,6 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         return bool(self.user_type_bits & self.USER_TYPE_EMPLOYER)
 
 
-def generate_password():
-    return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')
+class UserUnknownEmployer(AuditFields):
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
+    employer_name = models.CharField(max_length=100)

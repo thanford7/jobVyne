@@ -14,7 +14,7 @@ def create_user(strategy, details, backend, user=None, *args, **kwargs):
     
     return {
         'is_new': True,
-        'user': strategy.create_user(**fields)
+        'user': strategy.create_user(**fields, is_email_verified=True)
     }
 
 

@@ -53,6 +53,10 @@ class ColorUtil {
   getEmployerAccentColor (employer) {
     return employer.color_accent || this.getPaletteColor('accent')
   }
+
+  changeAlpha (color, offset) {
+    return colors.changeAlpha(color, offset)
+  }
 }
 
 const colorUtil = new ColorUtil()

@@ -70,6 +70,7 @@ p {
 }
 
 ul:not(.nav), ol {
+  padding-inline-start: 1.5em;
   li {
     margin-bottom: 0.5rem;
   }
@@ -77,7 +78,7 @@ ul:not(.nav), ol {
 
 ul, ol {
   li {
-    margin-left: 1.5em;
+    margin-left: 0.5em;
   }
 
   p {
