@@ -1,0 +1,22 @@
+{% extends 'emails/base_general_email.html' %}
+
+{% block body %}
+    <p style="text-align:left">Hi {{ user.first_name }},</p>
+    <p style="text-align:left">Please verify your email by clicking the button below:</p>
+    <table width="100%">
+        <tbody>
+            <tr>
+                <td style="border:20px transparent solid">
+                    <div style="padding:10px 0;text-align:center;background-color:#034C3C;border-radius:32px">
+                        <a href="{{ protocol }}://{{ domain }}/verify-email/{{ uid }}/{{ token }}"
+                           style="text-decoration:none;color:#fff;display:block;width:100%" target="_blank">
+                            Verify email
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="text-align:left">This link will expire in 8 hours. If you need to send another verification email, go to
+    <a href="{{ protocol }}://{{ domain }}/dashboard">jobvyne.com/dashboard</a>.
+{% endblock body %}

@@ -1,24 +1,27 @@
 from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import JobVyneUser, UserUnknownEmployer
+from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user
-
-__all__ = ('UserView',)
-
 from jvapp.utils.data import AttributeCfg, set_object_attributes
-
 from jvapp.utils.email import send_email
+from jvapp.utils.security import check_user_token, generate_user_token, get_user_id_from_uid, get_user_key_from_token
+
+__all__ = ('UserView', 'UserEmailVerificationView')
 
 
 class UserView(JobVyneAPIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrPostOrRead]
     
     def get(self, request, user_id=None):
         # This allows use to check authentication and conditionally grab user info in one request
@@ -37,6 +40,21 @@ class UserView(JobVyneAPIView):
             return Response(status=status.HTTP_200_OK, data=[get_serialized_user(u) for u in users])
         
         return Response('Please provide a user ID or search text', status=status.HTTP_400_BAD_REQUEST)
+    
+    @atomic
+    def post(self, request):
+        email = self.data.get('email')
+        password = self.data.get('password')
+        if not email or not password:
+            return Response('Email and password are required', status=status.HTTP_400_BAD_REQUEST)
+
+        user = JobVyneUser.objects.create_user(email, password=password)
+
+        # User wasn't created through social auth so we need to verify their email
+        self.send_email_verification_email(request, user, 'email')
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'User with email address <{user.email}> successfully created'
+        })
     
     @atomic
     def put(self, request, user_id):
@@ -95,6 +113,51 @@ class UserView(JobVyneAPIView):
             request=request,
             **email_cfg
         )
+        
+    @staticmethod
+    def send_email_verification_email(request, user, email_key):
+        current_site = get_current_site(request)
+        send_email(
+            'JobVyne | Email Verification',
+            getattr(user, email_key),
+            django_context={
+                'user': user,
+                'domain': current_site.domain,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': generate_user_token(user, email_key)
+            }
+        )
+        
+        
+class UserEmailVerificationView(JobVyneAPIView):
+    permission_classes = [AllowAny]
+    
+    @atomic
+    def post(self, request):
+        uid = self.data.get('uid')
+        token = self.data.get('token')
+        if not uid or not token:
+            return Response('A UID and token are required', status=status.HTTP_400_BAD_REQUEST)
+        
+        user_id = get_user_id_from_uid(uid)
+        email_key = get_user_key_from_token(token)
+        user = UserView.get_user(user_id=user_id)
+        is_valid_token = check_user_token(user, email_key, token)
+        if not is_valid_token:
+            return Response('This email verification link is no longer valid', status=status.HTTP_400_BAD_REQUEST)
+        
+        if email_key == 'email':
+            user.is_email_verified = True
+        elif email_key == 'business_email':
+            user.is_business_email_verified = True
+        else:
+            return Response(f'Unknown email key: {email_key}', status=status.HTTP_400_BAD_REQUEST)
+        
+        user.save()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{getattr(user, email_key)} successfully verified'
+        })
+        
 
 
 class JobVynePasswordResetForm(PasswordResetForm):
@@ -103,7 +166,6 @@ class JobVynePasswordResetForm(PasswordResetForm):
                   context, from_email, to_email, html_email_template_name=None):
         subject = context.get('subject', 'JobVyne | Reset Password')
         subject = ''.join(subject.splitlines())
-        context['protocol'] = 'https'  # Overwrite protocol to always use https
         send_email(
             subject,
             to_email,

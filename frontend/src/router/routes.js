@@ -26,6 +26,14 @@ const routes = [
   },
 
   {
+    path: '/verify-email/:uid(\\S+)/:token(\\S+)',
+    component: () => import('layouts/HeaderlessLayout.vue'),
+    children: [
+      { path: '', name: 'verify-email', meta: { isNoAuth: true }, component: () => import('pages/auth/VerifyEmailPage.vue') }
+    ]
+  },
+
+  {
     path: '/onboard',
     component: () => import('layouts/HeaderlessLayout.vue'),
     children: [

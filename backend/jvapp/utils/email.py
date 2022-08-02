@@ -70,6 +70,7 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
         subject = '(Test) ' + subject
     django_context = django_context or {}
     django_context['support_email'] = EMAIL_ADDRESS_SUPPORT
+    django_context['protocol'] = 'https'  # Overwrite protocol to always use https
     htmlContent = html_content or loader.render_to_string(django_email_body_template, django_context)
     
     message = Mail(

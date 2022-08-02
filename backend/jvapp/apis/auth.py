@@ -27,6 +27,8 @@ from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
 
 __all__ = ('LoginView', 'LoginSetCookieView', 'LogoutView', 'CheckAuthView', 'SocialAuthCredentialsView')
 
+from jvapp.utils.security import get_user_id_from_uid
+
 logger = getLogger()
 
 # https://cloud.google.com/recaptcha-enterprise/docs/interpret-assessment
@@ -258,7 +260,7 @@ class PasswordResetFromEmailView(APIView):
         if not (password := data.get('password')):
             return Response('A password is required', status=status.HTTP_400_BAD_REQUEST)
         
-        user_id = urlsafe_base64_decode(uid).decode()
+        user_id = get_user_id_from_uid(uid)
         user = JobVyneUser.objects.get(id=user_id)
         is_valid = self.token_generator.check_token(user, token)
         if not is_valid:

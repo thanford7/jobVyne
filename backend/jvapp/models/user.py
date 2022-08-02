@@ -58,8 +58,6 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_('Email must be set'))
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        if not user.is_email_verified:
-            pass  # TODO: Send verification email
         user.set_password(password or generate_password())
         user.save()
         return user

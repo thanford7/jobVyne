@@ -34,6 +34,9 @@ urlpatterns = [
     path('password-reset-generate/', auth.PasswordResetGenerateView.as_view()),
     path('password-reset-from-email/', auth.PasswordResetFromEmailView.as_view()),
     
+    # Email verification
+    path('verify-email/', user.UserEmailVerificationView.as_view()),
+    
     # Social auth
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view())
