@@ -1,13 +1,10 @@
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
+from jvapp.models.user import getUserUploadLocation
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePermissionsMixin
 
 __all__ = ('JobApplication', 'JobApplicationTemplate')
-
-
-def getUserUploadLocation(instance, filename):
-    return f'resumes/{instance.email}/{filename}'
 
 
 class JobApplicationFields(AuditFields):

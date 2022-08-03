@@ -10,13 +10,17 @@ from django.utils.translation import gettext_lazy as _
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
 
 
-__all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer')
+__all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer', 'getUserUploadLocation')
 
 from jvapp.utils.email import get_domain_from_email
 
 
 def generate_password():
     return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')
+
+
+def getUserUploadLocation(instance, filename):
+    return f'resumes/{instance.email}/{filename}'
 
 
 # Keep in sync with frontend user-types
@@ -98,6 +102,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
+    profile_picture = models.ImageField(upload_to=getUserUploadLocation, null=True, blank=True)
     is_email_verified = models.BooleanField(default=False)
     business_email = models.EmailField(_('business email address'), unique=True, null=True, blank=True)
     is_business_email_verified = models.BooleanField(default=False)

@@ -61,10 +61,19 @@ class UserView(JobVyneAPIView):
         user = self.get_user(user_id=user_id)
         user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
         set_object_attributes(user, self.data, {
+            'first_name': AttributeCfg(is_protect_existing=True),
+            'last_name': AttributeCfg(is_protect_existing=True),
             'business_email': AttributeCfg(is_protect_existing=True),
             'user_type_bits': None,
-            'employer_id': AttributeCfg(is_protect_existing=True)
+            'employer_id': AttributeCfg(is_protect_existing=True),
         })
+        
+        if 'profile_picture_url' in self.data and not self.data['profile_picture_url']:
+            user.profile_picture = None
+        
+        if profile_picture := self.files.get('profile_picture'):
+            user.profile_picture = profile_picture[0]
+        
         user.save()
         
         if unknown_employer_name := self.data.get('unknown_employer_name'):

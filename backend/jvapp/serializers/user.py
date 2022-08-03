@@ -6,6 +6,7 @@ from jvapp.utils.datetime import get_datetime_format_or_none
 def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
     data = {
         'id': user.id,
+        'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
         'email': user.email,
         'business_email': user.business_email,
         'first_name': user.first_name,

@@ -88,11 +88,6 @@ export default {
       type: [Array, Object] // Users can be plural (Array) or singular (Object)
     }
   },
-  watch: {
-    formDataSingle (newVal) {
-      console.log(newVal)
-    }
-  },
   computed: {
     titleText () {
       if (!this.user_ids) {

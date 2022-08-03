@@ -60,6 +60,11 @@ export default {
       fileUtil
     }
   },
+  watch: {
+    fileUrl () {
+      this.isUpload = !this.fileUrl
+    }
+  },
   methods: {
     getValues () {
       return {

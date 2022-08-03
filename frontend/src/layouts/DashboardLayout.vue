@@ -153,9 +153,9 @@ import { USER_TYPES } from 'src/utils/user-types'
 
 const generalMenuList = [
   {
-    icon: 'settings',
-    key: 'settings',
-    label: 'Settings',
+    icon: 'badge',
+    key: 'profile',
+    label: 'Profile',
     separator: false
   },
   {
@@ -288,6 +288,12 @@ const userCfgMap = {
         icon: 'dynamic_feed',
         key: 'content',
         label: 'Content',
+        separator: false
+      },
+      {
+        icon: 'settings',
+        key: 'settings',
+        label: 'Settings',
         separator: true
       }
     ]
