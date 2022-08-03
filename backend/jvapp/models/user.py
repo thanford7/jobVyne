@@ -12,6 +12,8 @@ from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
 
 __all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer')
 
+from jvapp.utils.email import get_domain_from_email
+
 
 def generate_password():
     return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')
@@ -161,6 +163,20 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     @property
     def is_employer(self):
         return bool(self.user_type_bits & self.USER_TYPE_EMPLOYER)
+    
+    @property
+    def is_employer_verified(self):
+        if not self.employer_id or not self.employer.email_domains:
+            return False
+    
+        return (
+                (self.is_email_verified and get_domain_from_email(self.email) in self.employer.email_domains)
+                or (
+                        self.business_email
+                        and self.is_business_email_verified
+                        and get_domain_from_email(self.business_email) in self.employer.email_domains
+                )
+        )
 
 
 class UserUnknownEmployer(AuditFields):

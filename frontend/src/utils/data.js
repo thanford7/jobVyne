@@ -358,7 +358,7 @@ class DataUtil {
   }
 
   isEmptyOrNil (val) {
-    return this.isNil(val) || this.isEmpty(val)
+    return this.isNil(val) || this.isEmpty(val) || (val instanceof String && !val.length)
   }
 
   isObject (val) {

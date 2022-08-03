@@ -1,5 +1,3 @@
-import re
-
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from django.db.transaction import atomic
@@ -20,6 +18,8 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
+
+from jvapp.utils.email import get_domain_from_email
 
 from jvapp.utils.sanitize import sanitizer
 
@@ -445,7 +445,7 @@ class EmployerFromDomainView(JobVyneAPIView):
         if not (email := self.query_params.get('email')):
             return Response('An email address is required', status=status.HTTP_400_BAD_REQUEST)
         
-        if not (email_domain := self.get_domain_from_email(email)):
+        if not (email_domain := get_domain_from_email(email)):
             return Response(f'Could not parse email domain for {email}', status=status.HTTP_400_BAD_REQUEST)
         
         employers = {e.email_domains: e for e in Employer.objects.all()}
@@ -460,12 +460,3 @@ class EmployerFromDomainView(JobVyneAPIView):
             status=status.HTTP_200_OK,
             data=matched_employers
         )
-    
-    @staticmethod
-    def get_domain_from_email(email):
-        email = email.strip()
-        domain_regex = re.compile('(?P<domain>[0-9a-z-]+?\.[0-9a-z-]+$)', re.I)
-        email_match = re.search(domain_regex, email)
-        if not email_match:
-            return None
-        return email_match.group('domain')

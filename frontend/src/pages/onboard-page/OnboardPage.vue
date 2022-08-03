@@ -51,6 +51,7 @@
 import BannerMessage from 'components/BannerMessage.vue'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 import StepBusinessEmail from 'pages/onboard-page/StepBusinessEmail.vue'
+import StepName from 'pages/onboard-page/StepName.vue'
 import StepSelectEmployer from 'pages/onboard-page/StepSelectEmployer.vue'
 import StepUnknownEmployer from 'pages/onboard-page/StepUnknownEmployer.vue'
 import StepUserType from 'pages/onboard-page/StepUserType.vue'
@@ -72,14 +73,17 @@ export default {
     StepUserType,
     StepBusinessEmail,
     StepUnknownEmployer,
-    StepSelectEmployer
+    StepSelectEmployer,
+    StepName
   },
   data () {
     const formData = {
       user_type_bits: 0,
       business_email: null,
       unknown_employer_name: null,
-      employer_id: null
+      employer_id: null,
+      first_name: null,
+      last_name: null
     }
     const userTypesCfg = [
       {
@@ -129,6 +133,13 @@ export default {
       const all = [
         { component: 'StepUserType', props: { formData: this.formData, userTypesCfg: this.userTypesCfg } }
       ]
+
+      if (dataUtil.isEmptyOrNil(this.user.first_name) || dataUtil.isEmptyOrNil(this.user.last_name)) {
+        all.push({
+          component: 'StepName',
+          props: { formData: this.formData }
+        })
+      }
 
       // A business email is used to identify the user's employer if their main email doesn't match with an
       // employer's list of allowed email domains. This can happen when a user uses a personal email to
@@ -185,6 +196,9 @@ export default {
       ...dataUtil.getForceArray(fromEmail),
       ...dataUtil.getForceArray(fromBusinessEmail)
     ])
+
+    this.formData.first_name = this.user.first_name
+    this.formData.last_name = this.user.last_name
   },
   preFetch () {
     const authStore = useAuthStore()

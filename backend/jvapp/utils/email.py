@@ -1,6 +1,7 @@
 import base64
 import logging
 import os
+import re
 from urllib.request import urlopen
 
 from django.conf import settings
@@ -100,3 +101,12 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
             message.attachment = attachment
     
     return send_sg_email(message)
+
+
+def get_domain_from_email(email):
+    email = email.strip()
+    domain_regex = re.compile('(?P<domain>[0-9a-z-]+?\.[0-9a-z-]+$)', re.I)
+    email_match = re.search(domain_regex, email)
+    if not email_match:
+        return None
+    return email_match.group('domain')

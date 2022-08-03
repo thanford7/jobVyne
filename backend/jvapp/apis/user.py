@@ -80,6 +80,7 @@ class UserView(JobVyneAPIView):
             user_filter = Q(email=user_email)
         
         users = JobVyneUser.objects \
+            .select_related('employer') \
             .prefetch_related('application_template', 'permission_groups') \
             .filter(user_filter)
         
