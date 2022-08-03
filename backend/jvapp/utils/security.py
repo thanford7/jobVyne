@@ -2,18 +2,20 @@ from datetime import datetime
 
 from django.conf import settings
 from django.utils.crypto import constant_time_compare, salted_hmac
-from django.utils.http import base36_to_int, int_to_base36, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.utils.http import base36_to_int, int_to_base36, urlsafe_base64_decode, urlsafe_base64_encode
 
 key_salt = 'jvapp.util.security.generate_user_token'
 
 
-def generate_user_token(user, user_key):
+def generate_user_token(user, user_key, timestamp=None):
     """Get a token from a discrete value from a user instance
     :param user {JobVyneUser}
     :param user_key: A key attribute from the JobVyneUser model (e.g. email)
+    :param timestamp
     :return: Token
     """
-    timestamp = _num_seconds(datetime.now())
+    timestamp = timestamp or _num_seconds(datetime.now())
     ts_b36 = int_to_base36(timestamp)
     hash_string = salted_hmac(
         key_salt,
@@ -40,7 +42,7 @@ def check_user_token(user, user_key, token):
         return False
     # Parse the token
     try:
-        ts_b36, _ = token.split("-")
+        ts_b36, _, _ = token.split("-")
     except ValueError:
         return False
     
@@ -58,6 +60,10 @@ def check_user_token(user, user_key, token):
         return False
     
     return True
+
+
+def get_uid_from_user(user):
+    return urlsafe_base64_encode(force_bytes(user.pk))
 
 
 def get_user_id_from_uid(uid):

@@ -217,9 +217,9 @@ const userCfgMap = {
         separator: false
       },
       {
-        icon: 'person',
-        key: 'profile',
-        label: 'Profile',
+        icon: 'web',
+        key: 'employee-profile-page',
+        label: 'Profile Page',
         separator: false
       },
       {

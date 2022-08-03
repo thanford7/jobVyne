@@ -70,7 +70,12 @@ const routes = [
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
       {
-        path: ':namespace(admin|candidate|employee|influencer|employer)?/profile',
+        path: ':namespace(admin|candidate|employee|influencer|employer)?',
+        name: 'dashboard',
+        component: () => import('pages/DashboardPage.vue')
+      },
+      {
+        path: ':namespace(admin|candidate|employee|influencer|employer)?/:key(profile)',
         name: 'profile',
         component: () => import('pages/ProfilePage.vue')
       },
@@ -99,12 +104,6 @@ const routes = [
         name: 'employer-settings',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/SettingsPage.vue')
-      },
-      // Must come last!!
-      {
-        path: ':namespace(admin|candidate|employee|influencer|employer)?',
-        name: 'dashboard',
-        component: () => import('pages/DashboardPage.vue')
       }
     ]
   },

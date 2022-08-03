@@ -15,9 +15,10 @@ from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.email import send_email
-from jvapp.utils.security import check_user_token, generate_user_token, get_user_id_from_uid, get_user_key_from_token
+from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
+    get_user_key_from_token
 
-__all__ = ('UserView', 'UserEmailVerificationView')
+__all__ = ('UserView', 'UserEmailVerificationView', 'UserEmailVerificationGenerateView')
 
 
 class UserView(JobVyneAPIView):
@@ -130,13 +131,34 @@ class UserView(JobVyneAPIView):
         send_email(
             'JobVyne | Email Verification',
             getattr(user, email_key),
+            django_email_body_template='emails/verify_email_email.html',
             django_context={
                 'user': user,
                 'domain': current_site.domain,
-                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'uid': get_uid_from_user(user),
                 'token': generate_user_token(user, email_key)
             }
         )
+        
+        
+class UserEmailVerificationGenerateView(JobVyneAPIView):
+    
+    @atomic
+    def post(self, request):
+        if not (email := self.data.get('email')):
+            return Response('An email is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        if email == self.user.email:
+            email_key = 'email'
+        elif email == self.user.business_email:
+            email_key = 'business_email'
+        else:
+            return Response('Unrecognized email for this user', status=status.HTTP_400_BAD_REQUEST)
+        
+        UserView.send_email_verification_email(request, self.user, email_key)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Verification email sent to {email}'
+        })
         
         
 class UserEmailVerificationView(JobVyneAPIView):
@@ -167,7 +189,6 @@ class UserEmailVerificationView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{getattr(user, email_key)} successfully verified'
         })
-        
 
 
 class JobVynePasswordResetForm(PasswordResetForm):

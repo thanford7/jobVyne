@@ -87,12 +87,54 @@
             </div>
           </div>
         </q-tab-panel>
+        <q-tab-panel name="security">
+          <div class="row q-gutter-y-sm">
+            <div class="col-12">
+              <q-table
+                :rows="userEmailRows"
+                :columns="emailVerificationColumns"
+                :hide-bottom="true"
+              >
+                <template v-slot:top>
+                  <div class="text-h6">
+                    Email verification
+                    <CustomTooltip :is_include_space="false">
+                      Email verification helps us make sure it's actually you!
+                      <q-icon name="fa-solid fa-user-secret"/>
+                    </CustomTooltip>
+                  </div>
+                </template>
+                <template v-slot:body-cell-isVerified="props">
+                  <q-td key="isVerified" class="text-center">
+                    <q-icon v-if="props.row.isVerified" name="check_circle" color="positive"/>
+                    <q-icon v-else name="cancel" color="negative"/>
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-action="props">
+                  <q-td key="action">
+                    <div class="flex justify-center">
+                      <q-btn
+                        v-if="props.row.action"
+                        color="primary"
+                        label="Send verification email"
+                        ripple dense
+                        @click="sendVerificationEmail(props.row.email)"
+                      />
+                      <span v-else>None required</span>
+                    </div>
+                  </q-td>
+                </template>
+              </q-table>
+            </div>
+          </div>
+        </q-tab-panel>
       </q-tab-panels>
     </div>
   </q-page>
 </template>
 
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import EmailInput from 'components/inputs/EmailInput.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
@@ -104,15 +146,23 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 
+const emailVerificationColumns = [
+  { name: 'type', field: 'type', align: 'left', label: 'Email type' },
+  { name: 'email', field: 'email', align: 'left', label: 'Email' },
+  { name: 'isVerified', field: 'isVerified', align: 'center', label: 'Verified' },
+  { name: 'action', field: 'action', align: 'center', label: 'Action' }
+]
+
 export default {
   name: 'ProfilePage',
-  components: { EmailInput, FileDisplayOrUpload, PageHeader },
+  components: { CustomTooltip, EmailInput, FileDisplayOrUpload, PageHeader },
   data () {
     return {
       tab: 'general',
       currentUserData: dataUtil.deepCopy(this.user),
       userData: dataUtil.deepCopy(this.user),
       newProfilePictureKey: 'profile_picture',
+      emailVerificationColumns,
       fileUtil,
       FILE_TYPES
     }
@@ -120,9 +170,34 @@ export default {
   computed: {
     hasUserDataChanged () {
       return !dataUtil.isDeepEqual(this.currentUserData, this.userData)
+    },
+    userEmailRows () {
+      const rows = [{
+        type: 'Primary',
+        email: this.user.email,
+        isVerified: this.user.is_email_verified,
+        action: !this.user.is_email_verified
+      }]
+
+      if (this.user.business_email) {
+        rows.push({
+          type: 'Business',
+          email: this.user.business_email,
+          isVerified: this.user.is_business_email_verified,
+          action: !this.user.is_business_email_verified
+        })
+      }
+
+      return rows
+    }
+  },
+  watch: {
+    tab () {
+      this.$router.replace({ name: this.$route.name, query: { tab: this.tab } })
     }
   },
   methods: {
+    // General tab
     async saveUserChanges () {
       const data = Object.assign({},
         this.userData,
@@ -135,6 +210,16 @@ export default {
     },
     undoUserChanges () {
       this.userData = dataUtil.deepCopy(this.user)
+    },
+    // Security tab
+    sendVerificationEmail (email) {
+      this.$api.post('verify-email-generate/', getAjaxFormData({ email }))
+    }
+  },
+  mounted () {
+    const { tab } = this.$route.query
+    if (tab) {
+      this.tab = tab
     }
   },
   preFetch () {
