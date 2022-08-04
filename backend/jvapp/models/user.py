@@ -1,3 +1,4 @@
+from collections import defaultdict
 from enum import Enum
 
 from django.db import models
@@ -10,7 +11,10 @@ from django.utils.translation import gettext_lazy as _
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
 
 
-__all__ = ('CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer', 'getUserUploadLocation')
+__all__ = (
+    'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
+    'getUserUploadLocation', 'UserEmployerPermissionGroup'
+)
 
 from jvapp.utils.email import get_domain_from_email
 
@@ -44,7 +48,7 @@ USER_MANAGEMENT_PERMISSIONS = [
 
 
 # Update migration_permissions.py and add a new migration
-class DefaultPermissionGroups(Enum):
+class StandardPermissionGroups(Enum):
     ADMIN = 'Admin'
     HR = 'HR Professional'
     EMPLOYEE = 'Employee'
@@ -111,7 +115,6 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     user_type_bits = models.SmallIntegerField(default=0)
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
     is_employer_deactivated = models.BooleanField(default=False, blank=True)
-    permission_groups = models.ManyToManyField('EmployerAuthGroup', related_name='user')
     created_dt = models.DateTimeField(_("date created"), default=timezone.now)
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
 
@@ -123,20 +126,22 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     def __str__(self):
         return self.email
     
-    def has_employer_permission(self, permission_name: str or list, is_all_true: bool = True):
+    def has_employer_permission(self, permission_name: str or list, employer_id: int, is_all_true: bool = True):
         """Check if user has the specified permission
         :param permission_name: A property of PermissionName class
+        :param employer_id
         :param is_all_true: If true, all permissions must be true.
             Otherwise if one permission is true, the func will return true
         """
         if isinstance(permission_name, str):
             permission_name = [permission_name]
         check_method = all if is_all_true else any
-        return check_method((self.permissions.get(p) for p in permission_name))
+        permission_names = [p.name for p in self.permissions_by_employer.get(employer_id)]
+        return check_method((name in permission_names for name in permission_name))
     
     def _jv_can_create(self, user):
         return user.is_admin or (
-            user.has_employer_permission(PermissionName.MANAGE_USER.value)
+            user.has_employer_permission(PermissionName.MANAGE_USER.value, user.employer_id)
             and self.employer_id == user.employer_id
         )
     
@@ -147,9 +152,21 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         return user.is_admin or self.id == user.id
         
     @cached_property
-    def permissions(self):
-        permission_groups = self.permission_groups.prefetch_related('permissions').all()
-        return {permission.name: permission for group in permission_groups for permission in group.permissions.all()}
+    def permissions_by_employer(self):
+        employer_permission_groups = self.employer_permission_group.prefetch_related('permissions').all()
+        permissions = defaultdict(list)
+        for employer_permission_group in employer_permission_groups:
+            for permission in employer_permission_group.permission_group.permissions.all():
+                permissions[employer_permission_group.employer_id].append(permission)
+        return permissions
+    
+    @cached_property
+    def permission_groups_by_employer(self):
+        employer_permission_groups = self.employer_permission_group.all()
+        groups = defaultdict(list)
+        for group in employer_permission_groups:
+            groups[group.employer_id].append(group)
+        return groups
     
     @property
     def is_admin(self):
@@ -170,7 +187,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     @property
     def is_employer(self):
         return bool(self.user_type_bits & self.USER_TYPE_EMPLOYER)
-    
+
     @property
     def is_employer_verified(self):
         if not self.employer_id or not self.employer.email_domains:
@@ -198,6 +215,15 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
             return False
     
         return self.business_email and get_domain_from_email(self.business_email) in self.employer.email_domains
+    
+    
+class UserEmployerPermissionGroup(models.Model):
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='employer_permission_group')
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
+    permission_group = models.ForeignKey('EmployerAuthGroup', on_delete=models.CASCADE)
+    
+    class Meta:
+        unique_together = ('user', 'employer', 'permission_group')
         
 
 class UserUnknownEmployer(AuditFields):

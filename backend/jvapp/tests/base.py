@@ -3,7 +3,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from jvapp.models import *
-from jvapp.models.user import DefaultPermissionGroups
+from jvapp.models.user import StandardPermissionGroups
 from jvapp.urls import api_path
 
 
@@ -22,11 +22,11 @@ class BaseTestCase(TestCase):
         )
         self.user_employer_admin = self.create_user(
             JobVyneUser.USER_TYPE_EMPLOYER, first_name='Britney', last_name='Spears',
-            employer_id=self.employer.id, auth_group_names=[DefaultPermissionGroups.ADMIN.value]
+            employer_id=self.employer.id, auth_group_names=[StandardPermissionGroups.ADMIN.value]
         )
         self.user_employer_hr = self.create_user(
             JobVyneUser.USER_TYPE_EMPLOYER, first_name='Scooby', last_name='Doo',
-            employer_id=self.employer.id, auth_group_names=[DefaultPermissionGroups.HR.value]
+            employer_id=self.employer.id, auth_group_names=[StandardPermissionGroups.HR.value]
         )
         self.user_employee = self.create_user(
             JobVyneUser.USER_TYPE_EMPLOYEE, first_name='Shark', last_name='Nado', employer_id=self.employer.id
@@ -79,6 +79,10 @@ class BaseTestCase(TestCase):
         auth_group_names = auth_group_names or []
         for group_name in auth_group_names:
             auth_group = self.employer_permission_groups[group_name]
-            user.permission_groups.add(auth_group)
+            UserEmployerPermissionGroup(
+                user=user,
+                employer_id=employer_id,
+                permission_group=auth_group
+            ).save()
         
         return user

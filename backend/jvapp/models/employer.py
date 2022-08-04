@@ -39,7 +39,10 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     def _jv_can_edit(self, user):
         return (
             user.is_admin
-            or (user.employer_id == self.id and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value))
+            or (
+                user.employer_id == self.id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
+            )
         )
     
     def _jv_can_delete(self, user):
@@ -104,14 +107,14 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
             self._raise_permission_error(PermissionName.CHANGE_PERMISSIONS.value)
             
     def jv_can_update_permissions(self, user):
-        return user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value)
+        return user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value, user.employer_id)
         
     def _jv_can_create(self, user):
         return (
             user.is_admin
             or (
                 self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_PERMISSION_GROUPS.value)
+                and user.has_employer_permission(PermissionName.MANAGE_PERMISSION_GROUPS.value, user.employer_id)
             )
         )
     
@@ -151,7 +154,7 @@ class EmployerFile(AuditFields, OwnerFields, JobVynePermissionsMixin):
             user.is_admin
             or (
                 self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value)
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
             )
         )
     
@@ -168,7 +171,7 @@ class EmployerFileTag(models.Model, JobVynePermissionsMixin):
             user.is_admin
             or (
                 self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value)
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
             )
         )
         
@@ -183,7 +186,7 @@ class EmployerPage(AuditFields, OwnerFields, JobVynePermissionsMixin):
             user.is_admin
             or (
                 self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value)
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
             )
         )
 

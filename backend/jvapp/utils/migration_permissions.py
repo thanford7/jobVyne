@@ -2,12 +2,12 @@ from dataclasses import dataclass
 
 from django.db.models import Q
 
-from jvapp.models.user import DefaultPermissionGroups
+from jvapp.models.user import StandardPermissionGroups
 
 
 @dataclass
 class Group:
-    name: str  # See DefaultPermissionGroups
+    name: str  # See StandardPermissionGroups
     user_type_bit: int
     is_default: bool
     
@@ -16,71 +16,72 @@ class Group:
 class Permission:
     name: str
     description: str
-    group_names: tuple  # See DefaultPermissionGroups
+    group_names: tuple  # See StandardPermissionGroups
     user_type_bit: int
     
 
+# Note don't add a default for employer groups (bit 16). These groups must be added manually be the employer
 groups_cfg = (
-    Group(name=DefaultPermissionGroups.ADMIN.value, user_type_bit=16, is_default=False),
-    Group(name=DefaultPermissionGroups.HR.value, user_type_bit=16, is_default=True),
-    Group(name=DefaultPermissionGroups.EMPLOYEE.value, user_type_bit=4, is_default=True),
-    Group(name=DefaultPermissionGroups.INFLUENCER.value, user_type_bit=8, is_default=True),
-    Group(name=DefaultPermissionGroups.JOB_SEEKER.value, user_type_bit=2, is_default=True),
+    Group(name=StandardPermissionGroups.ADMIN.value, user_type_bit=16, is_default=False),
+    Group(name=StandardPermissionGroups.HR.value, user_type_bit=16, is_default=False),
+    Group(name=StandardPermissionGroups.EMPLOYEE.value, user_type_bit=4, is_default=True),
+    Group(name=StandardPermissionGroups.INFLUENCER.value, user_type_bit=8, is_default=True),
+    Group(name=StandardPermissionGroups.JOB_SEEKER.value, user_type_bit=2, is_default=True),
 )
 
 permissions_cfg = (
     Permission(
         name='Manage users',
         description='Allows the user to create and edit new users.',
-        group_names=(DefaultPermissionGroups.ADMIN.value,),
+        group_names=(StandardPermissionGroups.ADMIN.value,),
         user_type_bit=16
     ),
     Permission(
         name='Change user permissions',
         description='',
-        group_names=(DefaultPermissionGroups.ADMIN.value,),
+        group_names=(StandardPermissionGroups.ADMIN.value,),
         user_type_bit=16
     ),
     Permission(
         name='Manage custom permission groups',
         description='Allows the user to create, edit, and delete custom permission groups.',
-        group_names=(DefaultPermissionGroups.ADMIN.value,),
+        group_names=(StandardPermissionGroups.ADMIN.value,),
         user_type_bit=16
     ),
     Permission(
         name='Manage employer content',
         description='Allows the user to create, edit, and delete employer content such as the employer description.',
-        group_names=(DefaultPermissionGroups.ADMIN.value, DefaultPermissionGroups.HR.value),
+        group_names=(StandardPermissionGroups.ADMIN.value, StandardPermissionGroups.HR.value),
         user_type_bit=16
     ),
     Permission(
         name='Manage employer jobs',
         description='Allows the user to create, edit, and delete. For most employers, most job data will automatically be pulled from your ATS.',
-        group_names=(DefaultPermissionGroups.ADMIN.value, DefaultPermissionGroups.HR.value),
+        group_names=(StandardPermissionGroups.ADMIN.value, StandardPermissionGroups.HR.value),
         user_type_bit=16
     ),
     Permission(
         name='Manage employee referral bonuses',
         description='Allows user to set and modify the referral bonus for any job or groups of jobs.',
-        group_names=(DefaultPermissionGroups.ADMIN.value, DefaultPermissionGroups.HR.value),
+        group_names=(StandardPermissionGroups.ADMIN.value, StandardPermissionGroups.HR.value),
         user_type_bit=16
     ),
     Permission(
         name='Add personal employee content',
         description='Allows employees to add text and video content about their job which is displayed for any of their unique job links.',
-        group_names=(DefaultPermissionGroups.EMPLOYEE.value,),
+        group_names=(StandardPermissionGroups.EMPLOYEE.value,),
         user_type_bit=4
     ),
     Permission(
         name='Manage billing settings',
         description='Allows user to update billing details and set budget limits.',
-        group_names=(DefaultPermissionGroups.ADMIN.value,),
+        group_names=(StandardPermissionGroups.ADMIN.value,),
         user_type_bit=16
     ),
     Permission(
         name='Manage employer settings',
         description='Allows user to update employer settings.',
-        group_names=(DefaultPermissionGroups.ADMIN.value,),
+        group_names=(StandardPermissionGroups.ADMIN.value,),
         user_type_bit=16
     ),
 )

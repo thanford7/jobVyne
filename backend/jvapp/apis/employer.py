@@ -11,7 +11,7 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup
-from jvapp.models.user import JobVyneUser
+from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
@@ -22,6 +22,9 @@ __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'Employer
 from jvapp.utils.email import get_domain_from_email
 
 from jvapp.utils.sanitize import sanitizer
+
+
+BATCH_UPDATE_SIZE = 100
 
 
 class EmployerView(JobVyneAPIView):
@@ -74,7 +77,12 @@ class EmployerView(JobVyneAPIView):
         
         employers = Employer.objects \
             .select_related('employer_size') \
-            .prefetch_related('employee', 'employee__permission_groups') \
+            .prefetch_related(
+                'employee',
+                'employee__employer_permission_group',
+                'employee__employer_permission_group__permission_group',
+                'employee__employer_permission_group__permission_group__permissions'
+            ) \
             .filter(employer_filter)
         
         if employer_id:
@@ -196,14 +204,19 @@ class EmployerUserView(JobVyneAPIView):
     @atomic
     def post(self, request):
         user, is_new = UserView.get_or_create_user(self.data)
+        employer_id = self.data['employer_id']
         if not user.employer_id:
-            user.employer_id = self.data['employer_id']
+            user.employer_id = employer_id
             user.save()
-        elif user.employer_id != self.data['employer_id']:
+        elif user.employer_id != employer_id:
             return Response('This user already exists and is associated with a different employer')
         
+        new_user_groups = []
         for group_id in self.data['permission_group_ids']:
-            user.permission_groups.add(group_id)
+            new_user_groups.append(
+                UserEmployerPermissionGroup(user=user, employer_id=employer_id, permission_group_id=group_id)
+            )
+        UserEmployerPermissionGroup.objects.bulk_create(new_user_groups)
         
         user_full_name = f'{user.first_name} {user.last_name}'
         success_message = f'Account created for {user_full_name}' if is_new else f'Account already exists for {user_full_name}. Permissions were updated.'
@@ -215,28 +228,38 @@ class EmployerUserView(JobVyneAPIView):
     @atomic
     def put(self, request):
         users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
-        for user in users:
-            set_object_attributes(user, self.data, {
-                'first_name': None,
-                'last_name': None
-            })
-            user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        batchCount = 0
+        while batchCount < len(users):
+            user_employer_permissions_to_delete_filter = Q()
+            user_employer_permissions_to_add = []
+            for user in users[batchCount:batchCount + BATCH_UPDATE_SIZE]:
+                set_object_attributes(user, self.data, {
+                    'first_name': None,
+                    'last_name': None
+                })
+                user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+                
+                if permission_group_ids := self.data.get('permission_group_ids'):
+                    user_employer_permissions_to_delete_filter |= (Q(user_id=user.id) & Q(employer_id=self.data['employer_id']))
+                    for group_id in permission_group_ids:
+                        user.permission_groups.add(group_id)
+                
+                if add_permission_group_ids := self.data.get('add_permission_group_ids'):
+                    for group_id in add_permission_group_ids:
+                        user_employer_permissions_to_add.append(UserEmployerPermissionGroup(
+                            user=user,
+                            employer_id=self.data['employer_id'],
+                            permission_group_id=group_id
+                        ))
+                
+                if remove_permission_group_ids := self.data.get('remove_permission_group_ids'):
+                    for group_id in remove_permission_group_ids:
+                        user_employer_permissions_to_delete_filter |= Q(permission_group_id=group_id)
             
-            # TODO: See if there is a way to do this in one database call (not per user)
-            if permission_group_ids := self.data.get('permission_group_ids'):
-                user.permission_groups.clear()
-                for group_id in permission_group_ids:
-                    user.permission_groups.add(group_id)
-            
-            if add_permission_group_ids := self.data.get('add_permission_group_ids'):
-                for group_id in add_permission_group_ids:
-                    user.permission_groups.add(group_id)
-            
-            if remove_permission_group_ids := self.data.get('remove_permission_group_ids'):
-                for group_id in remove_permission_group_ids:
-                    user.permission_groups.remove(group_id)
-        
-        JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name'])
+            JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name'])
+            UserEmployerPermissionGroup.objects.filter(user_employer_permissions_to_delete_filter).delete()
+            UserEmployerPermissionGroup.objects.bulk_create(user_employer_permissions_to_add)
+            batchCount += BATCH_UPDATE_SIZE
         userCount = len(users)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} updated'

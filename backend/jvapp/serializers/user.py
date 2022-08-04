@@ -1,6 +1,15 @@
+import functools
+
 from jvapp.models.user import JobVyneUser
 from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.utils.datetime import get_datetime_format_or_none
+
+
+def _reduce_user_type_bits(permission_groups):
+    return functools.reduce(
+        lambda user_type_bits, group: group.user_type_bit | user_type_bits,
+        permission_groups, 0
+    )
 
 
 def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
@@ -16,13 +25,22 @@ def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
         'is_employer_deactivated': user.is_employer_deactivated,
         'created_dt': get_datetime_format_or_none(user.created_dt),
         'modified_dt': get_datetime_format_or_none(user.modified_dt),
-        'permissions': list(user.permissions.keys()),
-        'permission_groups': [{
-            'id': pg.id,
-            'name': pg.name,
-            'user_type_bit': pg.user_type_bit,
-            'employer_id': pg.employer_id
-        } for pg in user.permission_groups.all()]
+        'permissions_by_employer': {
+            employer_id: [p.name for p in permissions]
+            for employer_id, permissions in user.permissions_by_employer.items()
+        },
+        'permission_groups_by_employer': {
+            employer_id: [{
+                'id': pg.id,
+                'name': pg.name,
+                'user_type_bit': pg.user_type_bit
+            } for pg in permission_groups]
+            for employer_id, permission_groups in user.permission_groups_by_employer.items()
+        },
+        'user_type_bits_by_employer': {
+            employer_id: _reduce_user_type_bits(permission_groups)
+            for employer_id, permission_groups in user.permission_groups_by_employer.items()
+        }
     }
     
     if isIncludePersonalInfo:
@@ -32,6 +50,6 @@ def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
         data['is_email_employer_permitted'] = user.is_email_employer_permitted
         data['is_business_email_verified'] = user.is_business_email_verified
         data['is_business_email_employer_permitted'] = user.is_business_email_employer_permitted
-        data['is_verified'] = user.is_employer_verified
+        data['is_employer_verified'] = user.is_employer_verified
         
     return data

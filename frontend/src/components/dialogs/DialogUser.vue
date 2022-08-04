@@ -49,6 +49,7 @@
 
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
 import { useEmployerStore } from 'stores/employer-store'
@@ -109,10 +110,13 @@ export default {
   methods: {
     async saveUser () {
       const ajaxFn = (this.user_ids) ? this.$api.put : this.$api.post
-      const data = (this.user_ids) ? { user_ids: this.user_ids } : { employer_id: this.authStore.user.employer_id }
+      const data = { employer_id: this.user.employer_id }
+      if (this.user_ids) {
+        data.user_ids = this.user_ids
+      }
       Object.assign(data, (this.isSingle) ? this.formDataSingle : this.formDataMulti)
       await ajaxFn('employer/user/', getAjaxFormData(data))
-      this.employerStore.setEmployer(this.authStore.user.employer_id, true)
+      this.employerStore.setEmployer(this.user.employer_id, true)
       this.$emit('ok')
     }
   },
@@ -121,7 +125,13 @@ export default {
     return employerStore.setEmployerPermissions()
   },
   setup () {
-    return { authStore: useAuthStore(), employerStore: useEmployerStore() }
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
+    return {
+      authStore,
+      employerStore: useEmployerStore(),
+      user
+    }
   },
   mounted () {
     // Clear out the forms

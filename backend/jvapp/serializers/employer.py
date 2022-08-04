@@ -28,8 +28,7 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
                 'id': pg.id,
                 'name': pg.name,
                 'user_type_bit': pg.user_type_bit,
-                'employer_id': pg.employer_id
-            } for pg in e.permission_groups.all()],
+            } for pg in e.permission_groups_by_employer[employer.id]],
             'created_dt': get_datetime_format_or_none(e.created_dt),
         } for e in employer.employee.all().order_by('-id')]
     

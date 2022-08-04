@@ -91,7 +91,12 @@ class UserView(JobVyneAPIView):
         
         users = JobVyneUser.objects \
             .select_related('employer') \
-            .prefetch_related('application_template', 'permission_groups') \
+            .prefetch_related(
+                'application_template',
+                'employer_permission_group',
+                'employer_permission_group__permission_group',
+                'employer_permission_group__permission_group__permissions'
+            ) \
             .filter(user_filter)
         
         if user_id or user_email:

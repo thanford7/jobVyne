@@ -23,7 +23,7 @@ class JobVyneUserAdmin(UserAdmin):
                     "is_superuser",
                     "user_type_bits",
                     "is_employer_deactivated",
-                    "permission_groups"
+                    "employer_permission_group"
                 ),
             },
         ),
