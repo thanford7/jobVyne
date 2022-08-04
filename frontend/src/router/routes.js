@@ -74,11 +74,6 @@ const routes = [
         name: 'dashboard',
         component: () => import('pages/DashboardPage.vue')
       },
-      {
-        path: ':namespace(admin|candidate|employee|influencer|employer)?/:key(profile)',
-        name: 'profile',
-        component: () => import('pages/ProfilePage.vue')
-      },
       // employee pages
       {
         path: ':namespace(employee)/:key(links)',
@@ -104,6 +99,18 @@ const routes = [
         name: 'employer-settings',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/SettingsPage.vue')
+      }
+    ]
+  },
+
+  {
+    path: '/user',
+    component: () => import('layouts/DashboardLayout.vue'),
+    children: [
+      {
+        path: ':key(profile)',
+        name: 'profile',
+        component: () => import('pages/ProfilePage.vue')
       }
     ]
   },

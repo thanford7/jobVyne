@@ -183,6 +183,7 @@ export default {
     async incrementStep () {
       if (this.stepIdx === this.steps.length - 1) {
         await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(this.formData))
+        await this.authStore.setUser(true)
         this.$router.push({ name: 'dashboard' })
       } else {
         this.stepIdx++

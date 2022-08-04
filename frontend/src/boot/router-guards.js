@@ -2,6 +2,13 @@ import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
 import { getAjaxFormData } from 'src/utils/requests'
 
+const isDashboardPageFn = (to) => {
+  if (!to) {
+    return false
+  }
+  return to.matched.some((match) => match.path.includes('dashboard'))
+}
+
 export default boot(({ app, router }) => {
   router.beforeEach(async (to, from) => {
     const $api = app.config.globalProperties.$api
@@ -38,6 +45,18 @@ export default boot(({ app, router }) => {
         // redirect the user to the login page
         return { name: 'login' }
       }
+
+      const isDashboardPage = isDashboardPageFn(to)
+
+      if (isAuthenticated && isDashboardPage && !user.user_type_bits) {
+        return { name: 'onboard' }
+      }
+
+      // Redirect user to page where they can verify their email if they haven't already
+      if (!user.is_verified && isDashboardPage) {
+        return { name: 'profile', params: { key: 'profile' }, query: { tab: 'security' } }
+      }
+
       if (to.meta.userTypeBits && !(to.meta.userTypeBits & user.user_type_bits)) {
         return { name: 'dashboard' }
       }

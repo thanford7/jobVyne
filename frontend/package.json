@@ -12,8 +12,10 @@
   "dependencies": {
     "@quasar/extras": "^1.0.0",
     "axios": "^0.21.1",
+    "axios-cache-adapter": "^2.7.3",
     "js-cookie": "^3.0.1",
     "just-clone": "^6.0.1",
+    "md5": "^2.3.0",
     "pinia": "^2.0.11",
     "pluralize": "^8.0.0",
     "quasar": "^2.6.0",

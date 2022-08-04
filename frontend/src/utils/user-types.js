@@ -14,6 +14,12 @@ export const USER_TYPES = {
   [USER_TYPE_EMPLOYER]: 0x10
 }
 
+export const COMPANY_USER_TYPES = [USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER]
+export const COMPANY_USER_TYPE_BITS = COMPANY_USER_TYPES.reduce((bits, userType) => {
+  bits |= USER_TYPES[userType]
+  return bits
+}, 0)
+
 // Keep in sync with backend user model
 export const PERMISSION_NAMES = {
   MANAGE_USER: 'Manage users',

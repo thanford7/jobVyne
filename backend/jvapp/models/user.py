@@ -49,6 +49,7 @@ class DefaultPermissionGroups(Enum):
     HR = 'HR Professional'
     EMPLOYEE = 'Employee'
     INFLUENCER = 'Influencer'
+    JOB_SEEKER = 'Job Seeker'
 
 
 class CustomUserManager(BaseUserManager):
@@ -63,6 +64,7 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError(_('Email must be set'))
         email = self.normalize_email(email)
+        extra_fields['user_type_bits'] = extra_fields.get('user_type_bits') or 0
         user = self.model(email=email, **extra_fields)
         user.set_password(password or generate_password())
         user.save()
@@ -106,7 +108,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     is_email_verified = models.BooleanField(default=False)
     business_email = models.EmailField(_('business email address'), unique=True, null=True, blank=True)
     is_business_email_verified = models.BooleanField(default=False)
-    user_type_bits = models.SmallIntegerField(null=True, blank=True)
+    user_type_bits = models.SmallIntegerField(default=0)
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
     is_employer_deactivated = models.BooleanField(default=False, blank=True)
     permission_groups = models.ManyToManyField('EmployerAuthGroup', related_name='user')
@@ -175,14 +177,28 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
             return False
     
         return (
-                (self.is_email_verified and get_domain_from_email(self.email) in self.employer.email_domains)
+                (self.is_email_verified and self.is_email_employer_permitted)
                 or (
                         self.business_email
                         and self.is_business_email_verified
                         and get_domain_from_email(self.business_email) in self.employer.email_domains
                 )
         )
+    
+    @property
+    def is_email_employer_permitted(self):
+        if not self.employer_id or not self.employer.email_domains:
+            return False
+        
+        return get_domain_from_email(self.email) in self.employer.email_domains
 
+    @property
+    def is_business_email_employer_permitted(self):
+        if not self.employer_id or not self.employer.email_domains:
+            return False
+    
+        return self.business_email and get_domain_from_email(self.business_email) in self.employer.email_domains
+        
 
 class UserUnknownEmployer(AuditFields):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)

@@ -8,6 +8,9 @@
         <slot/>
       </p>
     </div>
+    <div class="col-12">
+      <slot name="bottom"/>
+    </div>
   </div>
 </template>
 

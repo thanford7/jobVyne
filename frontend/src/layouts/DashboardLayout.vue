@@ -146,6 +146,7 @@
 
 <script>
 import BannerMessage from 'components/BannerMessage.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import { useUtilStore } from 'stores/utility-store'
 import { useAuthStore } from 'stores/auth-store'
 import { Loading } from 'quasar'
@@ -312,9 +313,10 @@ export default {
   computed: {
     menuList () {
       if (!this.viewerModeBit) {
-        return []
+        return generalMenuList
       }
-      return [...userCfgMap[this.viewerModeBit].menuItems, ...generalMenuList]
+      const userMenuList = (this.user.is_verified) ? userCfgMap[this.viewerModeBit].menuItems : []
+      return [...userMenuList, ...generalMenuList]
     },
     pageKey () {
       return this.$route.params.key || 'dashboard'
@@ -369,9 +371,7 @@ export default {
     },
     redirectUrl (key, namespace = null) {
       namespace = namespace || userCfgMap[this.viewerModeBit].namespace
-      const baseUrl = `/dashboard/${namespace}`
-      const url = (key === 'dashboard') ? baseUrl : `${baseUrl}/${key}`
-      this.$router.push(url)
+      this.$router.push({ name: key, params: { namespace, key } })
     }
   },
   preFetch () {
@@ -380,9 +380,12 @@ export default {
     return authStore.setUser().finally(() => Loading.hide())
   },
   setup () {
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
     return {
       authStore: useAuthStore(),
-      utilStore: useUtilStore()
+      utilStore: useUtilStore(),
+      user
     }
   }
 }

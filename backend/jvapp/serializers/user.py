@@ -29,7 +29,9 @@ def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
         application_template = next((at for at in user.application_template.all()), None)
         data['application_template'] = base_application_serializer(application_template) if application_template else None
         data['is_email_verified'] = user.is_email_verified
+        data['is_email_employer_permitted'] = user.is_email_employer_permitted
         data['is_business_email_verified'] = user.is_business_email_verified
+        data['is_business_email_employer_permitted'] = user.is_business_email_employer_permitted
         data['is_verified'] = user.is_employer_verified
         
     return data

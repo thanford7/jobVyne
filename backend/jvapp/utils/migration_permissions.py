@@ -25,6 +25,7 @@ groups_cfg = (
     Group(name=DefaultPermissionGroups.HR.value, user_type_bit=16, is_default=True),
     Group(name=DefaultPermissionGroups.EMPLOYEE.value, user_type_bit=4, is_default=True),
     Group(name=DefaultPermissionGroups.INFLUENCER.value, user_type_bit=8, is_default=True),
+    Group(name=DefaultPermissionGroups.JOB_SEEKER.value, user_type_bit=2, is_default=True),
 )
 
 permissions_cfg = (

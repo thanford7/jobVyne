@@ -23,7 +23,7 @@ export const useAjaxStore = defineStore('ajax', {
         msg = `${status} ${statusText}`
         if (data && data.detail) {
           msg += `: ${data.detail}`
-        } else if (isString(data) && data.includes('<!doctype html>')) {
+        } else if (isString(data) && data.toLowerCase().includes('<!doctype html>')) {
           msg += `: ${this.parseHtmlMessage(data)}`
         } else if (isString(data)) {
           msg += `: ${data}`

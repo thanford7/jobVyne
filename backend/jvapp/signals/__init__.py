@@ -109,8 +109,18 @@ def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
         return
     
     default_permission_groups = _get_default_user_groups(instance.employer_id)
+    groups_to_add = []
     for user_type_bit in JobVyneUser.ALL_USER_TYPES:
         if instance.user_type_bits and (instance.user_type_bits & user_type_bit):
             default_permission_group = default_permission_groups.get(user_type_bit)
             if default_permission_group:
-                instance.permission_groups.add(default_permission_group)
+                groups_to_add.append(
+                    instance.permission_groups.through(
+                        jobvyneuser_id=instance.id,
+                        employerauthgroup_id=default_permission_group.id
+                    )
+                )
+    # Need to bulk create instead of adding each group with the add method
+    # If each group is added individually, this triggers the receiver for the group
+    # change which then updates the user_type_bits based on that singular group
+    instance.permission_groups.through.objects.bulk_create(groups_to_add)

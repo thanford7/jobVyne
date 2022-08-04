@@ -1,7 +1,32 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader title="Profile"/>
+      <PageHeader title="Profile">
+        <template v-slot:bottom>
+          <q-banner v-if="!user.is_verified" rounded class="bg-warning">
+            <template v-slot:avatar>
+              <q-icon name="warning"/>
+            </template>
+            <template v-if="isCompanyUser">
+              You must verify an email that is covered under your company's email domains.
+              Use the "Send verification email" button in the
+              <a href="/user/profile/?tab=security">"Security" profile section</a>
+              to complete this action. The following domains
+              are covered:
+              <ul>
+                <li v-for="domain in supportedEmailDomains">{{ domain }}</li>
+              </ul>
+              If your primary email is not covered under any of these domains, go to the <a
+              href="/user/profile/?tab=general">"General" profile section</a>
+              to add your business email.
+            </template>
+            <template v-else>
+              You must verify your email before getting access to most JobVyne features. Use the "Send verification
+              email" below to complete this action.
+            </template>
+          </q-banner>
+        </template>
+      </PageHeader>
       <q-tabs
         v-model="tab"
         dense
@@ -92,7 +117,7 @@
             <div class="col-12">
               <q-table
                 :rows="userEmailRows"
-                :columns="emailVerificationColumns"
+                :columns="userEmailColumns"
                 :hide-bottom="true"
               >
                 <template v-slot:top>
@@ -103,6 +128,21 @@
                       <q-icon name="fa-solid fa-user-secret"/>
                     </CustomTooltip>
                   </div>
+                </template>
+                <template v-slot:header-cell-isEmployerEmail="props">
+                  <q-th key="isEmployerEmail">
+                    {{ props.col.label }}
+                    <CustomTooltip>
+                      <template v-slot:icon>
+                        <q-icon class="text-gray-500" tag="span" name="help_outline" size="16px"/>
+                      </template>
+                      You must have a verified email that belongs to an email domain supported
+                      by {{ employer.name }}. The following domains are supported:
+                      <ul>
+                        <li v-for="domain in supportedEmailDomains">{{ domain }}</li>
+                      </ul>
+                    </CustomTooltip>
+                  </q-th>
                 </template>
                 <template v-slot:body-cell-isVerified="props">
                   <q-td key="isVerified" class="text-center">
@@ -124,6 +164,12 @@
                     </div>
                   </q-td>
                 </template>
+                <template v-slot:body-cell-isEmployerEmail="props">
+                  <q-td key="isEmployerEmail" class="text-center">
+                    <q-icon v-if="props.row.isEmployerEmail" name="check_circle" color="positive"/>
+                    <q-icon v-else name="cancel" color="negative"/>
+                  </q-td>
+                </template>
               </q-table>
             </div>
           </div>
@@ -142,16 +188,11 @@ import { Loading, useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
+import { COMPANY_USER_TYPE_BITS } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
-
-const emailVerificationColumns = [
-  { name: 'type', field: 'type', align: 'left', label: 'Email type' },
-  { name: 'email', field: 'email', align: 'left', label: 'Email' },
-  { name: 'isVerified', field: 'isVerified', align: 'center', label: 'Verified' },
-  { name: 'action', field: 'action', align: 'center', label: 'Action' }
-]
 
 export default {
   name: 'ProfilePage',
@@ -162,20 +203,46 @@ export default {
       currentUserData: dataUtil.deepCopy(this.user),
       userData: dataUtil.deepCopy(this.user),
       newProfilePictureKey: 'profile_picture',
-      emailVerificationColumns,
       fileUtil,
       FILE_TYPES
     }
   },
   computed: {
+    employer () {
+      if (!this.user.employer_id) {
+        return {}
+      }
+      return this.employerStore.getEmployer(this.user.employer_id)
+    },
+    supportedEmailDomains () {
+      if (!this.employer.email_domains) {
+        return []
+      }
+      return this.employer.email_domains.split(',')
+    },
     hasUserDataChanged () {
       return !dataUtil.isDeepEqual(this.currentUserData, this.userData)
+    },
+    userEmailColumns () {
+      const cols = [
+        { name: 'type', field: 'type', align: 'left', label: 'Email type' },
+        { name: 'email', field: 'email', align: 'left', label: 'Email' },
+        { name: 'isVerified', field: 'isVerified', align: 'center', label: 'Verified' },
+        { name: 'action', field: 'action', align: 'center', label: 'Action' }
+      ]
+      if (this.user.employer_id) {
+        cols.splice(2, 0, {
+          name: 'isEmployerEmail', field: 'isEmployerEmail', align: 'center', label: 'Employer email'
+        })
+      }
+      return cols
     },
     userEmailRows () {
       const rows = [{
         type: 'Primary',
         email: this.user.email,
         isVerified: this.user.is_email_verified,
+        isEmployerEmail: this.user.is_email_employer_permitted,
         action: !this.user.is_email_verified
       }]
 
@@ -184,11 +251,15 @@ export default {
           type: 'Business',
           email: this.user.business_email,
           isVerified: this.user.is_business_email_verified,
+          isEmployerEmail: this.user.is_business_email_employer_permitted,
           action: !this.user.is_business_email_verified
         })
       }
 
       return rows
+    },
+    isCompanyUser () {
+      return this.user.user_type_bits & COMPANY_USER_TYPE_BITS
     }
   },
   watch: {
@@ -224,14 +295,22 @@ export default {
   },
   preFetch () {
     const authStore = useAuthStore()
+    const employerStore = useEmployerStore()
     Loading.show()
 
-    return authStore.setUser().finally(() => {
+    return authStore.setUser().then(() => {
+      if (authStore.propUser.employer_id) {
+        return Promise.all([
+          employerStore.setEmployer(authStore.propUser.employer_id)
+        ])
+      }
+    }).finally(() => {
       Loading.hide()
     })
   },
   setup () {
     const authStore = useAuthStore()
+    const employerStore = useEmployerStore()
     const { user } = storeToRefs(authStore)
 
     const globalStore = useGlobalStore()
@@ -244,6 +323,7 @@ export default {
 
     return {
       authStore,
+      employerStore,
       user
     }
   }
