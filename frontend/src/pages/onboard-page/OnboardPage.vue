@@ -59,6 +59,7 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
 import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
@@ -67,8 +68,7 @@ import {
   USER_TYPES,
   USER_TYPE_EMPLOYER,
   USER_TYPE_CANDIDATE,
-  USER_TYPE_EMPLOYEE,
-  getDefaultLandingPageKey
+  USER_TYPE_EMPLOYEE
 } from 'src/utils/user-types.js'
 
 export default {
@@ -190,7 +190,7 @@ export default {
       if (this.stepIdx === this.steps.length - 1) {
         await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(this.formData))
         await this.authStore.setUser(true)
-        this.$router.push({ name: getDefaultLandingPageKey(this.authStore.propUser) })
+        this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))
       } else {
         this.stepIdx++
       }

@@ -51,7 +51,7 @@ def add_owner_fields(sender, instance, *args, **kwargs):
 @receiver(post_save, sender=JobVyneUser)
 def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
     # Only set permission groups if the user doesn't already have any
-    if len(instance.permission_groups.all()):
+    if len(instance.employer_permission_group.all()):
         return
     
     default_permission_groups = _get_default_user_groups(instance.employer_id)

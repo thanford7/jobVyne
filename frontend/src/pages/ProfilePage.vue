@@ -3,7 +3,7 @@
     <div class="q-ml-sm">
       <PageHeader title="Profile">
         <template v-slot:bottom>
-          <q-banner v-if="!user.is_verified" rounded class="bg-warning">
+          <q-banner v-if="(!user.is_employer_verified && isCompanyUser) || !user.is_email_verified" rounded class="bg-warning">
             <template v-slot:avatar>
               <q-icon name="warning"/>
             </template>

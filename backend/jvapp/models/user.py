@@ -153,7 +153,10 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         
     @cached_property
     def permissions_by_employer(self):
-        employer_permission_groups = self.employer_permission_group.prefetch_related('permissions').all()
+        employer_permission_groups = self.employer_permission_group\
+            .select_related('permission_group')\
+            .prefetch_related('permission_group__permissions')\
+            .all()
         permissions = defaultdict(list)
         for employer_permission_group in employer_permission_groups:
             for permission in employer_permission_group.permission_group.permissions.all():
@@ -162,10 +165,10 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     
     @cached_property
     def permission_groups_by_employer(self):
-        employer_permission_groups = self.employer_permission_group.all()
+        employer_permission_groups = self.employer_permission_group.select_related('permission_group').all()
         groups = defaultdict(list)
-        for group in employer_permission_groups:
-            groups[group.employer_id].append(group)
+        for employer_permission_group in employer_permission_groups:
+            groups[employer_permission_group.employer_id].append(employer_permission_group.permission_group)
         return groups
     
     @property

@@ -11,7 +11,7 @@
         <q-space/>
         <q-tabs class="gt-sm" align="right" shrink>
           <template v-if="authStore.propIsAuthenticated">
-            <q-route-tab :to="{ name: getDefaultLandingPageKey(authStore.propUser) }" label="Dashboard"/>
+            <q-route-tab :to="pagePermissionsUtil.getDefaultLandingPage(authStore.propUser)" label="Dashboard"/>
             <q-tab label="Logout" @click="authStore.logout"/>
           </template>
           <q-route-tab v-else :to="{ name: 'login' }" label="Login"/>
@@ -32,7 +32,7 @@
                   exact clickable v-close-popup
                   v-ripple
                   label="Dashboard"
-                  :to="{ name: getDefaultLandingPageKey(authStore.propUser) }"
+                  :to="pagePermissionsUtil.getDefaultLandingPage(authStore.propUser)"
                 >
                   <q-item-section>
                     Dashboard
@@ -77,7 +77,7 @@
 </template>
 
 <script>
-import { getDefaultLandingPageKey } from 'src/utils/user-types.js'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store'
 import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
@@ -88,7 +88,7 @@ export default {
   components: { CustomFooter, BannerMessage },
   data () {
     return {
-      getDefaultLandingPageKey
+      pagePermissionsUtil
     }
   },
   preFetch () {

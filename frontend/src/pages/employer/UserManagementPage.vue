@@ -258,9 +258,9 @@ import { Loading, useMeta, useQuasar } from 'quasar'
 import { useGlobalStore } from 'stores/global-store'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogEmployerAuthGroup from 'components/dialogs/DialogEmployerAuthGroup.vue'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests'
 import userTypeUtil, {
-  PERMISSION_NAMES,
   USER_TYPE_EMPLOYEE,
   USER_TYPE_EMPLOYER,
   USER_TYPES
@@ -314,7 +314,7 @@ export default {
       dataUtil,
       userTypeUtil,
       dateTimeUtil,
-      PERMISSION_NAMES
+      PERMISSION_NAMES: pagePermissionsUtil.PERMISSION_NAMES
     }
   },
   computed: {

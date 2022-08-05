@@ -21,9 +21,10 @@ import EmailInput from 'components/inputs/EmailInput.vue'
 import PasswordInput from 'components/inputs/PasswordInput.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
-import { getDefaultLandingPageKey, USER_TYPES } from 'src/utils/user-types'
+import { USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthEmailForm',
@@ -68,8 +69,7 @@ export default {
       await this.$api.post('auth/login/', getAjaxFormData(user))
       if (this.$route.name === 'login') {
         await this.authStore.setUser(true)
-        const landingPageKey = getDefaultLandingPageKey(this.authStore.propUser)
-        this.$router.push({ name: landingPageKey })
+        this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))
       } else {
         // User logged in from a dialog so redirect back to the page they were on
         this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })

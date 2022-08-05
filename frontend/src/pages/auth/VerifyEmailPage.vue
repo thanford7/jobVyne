@@ -15,7 +15,7 @@ import { AJAX_EVENTS } from 'boot/axios.js'
 import BaseAuthPage from 'pages/auth/BaseAuthPage.vue'
 import { useMeta } from 'quasar'
 import { getAjaxFormData } from 'src/utils/requests.js'
-import { getDefaultLandingPageKey } from 'src/utils/user-types.js'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
@@ -37,7 +37,7 @@ export default {
     }))
     if (resp.status >= 200 && resp.status < 300) {
       await this.authStore.setUser(true)
-      this.$router.push({ name: getDefaultLandingPageKey(this.authStore.propUser) })
+      this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))
     }
   },
   setup () {

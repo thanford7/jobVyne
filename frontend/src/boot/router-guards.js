@@ -1,7 +1,7 @@
 import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests'
-import { getUserPagePermissions } from 'src/utils/user-types.js'
 
 const isMainPageFn = (to) => {
   if (!to) {
@@ -55,7 +55,7 @@ export default boot(({ app, router }) => {
         return { name: 'login' }
       }
 
-      const { canView, canEdit } = getUserPagePermissions(user, to.name)
+      const { canView, canEdit } = pagePermissionsUtil.getUserPagePermissions(user, to.name)
 
       // Redirect user to page where they can verify their email if they haven't already
       if (!canView) {

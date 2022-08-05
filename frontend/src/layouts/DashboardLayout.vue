@@ -51,7 +51,7 @@
               clickable
               :active="menuItem.key === pageKey"
               :class="(menuItem.key === pageKey) ? 'border-left-4-primary' : ''"
-              @click="$router.push({ name: menuItem.key })"
+              @click="$router.push(pagePermissionsUtil.getRouterPageCfg(menuItem.key))"
               v-ripple
             >
               <q-item-section avatar>
@@ -125,7 +125,7 @@
         v-for="menuItem in menuList"
         class="col-3 q-py-sm"
         :class="getMobileMenuItemClasses(menuItem)"
-        @click="$router.push({ name: menuItem.key })"
+        @click="$router.push(pagePermissionsUtil.getRouterPageCfg(menuItem.key))"
         v-ripple
       >
         <div class="text-center">
@@ -150,7 +150,8 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import { useUtilStore } from 'stores/utility-store'
 import { useAuthStore } from 'stores/auth-store'
 import { Loading } from 'quasar'
-import { getDefaultLandingPageKey, USER_TYPES, userCfgMap } from 'src/utils/user-types'
+import pagePermissionsUtil from 'src/utils/permissions.js'
+import { USER_TYPES } from 'src/utils/user-types'
 
 const generalMenuList = [
   {
@@ -185,7 +186,8 @@ export default {
     return {
       isLeftDrawerOpen: true,
       isRightDrawerOpen: false,
-      userCfgMap
+      pagePermissionsUtil,
+      userCfgMap: pagePermissionsUtil.userCfgMap
     }
   },
   computed: {
@@ -193,14 +195,14 @@ export default {
       if (!this.viewerModeBit) {
         return generalMenuList
       }
-      const userMenuList = (this.user.is_verified) ? userCfgMap[this.viewerModeBit].menuItems : []
+      const userMenuList = pagePermissionsUtil.filterViewablePages(this.user, this.viewerModeBit)
       return [...userMenuList, ...generalMenuList]
     },
     pageKey () {
       return this.$route.name
     },
     viewerModeBit () {
-      const viewerModeBit = Object.entries(userCfgMap).reduce((matchedUserBit, [userBit, cfg]) => {
+      const viewerModeBit = Object.entries(this.userCfgMap).reduce((matchedUserBit, [userBit, cfg]) => {
         if (cfg.namespace === this.$route.params.namespace) {
           return userBit
         }
@@ -211,8 +213,8 @@ export default {
     userViewOptions () {
       return this.authStore.propUserTypeBitsList.map((userBit) => {
         return {
-          label: userCfgMap[userBit].viewLabel,
-          icon: userCfgMap[userBit].viewIcon,
+          label: this.userCfgMap[userBit].viewLabel,
+          icon: this.userCfgMap[userBit].viewIcon,
           userBit
         }
       })
@@ -220,8 +222,7 @@ export default {
   },
   methods: {
     changeViewMode (viewModeBit) {
-      const defaultPageKey = getDefaultLandingPageKey(this.user, viewModeBit)
-      this.$router.push({ name: defaultPageKey })
+      this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.user, viewModeBit))
     },
     getDefaultUserModeBit () {
       const viewModePrioritized = [
