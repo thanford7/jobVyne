@@ -190,7 +190,6 @@ import sectionUtil, { SECTION_TYPES } from 'components/sections/sectionTypes.js'
 import TextSectionCfg from 'components/sections/TextSectionCfg.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
-import pagePermissionsUtil from 'src/utils/permissions.js'
 import IconSectionCfg from 'components/sections/IconSectionCfg.vue'
 import { Loading, useMeta } from 'quasar'
 import { FILE_TYPES } from 'src/utils/file'
@@ -215,7 +214,7 @@ export default {
   },
   computed: {
     canEdit () {
-      return this.authStore.getHasPermission(pagePermissionsUtil.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
+      return this.$route.meta.canEdit
     },
     hasSectionsChanged () {
       return !dataUtil.isDeepEqual(this.currentSections, this.sections)

@@ -196,6 +196,11 @@ export default {
         return generalMenuList
       }
       const userMenuList = pagePermissionsUtil.filterViewablePages(this.user, this.viewerModeBit)
+
+      // Add a separator between user type specific items and general items
+      if (userMenuList.length) {
+        userMenuList[userMenuList.length - 1].separator = true
+      }
       return [...userMenuList, ...generalMenuList]
     },
     pageKey () {

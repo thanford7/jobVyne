@@ -38,8 +38,7 @@ class PagePermissionsUtil {
             icon: 'home',
             key: 'admin-dashboard',
             label: 'Dashboard',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL,
-            separator: false
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           }
         ]
       },
@@ -51,8 +50,7 @@ class PagePermissionsUtil {
           {
             icon: 'home',
             key: 'candidate-dashboard',
-            label: 'Dashboard',
-            separator: false
+            label: 'Dashboard'
           }
         ]
       },
@@ -65,15 +63,13 @@ class PagePermissionsUtil {
             icon: 'home',
             key: 'employee-dashboard',
             label: 'Dashboard',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            separator: false
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
           {
             icon: 'link',
             key: 'employee-links',
             label: 'Referral Links',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            separator: false
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
           {
             icon: 'web',
@@ -82,21 +78,18 @@ class PagePermissionsUtil {
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
             isPermittedFn: (permissionGroups, permissions) => {
               return permissions && permissions.includes(this.PERMISSION_NAMES.ADD_EMPLOYEE_CONTENT)
-            },
-            separator: false
+            }
           },
           {
             icon: 'share',
             key: 'employee-social-accounts',
-            label: 'Social Accounts',
-            separator: false
+            label: 'Social Accounts'
           },
           {
             icon: 'dynamic_feed',
             key: 'employee-content',
             label: 'Content',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            separator: true
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           }
         ]
       },
@@ -109,8 +102,7 @@ class PagePermissionsUtil {
             icon: 'home',
             key: 'influencer-dashboard',
             label: 'Dashboard',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL,
-            separator: false
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           }
         ]
       },
@@ -124,8 +116,7 @@ class PagePermissionsUtil {
             key: 'employer-dashboard',
             label: 'Dashboard',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedFn: isUserEmployerFn,
-            separator: false
+            isPermittedFn: isUserEmployerFn
           },
           {
             icon: 'web',
@@ -135,8 +126,7 @@ class PagePermissionsUtil {
             isPermittedViewFn: isUserEmployerFn,
             isPermittedFn: (permissionGroups, permissions) => {
               return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
-            },
-            separator: false
+            }
           },
           {
             icon: 'groups',
@@ -147,8 +137,7 @@ class PagePermissionsUtil {
             isPermittedFn: (permissionGroups, permissions) => {
               const allowedPermissions = [this.PERMISSION_NAMES.MANAGE_PERMISSION_GROUPS, this.PERMISSION_NAMES.MANAGE_USER]
               return isUserEmployerFn(permissionGroups, permissions) && dataUtil.getArrayIntersection(allowedPermissions, permissions).length
-            },
-            separator: false
+            }
           },
           {
             icon: 'message',
@@ -158,8 +147,7 @@ class PagePermissionsUtil {
             isPermittedViewFn: isUserEmployerFn,
             isPermittedFn: (permissionGroups, permissions) => {
               return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
-            },
-            separator: false
+            }
           },
           {
             icon: 'dynamic_feed',
@@ -169,8 +157,7 @@ class PagePermissionsUtil {
             isPermittedViewFn: isUserEmployerFn,
             isPermittedFn: (permissionGroups, permissions) => {
               return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
-            },
-            separator: false
+            }
           },
           {
             icon: 'settings',
@@ -180,8 +167,7 @@ class PagePermissionsUtil {
             isPermittedFn: (permissionGroups, permissions) => {
               const allowedPermissions = [this.PERMISSION_NAMES.MANAGE_EMPLOYER_SETTINGS, this.PERMISSION_NAMES.MANAGE_BILLING_SETTINGS]
               return isUserEmployerFn(permissionGroups, permissions) && dataUtil.getArrayIntersection(allowedPermissions, permissions).length
-            },
-            separator: true
+            }
           }
         ]
       }
@@ -219,7 +205,11 @@ class PagePermissionsUtil {
     const userPermissions = this.getAllUserPermissions(user)
     const userPermissionGroups = this.getAllUserPermissionGroups(user)
     const canEdit = !isPermittedFn || isPermittedFn(userPermissionGroups, userPermissions)
-    const canView = canEdit || !isPermittedViewFn || isPermittedViewFn(userPermissionGroups, userPermissions)
+    const canView = (
+      canEdit ||
+      (!isPermittedFn && !isPermittedViewFn) ||
+      (isPermittedViewFn && isPermittedViewFn(userPermissionGroups, userPermissions))
+    )
     return { canView, canEdit }
   }
 
