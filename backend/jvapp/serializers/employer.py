@@ -1,6 +1,7 @@
 from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
 from jvapp.serializers.content import get_serialized_content_item
+from jvapp.serializers.user import reduce_user_type_bits
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -22,7 +23,7 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
             'email': e.email,
             'first_name': e.first_name,
             'last_name': e.last_name,
-            'user_type_bits': e.user_type_bits,
+            'user_type_bits': reduce_user_type_bits(e.permission_groups_by_employer[employer.id]),
             'is_employer_deactivated': e.is_employer_deactivated,
             'permission_groups': [{
                 'id': pg.id,

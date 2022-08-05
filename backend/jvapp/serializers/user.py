@@ -5,7 +5,7 @@ from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
-def _reduce_user_type_bits(permission_groups):
+def reduce_user_type_bits(permission_groups):
     return functools.reduce(
         lambda user_type_bits, group: group.user_type_bit | user_type_bits,
         permission_groups, 0
@@ -38,7 +38,7 @@ def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
             for employer_id, permission_groups in user.permission_groups_by_employer.items()
         },
         'user_type_bits_by_employer': {
-            employer_id: _reduce_user_type_bits(permission_groups)
+            employer_id: reduce_user_type_bits(permission_groups)
             for employer_id, permission_groups in user.permission_groups_by_employer.items()
         }
     }

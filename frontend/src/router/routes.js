@@ -150,7 +150,7 @@ const routes = [
   },
 
   {
-    path: '/user',
+    path: '/:namespace(user)',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
       {

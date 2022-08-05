@@ -9,7 +9,7 @@ from jvapp.models.employer import is_default_auth_group
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
 
 
-def _get_default_user_groups(employer_id):
+def _get_default_user_groups(employer_id=None):
     # Get the default permission groups for each user type
     group_filter = (
             Q(is_default=True)

@@ -2,8 +2,6 @@ from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
 from django.db.transaction import atomic
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response

@@ -249,19 +249,14 @@ class PagePermissionsUtil {
         }
       }
     }
-    return { name: 'profile' }
+    return this.getRouterPageCfg('profile')
   }
 
   getRouterPageCfg (pageKey) {
     const routerCfg = { name: pageKey, params: { key: pageKey } }
     const pageCfg = this.userPagePermissionCfgs[pageKey]
 
-    // This is a general page with no namespace
-    if (!pageCfg) {
-      return routerCfg
-    }
-
-    routerCfg.params.namespace = pageCfg.namespace
+    routerCfg.params.namespace = (!pageCfg) ? 'user' : pageCfg.namespace
     return routerCfg
   }
 }

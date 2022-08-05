@@ -7,7 +7,7 @@ const isMainPageFn = (to) => {
   if (!to) {
     return false
   }
-  const mainPageNamespaces = ['candidate', 'employee', 'influencer', 'employer']
+  const mainPageNamespaces = ['candidate', 'employee', 'influencer', 'employer', 'user']
   return to.params.namespace && mainPageNamespaces.includes(to.params.namespace)
 }
 
@@ -59,7 +59,7 @@ export default boot(({ app, router }) => {
 
       // Redirect user to page where they can verify their email if they haven't already
       if (!canView) {
-        return { name: 'profile', params: { key: 'profile' }, query: { tab: 'security' } }
+        return { name: 'profile', params: { namespace: 'user', key: 'profile' }, query: { tab: 'security' } }
       }
 
       // Add meta permission to edit which can be used by the page

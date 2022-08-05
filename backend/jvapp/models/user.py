@@ -136,7 +136,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         if isinstance(permission_name, str):
             permission_name = [permission_name]
         check_method = all if is_all_true else any
-        permission_names = [p.name for p in self.permissions_by_employer.get(employer_id)]
+        permission_names = [p.name for p in self.permissions_by_employer.get(employer_id) or []]
         return check_method((name in permission_names for name in permission_name))
     
     def _jv_can_create(self, user):
