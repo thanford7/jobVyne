@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 
+from jvapp.models import UserEmployerPermissionGroup
 from jvapp.models.employer import *
 from jvapp.models.job_seeker import *
 from jvapp.models.location import *
@@ -41,6 +42,11 @@ class JobVyneUserAdmin(UserAdmin):
     list_display = ("email", "first_name", "last_name", "is_staff")
     search_fields = ("first_name", "last_name", "email")
     ordering = ("last_name", "first_name")
+    
+
+@admin.register(UserEmployerPermissionGroup)
+class UserAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Employer, EmployerJob, EmployerAuthGroup, EmployerPermission, EmployerSize, JobDepartment)

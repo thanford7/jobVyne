@@ -3,7 +3,8 @@
     <div class="q-ml-sm">
       <PageHeader title="Profile">
         <template v-slot:bottom>
-          <q-banner v-if="(!user.is_employer_verified && isCompanyUser) || !user.is_email_verified" rounded class="bg-warning">
+          <q-banner v-if="(!user.is_employer_verified && isCompanyUser) || !user.is_email_verified" rounded
+                    class="bg-warning">
             <template v-slot:avatar>
               <q-icon name="warning"/>
             </template>
@@ -113,7 +114,7 @@
           </div>
         </q-tab-panel>
         <q-tab-panel name="security">
-          <div class="row q-gutter-y-sm">
+          <div class="row q-gutter-y-lg">
             <div class="col-12">
               <q-table
                 :rows="userEmailRows"
@@ -172,6 +173,55 @@
                 </template>
               </q-table>
             </div>
+            <div class="col-12">
+              <q-table
+                :rows="userPermissionGroupRows"
+                :columns="userPermissionGroupColumns"
+                :hide-bottom="true"
+              >
+                <template v-slot:top>
+                  <div class="text-h6">
+                    Employer Permission Groups
+                    <CustomTooltip :is_include_space="false">
+                      Permission groups determine what content you can view for each employer and
+                      what you are allowed to do for each employer (e.g. manage other users). Some
+                      permissions are automatically approved, but others require the approval of
+                      an administrative user from the specified employer.
+                    </CustomTooltip>
+                  </div>
+                </template>
+                <template v-slot:header-cell-unapprovedGroups="props">
+                  <q-th key="unapprovedGroups">
+                    {{ props.col.label }}
+                    <CustomTooltip>
+                      <template v-slot:icon>
+                        <q-icon class="text-gray-500" tag="span" name="help_outline" size="16px"/>
+                      </template>
+                      Administrative users from the employer are automatically notified when a user
+                      has an unapproved permission that requires their review.
+                    </CustomTooltip>
+                  </q-th>
+                </template>
+                <template v-slot:body-cell-approvedGroups="props">
+                  <q-td key="approvedGroups" class="text-center">
+                    <q-chip
+                      v-for="group in props.row.approvedGroups"
+                      color="grey-7" text-color="white" size="md"
+                    >{{ group.name }}</q-chip>
+                    <span v-if="!props.row.approvedGroups">{{globalStore.nullValueStr}}</span>
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-unapprovedGroups="props">
+                  <q-td key="unapprovedGroups" class="text-center">
+                    <q-chip
+                      v-for="group in props.row.unapprovedGroups"
+                      color="grey-7" text-color="white" size="md"
+                    >{{ group.name }}</q-chip>
+                    <span v-if="!props.row.unapprovedGroups">{{globalStore.nullValueStr}}</span>
+                  </q-td>
+                </template>
+              </q-table>
+            </div>
           </div>
         </q-tab-panel>
       </q-tab-panels>
@@ -194,6 +244,12 @@ import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 
+const userPermissionGroupColumns = [
+  { name: 'employerName', field: 'employerName', align: 'left', label: 'Employer Name' },
+  { name: 'approvedGroups', field: 'approvedGroups', align: 'center', label: 'Approved Groups' },
+  { name: 'unapprovedGroups', field: 'unapprovedGroups', align: 'center', label: 'Unapproved Groups' }
+]
+
 export default {
   name: 'ProfilePage',
   components: { CustomTooltip, EmailInput, FileDisplayOrUpload, PageHeader },
@@ -203,6 +259,7 @@ export default {
       currentUserData: dataUtil.deepCopy(this.user),
       userData: dataUtil.deepCopy(this.user),
       newProfilePictureKey: 'profile_picture',
+      userPermissionGroupColumns,
       fileUtil,
       FILE_TYPES
     }
@@ -222,6 +279,15 @@ export default {
     },
     hasUserDataChanged () {
       return !dataUtil.isDeepEqual(this.currentUserData, this.userData)
+    },
+    userPermissionGroupRows () {
+      return Object.entries(this.user.permission_groups_by_employer).map(([employerId, permissionGroups]) => {
+        const employer = this.employerStore.getEmployer(employerId)
+        const employerName = (employer) ? employer.name : null
+        const approvedGroups = permissionGroups.filter((pg) => pg.is_approved)
+        const unapprovedGroups = permissionGroups.filter((pg) => !pg.is_approved)
+        return { employerName, approvedGroups, unapprovedGroups }
+      })
     },
     userEmailColumns () {
       const cols = [
@@ -324,6 +390,7 @@ export default {
     return {
       authStore,
       employerStore,
+      globalStore: useGlobalStore(),
       user
     }
   }

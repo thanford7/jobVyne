@@ -1,3 +1,5 @@
+from functools import reduce
+
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from django.db.transaction import atomic
@@ -235,7 +237,7 @@ class EmployerUserView(JobVyneAPIView):
         users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
         batchCount = 0
         while batchCount < len(users):
-            user_employer_permissions_to_delete_filter = Q()
+            user_employer_permissions_to_delete_filters = []
             user_employer_permissions_to_add = []
             for user in users[batchCount:batchCount + BATCH_UPDATE_SIZE]:
                 set_object_attributes(user, self.data, {
@@ -245,9 +247,14 @@ class EmployerUserView(JobVyneAPIView):
                 user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
                 
                 if permission_group_ids := self.data.get('permission_group_ids'):
-                    user_employer_permissions_to_delete_filter |= (Q(user_id=user.id) & Q(employer_id=self.data['employer_id']))
+                    user_employer_permissions_to_delete_filters.append(Q(user_id=user.id) & Q(employer_id=self.data['employer_id']))
                     for group_id in permission_group_ids:
-                        user.permission_groups.add(group_id)
+                        user_employer_permissions_to_add.append(UserEmployerPermissionGroup(
+                            user=user,
+                            employer_id=self.data['employer_id'],
+                            permission_group_id=group_id,
+                            is_employer_approved=True
+                        ))
                 
                 if add_permission_group_ids := self.data.get('add_permission_group_ids'):
                     for group_id in add_permission_group_ids:
@@ -260,10 +267,15 @@ class EmployerUserView(JobVyneAPIView):
                 
                 if remove_permission_group_ids := self.data.get('remove_permission_group_ids'):
                     for group_id in remove_permission_group_ids:
-                        user_employer_permissions_to_delete_filter |= Q(permission_group_id=group_id)
+                        user_employer_permissions_to_delete_filters.append(Q(user_id=user.id) & Q(permission_group_id=group_id))
             
             JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name'])
-            UserEmployerPermissionGroup.objects.filter(user_employer_permissions_to_delete_filter).delete()
+            if user_employer_permissions_to_delete_filters:
+                def reduceFilters(allFilters, filter):
+                    allFilters |= filter
+                    return allFilters
+                delete_filter = reduce(reduceFilters, user_employer_permissions_to_delete_filters)
+                UserEmployerPermissionGroup.objects.filter(delete_filter).delete()
             UserEmployerPermissionGroup.objects.bulk_create(user_employer_permissions_to_add)
             batchCount += BATCH_UPDATE_SIZE
         userCount = len(users)
