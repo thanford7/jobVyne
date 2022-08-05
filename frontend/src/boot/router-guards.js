@@ -1,12 +1,14 @@
 import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
 import { getAjaxFormData } from 'src/utils/requests'
+import { getUserPagePermissions } from 'src/utils/user-types.js'
 
-const isDashboardPageFn = (to) => {
+const isMainPageFn = (to) => {
   if (!to) {
     return false
   }
-  return to.matched.some((match) => match.path.includes('dashboard'))
+  const mainPageNamespaces = ['candidate', 'employee', 'influencer', 'employer']
+  return to.params.namespace && mainPageNamespaces.includes(to.params.namespace)
 }
 
 export default boot(({ app, router }) => {
@@ -25,7 +27,7 @@ export default boot(({ app, router }) => {
         return { name: 'error' }
       }
 
-      return { path: redirectPageUrl || '/dashboard', query: redirectParams }
+      return { path: redirectPageUrl || '/user/profile', query: redirectParams }
     }
 
     // Capture page view
@@ -41,25 +43,27 @@ export default boot(({ app, router }) => {
       const resp = await $api.get('auth/check-auth/')
       const user = resp.data
       const isAuthenticated = user && !dataUtil.isEmptyOrNil(user)
+
+      const isMainPage = isMainPageFn(to)
+      const isOnboardingNeeded = isAuthenticated && !user.user_type_bits
+      if (isOnboardingNeeded && isMainPage) {
+        return { name: 'onboard' }
+      }
+
       if (!isAuthenticated && !to.meta.isNoAuth) {
         // redirect the user to the login page
         return { name: 'login' }
       }
 
-      const isDashboardPage = isDashboardPageFn(to)
-
-      if (isAuthenticated && isDashboardPage && !user.user_type_bits) {
-        return { name: 'onboard' }
-      }
+      const { canView, canEdit } = getUserPagePermissions(user, to.name)
 
       // Redirect user to page where they can verify their email if they haven't already
-      if (!user.is_verified && isDashboardPage) {
+      if (!canView) {
         return { name: 'profile', params: { key: 'profile' }, query: { tab: 'security' } }
       }
 
-      if (to.meta.userTypeBits && !(to.meta.userTypeBits & user.user_type_bits)) {
-        return { name: 'dashboard' }
-      }
+      // Add meta permission to edit which can be used by the page
+      to.meta.canEdit = canEdit
     } catch (e) {
       return { name: 'error' }
     }

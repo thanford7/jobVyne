@@ -23,7 +23,7 @@ import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form'
 import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
-import { USER_TYPES } from 'src/utils/user-types'
+import { getDefaultLandingPageKey, USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthEmailForm',
@@ -67,8 +67,11 @@ export default {
       }
       await this.$api.post('auth/login/', getAjaxFormData(user))
       if (this.$route.name === 'login') {
-        this.$router.push('/dashboard')
+        await this.authStore.setUser(true)
+        const landingPageKey = getDefaultLandingPageKey(this.authStore.propUser)
+        this.$router.push({ name: landingPageKey })
       } else {
+        // User logged in from a dialog so redirect back to the page they were on
         this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })
       }
     },
@@ -82,8 +85,8 @@ export default {
     this.$api.get('auth/login-set-cookie/')
   },
   setup () {
-    const store = useAuthStore()
-    return { store }
+    const authStore = useAuthStore()
+    return { authStore }
   },
   mounted () {
     this.setEmail()

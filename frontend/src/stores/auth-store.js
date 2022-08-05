@@ -61,8 +61,12 @@ export const useAuthStore = defineStore('auth', {
         this.applications = resp.data
       }
     },
-    getHasPermission (permissionName) {
-      return this?.user?.permissions?.includes(permissionName)
+    getHasPermission (permissionName, employerId = null) {
+      employerId = employerId || this.user.employer_id
+      if (!this.user || !this.user.permissions_by_employer[employerId]) {
+        return false
+      }
+      return this.user.permissions_by_employer[employerId].includes(permissionName)
     },
     executeIfCaptchaValid (action, successFn, failureFn, alwaysFn = null) {
       // eslint-disable-next-line no-undef

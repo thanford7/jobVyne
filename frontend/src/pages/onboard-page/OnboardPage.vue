@@ -63,7 +63,13 @@ import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
-import { USER_TYPES, USER_TYPE_EMPLOYER, USER_TYPE_CANDIDATE, USER_TYPE_EMPLOYEE } from 'src/utils/user-types.js'
+import {
+  USER_TYPES,
+  USER_TYPE_EMPLOYER,
+  USER_TYPE_CANDIDATE,
+  USER_TYPE_EMPLOYEE,
+  getDefaultLandingPageKey
+} from 'src/utils/user-types.js'
 
 export default {
   name: 'OnboardPage',
@@ -184,7 +190,7 @@ export default {
       if (this.stepIdx === this.steps.length - 1) {
         await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(this.formData))
         await this.authStore.setUser(true)
-        this.$router.push({ name: 'dashboard' })
+        this.$router.push({ name: getDefaultLandingPageKey(this.authStore.propUser) })
       } else {
         this.stepIdx++
       }

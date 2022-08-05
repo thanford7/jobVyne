@@ -66,36 +66,82 @@ const routes = [
   },
 
   {
-    path: '/dashboard',
+    path: '/:namespace(admin)',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
       {
-        path: ':namespace(admin|candidate|employee|influencer|employer)?',
-        name: 'dashboard',
+        path: 'dashboard',
+        name: 'admin-dashboard',
+        component: () => import('pages/DashboardPage.vue')
+      }
+    ]
+  },
+
+  {
+    path: '/:namespace(candidate)',
+    component: () => import('layouts/DashboardLayout.vue'),
+    children: [
+      {
+        path: 'dashboard',
+        name: 'candidate-dashboard',
+        component: () => import('pages/DashboardPage.vue')
+      }
+    ]
+  },
+
+  {
+    path: '/:namespace(employee)',
+    component: () => import('layouts/DashboardLayout.vue'),
+    children: [
+      {
+        path: 'dashboard',
+        name: 'employee-dashboard',
         component: () => import('pages/DashboardPage.vue')
       },
-      // employee pages
       {
-        path: ':namespace(employee)/:key(links)',
-        name: 'dashboard-links',
+        path: ':key(employee-links)',
+        name: 'employee-links',
         meta: { userTypeBits: USER_TYPES.Employee },
         component: () => import('pages/employee/ReferralLinksPage.vue')
-      },
-      // employer pages
+      }
+    ]
+  },
+
+  {
+    path: '/:namespace(influencer)',
+    component: () => import('layouts/DashboardLayout.vue'),
+    children: [
       {
-        path: ':namespace(employer)/:key(user-management)',
-        name: 'user-management',
+        path: 'dashboard',
+        name: 'influencer-dashboard',
+        component: () => import('pages/DashboardPage.vue')
+      }
+    ]
+  },
+
+  {
+    path: '/:namespace(employer)',
+    component: () => import('layouts/DashboardLayout.vue'),
+    children: [
+      {
+        path: 'dashboard',
+        name: 'employer-dashboard',
+        component: () => import('pages/DashboardPage.vue')
+      },
+      {
+        path: ':key(employer-user-management)',
+        name: 'employer-user-management',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/UserManagementPage.vue')
       },
       {
-        path: ':namespace(employer)/:key(employer-profile-page)',
+        path: ':key(employer-profile-page)',
         name: 'employer-profile-page',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/EmployerProfileCfgPage.vue')
       },
       {
-        path: ':namespace(employer)/:key(settings)',
+        path: ':key(employer-settings)',
         name: 'employer-settings',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/SettingsPage.vue')
