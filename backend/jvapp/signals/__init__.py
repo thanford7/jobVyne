@@ -9,7 +9,7 @@ from jvapp.models.employer import is_default_auth_group
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
 
 
-def _get_default_user_groups(employer_id=None):
+def _get_default_user_groups(employer_id):
     # Get the default permission groups for each user type
     group_filter = (
             Q(is_default=True)
@@ -64,7 +64,8 @@ def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
                     UserEmployerPermissionGroup(
                         user_id=instance.id,
                         employer_id=instance.employer_id,
-                        permission_group_id=default_permission_group.id
+                        permission_group_id=default_permission_group.id,
+                        is_employer_approved=user_type_bit not in JobVyneUser.USER_TYPES_APPROVAL_REQUIRED
                     )
                 )
 

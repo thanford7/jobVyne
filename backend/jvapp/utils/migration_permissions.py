@@ -20,13 +20,14 @@ class Permission:
     user_type_bit: int
     
 
-# Note don't add a default for employer groups (bit 16). These groups must be added manually be the employer
+# Note don't add a default for employer groups (bit 16) or job seeker groups (bit 2).
+# These groups must be added manually be the employer
 groups_cfg = (
     Group(name=StandardPermissionGroups.ADMIN.value, user_type_bit=16, is_default=False),
     Group(name=StandardPermissionGroups.HR.value, user_type_bit=16, is_default=False),
     Group(name=StandardPermissionGroups.EMPLOYEE.value, user_type_bit=4, is_default=True),
     Group(name=StandardPermissionGroups.INFLUENCER.value, user_type_bit=8, is_default=True),
-    Group(name=StandardPermissionGroups.JOB_SEEKER.value, user_type_bit=2, is_default=True),
+    Group(name=StandardPermissionGroups.JOB_SEEKER.value, user_type_bit=2, is_default=False),
 )
 
 permissions_cfg = (

@@ -17,19 +17,26 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
         'color_accent': employer.color_accent
     }
     
+    def get_permission_groups(employee):
+        return [
+            p.permission_group
+            for p in employee.get_employer_permission_groups_by_employer(True)[employer.id]
+        ]
+    
     if is_include_employees:
         data['employees'] = [{
             'id': e.id,
             'email': e.email,
             'first_name': e.first_name,
             'last_name': e.last_name,
-            'user_type_bits': reduce_user_type_bits(e.permission_groups_by_employer[employer.id]),
+            'user_type_bits': reduce_user_type_bits(get_permission_groups(e)),
             'is_employer_deactivated': e.is_employer_deactivated,
             'permission_groups': [{
-                'id': pg.id,
-                'name': pg.name,
-                'user_type_bit': pg.user_type_bit,
-            } for pg in e.permission_groups_by_employer[employer.id]],
+                'id': epg.permission_group.id,
+                'name': epg.permission_group.name,
+                'user_type_bit': epg.permission_group.user_type_bit,
+                'is_approved': epg.is_employer_approved
+            } for epg in e.get_employer_permission_groups_by_employer(True)[employer.id]],
             'created_dt': get_datetime_format_or_none(e.created_dt),
         } for e in employer.employee.all().order_by('-id')]
     

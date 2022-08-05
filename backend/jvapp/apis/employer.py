@@ -214,7 +214,12 @@ class EmployerUserView(JobVyneAPIView):
         new_user_groups = []
         for group_id in self.data['permission_group_ids']:
             new_user_groups.append(
-                UserEmployerPermissionGroup(user=user, employer_id=employer_id, permission_group_id=group_id)
+                UserEmployerPermissionGroup(
+                    user=user,
+                    employer_id=employer_id,
+                    permission_group_id=group_id,
+                    is_employer_approved=True
+                )
             )
         UserEmployerPermissionGroup.objects.bulk_create(new_user_groups)
         
@@ -249,7 +254,8 @@ class EmployerUserView(JobVyneAPIView):
                         user_employer_permissions_to_add.append(UserEmployerPermissionGroup(
                             user=user,
                             employer_id=self.data['employer_id'],
-                            permission_group_id=group_id
+                            permission_group_id=group_id,
+                            is_employer_approved=True
                         ))
                 
                 if remove_permission_group_ids := self.data.get('remove_permission_group_ids'):

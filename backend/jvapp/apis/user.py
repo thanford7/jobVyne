@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q

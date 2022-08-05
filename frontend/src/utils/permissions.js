@@ -203,7 +203,7 @@ class PagePermissionsUtil {
     }
 
     const userPermissions = this.getAllUserPermissions(user)
-    const userPermissionGroups = this.getAllUserPermissionGroups(user)
+    const userPermissionGroups = this.getAllApprovedUserPermissionGroups(user)
     const canEdit = !isPermittedFn || isPermittedFn(userPermissionGroups, userPermissions)
     const canView = (
       canEdit ||
@@ -227,9 +227,10 @@ class PagePermissionsUtil {
     return dataUtil.uniqArray(allPermissions)
   }
 
-  getAllUserPermissionGroups (user) {
+  getAllApprovedUserPermissionGroups (user) {
     return Object.values(user.permission_groups_by_employer).reduce((allGroups, groups) => {
-      return [...allGroups, ...groups]
+      const approvedGroups = groups.filter((g) => g.is_approved)
+      return [...allGroups, ...approvedGroups]
     }, [])
   }
 

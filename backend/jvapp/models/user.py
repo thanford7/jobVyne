@@ -4,6 +4,7 @@ from enum import Enum
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
+from django.db.models import Q
 from django.utils import crypto, timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -105,6 +106,9 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         USER_TYPE_EMPLOYER
     ]
     
+    # Permissions for these user types must be approved by another user with the appropriate priveleges
+    USER_TYPES_APPROVAL_REQUIRED = [USER_TYPE_EMPLOYER]
+    
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
@@ -136,7 +140,8 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         if isinstance(permission_name, str):
             permission_name = [permission_name]
         check_method = all if is_all_true else any
-        permission_names = [p.name for p in self.permissions_by_employer.get(employer_id) or []]
+        permissions_by_employer = self.get_permissions_by_employer()
+        permission_names = [p.name for p in permissions_by_employer.get(employer_id) or []]
         return check_method((name in permission_names for name in permission_name))
     
     def _jv_can_create(self, user):
@@ -150,25 +155,27 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     
     def _jv_can_delete(self, user):
         return user.is_admin or self.id == user.id
-        
-    @cached_property
-    def permissions_by_employer(self):
-        employer_permission_groups = self.employer_permission_group\
-            .select_related('permission_group')\
-            .prefetch_related('permission_group__permissions')\
-            .all()
+
+    def get_user_employer_permissions(self, is_include_non_approved=False):
+        filter = Q() if is_include_non_approved else Q(is_employer_approved=True)
+        return self.employer_permission_group \
+            .select_related('permission_group') \
+            .prefetch_related('permission_group__permissions') \
+            .filter(filter)
+
+    def get_permissions_by_employer(self, is_include_non_approved=False):
+        employer_permission_groups = self.get_user_employer_permissions(is_include_non_approved)
         permissions = defaultdict(list)
         for employer_permission_group in employer_permission_groups:
             for permission in employer_permission_group.permission_group.permissions.all():
                 permissions[employer_permission_group.employer_id].append(permission)
         return permissions
-    
-    @cached_property
-    def permission_groups_by_employer(self):
-        employer_permission_groups = self.employer_permission_group.select_related('permission_group').all()
+
+    def get_employer_permission_groups_by_employer(self, is_include_non_approved=False):
+        employer_permission_groups = self.get_user_employer_permissions(is_include_non_approved)
         groups = defaultdict(list)
         for employer_permission_group in employer_permission_groups:
-            groups[employer_permission_group.employer_id].append(employer_permission_group.permission_group)
+            groups[employer_permission_group.employer_id].append(employer_permission_group)
         return groups
     
     @property
@@ -224,6 +231,7 @@ class UserEmployerPermissionGroup(models.Model):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='employer_permission_group')
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
     permission_group = models.ForeignKey('EmployerAuthGroup', on_delete=models.CASCADE)
+    is_employer_approved = models.BooleanField(default=False)
     
     class Meta:
         unique_together = ('user', 'employer', 'permission_group')

@@ -82,7 +82,8 @@ class BaseTestCase(TestCase):
             UserEmployerPermissionGroup(
                 user=user,
                 employer_id=employer_id,
-                permission_group=auth_group
+                permission_group=auth_group,
+                is_employer_approved=True
             ).save()
         
         return user

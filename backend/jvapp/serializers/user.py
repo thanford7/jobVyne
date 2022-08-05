@@ -27,19 +27,20 @@ def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
         'modified_dt': get_datetime_format_or_none(user.modified_dt),
         'permissions_by_employer': {
             employer_id: [p.name for p in permissions]
-            for employer_id, permissions in user.permissions_by_employer.items()
+            for employer_id, permissions in user.get_permissions_by_employer().items()
         },
         'permission_groups_by_employer': {
             employer_id: [{
-                'id': pg.id,
-                'name': pg.name,
-                'user_type_bit': pg.user_type_bit
-            } for pg in permission_groups]
-            for employer_id, permission_groups in user.permission_groups_by_employer.items()
+                'id': epg.permission_group.id,
+                'name': epg.permission_group.name,
+                'user_type_bit': epg.permission_group.user_type_bit,
+                'is_approved': epg.is_employer_approved
+            } for epg in employer_permission_groups]
+            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(True).items()
         },
         'user_type_bits_by_employer': {
-            employer_id: reduce_user_type_bits(permission_groups)
-            for employer_id, permission_groups in user.permission_groups_by_employer.items()
+            employer_id: reduce_user_type_bits([epg.permission_group for epg in employer_permission_groups])
+            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer().items()
         }
     }
     
