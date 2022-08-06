@@ -253,11 +253,17 @@ class PagePermissionsUtil {
     return this.getRouterPageCfg('profile')
   }
 
-  getRouterPageCfg (pageKey) {
+  getRouterPageCfg (pageKey, userTypeBit = null) {
     const routerCfg = { name: pageKey, params: { key: pageKey } }
     const pageCfg = this.userPagePermissionCfgs[pageKey]
 
-    routerCfg.params.namespace = (!pageCfg) ? 'user' : pageCfg.namespace
+    if (!pageCfg) {
+      routerCfg.params.namespace = 'user'
+      // Use the existing user type bit if this is a generic user page
+      routerCfg.params.userTypeBit = userTypeBit
+    } else {
+      routerCfg.params.namespace = pageCfg.namespace
+    }
     return routerCfg
   }
 }

@@ -25,7 +25,6 @@ from jvapp.utils.email import get_domain_from_email
 
 from jvapp.utils.sanitize import sanitizer
 
-
 BATCH_UPDATE_SIZE = 100
 
 
@@ -39,8 +38,8 @@ class EmployerView(JobVyneAPIView):
             data = get_serialized_employer(
                 employer,
                 is_include_employees=(not isinstance(self.user, AnonymousUser)) and (
-                    self.user.is_admin
-                    or (self.user.employer_id == employer_id and self.user.is_employer)
+                        self.user.is_admin
+                        or (self.user.employer_id == employer_id and self.user.is_employer)
                 )
             )
         else:
@@ -80,11 +79,11 @@ class EmployerView(JobVyneAPIView):
         employers = Employer.objects \
             .select_related('employer_size') \
             .prefetch_related(
-                'employee',
-                'employee__employer_permission_group',
-                'employee__employer_permission_group__permission_group',
-                'employee__employer_permission_group__permission_group__permissions'
-            ) \
+            'employee',
+            'employee__employer_permission_group',
+            'employee__employer_permission_group__permission_group',
+            'employee__employer_permission_group__permission_group__permissions'
+        ) \
             .filter(employer_filter)
         
         if employer_id:
@@ -135,6 +134,10 @@ class EmployerJobView(JobVyneAPIView):
 
 class EmployerAuthGroupView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
+    IGNORED_AUTH_GROUPS = [
+        JobVyneUser.USER_TYPE_ADMIN, JobVyneUser.USER_TYPE_CANDIDATE,
+        JobVyneUser.USER_TYPE_INFLUENCER  # TODO: Remove this one once influencer functionality is added
+    ]
     
     def get(self, request):
         auth_groups = self.get_auth_groups(employer_id=self.user.employer_id)
@@ -188,7 +191,7 @@ class EmployerAuthGroupView(JobVyneAPIView):
         auth_group = EmployerAuthGroup.objects.get(id=auth_group_id)
         auth_group.jv_check_permission(PermissionTypes.DELETE.value, self.user)
         auth_group.delete()
-
+        
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{auth_group.name} group deleted'
         })
@@ -198,6 +201,7 @@ class EmployerAuthGroupView(JobVyneAPIView):
         auth_group_filter = auth_group_filter or Q()
         if employer_id:
             auth_group_filter &= (Q(employer_id=employer_id) | Q(employer_id__isnull=True))
+            auth_group_filter &= ~Q(user_type_bit__in=EmployerAuthGroupView.IGNORED_AUTH_GROUPS)
         return EmployerAuthGroup.objects.prefetch_related('permissions').filter(auth_group_filter)
 
 
@@ -236,18 +240,27 @@ class EmployerUserView(JobVyneAPIView):
     def put(self, request):
         users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
         batchCount = 0
+        
+        def get_unique_permission_key(p):
+            return p.user_id, p.employer_id, p.permission_group_id
+        
         while batchCount < len(users):
             user_employer_permissions_to_delete_filters = []
             user_employer_permissions_to_add = []
+            user_employer_permissions_to_update = []
             for user in users[batchCount:batchCount + BATCH_UPDATE_SIZE]:
                 set_object_attributes(user, self.data, {
                     'first_name': None,
                     'last_name': None
                 })
                 user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+                current_user_permissions = {
+                    get_unique_permission_key(p): p for p in user.employer_permission_group.all()
+                }
                 
                 if permission_group_ids := self.data.get('permission_group_ids'):
-                    user_employer_permissions_to_delete_filters.append(Q(user_id=user.id) & Q(employer_id=self.data['employer_id']))
+                    user_employer_permissions_to_delete_filters.append(
+                        Q(user_id=user.id) & Q(employer_id=self.data['employer_id']))
                     for group_id in permission_group_ids:
                         user_employer_permissions_to_add.append(UserEmployerPermissionGroup(
                             user=user,
@@ -258,29 +271,60 @@ class EmployerUserView(JobVyneAPIView):
                 
                 if add_permission_group_ids := self.data.get('add_permission_group_ids'):
                     for group_id in add_permission_group_ids:
-                        user_employer_permissions_to_add.append(UserEmployerPermissionGroup(
+                        permission_group = UserEmployerPermissionGroup(
                             user=user,
                             employer_id=self.data['employer_id'],
                             permission_group_id=group_id,
                             is_employer_approved=True
-                        ))
+                        )
+                        if existing_permission := current_user_permissions.get(
+                                get_unique_permission_key(permission_group)):
+                            existing_permission.is_employer_approved = True
+                            user_employer_permissions_to_update.append(existing_permission)
+                        else:
+                            user_employer_permissions_to_add.append(permission_group)
                 
                 if remove_permission_group_ids := self.data.get('remove_permission_group_ids'):
                     for group_id in remove_permission_group_ids:
-                        user_employer_permissions_to_delete_filters.append(Q(user_id=user.id) & Q(permission_group_id=group_id))
+                        user_employer_permissions_to_delete_filters.append(
+                            Q(user_id=user.id) & Q(permission_group_id=group_id))
             
             JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name'])
             if user_employer_permissions_to_delete_filters:
                 def reduceFilters(allFilters, filter):
                     allFilters |= filter
                     return allFilters
+                
                 delete_filter = reduce(reduceFilters, user_employer_permissions_to_delete_filters)
                 UserEmployerPermissionGroup.objects.filter(delete_filter).delete()
             UserEmployerPermissionGroup.objects.bulk_create(user_employer_permissions_to_add)
+            UserEmployerPermissionGroup.objects.bulk_update(user_employer_permissions_to_update,
+                                                            ['is_employer_approved'])
             batchCount += BATCH_UPDATE_SIZE
         userCount = len(users)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} updated'
+        })
+
+
+class EmployerUserApproveView(JobVyneAPIView):
+    
+    @atomic
+    def put(self, request):
+        """Set unapproved permission groups to approved for selected users
+        """
+        users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
+        groups_to_update = []
+        for user in users:
+            user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+            for group in user.employer_permission_group.filter(is_employer_approved=False):
+                group.is_employer_approved = True
+                groups_to_update.append(group)
+        
+        UserEmployerPermissionGroup.objects.bulk_update(groups_to_update, ['is_employer_approved'])
+        userCount = len(users)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Permissions approved for {userCount} {"user" if userCount == 1 else "users"}'
         })
 
 
@@ -300,8 +344,8 @@ class EmployerUserActivateView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} {"deactivated" if is_deactivate else "activated"}'
         })
-    
-    
+
+
 class EmployerFileView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
@@ -324,7 +368,7 @@ class EmployerFileView(JobVyneAPIView):
             'id': employer_file.id,
             SUCCESS_MESSAGE_KEY: f'Created a new file titled {employer_file.title}'
         })
-        
+    
     @atomic
     def put(self, request, file_id):
         if not self.data['employer_id']:
@@ -336,7 +380,7 @@ class EmployerFileView(JobVyneAPIView):
             'id': employer_file.id,
             SUCCESS_MESSAGE_KEY: f'Updated file titled {employer_file.title}'
         })
-
+    
     @staticmethod
     @atomic
     def update_employer_file(employer_file, data, user, file=None):
@@ -347,11 +391,11 @@ class EmployerFileView(JobVyneAPIView):
         
         if file:
             employer_file.file = file
-
+        
         employer_file.title = (
-            employer_file.title
-            or getattr(file, 'name', None)
-            or employer_file.file.name.split('/')[-1]
+                employer_file.title
+                or getattr(file, 'name', None)
+                or employer_file.file.name.split('/')[-1]
         )
         
         permission_type = PermissionTypes.EDIT.value if employer_file.id else PermissionTypes.CREATE.value
@@ -365,7 +409,7 @@ class EmployerFileView(JobVyneAPIView):
                 employer_file.tags.add(tag)
             else:
                 employer_file.tags.add(tag['id'])
-        
+    
     @staticmethod
     def get_employer_files(file_id=None, employer_id=None, file_filter=None):
         file_filter = file_filter or Q()
@@ -373,7 +417,7 @@ class EmployerFileView(JobVyneAPIView):
             file_filter &= Q(id=file_id)
         if employer_id:
             file_filter &= Q(employer_id=employer_id)
-
+        
         files = EmployerFile.objects.prefetch_related('tags').filter(file_filter)
         if file_id:
             if not files:
@@ -400,7 +444,7 @@ class EmployerFileTagView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{tag.name} tag was deleted'
         })
-
+    
     @staticmethod
     @atomic
     def get_or_create_tag(tag_name, employer_id):
@@ -410,15 +454,15 @@ class EmployerFileTagView(JobVyneAPIView):
             tag = EmployerFileTag(name=tag_name, employer_id=employer_id)
             tag.save()
             return tag
-
+    
     @staticmethod
     def get_employer_file_tags(employer_id):
         return EmployerFileTag.objects.filter(employer_id=employer_id)
-    
-    
+
+
 class EmployerPageView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
-
+    
     def get(self, request):
         if not (employer_id := self.query_params['employer_id']):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
@@ -467,11 +511,11 @@ class EmployerPageView(JobVyneAPIView):
         for content_item_id, content_item in current_sections.items():
             employer_page.content_item.remove(content_item_id)
             content_item.delete()
-            
+        
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Updated the profile page'
         })
-        
+    
     @staticmethod
     def get_employer_page(employer_id):
         try:

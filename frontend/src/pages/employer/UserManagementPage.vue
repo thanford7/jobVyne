@@ -58,7 +58,13 @@
                         :is-required="false"
                       />
                     </div>
-                    <div class="q-pa-sm">
+                    <div class="col-12 col-md-4 q-pa-sm">
+                      <SelectYesNo label="Approval Required" v-model="userFilter.isApprovalRequired"/>
+                    </div>
+                    <div class="col-12 col-md-4 q-pa-sm">
+                      <SelectYesNo label="Active" v-model="userFilter.isActive"/>
+                    </div>
+                    <div class="col-12 q-pa-sm">
                       <a href="#" @click="clearUserFilter">Clear all</a>
                     </div>
                   </div>
@@ -67,6 +73,7 @@
             </div>
             <div class="col-12">
               <q-table
+                ref="employeeTable"
                 :rows="employees || []"
                 :columns="userColumns"
                 row-key="id"
@@ -77,25 +84,103 @@
                 :rows-per-page-options="[25, 50, 100]"
               >
                 <template v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)" v-slot:top>
-                  <q-btn ripple class="q-mr-sm" color="primary" icon="add" label="Add user" @click="openUserModal()"/>
-                  <div v-if="selectedUsers && selectedUsers.length" class="q-gutter-x-sm">
-                    <q-btn color="primary" icon="edit" ripple
-                           :label="`Modify ${dataUtil.pluralize('user', selectedUsers.length)}`"
-                           @click="openUserModal(selectedUsers)"/>
-                    <q-btn v-if="deactivatedUserCount" color="primary" icon="power" ripple
-                           :label="`Re-activate ${dataUtil.pluralize('user', deactivatedUserCount)}`"
-                           @click="activateUsers(false)"/>
-                    <div v-if="activatedUserCount" style="display: inline-block;">
-                      <q-btn color="negative" icon="power_off" ripple
-                             :label="`De-activate ${dataUtil.pluralize('user', activatedUserCount)}`"
-                             @click="activateUsers(true)"/>
-                      <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
-                        User(s) will no longer be able to create links for your company. Any current links will be
-                        re-directed
-                        to a general company page with all open jobs shown.
-                      </q-tooltip>
-                    </div>
-                  </div>
+                  <q-btn-dropdown color="primary" label="User actions">
+                    <q-list>
+                      <q-item clickable v-close-popup @click="openUserModal()">
+                        <q-item-section avatar>
+                          <q-icon name="add"/>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>Add user</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <template v-if="selectedUsers && selectedUsers.length">
+                        <q-item clickable v-close-popup @click="openUserModal(selectedUsers)">
+                          <q-item-section avatar>
+                            <q-icon name="edit"/>
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>Modify {{ dataUtil.pluralize('user', selectedUsers.length) }}</q-item-label>
+                          </q-item-section>
+                        </q-item>
+                        <q-item
+                          v-if="deactivatedUserCount"
+                          clickable v-close-popup @click="activateUsers(false)"
+                        >
+                          <q-item-section avatar>
+                            <q-icon name="power"/>
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>Re-activate {{
+                                dataUtil.pluralize('user', deactivatedUserCount)
+                              }}
+                            </q-item-label>
+                          </q-item-section>
+                        </q-item>
+                        <q-item
+                          v-if="activatedUserCount"
+                          clickable v-close-popup @click="activateUsers(true)"
+                        >
+                          <q-item-section avatar>
+                            <q-icon name="power_off"/>
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>Deactivate {{ dataUtil.pluralize('user', activatedUserCount) }}</q-item-label>
+                            <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                              User(s) will no longer be able to create links for your company. Any current links will be
+                              re-directed
+                              to a general company page with all open jobs shown.
+                            </q-tooltip>
+                          </q-item-section>
+                        </q-item>
+                        <q-item
+                          v-if="unapprovedUserCount"
+                          clickable v-close-popup @click="approveUsers()"
+                        >
+                          <q-item-section avatar>
+                            <q-icon name="how_to_reg"/>
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>Approve permissions for {{
+                                dataUtil.pluralize('user', unapprovedUserCount)
+                              }}
+                            </q-item-label>
+                            <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                              If you don't want to approve all permissions for a specific user. Select the user, click
+                              the "Modify user"
+                              button and remove the permission from the list of permissions for that user.
+                            </q-tooltip>
+                          </q-item-section>
+                        </q-item>
+                      </template>
+                    </q-list>
+                  </q-btn-dropdown>
+                </template>
+                <template v-slot:header-cell-permissionGroups>
+                  <q-th class="text-left">
+                    Permission groups
+                    <CustomTooltip icon_size="16px">
+                      Some permission groups require approval from an employer user
+                      that has permission to manage other users.
+                      <div class="q-mt-sm">
+                        <q-chip label="Approved" color="positive" text-color="black"/>
+                        <q-chip label="Unapproved" color="negative" text-color="black"/>
+                      </div>
+                    </CustomTooltip>
+                  </q-th>
+                </template>
+                <template v-slot:body-cell-isApprovalRequired="props">
+                  <q-td class="text-center">
+                    <CustomTooltip v-if="props.row.isApprovalRequired" :is_include_icon="false">
+                      <template v-slot:icon>
+                        <q-icon name="warning" color="warning" size="xs"/>
+                      </template>
+                      This user has one or more permissions which require approval from an authorized employer user.
+                      Select the user and click the "User Actions" dropdown button to approve or decline the
+                      permissions.
+                    </CustomTooltip>
+                    {{ props.value }}
+                  </q-td>
                 </template>
                 <template v-slot:body-cell-userTypeBits="props">
                   <q-td key="user_type_bits">
@@ -111,8 +196,8 @@
                   <q-td key="permission_groups">
                     <q-chip
                       v-for="group in props.row.permission_groups"
-                      color="grey-7"
-                      text-color="white"
+                      :color="(group.is_approved) ? 'positive' : 'negative'"
+                      text-color="black"
                     >{{ group.name }}
                     </q-chip>
                   </q-td>
@@ -251,6 +336,7 @@
 </template>
 
 <script>
+import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { useEmployerStore } from 'stores/employer-store'
 import { useAuthStore } from 'stores/auth-store'
@@ -273,15 +359,23 @@ import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
 
 const userColumns = [
   {
-    name: 'is_employer_deactivated',
+    name: 'isApprovalRequired',
+    field: 'isApprovalRequired',
+    align: 'center',
+    label: 'Approval required',
+    format: (val) => (val) ? 'Yes' : 'No',
+    sortable: true
+  },
+  {
+    name: 'isEmployerDeactivated',
     field: 'is_employer_deactivated',
     align: 'center',
     label: 'Active',
     format: (val) => (val) ? 'No' : 'Yes',
     sortable: true
   },
-  { name: 'first_name', field: 'first_name', align: 'left', label: 'First name', sortable: true },
-  { name: 'last_name', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
+  { name: 'firstName', field: 'first_name', align: 'left', label: 'First name', sortable: true },
+  { name: 'lastName', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
   { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
   { name: 'userTypeBits', field: 'user_type_bits', align: 'left', label: 'User types' },
   { name: 'permissionGroups', field: 'permission_groups', align: 'left', label: 'Permission groups' },
@@ -291,12 +385,14 @@ const userColumns = [
 const userFilterTemplate = {
   searchText: null,
   userTypeBitsList: null,
-  permissionGroupIds: null
+  permissionGroupIds: null,
+  isApprovalRequired: null,
+  isActive: null
 }
 
 export default {
   name: 'UserManagementPage',
-  components: { SelectPermissionGroup, SelectUserType, CustomTooltip, PageHeader },
+  components: { SelectYesNo, SelectPermissionGroup, SelectUserType, CustomTooltip, PageHeader },
   data () {
     return {
       tab: 'users',
@@ -330,6 +426,12 @@ export default {
       }
       return this.selectedUsers.filter((user) => user.is_employer_deactivated).length
     },
+    unapprovedUserCount () {
+      if (!this.selectedUsers) {
+        return
+      }
+      return this.selectedUsers.filter((user) => user.isApprovalRequired).length
+    },
     selectedGroup () {
       if (!this.selectedGroupId) {
         return null
@@ -362,7 +464,10 @@ export default {
       return false
     },
     employees () {
-      return this.employerStore.employers[this.authStore.user.employer_id].employees
+      return this.employerStore.employers[this.authStore.user.employer_id].employees.map((employee) => {
+        employee.isApprovalRequired = employee.permission_groups.some((p) => !p.is_approved)
+        return employee
+      })
     }
   },
   methods: {
@@ -390,6 +495,13 @@ export default {
     async activateUsers (isDeactivate) {
       await this.$api.put('employer/user/activate/', getAjaxFormData(
         { is_deactivate: isDeactivate, user_ids: this.selectedUsers.map((u) => u.id) }
+      ))
+      this.employerStore.setEmployer(this.authStore.user.employer_id, true)
+      this.unselectUsers()
+    },
+    async approveUsers () {
+      await this.$api.put('employer/user/approve/', getAjaxFormData(
+        { user_ids: this.selectedUsers.map((u) => u.id) }
       ))
       this.employerStore.setEmployer(this.authStore.user.employer_id, true)
       this.unselectUsers()
@@ -446,6 +558,16 @@ export default {
             return false
           }
         }
+        if (this.userFilter?.isApprovalRequired?.length) {
+          if (!this.userFilter.isApprovalRequired.includes(employee.isApprovalRequired)) {
+            return false
+          }
+        }
+        if (this.userFilter?.isActive?.length) {
+          if (!this.userFilter.isActive.includes(!employee.is_employer_deactivated)) {
+            return false
+          }
+        }
         return true
       })
     },
@@ -485,6 +607,10 @@ export default {
   },
   mounted () {
     this.selectedGroupId = this.employerStore.permissionGroups[0].id
+
+    // Sort so employee requiring approval are at the top (once for asc, and again for desc)
+    this.$refs.employeeTable.sort('isApprovalRequired')
+    this.$refs.employeeTable.sort('isApprovalRequired')
   }
 }
 </script>

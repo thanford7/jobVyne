@@ -51,7 +51,7 @@
               clickable
               :active="menuItem.key === pageKey"
               :class="(menuItem.key === pageKey) ? 'border-left-4-primary' : ''"
-              @click="$router.push(pagePermissionsUtil.getRouterPageCfg(menuItem.key))"
+              @click="$router.push(pagePermissionsUtil.getRouterPageCfg(menuItem.key, viewerModeBit))"
               v-ripple
             >
               <q-item-section avatar>
@@ -213,7 +213,7 @@ export default {
         }
         return matchedUserBit
       }, 0)
-      return viewerModeBit || this.getDefaultUserModeBit()
+      return viewerModeBit || this.$route.params.userTypeBit || this.getDefaultUserModeBit()
     },
     userViewOptions () {
       return this.authStore.propUserTypeBitsList.map((userBit) => {

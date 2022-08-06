@@ -1,6 +1,6 @@
 <template>
   <q-select
-    filled emit-value map-options
+    filled emit-value map-options use-chips
     :multiple="isMulti"
     :options="userGroups"
     autocomplete="name"
@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import { USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER, USER_TYPE_INFLUENCER, USER_TYPES } from 'src/utils/user-types'
+import { USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER, USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'SelectUserType',
@@ -28,7 +28,7 @@ export default {
   },
   computed: {
     userGroups () {
-      return [USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE, USER_TYPE_INFLUENCER].map((userType) => {
+      return [USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE].map((userType) => {
         return {
           name: userType,
           user_type_bit: USER_TYPES[userType]

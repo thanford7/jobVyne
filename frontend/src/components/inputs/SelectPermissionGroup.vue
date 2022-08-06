@@ -1,6 +1,6 @@
 <template>
   <q-select
-    filled multiple emit-value map-options clearable use-chips
+    filled multiple emit-value map-options use-chips
     :options="options"
     autocomplete="name"
     option-value="id"
