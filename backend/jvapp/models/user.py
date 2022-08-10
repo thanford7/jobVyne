@@ -1,12 +1,12 @@
 from collections import defaultdict
 from enum import Enum
 
+from django.contrib.auth.password_validation import validate_password
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Q
 from django.utils import crypto, timezone
-from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
@@ -71,6 +71,8 @@ class CustomUserManager(BaseUserManager):
         email = self.normalize_email(email)
         extra_fields['user_type_bits'] = extra_fields.get('user_type_bits') or 0
         user = self.model(email=email, **extra_fields)
+        if password:
+            validate_password(password, user=user)
         user.set_password(password or generate_password())
         user.save()
         return user

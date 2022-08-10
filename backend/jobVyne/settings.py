@@ -109,7 +109,7 @@ SOCIAL_AUTH_LINKEDIN_SECRET = env('LINKEDIN_SECRET')
 SOCIAL_AUTH_FACEBOOK_API_VERSION = '14.0'
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
-  'fields': 'id, first_name, last_name, email, picture'
+    'fields': 'id, first_name, last_name, email, picture'
 }
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['profile', 'email']
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
@@ -210,12 +210,30 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 10,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+    {
+        'NAME': 'jobVyne.passwordValidation.LowercaseCharValidator',
+    },
+    {
+        'NAME': 'jobVyne.passwordValidation.UppercaseCharValidator',
+    },
+    {
+        'NAME': 'jobVyne.passwordValidation.NumberValidator',
+    },
+    {
+        'NAME': 'jobVyne.passwordValidation.SymbolValidator',
+    },
+    {
+        'NAME': 'jobVyne.passwordValidation.WhitespaceValidator',
     },
 ]
 

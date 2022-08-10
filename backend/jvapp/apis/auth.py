@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordResetConfirmView
 from django.utils.decorators import method_decorator
@@ -17,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from social_django.utils import psa
 
-from jvapp.apis._apiBase import SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.user import UserView
 from jvapp.models import JobVyneUser
 from jvapp.serializers.user import get_serialized_user
@@ -268,8 +269,32 @@ class PasswordResetFromEmailView(APIView):
                 'This reset link has expired or is invalid. Go to the login page to request a new reset email.',
                 status=status.HTTP_400_BAD_REQUEST
             )
+        validate_password(password, user=user)
         user.set_password(password)
         user.save()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Password successfully reset'
+        })
+    
+    
+class PasswordResetView(JobVyneAPIView):
+    
+    def put(self, request):
+        if not (current_password := self.data.get('current_password')):
+            return Response('Current password is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        is_password_correct = self.user.check_password(current_password)
+        if not is_password_correct:
+            return Response('Current password is incorrect', status=status.HTTP_401_UNAUTHORIZED)
+        
+        new_password = self.data.get('new_password')
+        validate_password(new_password, user=self.user)
+        self.user.set_password(new_password)
+        self.user.save()
+        # user = authenticate(username=self.user.email, password=new_password)
+        # if not user:
+        #     return Response('Something went wrong with the password reset. Please try again.', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        login(request, self.user, backend='django.contrib.auth.backends.ModelBackend')
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Password successfully reset'
         })

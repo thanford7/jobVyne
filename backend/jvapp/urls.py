@@ -32,6 +32,7 @@ urlpatterns = [
     path('auth/validate-captcha/', auth.validate_recaptcha),
     
     # Password (re)set
+    path('password-reset/', auth.PasswordResetView.as_view()),
     path('password-reset-generate/', auth.PasswordResetGenerateView.as_view()),
     path('password-reset-from-email/', auth.PasswordResetFromEmailView.as_view()),
     

@@ -115,6 +115,50 @@
         </q-tab-panel>
         <q-tab-panel name="security">
           <div class="row q-gutter-y-lg">
+            <div class="col-12 border-bottom-1-gray-300">
+              <div class="text-h6">Password update</div>
+              <div class="row q-mt-md">
+                <div class="col-12">
+                  <q-btn
+                    ripple color="primary"
+                    label="Send password reset email"
+                    @click="sendPasswordReset()"
+                  />
+                </div>
+                <div class="col-12">
+                  <SeparatorWithText>or</SeparatorWithText>
+                </div>
+                <q-form
+                  @submit="savePassword"
+                  class="q-gutter-xs q-mb-md"
+                >
+                  <div class="row">
+                    <div class="col-12">
+                      <PasswordInput label="Current password" v-model="passwordData.current_password"/>
+                    </div>
+                    <div class="col-12 col-md-6 q-pr-md-sm">
+                      <PasswordInput label="New password" v-model="passwordData.new_password" :is-validate="true"/>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <PasswordInput
+                        label="Re-enter new password"
+                        v-model="passwordData.new_password_confirm"
+                        :custom-rules="[
+                        (val) => val === passwordData.new_password || 'Password must match'
+                      ]"
+                      />
+                    </div>
+                    <div class="col-12 q-mt-sm">
+                      <q-btn
+                        label="Update password"
+                        type="submit" ripple
+                        color="primary"
+                      />
+                    </div>
+                  </div>
+                </q-form>
+              </div>
+            </div>
             <div class="col-12">
               <q-table
                 :rows="userEmailRows"
@@ -207,8 +251,9 @@
                     <q-chip
                       v-for="group in props.row.approvedGroups"
                       color="grey-7" text-color="white" size="md"
-                    >{{ group.name }}</q-chip>
-                    <span v-if="!props.row.approvedGroups">{{globalStore.nullValueStr}}</span>
+                    >{{ group.name }}
+                    </q-chip>
+                    <span v-if="!props.row.approvedGroups">{{ globalStore.nullValueStr }}</span>
                   </q-td>
                 </template>
                 <template v-slot:body-cell-unapprovedGroups="props">
@@ -216,8 +261,9 @@
                     <q-chip
                       v-for="group in props.row.unapprovedGroups"
                       color="grey-7" text-color="white" size="md"
-                    >{{ group.name }}</q-chip>
-                    <span v-if="!props.row.unapprovedGroups">{{globalStore.nullValueStr}}</span>
+                    >{{ group.name }}
+                    </q-chip>
+                    <span v-if="!props.row.unapprovedGroups">{{ globalStore.nullValueStr }}</span>
                   </q-td>
                 </template>
               </q-table>
@@ -232,6 +278,7 @@
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmailInput from 'components/inputs/EmailInput.vue'
+import PasswordInput from 'components/inputs/PasswordInput.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
@@ -243,6 +290,7 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
+import SeparatorWithText from 'components/SeparatorWithText.vue'
 
 const userPermissionGroupColumns = [
   { name: 'employerName', field: 'employerName', align: 'left', label: 'Employer Name' },
@@ -252,12 +300,17 @@ const userPermissionGroupColumns = [
 
 export default {
   name: 'ProfilePage',
-  components: { CustomTooltip, EmailInput, FileDisplayOrUpload, PageHeader },
+  components: { PasswordInput, CustomTooltip, EmailInput, FileDisplayOrUpload, PageHeader, SeparatorWithText },
   data () {
     return {
       tab: 'general',
       currentUserData: dataUtil.deepCopy(this.user),
       userData: dataUtil.deepCopy(this.user),
+      passwordData: {
+        current_password: null,
+        new_password: null,
+        new_password_confirm: null
+      },
       newProfilePictureKey: 'profile_picture',
       userPermissionGroupColumns,
       fileUtil,
@@ -349,6 +402,12 @@ export default {
       this.userData = dataUtil.deepCopy(this.user)
     },
     // Security tab
+    savePassword () {
+      this.$api.put('password-reset/', getAjaxFormData(this.passwordData))
+    },
+    sendPasswordReset () {
+      this.$api.post('password-reset-generate/', getAjaxFormData({ email: this.user.email }))
+    },
     sendVerificationEmail (email) {
       this.$api.post('verify-email-generate/', getAjaxFormData({ email }))
     }
