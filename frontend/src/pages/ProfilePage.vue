@@ -40,7 +40,7 @@
         <q-tab name="general" label="General"/>
         <q-tab name="security" label="Security"/>
       </q-tabs>
-      <q-tab-panels v-model="tab" animated>
+      <q-tab-panels v-model="tab" animated :keep-alive="true">
         <q-tab-panel name="general">
           <div class="row q-gutter-y-sm">
             <div class="col-12 q-gutter-x-sm q-mb-sm">
@@ -383,7 +383,7 @@ export default {
   },
   watch: {
     tab () {
-      this.$router.replace({ name: this.$route.name, query: { tab: this.tab } })
+      this.$router.replace({ name: this.$route.name, params: this.$route.params, query: { tab: this.tab } })
     }
   },
   methods: {

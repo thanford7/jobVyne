@@ -59,6 +59,12 @@ class UserView(JobVyneAPIView):
     def put(self, request, user_id):
         user = self.get_user(user_id=user_id)
         user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        
+        # Reset email verification if this is a new email
+        if new_business_email := self.data.get('business_email'):
+            if new_business_email != user.business_email:
+                user.is_business_email_verified = False
+        
         set_object_attributes(user, self.data, {
             'first_name': AttributeCfg(is_protect_existing=True),
             'last_name': AttributeCfg(is_protect_existing=True),
