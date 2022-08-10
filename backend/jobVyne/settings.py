@@ -23,15 +23,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
-
-def get_boolean_env_variable(key, default=False):
-    var = os.environ.get(key)
-    if var is not None:
-        return any([var.lower() == 'true', var == '1', var == 1, var == True])
-    return default
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
@@ -45,11 +36,14 @@ logger = setLogger(LOG_LEVEL)
 logger.info(f'Base directory is: {BASE_DIR}')
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
-if csrf_trusted_origins := env('CSRF_TRUSTED_ORIGINS', default=None):
-    CSRF_TRUSTED_ORIGINS = csrf_trusted_origins
+IS_LOCAL = env('IS_LOCAL', cast=bool)
+if IS_LOCAL:
+    CSRF_TRUSTED_ORIGINS = ['https://localhost']
+else:
+    CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com']
 
 # Application definition
 
@@ -154,7 +148,6 @@ REST_FRAMEWORK = {
 
 ROOT_URLCONF = 'jobVyne.urls'
 
-IS_LOCAL = get_boolean_env_variable('IS_LOCAL')
 if frontend_url_override := env('FRONTEND_URL_OVERRIDE', default=None):
     FRONTEND_URL = frontend_url_override
 elif IS_LOCAL:
@@ -241,7 +234,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Email
-SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+SENDGRID_API_KEY = env('SENDGRID_API_KEY')
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_HOST_USER = 'apikey'  # Exactly that.
@@ -263,9 +256,6 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
-# STATICFILES_DIRS = [
-#     os.path.join(BASE_DIR, 'jvapp/static'),
-# ]
 STATIC_ROOT = '/static/'
 if IS_LOCAL:
     logger.info('Using local static storage')
@@ -277,8 +267,8 @@ if IS_LOCAL:
 else:
     logger.info('Using S3 static storage')
     AWS_QUERYSTRING_AUTH = False
-    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+    AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = 'jobvyne'
     AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
     AWS_S3_OBJECT_PARAMETERS = {
@@ -303,7 +293,7 @@ else:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # SQL Logging
-if get_boolean_env_variable('SQL_LOG'):
+if env('SQL_LOG', cast=bool, default=None):
     LOGGING = {
         'version': 1,
         'loggers': {
@@ -314,8 +304,8 @@ if get_boolean_env_variable('SQL_LOG'):
     }
 
 # reCAPTCHA
-GOOGLE_CAPTCHA_SITE_KEY = os.getenv('GOOGLE_CAPTCHA_SITE_KEY')
-GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID')
+GOOGLE_CAPTCHA_SITE_KEY = env('GOOGLE_CAPTCHA_SITE_KEY')
+GOOGLE_PROJECT_ID = env('GOOGLE_PROJECT_ID')
 
 # Set Google Env variable from string (needs to be a path to a file)
 google_credentials = json.loads(env('GOOGLE_APPLICATION_CREDENTIALS_STR').replace('\'', '"'), strict=False)
