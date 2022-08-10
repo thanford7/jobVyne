@@ -291,9 +291,6 @@ class PasswordResetView(JobVyneAPIView):
         validate_password(new_password, user=self.user)
         self.user.set_password(new_password)
         self.user.save()
-        # user = authenticate(username=self.user.email, password=new_password)
-        # if not user:
-        #     return Response('Something went wrong with the password reset. Please try again.', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         login(request, self.user, backend='django.contrib.auth.backends.ModelBackend')
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Password successfully reset'
