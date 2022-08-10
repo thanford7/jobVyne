@@ -85,7 +85,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_uid',
     'social_core.pipeline.social_auth.auth_allowed',
     'social_core.pipeline.social_auth.social_user',
-    'jobVyne.customSocialPipeline.redirect_if_no_refresh_token',
+    # 'jobVyne.customSocialPipeline.redirect_if_no_refresh_token',
     # 'social_core.pipeline.user.get_username',
     'social_core.pipeline.social_auth.associate_by_email',
     'jobVyne.customSocialPipeline.create_user',
@@ -111,7 +111,8 @@ SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['profile', 'email']
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
     'access_type': 'offline',
-    'approval_prompt': 'auto'
+    # https://python-social-auth.readthedocs.io/en/latest/use_cases.html#re-prompt-google-oauth2-users-to-refresh-the-refresh-token
+    # 'approval_prompt': 'auto'
 }
 SOCIAL_AUTH_LINKEDIN_OAUTH2_SCOPE = ['r_emailaddress', 'r_liteprofile', 'w_member_social']
 SOCIAL_AUTH_LINKEDIN_OAUTH2_FIELD_SELECTORS = ['emailAddress']

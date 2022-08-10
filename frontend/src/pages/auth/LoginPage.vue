@@ -6,10 +6,10 @@
     <AuthAll :is-create="isCreate"/>
     <div class="q-mt-md">
       <div v-if="isCreate">
-        Current user? <a href="#" @click="isCreate=false">Login here</a>
+        Current user? <a href="#" @click="toggleNewUser($event, 0)">Login here</a>
       </div>
       <div v-else>
-        New user? <a href="#" @click="isCreate=true">Sign up here</a>
+        New user? <a href="#" @click="toggleNewUser($event, 1)">Sign up here</a>
       </div>
     </div>
     <div>
@@ -30,17 +30,26 @@ export default {
   components: { BaseAuthPage, AuthAll },
   data () {
     return {
-      isCreate: false,
       newUserHeader: 'Join JobVyne!',
       currentUserHeader: 'Welcome back!',
       USER_TYPES,
       USER_TYPE_EMPLOYEE
     }
   },
+  computed: {
+    isCreate () {
+      const isNew = this.$route.query.isNew || 0
+      return Boolean(parseInt(isNew))
+    }
+  },
   methods: {
     goToReset (e) {
       e.preventDefault()
       this.$router.push({ name: 'password-reset-generate' })
+    },
+    toggleNewUser (e, isNew) {
+      e.preventDefault()
+      this.$router.push({ name: this.$route.name, query: { isNew } })
     }
   },
   setup () {

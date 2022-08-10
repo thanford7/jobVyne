@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
@@ -15,10 +13,13 @@ from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.email import send_email
+from jvapp.utils.logger import getLogger
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
     get_user_key_from_token
 
 __all__ = ('UserView', 'UserEmailVerificationView', 'UserEmailVerificationGenerateView')
+
+logger = getLogger()
 
 
 class UserView(JobVyneAPIView):
@@ -59,6 +60,7 @@ class UserView(JobVyneAPIView):
     
     @atomic
     def put(self, request, user_id):
+        logger.info('Hit user put')
         user = self.get_user(user_id=user_id)
         user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
         set_object_attributes(user, self.data, {

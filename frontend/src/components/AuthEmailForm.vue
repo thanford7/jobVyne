@@ -5,7 +5,7 @@
     <EmailInput v-model="email"/>
     <PasswordInput v-model="password"/>
 
-    <div>
+    <div class="q-mt-sm">
       <q-btn
         :label="(isCreate) ? createText : loginText"
         type="submit" ripple
@@ -62,11 +62,14 @@ export default {
   methods: {
     isGoodEmail: formUtil.isGoodEmail,
     async login () {
-      const user = {
+      const userData = getAjaxFormData({
         email: this.email,
         password: this.password
+      })
+      if (this.isCreate) {
+        await this.$api.post('user/', userData)
       }
-      await this.$api.post('auth/login/', getAjaxFormData(user))
+      await this.$api.post('auth/login/', userData)
       if (this.$route.name === 'login') {
         await this.authStore.setUser(true)
         this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))

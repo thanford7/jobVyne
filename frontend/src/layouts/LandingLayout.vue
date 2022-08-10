@@ -14,7 +14,14 @@
             <q-route-tab :to="pagePermissionsUtil.getDefaultLandingPage(authStore.propUser)" label="Dashboard"/>
             <q-tab label="Logout" @click="authStore.logout"/>
           </template>
-          <q-route-tab v-else :to="{ name: 'login' }" label="Login"/>
+          <template v-else>
+            <q-route-tab :to="{ name: 'login', query: { isNew: 0 } }" label="Login"/>
+            <q-route-tab
+              :to="{ name: 'login', query: { isNew: 1 } }"
+              label="Sign up"
+              class="bg-accent text-white"
+            />
+          </template>
         </q-tabs>
         <div class="lt-md q-pa-md" style="max-width: 250px">
           <q-btn-dropdown
@@ -49,17 +56,26 @@
                   </q-item-section>
                 </q-item>
               </template>
-              <q-item
-                v-else
-                exact clickable v-close-popup
-                v-ripple
-                :to="{ name: 'login' }"
-                label="Login"
-              >
-                <q-item-section>
-                  Login
-                </q-item-section>
-              </q-item>
+              <template v-else>
+                <q-item
+                  exact clickable v-close-popup
+                  v-ripple
+                  :to="{ name: 'login', query: { isNew: 0 } }"
+                >
+                  <q-item-section>
+                    Login
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  exact clickable v-close-popup
+                  v-ripple
+                  :to="{ name: 'login', query: { isNew: 1 } }"
+                >
+                  <q-item-section>
+                    Sign up
+                  </q-item-section>
+                </q-item>
+              </template>
             </q-list>
           </q-btn-dropdown>
         </div>
