@@ -48,6 +48,9 @@ PREPEND_WWW = False
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
+if csrf_trusted_origins := env('CSRF_TRUSTED_ORIGINS', default=None):
+    CSRF_TRUSTED_ORIGINS = csrf_trusted_origins
+
 # Application definition
 
 INSTALLED_APPS = [
