@@ -71,7 +71,7 @@ module.exports = configure(function (ctx) {
       // publicPath: '/',
       // analyze: true,
       env: {
-        API_URL: (ctx.dev) ? '/api/v1/' : 'backend/api/v1',
+        API_URL: (ctx.dev) ? '/api/v1/' : '/backend/api/v1',
         GOOGLE_CAPTCHA_KEY: (ctx.dev) ? '6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp' : '6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl'
       },
       // rawDefine: {}
