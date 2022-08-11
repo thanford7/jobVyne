@@ -5,6 +5,7 @@ export const useEmployerStore = defineStore('employer', {
   state: () => ({
     employers: {}, // employerId: {<employer>}
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
+    employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
     employerPage: {}, // employerId: {<employerPage>}
@@ -21,13 +22,21 @@ export const useEmployerStore = defineStore('employer', {
     },
     async setEmployerJobs (employerId, isForceRefresh = false) {
       if (!this.employerJobs[employerId] || isForceRefresh) {
-        const resp = await this.$api.get(
+        const jobResp = await this.$api.get(
           'employer/job/',
           {
             params: { employer_id: employerId }
           }
         )
-        this.employerJobs[employerId] = resp.data
+        this.employerJobs[employerId] = jobResp.data
+
+        const locResp = await this.$api.get(
+          'employer/job/location/',
+          {
+            params: { employer_id: employerId }
+          }
+        )
+        this.employerJobLocations[employerId] = locResp.data
       }
     },
     async setEmployerPermissions (isForceRefresh = false) {
@@ -119,34 +128,22 @@ export const useEmployerStore = defineStore('employer', {
       return dataUtil.sortBy(vals, 'department')
     },
     getJobCities (employerId) {
-      if (!this.employerJobs[employerId]) {
+      if (!this.employerJobLocations[employerId]) {
         return null
       }
-      const vals = dataUtil.uniqBy(
-        this.employerJobs[employerId].map((j) => ({ city: j.city })),
-        'city'
-      )
-      return dataUtil.sortBy(vals, 'city')
+      return this.employerJobLocations[employerId].cities
     },
     getJobStates (employerId) {
-      if (!this.employerJobs[employerId]) {
+      if (!this.employerJobLocations[employerId]) {
         return null
       }
-      const vals = dataUtil.uniqBy(
-        this.employerJobs[employerId].map((j) => ({ state: j.state, id: j.state_id })),
-        'state'
-      )
-      return dataUtil.sortBy(vals, 'state')
+      return this.employerJobLocations[employerId].states
     },
     getJobCountries (employerId) {
-      if (!this.employerJobs[employerId]) {
+      if (!this.employerJobLocations[employerId]) {
         return null
       }
-      const vals = dataUtil.uniqBy(
-        this.employerJobs[employerId].map((j) => ({ country: j.country, id: j.country_id })),
-        'country'
-      )
-      return dataUtil.sortBy(vals, 'country')
+      return this.employerJobLocations[employerId].countries
     }
   }
 })

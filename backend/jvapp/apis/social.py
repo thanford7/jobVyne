@@ -150,11 +150,11 @@ class SocialLinkJobsView(JobVyneAPIView):
     @staticmethod
     def get_jobs_from_filter(link_filter):
         jobs_filter = Q(employer_id=link_filter.employer_id)
-        jobs_filter &= Q(openDate__lte=timezone.now().date())
-        jobs_filter &= (Q(closeDate__isnull=True) | Q(closeDate__gt=timezone.now().date()))
+        jobs_filter &= Q(open_date__lte=timezone.now().date())
+        jobs_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
         
         if len(link_filter.departments.all()):
-            jobs_filter &= Q(jobDepartment_id__in=[d.id for d in link_filter.departments.all()])
+            jobs_filter &= Q(job_department_id__in=[d.id for d in link_filter.departments.all()])
             
         if link_filter.cities:
             jobs_filter &= Q(city__in=link_filter.cities)

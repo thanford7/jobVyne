@@ -31,6 +31,9 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     countries = models.ManyToManyField('Country')
     jobs = models.ManyToManyField('EmployerJob')
     
+    class Meta:
+        ordering = ('-modified_dt',)
+    
     @classmethod
     def _jv_filter_perm_query(cls, user, query):
         if user.is_admin:

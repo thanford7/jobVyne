@@ -43,7 +43,7 @@
       <ResponsiveWidth>
         <BannerMessage/>
       </ResponsiveWidth>
-      <q-page v-if="isLoaded">
+      <q-page v-if="isLoaded" class="scroll">
         <q-tab-panels v-model="tab" animated>
           <q-tab-panel name="jobs">
             <div class="row justify-center">
@@ -57,7 +57,7 @@
                         </q-card>
                       </div>
                       <div v-for="job in jobs" :key="job.id" class="q-mb-md">
-                        <q-card :style="getSelectedCardStyle(job)">
+                        <q-card :style="getSelectedCardStyle(job)" :id="`job-${job.id}`">
                           <div v-if="getJobApplication(job.id)" class="application-date" :style="getHeaderStyle()">
                             Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
                           </div>
@@ -67,8 +67,27 @@
                               <q-chip color="grey-7" text-color="white" size="md" icon="domain">
                                 {{ job.job_department }}
                               </q-chip>
-                              <q-chip color="grey-7" text-color="white" size="md" icon="place">
-                                {{ getFullLocation(job) }}
+                              <template v-if="job.locations.length > 1">
+                                <CustomTooltip :is_include_space="false">
+                                  <template v-slot:icon>
+                                    <q-chip
+                                      color="grey-7" text-color="white" size="md" icon="place"
+                                    >
+                                      Multiple locations
+                                    </q-chip>
+                                  </template>
+                                  <ul>
+                                    <li v-for="location in job.locations">
+                                      {{ getFullLocation(location) }}
+                                    </li>
+                                  </ul>
+                                </CustomTooltip>
+                              </template>
+                              <q-chip
+                                v-else-if="job.locations.length"
+                                color="grey-7" text-color="white" size="md" icon="place"
+                              >
+                                {{ getFullLocation(job.locations[0]) }}
                               </q-chip>
                               <q-chip v-if="job.is_remote" color="grey-7" text-color="white" size="md" icon="laptop">
                                 Remote
@@ -94,7 +113,7 @@
                               ripple unelevated
                               label="Apply"
                               :style="getButtonStyle()"
-                              @click="openApplication(job.id)"
+                              @click="openApplication($event, job.id)"
                             />
                           </q-card-actions>
                         </q-card>
@@ -130,8 +149,10 @@
 </template>
 
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
+import scrollUtil from 'src/utils/scroll.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { ref } from 'vue'
 import BannerMessage from 'components/BannerMessage.vue'
@@ -160,7 +181,7 @@ export default {
       dateTimeUtil
     }
   },
-  components: { EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
+  components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
@@ -169,7 +190,7 @@ export default {
       this.jobApplication = null
       await this.$router.replace({ name: this.$route.name, query: {} })
     },
-    async openApplication (jobId) {
+    async openApplication (e, jobId) {
       this.jobApplication = this.jobs.find((j) => j.id === jobId)
       await this.$router.replace({ name: this.$route.name, query: { jobId } })
       if (window.innerWidth < 600) {
@@ -177,6 +198,7 @@ export default {
       } else {
         this.isRightDrawerOpen = true
       }
+      scrollUtil.scrollToElement(document.getElementById(`job-${jobId}`))
     },
     getJobApplication (jobId) {
       if (!this.applications) {
@@ -238,7 +260,7 @@ export default {
 
     const { jobId } = dataUtil.getQueryParams()
     if (jobId) {
-      this.openApplication(parseInt(jobId))
+      this.openApplication(null, parseInt(jobId))
     }
 
     this.isLoaded = true

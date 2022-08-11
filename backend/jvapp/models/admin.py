@@ -64,6 +64,6 @@ class SocialAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(Country, State)
+@admin.register(Country, State, Location)
 class LocationAdmin(admin.ModelAdmin):
     pass

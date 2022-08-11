@@ -50,29 +50,20 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     
 class EmployerJob(AuditFields, OwnerFields):
-    employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employerJob')
-    jobTitle = models.CharField(max_length=100)
-    jobDescription = models.TextField()
-    jobDepartment = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
-    openDate = models.DateField(null=True, blank=True)
-    closeDate = models.DateField(null=True, blank=True)
-    salaryFloor = models.FloatField(null=True, blank=True)
-    salaryCeiling = models.FloatField(null=True, blank=True)
-    referralBonus = models.FloatField(null=True, blank=True)
-    isFullTime = models.BooleanField(default=True, blank=True)
-
-    # Location
-    isRemote = models.BooleanField(null=True, blank=True)
-    location = models.CharField(max_length=100, null=True, blank=True)  # Raw text
-    city = models.CharField(max_length=50, null=True, blank=True)
-    state = models.ForeignKey(State, null=True, blank=True, on_delete=models.SET_NULL)
-    country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.SET_NULL)
+    employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
+    job_title = models.CharField(max_length=100)
+    job_description = models.TextField()
+    job_department = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
+    open_date = models.DateField(null=True, blank=True)
+    close_date = models.DateField(null=True, blank=True)
+    salary_floor = models.FloatField(null=True, blank=True)
+    salary_ceiling = models.FloatField(null=True, blank=True)
+    referral_bonus = models.FloatField(null=True, blank=True)
+    is_full_time = models.BooleanField(default=True, blank=True)
+    locations = models.ManyToManyField('Location')
     
     def __str__(self):
-        return f'{self.employer.employer_name}-{self.jobTitle}-{self.location}'
-    
-    class Meta:
-        unique_together = ('employer', 'jobTitle', 'location')
+        return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
 
 
 #If multiple records have is_default = True, tie break will go to:

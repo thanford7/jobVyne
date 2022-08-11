@@ -4,7 +4,6 @@ from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from django.db.transaction import atomic
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
@@ -95,7 +94,7 @@ class EmployerView(JobVyneAPIView):
 
 
 class EmployerJobView(JobVyneAPIView):
-    permission_classes = [IsAuthenticated, IsAdminOrEmployerOrReadOnlyPermission]
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request, employer_job_id=None):
         if employer_job_id:
@@ -116,12 +115,13 @@ class EmployerJobView(JobVyneAPIView):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
         
-        jobs = EmployerJob.objects \
-            .select_related(
-            'jobDepartment',
-            'state',
-            'country'
-        ) \
+        jobs = EmployerJob.objects\
+            .select_related('job_department')\
+            .prefetch_related(
+                'locations',
+                'locations__state',
+                'locations__country'
+            )\
             .filter(employer_job_filter)
         
         if employer_job_id:
@@ -545,3 +545,30 @@ class EmployerFromDomainView(JobVyneAPIView):
             status=status.HTTP_200_OK,
             data=matched_employers
         )
+
+
+class EmployerJobLocationView(JobVyneAPIView):
+    
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+
+        job_filter = Q(employer_id=employer_id)
+        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_filter)
+        cities, states, countries = set(), {}, {}
+        for job in jobs:
+            for location in job.locations.all():
+                if location.city:
+                    cities.add(location.city)
+                if location.state and not states.get(location.state_id):
+                    states[location.state_id] = {'name': location.state.name, 'id': location.state.id}
+                if location.country and not countries.get(location.country_id):
+                    countries[location.country_id] = {'name': location.country.name, 'id': location.country.id}
+        
+        return Response(status=status.HTTP_200_OK, data={
+            'cities': sorted(list(cities)),
+            'states': sorted(list(states.values()), key=lambda x: x['name']),
+            'countries': sorted(list(countries.values()), key=lambda x: x['name'])
+        })

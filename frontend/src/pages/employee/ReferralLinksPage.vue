@@ -204,7 +204,7 @@
                       v-model="formData.states"
                       :options="employerStore.getJobStates(user.employer_id)"
                       option-value="id"
-                      option-label="state"
+                      option-label="name"
                       label="State"
                     />
                   </div>
@@ -214,7 +214,7 @@
                       v-model="formData.countries"
                       :options="employerStore.getJobCountries(user.employer_id)"
                       option-value="id"
-                      option-label="country"
+                      option-label="name"
                       label="Country"
                     />
                   </div>
@@ -237,7 +237,37 @@
                   filter="formData"
                   no-data-label="No jobs match the filter"
                   :rows-per-page-options="[5, 10, 15]"
-                />
+                >
+                  <template v-slot:body-cell-locations="props">
+                    <q-td>
+                      <template v-if="props.row.locations.length > 1">
+                        <CustomTooltip :is_include_space="false">
+                          <template v-slot:icon>
+                            <q-chip
+                              color="grey-7" text-color="white" size="13px" dense
+                            >
+                              Multiple locations
+                            </q-chip>
+                          </template>
+                          <ul>
+                            <li v-for="location in props.row.locations">
+                              {{ getFullLocation(location) }}
+                            </li>
+                          </ul>
+                        </CustomTooltip>
+                      </template>
+                      <q-chip
+                        v-else-if="props.row.locations.length"
+                        dense
+                        color="grey-7"
+                        text-color="white"
+                        size="13px"
+                      >
+                        {{ getFullLocation(props.row.locations[0]) }}
+                      </q-chip>
+                    </q-td>
+                  </template>
+                </q-table>
               </div>
             </div>
             <div class="row">
@@ -289,6 +319,7 @@
 </template>
 
 <script>
+import locationUtil from 'src/utils/location.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
@@ -304,7 +335,7 @@ import PageHeader from 'components/PageHeader.vue'
 const jobColumns = [
   { name: 'job_title', field: 'job_title', align: 'left', label: 'Title', sortable: true },
   { name: 'job_department', field: 'job_department', align: 'left', label: 'Department', sortable: true },
-  { name: 'location', field: 'location', align: 'left', label: 'Location', sortable: true },
+  { name: 'locations', field: 'locations', align: 'left', label: 'Location', sortable: true },
   {
     name: 'open_date',
     field: 'open_date',
@@ -385,6 +416,7 @@ export default {
   },
   methods: {
     copyText: dataUtil.copyText.bind(dataUtil),
+    getFullLocation: locationUtil.getFullLocation,
     getLocations (row) {
       const locations = []
       dataUtil.getForceArray(row.cities).forEach((cityName) => {
@@ -450,16 +482,19 @@ export default {
       const stateIds = (this.formData.states) ? this.formData.states.map((state) => state.id) : []
       const countryIds = (this.formData.countries) ? this.formData.countries.map((country) => country.id) : []
       return rows.filter((job) => {
+        const jobCities = job.locations.map((l) => l.city)
+        const jobStateIds = job.locations.map((l) => l.state_id)
+        const jobCountryIds = job.locations.map((l) => l.country_id)
         if (this.formData.departments?.length && !departmentIds.includes(job.job_department_id)) {
           return false
         }
-        if (this.formData.cities?.length && !this.formData.cities.includes(job.city)) {
+        if (this.formData.cities?.length && !dataUtil.getArrayIntersection(this.formData.cities, jobCities).length) {
           return false
         }
-        if (this.formData.states?.length && !stateIds.includes(job.state_id)) {
+        if (this.formData.states?.length && !dataUtil.getArrayIntersection(stateIds, jobStateIds).length) {
           return false
         }
-        if (this.formData.countries?.length && !countryIds.includes(job.country_id)) {
+        if (this.formData.countries?.length && !dataUtil.getArrayIntersection(countryIds, jobCountryIds).length) {
           return false
         }
         return true
@@ -482,6 +517,7 @@ export default {
     },
     resetLinkForm () {
       this.formData = { ...formDataTemplate }
+      this.linkId = null
     }
   },
   preFetch () {
