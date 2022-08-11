@@ -129,6 +129,16 @@ class PagePermissionsUtil {
             }
           },
           {
+            icon: 'work',
+            key: 'employer-jobs',
+            label: 'Jobs',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+            isPermittedViewFn: isUserEmployerFn,
+            isPermittedFn: (permissionGroups, permissions) => {
+              return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_REFERRAL_BONUSES)
+            }
+          },
+          {
             icon: 'groups',
             key: 'employer-user-management',
             label: 'Users',

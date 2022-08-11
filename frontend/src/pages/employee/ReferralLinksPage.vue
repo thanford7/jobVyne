@@ -139,7 +139,7 @@
               </div>
               <div class="col-12 col-md-6">
                 <q-select
-                  outlined
+                  filled
                   v-model="formData.platform"
                   :options="socialStore.platforms"
                   autocomplete="name"
@@ -178,45 +178,16 @@
               <div class="col-12">
                 <div class="row">
                   <div class="col-12 col-md-6 q-pr-md-sm">
-                    <q-select
-                      outlined multiple clearable use-chips
-                      v-model="formData.departments"
-                      :options="employerStore.getJobDepartments(user.employer_id)"
-                      option-value="id"
-                      option-label="department"
-                      label="Department"
-                    />
+                    <SelectJobDepartment v-model="formData.departments"/>
                   </div>
                   <div class="col-12 col-md-6">
-                    <q-select
-                      outlined multiple clearable use-chips
-                      v-model="formData.cities"
-                      :emit-value="true"
-                      :options="employerStore.getJobCities(user.employer_id)"
-                      option-value="city"
-                      option-label="city"
-                      label="City"
-                    />
+                    <SelectJobCity v-model="formData.cities"/>
                   </div>
                   <div class="col-12 col-md-6 q-pr-md-sm">
-                    <q-select
-                      outlined multiple clearable use-chips
-                      v-model="formData.states"
-                      :options="employerStore.getJobStates(user.employer_id)"
-                      option-value="id"
-                      option-label="name"
-                      label="State"
-                    />
+                    <SelectJobState v-model="formData.states"/>
                   </div>
                   <div class="col-12 col-md-6">
-                    <q-select
-                      outlined multiple clearable use-chips
-                      v-model="formData.countries"
-                      :options="employerStore.getJobCountries(user.employer_id)"
-                      option-value="id"
-                      option-label="name"
-                      label="Country"
-                    />
+                    <SelectJobCountry v-model="formData.countries"/>
                   </div>
                 </div>
               </div>
@@ -319,6 +290,11 @@
 </template>
 
 <script>
+import SelectJobCity from 'components/inputs/SelectJobCity.vue'
+import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
+import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
+import SelectJobState from 'components/inputs/SelectJobState.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import locationUtil from 'src/utils/location.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
@@ -335,14 +311,14 @@ import PageHeader from 'components/PageHeader.vue'
 const jobColumns = [
   { name: 'job_title', field: 'job_title', align: 'left', label: 'Title', sortable: true },
   { name: 'job_department', field: 'job_department', align: 'left', label: 'Department', sortable: true },
-  { name: 'locations', field: 'locations', align: 'left', label: 'Location', sortable: true },
+  { name: 'locations', field: 'locations', align: 'left', label: 'Location' },
   {
     name: 'open_date',
     field: 'open_date',
     align: 'left',
     label: 'Posted Date',
     sortable: true,
-    format: dateTimeUtil.getShortDate
+    format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
   },
   {
     name: 'referral_bonus',
@@ -364,7 +340,7 @@ const applicationsColumns = [
     align: 'left',
     label: 'Application date',
     sortable: true,
-    format: dateTimeUtil.getShortDate
+    format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
   }
 ]
 
@@ -377,7 +353,7 @@ const formDataTemplate = {
 }
 
 export default {
-  components: { PageHeader, CustomTooltip },
+  components: { SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, PageHeader, CustomTooltip },
   data () {
     return {
       formData: { ...formDataTemplate },
@@ -409,9 +385,6 @@ export default {
       }
       const applications = this.selectedLinkFilter.performance.applications
       return (applications.length) ? applications : null
-    },
-    user () {
-      return this.authStore.propUser
     }
   },
   methods: {
@@ -419,10 +392,9 @@ export default {
     getFullLocation: locationUtil.getFullLocation,
     getLocations (row) {
       const locations = []
-      dataUtil.getForceArray(row.cities).forEach((cityName) => {
-        const city = { name: cityName }
+      dataUtil.getForceArray(row.cities).forEach((city) => {
         city.type = 'city'
-        city.key = cityName
+        city.key = `city-${city.id}`
         city.color = 'blue-8'
         locations.push(city)
       })
@@ -479,16 +451,17 @@ export default {
     },
     jobDataFilter (rows) {
       const departmentIds = (this.formData.departments) ? this.formData.departments.map((department) => department.id) : []
+      const cityIds = (this.formData.cities) ? this.formData.cities.map((city) => city.id) : []
       const stateIds = (this.formData.states) ? this.formData.states.map((state) => state.id) : []
       const countryIds = (this.formData.countries) ? this.formData.countries.map((country) => country.id) : []
       return rows.filter((job) => {
-        const jobCities = job.locations.map((l) => l.city)
+        const jobCityIds = job.locations.map((l) => l.city_id)
         const jobStateIds = job.locations.map((l) => l.state_id)
         const jobCountryIds = job.locations.map((l) => l.country_id)
         if (this.formData.departments?.length && !departmentIds.includes(job.job_department_id)) {
           return false
         }
-        if (this.formData.cities?.length && !dataUtil.getArrayIntersection(this.formData.cities, jobCities).length) {
+        if (this.formData.cities?.length && !dataUtil.getArrayIntersection(cityIds, jobCityIds).length) {
           return false
         }
         if (this.formData.states?.length && !dataUtil.getArrayIntersection(stateIds, jobStateIds).length) {
@@ -501,10 +474,9 @@ export default {
       })
     },
     async saveLink () {
-      const user = this.authStore.propUser
       const data = {
-        owner_id: user.id,
-        employer_id: user.employer_id,
+        owner_id: this.user.id,
+        employer_id: this.user.employer_id,
         platform_id: this.formData?.platform?.id,
         department_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.departments?.map((dept) => dept.id)),
         cities: dataUtil.getArrayWithValuesOrNone(this.formData.cities),
@@ -541,6 +513,7 @@ export default {
     const globalStore = useGlobalStore()
     const authStore = useAuthStore()
     const utilStore = useUtilStore()
+    const { user } = storeToRefs(authStore)
 
     const pageTitle = 'Referral Links'
     const metaData = {
@@ -549,7 +522,7 @@ export default {
     }
     useMeta(metaData)
 
-    return { socialStore, employerStore, authStore, globalStore, utilStore }
+    return { socialStore, employerStore, authStore, globalStore, utilStore, user }
   }
 }
 </script>

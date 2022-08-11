@@ -129,6 +129,12 @@ const routes = [
         component: () => import('pages/DashboardPage.vue')
       },
       {
+        path: ':key(employer-jobs)',
+        name: 'employer-jobs',
+        meta: { userTypeBits: USER_TYPES.Employer },
+        component: () => import('pages/employer/jobs-page/JobsPage.vue')
+      },
+      {
         path: ':key(employer-user-management)',
         name: 'employer-user-management',
         meta: { userTypeBits: USER_TYPES.Employer },

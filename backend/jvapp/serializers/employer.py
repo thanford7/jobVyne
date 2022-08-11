@@ -61,11 +61,12 @@ def get_serialized_employer_job(employer_job: EmployerJob):
             {
                 'is_remote': l.is_remote,
                 'text': l.text,
-                'city': l.city,
-                'state': l.state.name,
-                'state_id': l.state_id,
-                'country': l.country.name,
-                'country_id': l.country_id
+                'city': l.city.name if l.city else None,
+                'city_id': l.city_id if l.city else None,
+                'state': l.state.name if l.state else None,
+                'state_id': l.state_id if l.state else None,
+                'country': l.country.name if l.country else None,
+                'country_id': l.country_id if l.country else None
             } for l in employer_job.locations.all()
         ]
     }

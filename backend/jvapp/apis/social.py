@@ -83,7 +83,7 @@ class SocialLinkFilterView(JobVyneAPIView):
     @staticmethod
     @atomic
     def create_or_update_link_filter(link_filter, data, user):
-        cfg = {'cities': None}
+        cfg = {}
         if not link_filter.created_dt:
             cfg['owner_id'] = None
             cfg['employer_id'] = None
@@ -95,6 +95,9 @@ class SocialLinkFilterView(JobVyneAPIView):
         
         if department_ids := data.get('department_ids'):
             link_filter.departments.set(department_ids)
+            
+        if city_ids := data.get('city_ids'):
+            link_filter.cities.set(city_ids)
             
         if state_ids := data.get('state_ids'):
             link_filter.states.set(state_ids)
@@ -113,7 +116,7 @@ class SocialLinkFilterView(JobVyneAPIView):
         links = SocialLinkFilter.objects\
             .select_related('employer', 'platform')\
             .prefetch_related(
-                'departments', 'states', 'countries', 'jobs',
+                'departments', 'cities', 'states', 'countries', 'jobs',
                 'job_application', 'job_application__employer_job', 'page_view'
             )\
             .filter(link_filter_filter)
@@ -157,7 +160,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs_filter &= Q(job_department_id__in=[d.id for d in link_filter.departments.all()])
             
         if link_filter.cities:
-            jobs_filter &= Q(city__in=link_filter.cities)
+            jobs_filter &= Q(city_id__in=[c.id for c in link_filter.cities.all()])
             
         if len(link_filter.states.all()):
             jobs_filter &= Q(state_id__in=[s.id for s in link_filter.states.all()])

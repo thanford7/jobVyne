@@ -22,7 +22,7 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         'platform_name': link_filter.platform.name if link_filter.platform else None,
         'platform_id': link_filter.platform_id,
         'departments': [{'name': d.name, 'id': d.id} for d in link_filter.departments.all()],
-        'cities': link_filter.cities,
+        'cities': [{'name': c.name, 'id': c.id} for c in link_filter.cities.all()],
         'states': [{'name': s.name, 'id': s.id} for s in link_filter.states.all()],
         'countries': [{'name': c.name, 'id': c.id} for c in link_filter.countries.all()],
         'jobs': [{'title': j.jobTitle, 'id': j.id} for j in link_filter.jobs.all()]

@@ -22,54 +22,42 @@
         <q-tab-panel name="users">
           <div class="row q-gutter-y-md">
             <div class="col-12">
-              <q-card>
-                <div class="row q-ml-sm q-py-sm q-pr-md">
-                  <div class="text-h6">User filters</div>
-                  <q-space/>
-                  <q-btn
-                    color="grey-7"
-                    flat dense
-                    :icon="isUserFilterExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
-                    @click="isUserFilterExpanded = !isUserFilterExpanded"
-                  />
-                </div>
-                <q-slide-transition>
-                  <div v-show="isUserFilterExpanded" class="row">
-                    <div class="col-12 col-md-4 q-pa-sm">
-                      <q-input filled borderless debounce="300" v-model="userFilter.searchText" placeholder="Search">
-                        <template v-slot:append>
-                          <q-icon name="search"/>
-                          <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
-                            Search by first name, last name, or email
-                          </q-tooltip>
-                        </template>
-                      </q-input>
-                    </div>
-                    <div class="col-12 col-md-4 q-pa-sm">
-                      <SelectUserType
-                        v-model="userFilter.userTypeBitsList"
-                        :is-multi="true"
-                        :is-required="false"
-                      />
-                    </div>
-                    <div class="col-12 col-md-4 q-pa-sm">
-                      <SelectPermissionGroup
-                        v-model="userFilter.permissionGroupIds"
-                        :is-required="false"
-                      />
-                    </div>
-                    <div class="col-12 col-md-4 q-pa-sm">
-                      <SelectYesNo label="Approval Required" v-model="userFilter.isApprovalRequired"/>
-                    </div>
-                    <div class="col-12 col-md-4 q-pa-sm">
-                      <SelectYesNo label="Active" v-model="userFilter.isActive"/>
-                    </div>
-                    <div class="col-12 q-pa-sm">
-                      <a href="#" @click="clearUserFilter">Clear all</a>
-                    </div>
+              <FilterCard title="User filters">
+                <template v-slot:filters>
+                  <div class="col-12 col-md-4 q-pa-sm">
+                    <q-input filled borderless debounce="300" v-model="userFilter.searchText" placeholder="Search">
+                      <template v-slot:append>
+                        <q-icon name="search"/>
+                        <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                          Search by first name, last name, or email
+                        </q-tooltip>
+                      </template>
+                    </q-input>
                   </div>
-                </q-slide-transition>
-              </q-card>
+                  <div class="col-12 col-md-4 q-pa-sm">
+                    <SelectUserType
+                      v-model="userFilter.userTypeBitsList"
+                      :is-multi="true"
+                      :is-required="false"
+                    />
+                  </div>
+                  <div class="col-12 col-md-4 q-pa-sm">
+                    <SelectPermissionGroup
+                      v-model="userFilter.permissionGroupIds"
+                      :is-required="false"
+                    />
+                  </div>
+                  <div class="col-12 col-md-4 q-pa-sm">
+                    <SelectYesNo label="Approval Required" v-model="userFilter.isApprovalRequired"/>
+                  </div>
+                  <div class="col-12 col-md-4 q-pa-sm">
+                    <SelectYesNo label="Active" v-model="userFilter.isActive"/>
+                  </div>
+                  <div class="col-12 q-pa-sm">
+                    <a href="#" @click="clearUserFilter">Clear all</a>
+                  </div>
+                </template>
+              </FilterCard>
             </div>
             <div class="col-12">
               <q-table
@@ -336,6 +324,7 @@
 </template>
 
 <script>
+import FilterCard from 'components/FilterCard.vue'
 import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { useEmployerStore } from 'stores/employer-store'
@@ -379,7 +368,7 @@ const userColumns = [
   { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
   { name: 'userTypeBits', field: 'user_type_bits', align: 'left', label: 'User types' },
   { name: 'permissionGroups', field: 'permission_groups', align: 'left', label: 'Permission groups' },
-  { name: 'created_dt', field: 'created_dt', align: 'left', label: 'Joined date', format: dateTimeUtil.getShortDate }
+  { name: 'created_dt', field: 'created_dt', align: 'left', label: 'Joined date', format: dateTimeUtil.getShortDate.bind(dateTimeUtil) }
 ]
 
 const userFilterTemplate = {
@@ -392,7 +381,7 @@ const userFilterTemplate = {
 
 export default {
   name: 'UserManagementPage',
-  components: { SelectYesNo, SelectPermissionGroup, SelectUserType, CustomTooltip, PageHeader },
+  components: { FilterCard, SelectYesNo, SelectPermissionGroup, SelectUserType, CustomTooltip, PageHeader },
   data () {
     return {
       tab: 'users',

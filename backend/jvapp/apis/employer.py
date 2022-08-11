@@ -119,6 +119,7 @@ class EmployerJobView(JobVyneAPIView):
             .select_related('job_department')\
             .prefetch_related(
                 'locations',
+                'locations__city',
                 'locations__state',
                 'locations__country'
             )\
@@ -557,18 +558,18 @@ class EmployerJobLocationView(JobVyneAPIView):
 
         job_filter = Q(employer_id=employer_id)
         jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_filter)
-        cities, states, countries = set(), {}, {}
+        cities, states, countries = {}, {}, {}
         for job in jobs:
             for location in job.locations.all():
-                if location.city:
-                    cities.add(location.city)
+                if location.city and not cities.get(location.city_id):
+                    cities[location.city_id] = {'name': location.city.name, 'id': location.city.id}
                 if location.state and not states.get(location.state_id):
                     states[location.state_id] = {'name': location.state.name, 'id': location.state.id}
                 if location.country and not countries.get(location.country_id):
                     countries[location.country_id] = {'name': location.country.name, 'id': location.country.id}
         
         return Response(status=status.HTTP_200_OK, data={
-            'cities': sorted(list(cities)),
+            'cities': sorted(list(cities.values()), key=lambda x: x['name']),
             'states': sorted(list(states.values()), key=lambda x: x['name']),
             'countries': sorted(list(countries.values()), key=lambda x: x['name'])
         })
