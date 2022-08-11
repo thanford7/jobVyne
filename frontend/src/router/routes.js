@@ -144,7 +144,7 @@ const routes = [
         path: ':key(employer-settings)',
         name: 'employer-settings',
         meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/SettingsPage.vue')
+        component: () => import('pages/employer/settings-page/SettingsPage.vue')
       }
     ]
   },

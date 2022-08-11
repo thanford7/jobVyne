@@ -13,6 +13,7 @@
       >
         <q-tab name="style" label="Brand style"/>
         <q-tab name="security" label="Security"/>
+        <q-tab name="integration" label="Integration"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="style">
@@ -120,6 +121,9 @@
             </div>
           </div>
         </q-tab-panel>
+        <q-tab-panel name="integration">
+          <IntegrationSection/>
+        </q-tab-panel>
       </q-tab-panels>
     </div>
   </q-page>
@@ -130,6 +134,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import ColorPicker from 'components/inputs/ColorPicker.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import PageHeader from 'components/PageHeader.vue'
+import IntegrationSection from 'pages/employer/settings-page/IntegrationSection.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
@@ -141,7 +146,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'SettingsPage',
-  components: { CustomTooltip, ColorPicker, FileDisplayOrUpload, PageHeader },
+  components: { IntegrationSection, CustomTooltip, ColorPicker, FileDisplayOrUpload, PageHeader },
   data () {
     return {
       tab: 'style',
