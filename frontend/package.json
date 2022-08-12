@@ -18,10 +18,11 @@
     "md5": "^2.3.0",
     "pinia": "^2.0.11",
     "pluralize": "^8.0.0",
-    "quasar": "^2.6.0",
+    "quasar": "^2.7.7",
     "rfs": "^9.0.6",
     "sanitize-html": "^2.7.1",
     "tiny-emitter": "^2.1.0",
+    "v-money": "^0.8.1",
     "vue": "^3.0.0",
     "vue-i18n": "^9.0.0",
     "vue-router": "^4.0.0"

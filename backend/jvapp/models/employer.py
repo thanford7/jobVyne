@@ -64,6 +64,26 @@ class EmployerJob(AuditFields, OwnerFields):
     
     def __str__(self):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
+    
+    
+class EmployerReferralBonusRule(AuditFields, OwnerFields):
+    employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='referral_bonus_rule')
+    order_idx = models.SmallIntegerField()
+    include_departments = models.ManyToManyField('JobDepartment', related_name='include_bonus')
+    exclude_departments = models.ManyToManyField('JobDepartment', related_name='exclude_bonus')
+    include_cities = models.ManyToManyField('City', related_name='include_bonus')
+    exclude_cities = models.ManyToManyField('City', related_name='exclude_bonus')
+    include_states = models.ManyToManyField('State', related_name='include_bonus')
+    exclude_states = models.ManyToManyField('State', related_name='exclude_bonus')
+    include_countries = models.ManyToManyField('Country', related_name='include_bonus')
+    exclude_countries = models.ManyToManyField('Country', related_name='exclude_bonus')
+    include_job_titles_regex = models.CharField(max_length=500, null=True, blank=True)
+    exclude_job_titles_regex = models.CharField(max_length=500, null=True, blank=True)
+    base_bonus_amount = models.FloatField()
+    bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT)
+    
+    class Meta:
+        unique_together = ('employer', 'order_idx')
 
 
 #If multiple records have is_default = True, tie break will go to:

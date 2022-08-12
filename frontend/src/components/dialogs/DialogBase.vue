@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card class="q-dialog-plugin">
+    <q-card class="q-dialog-plugin" :style="cardStyle">
       <q-card-section>
         <div v-if="baseTitleText" class="text-h6">
           {{baseTitleText}}
@@ -47,6 +47,10 @@ export default {
     isIncludeButtons: {
       type: Boolean,
       default: true
+    },
+    width: {
+      type: String,
+      default: '500px'
     }
   },
   emits: [
@@ -54,7 +58,11 @@ export default {
     // component will emit through useDialogPluginComponent()
     ...useDialogPluginComponent.emits
   ],
-
+  computed: {
+    cardStyle () {
+      return { width: this.width, maxWidth: '95vw' }
+    }
+  },
   setup () {
     // !NOTE!! prefetch method doesn't work with dialogs. See DialogEmployerFile for an
     // example of handling async data

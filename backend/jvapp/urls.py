@@ -1,11 +1,12 @@
 from django.urls import path, re_path
 
-from jvapp.apis import auth, employer, job_seeker, social, tracking, user, waitlist
+from jvapp.apis import auth, currency, employer, job_seeker, social, tracking, user, waitlist
 
 api_path = 'api/v1/'
 
 urlpatterns = [
     # Data
+    path('currency/', currency.CurrencyView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
     re_path('^employer/file/(?P<file_id>[0-9]+)?/?$', employer.EmployerFileView.as_view()),

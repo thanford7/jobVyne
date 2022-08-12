@@ -4,10 +4,15 @@ export const useGlobalStore = defineStore('global', {
   state: () => ({
     nullValueStr: '[None]',
     nullValueAnyStr: '[Any]',
-    websiteName: 'JobVyne'
+    websiteName: 'JobVyne',
+    currencies: null
   }),
 
   actions: {
+    async setCurrencies () {
+      const resp = await this.$api.get('currency/')
+      this.currencies = resp.data
+    },
     getPageTitle (pageName) {
       return `${pageName} - ${this.websiteName}`
     }

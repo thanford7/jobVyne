@@ -4,9 +4,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.contrib.auth.views import PasswordResetConfirmView
 from django.utils.decorators import method_decorator
-from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from google.cloud import recaptchaenterprise_v1
 from google.cloud.recaptchaenterprise_v1 import Assessment
