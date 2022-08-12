@@ -11,10 +11,11 @@ from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
-from jvapp.models.employer import EmployerAuthGroup
+from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule
 from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
-from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, get_serialized_employer_file, \
+from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
+    get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 
@@ -131,6 +132,122 @@ class EmployerJobView(JobVyneAPIView):
             return jobs[0]
         
         return jobs
+    
+    
+class EmployerBonusRuleView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        rules = self.get_employer_bonus_rules(self.user, employer_id=employer_id)
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[get_serialized_employer_bonus_rule(rule) for rule in rules]
+        )
+    
+    @atomic
+    def post(self, request):
+        rule = EmployerReferralBonusRule(employer_id=self.data['employer_id'])
+        self.update_bonus_rule(self.user, rule, self.data)
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                SUCCESS_MESSAGE_KEY: 'Referral bonus rule added'
+            }
+        )
+    
+    @atomic
+    def put(self, request, rule_id):
+        rule = self.get_employer_bonus_rules(self.user, rule_id=rule_id)
+        self.update_bonus_rule(self.user, rule, self.data)
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                SUCCESS_MESSAGE_KEY: 'Referral bonus rule updated'
+            }
+        )
+    
+    def delete(self, request, rule_id):
+        rule = self.get_employer_bonus_rules(self.user, rule_id=rule_id)
+        rule.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+        rule.delete()
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                SUCCESS_MESSAGE_KEY: 'Referral bonus rule deleted'
+            }
+        )
+    
+    @staticmethod
+    def get_employer_bonus_rules(user, rule_id=None, employer_id=None, is_use_permissions=True):
+        filter = Q()
+        if rule_id:
+            filter &= Q(id=rule_id)
+        elif employer_id:
+            filter &= Q(employer_id=employer_id)
+            
+        rules = EmployerReferralBonusRule.objects\
+            .select_related('bonus_currency')\
+            .prefetch_related(
+                'include_departments',
+                'exclude_departments',
+                'include_cities',
+                'exclude_cities',
+                'include_states',
+                'exclude_states',
+                'include_countries',
+                'exclude_countries'
+            )\
+            .filter(filter)
+        
+        if is_use_permissions:
+            rules = EmployerReferralBonusRule.jv_filter_perm(user, rules)
+        
+        if rule_id:
+            if not rules:
+                raise EmployerReferralBonusRule.DoesNotExist
+            return rules[0]
+        
+        return rules
+    
+    @staticmethod
+    @atomic
+    def update_bonus_rule(user, bonus_rule, data):
+        data['bonus_currency_id'] = data['bonus_currency']['id']
+        data['include_job_titles_regex'] = data['inclusion_criteria'].get('job_titles_regex')
+        data['exclude_job_titles_regex'] = data['exclusion_criteria'].get('job_titles_regex')
+        set_object_attributes(bonus_rule, data, {
+            'order_idx': None,
+            'include_job_titles_regex': None,
+            'exclude_job_titles_regex': None,
+            'base_bonus_amount': None,
+            'bonus_currency_id': None,
+            'days_after_hire_payout': None
+        })
+        
+        permission_type = PermissionTypes.EDIT.value if bonus_rule.id else PermissionTypes.CREATE.value
+        bonus_rule.jv_check_permission(permission_type, user)
+        bonus_rule.save()
+        
+        # Clear existing criteria
+        for field in [
+            'include_departments', 'exclude_departments',
+            'include_cities', 'exclude_cities',
+            'include_states', 'exclude_states',
+            'include_countries', 'exclude_countries'
+        ]:
+            bonus_rule_field = getattr(bonus_rule, field)
+            bonus_rule_field.clear()
+        
+        for dataKey, prepend_text in (('inclusion_criteria', 'include_'), ('exclusion_criteria', 'exclude_')):
+            for criteriaKey, criteriaVals in data[dataKey].items():
+                if criteriaKey == 'job_titles_regex':
+                    continue
+                rule_key = f'{prepend_text}{criteriaKey}'
+                bonus_rule_field = getattr(bonus_rule, rule_key)
+                for val in criteriaVals:
+                    bonus_rule_field.add(val['id'])
 
 
 class EmployerAuthGroupView(JobVyneAPIView):

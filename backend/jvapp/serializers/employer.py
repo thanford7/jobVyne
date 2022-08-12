@@ -72,6 +72,51 @@ def get_serialized_employer_job(employer_job: EmployerJob):
     }
 
 
+def get_serialized_employer_bonus_rule(bonus_rule: EmployerReferralBonusRule):
+    return {
+        'id': bonus_rule.id,
+        'employer_id': bonus_rule.employer_id,
+        'order_idx': bonus_rule.order_idx,
+        'inclusion_criteria': {
+            'departments': [
+                {'id': d.id, 'name': d.name} for d in bonus_rule.include_departments.all()
+            ],
+            'cities': [
+                {'id': c.id, 'name': c.name} for c in bonus_rule.include_cities.all()
+            ],
+            'states': [
+                {'id': s.id, 'name': s.name} for s in bonus_rule.include_states.all()
+            ],
+            'countries': [
+                {'id': c.id, 'name': c.name} for c in bonus_rule.include_countries.all()
+            ],
+            'job_titles_regex': bonus_rule.include_job_titles_regex,
+        },
+        'exclusion_criteria': {
+            'departments': [
+                {'id': d.id, 'name': d.name} for d in bonus_rule.exclude_departments.all()
+            ],
+            'cities': [
+                {'id': c.id, 'name': c.name} for c in bonus_rule.exclude_cities.all()
+            ],
+            'states': [
+                {'id': s.id, 'name': s.name} for s in bonus_rule.exclude_states.all()
+            ],
+            'countries': [
+                {'id': c.id, 'name': c.name} for c in bonus_rule.exclude_countries.all()
+            ],
+            'job_titles_regex': bonus_rule.exclude_job_titles_regex,
+        },
+        'base_bonus_amount': bonus_rule.base_bonus_amount,
+        'bonus_currency': {
+            'id': bonus_rule.bonus_currency.id,
+            'name': bonus_rule.bonus_currency.name,
+            'symbol': bonus_rule.bonus_currency.symbol
+        },
+        'days_after_hire_payout': bonus_rule.days_after_hire_payout
+    }
+
+
 def get_serialized_auth_group(auth_group: EmployerAuthGroup, all_permissions, auth_groups, user):
     employer_permissions = {ag.id: ag for ag in auth_group.permissions.all()}
     return {

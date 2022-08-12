@@ -70,7 +70,7 @@ export default {
   components: { CustomTooltip, SelectJobCity, SelectJobDepartment, SelectJobState, SelectJobCountry, SeparatorWithText },
   props: {
     formData: Object,
-    label: String
+    isInclusion: Boolean
   },
   data () {
     return {
@@ -82,6 +82,11 @@ export default {
         { title: FORM_TITLES.country, isShown: false },
         { title: FORM_TITLES.jobTitle, isShown: false }
       ]
+    }
+  },
+  computed: {
+    label () {
+      return `Add ${(this.isInclusion) ? 'inclusion' : 'exclusion'} criteria`
     }
   },
   methods: {

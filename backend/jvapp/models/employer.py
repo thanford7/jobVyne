@@ -3,14 +3,13 @@ from django.db import models
 
 from jvapp.models._customDjangoField import LowercaseCharField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
-from jvapp.models.location import Country, State
 from jvapp.models.user import PermissionName
 
 
 __all__ = (
     'Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
-    'EmployerPage'
+    'EmployerPage', 'EmployerReferralBonusRule'
 )
 
 
@@ -66,7 +65,7 @@ class EmployerJob(AuditFields, OwnerFields):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
     
     
-class EmployerReferralBonusRule(AuditFields, OwnerFields):
+class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='referral_bonus_rule')
     order_idx = models.SmallIntegerField()
     include_departments = models.ManyToManyField('JobDepartment', related_name='include_bonus')
@@ -81,9 +80,26 @@ class EmployerReferralBonusRule(AuditFields, OwnerFields):
     exclude_job_titles_regex = models.CharField(max_length=500, null=True, blank=True)
     base_bonus_amount = models.FloatField()
     bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT)
+    days_after_hire_payout = models.SmallIntegerField()
     
     class Meta:
-        unique_together = ('employer', 'order_idx')
+        ordering = ('employer_id', 'order_idx')
+        
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, user.employer_id)
+            )
+        )
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+    
+        return query.filter(employer_id=user.employer_id)
 
 
 #If multiple records have is_default = True, tie break will go to:

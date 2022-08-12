@@ -52,7 +52,8 @@ export default {
     return authStore.setUser().then(() => {
       return Promise.all([
         employerStore.setEmployer(authStore.propUser.employer_id),
-        employerStore.setEmployerJobs(authStore.propUser.employer_id)
+        employerStore.setEmployerJobs(authStore.propUser.employer_id),
+        employerStore.setEmployerBonusRules(authStore.propUser.employer_id)
       ])
     }).finally(() => {
       Loading.hide()

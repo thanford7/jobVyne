@@ -5,6 +5,7 @@ export const useEmployerStore = defineStore('employer', {
   state: () => ({
     employers: {}, // employerId: {<employer>}
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
+    employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
     employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
@@ -37,6 +38,14 @@ export const useEmployerStore = defineStore('employer', {
           }
         )
         this.employerJobLocations[employerId] = locResp.data
+      }
+    },
+    async setEmployerBonusRules (employerId, isForceRefresh = false) {
+      if (!this.employerBonusRules[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('employer/bonus/rule/', {
+          params: { employer_id: employerId }
+        })
+        this.employerBonusRules[employerId] = resp.data
       }
     },
     async setEmployerPermissions (isForceRefresh = false) {
@@ -113,6 +122,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployerJobs (employerId) {
       return dataUtil.sortBy(this.employerJobs[employerId] || [], 'job_title')
+    },
+    getEmployerBonusRules (employerId) {
+      return dataUtil.sortBy(this.employerBonusRules[employerId] || [], 'order_idx')
     },
     getEmployerPage (employerId) {
       return this.employerPage[employerId]
