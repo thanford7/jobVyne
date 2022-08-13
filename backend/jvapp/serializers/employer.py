@@ -1,7 +1,10 @@
+import re
+
 from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
 from jvapp.serializers.content import get_serialized_content_item
 from jvapp.serializers.user import reduce_user_type_bits
+from jvapp.utils.data import get_list_intersection
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -43,8 +46,8 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
     return data
 
 
-def get_serialized_employer_job(employer_job: EmployerJob):
-    return {
+def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
+    data = {
         'id': employer_job.id,
         'employer_id': employer_job.employer_id,
         'job_title': employer_job.job_title,
@@ -62,47 +65,102 @@ def get_serialized_employer_job(employer_job: EmployerJob):
                 'is_remote': l.is_remote,
                 'text': l.text,
                 'city': l.city.name if l.city else None,
-                'city_id': l.city_id if l.city else None,
+                'city_id': l.city_id,
                 'state': l.state.name if l.state else None,
-                'state_id': l.state_id if l.state else None,
+                'state_id': l.state_id,
                 'country': l.country.name if l.country else None,
-                'country_id': l.country_id if l.country else None
+                'country_id': l.country_id
             } for l in employer_job.locations.all()
         ]
     }
+    
+    if rules:
+        # Serialize the rules so inclusion/exclusion criteria are grouped
+        rules = [get_serialized_employer_bonus_rule(r, is_ids_only=True) for r in rules]
+        rules.sort(key=lambda x: x['order_idx'])
+        job_props = {
+            'cities': [l.city_id for l in employer_job.locations.all()],
+            'states': [l.state_id for l in employer_job.locations.all()],
+            'countries': [l.country_id for l in employer_job.locations.all()]
+        }
+        
+        # Loop through each role in order (order_idx) and find the first rule
+        # that applies to this job
+        data['bonus_rule'] = None
+        for rule in rules:
+            is_match = True
+            for ruleKey, negateFn in (
+                ('inclusion_criteria', lambda x: not x),
+                ('exclusion_criteria', lambda x: x),
+            ):
+                for criteriaKey, criteriaVal in rule[ruleKey].items():
+                    if not criteriaVal:
+                        continue
+                    
+                    if criteriaKey == 'departments' and negateFn(int(employer_job.job_department_id) in criteriaVal):
+                        is_match = False
+                        break
+                    
+                    if (
+                        criteriaKey in ['cities', 'states', 'countries']
+                        and negateFn(get_list_intersection(job_props[criteriaKey], criteriaVal))
+                    ):
+                        is_match = False
+                        break
+                    
+                    if (
+                        criteriaKey == 'job_titles_regex'
+                        and negateFn(re.search(criteriaVal, employer_job.job_title, flags=re.IGNORECASE))
+                    ):
+                        is_match = False
+                        break
+                        
+                if not is_match:
+                    break
+            
+            if is_match:
+                data['bonus_rule'] = {
+                    'id': rule['id'],
+                    'base_bonus_amount': rule['base_bonus_amount'],
+                    'bonus_currency': rule['bonus_currency'],
+                    'days_after_hire_payout': rule['days_after_hire_payout']
+                }
+                break
+    
+    return data
 
 
-def get_serialized_employer_bonus_rule(bonus_rule: EmployerReferralBonusRule):
+def get_serialized_employer_bonus_rule(bonus_rule: EmployerReferralBonusRule, is_ids_only=False):
     return {
         'id': bonus_rule.id,
         'employer_id': bonus_rule.employer_id,
         'order_idx': bonus_rule.order_idx,
         'inclusion_criteria': {
-            'departments': [
+            'departments': [d.id for d in bonus_rule.include_departments.all()] if is_ids_only else [
                 {'id': d.id, 'name': d.name} for d in bonus_rule.include_departments.all()
             ],
-            'cities': [
+            'cities': [c.id for c in bonus_rule.include_cities.all()] if is_ids_only else [
                 {'id': c.id, 'name': c.name} for c in bonus_rule.include_cities.all()
             ],
-            'states': [
+            'states': [s.id for s in bonus_rule.include_states.all()] if is_ids_only else [
                 {'id': s.id, 'name': s.name} for s in bonus_rule.include_states.all()
             ],
-            'countries': [
+            'countries': [c.id for c in bonus_rule.include_countries.all()] if is_ids_only else [
                 {'id': c.id, 'name': c.name} for c in bonus_rule.include_countries.all()
             ],
             'job_titles_regex': bonus_rule.include_job_titles_regex,
         },
         'exclusion_criteria': {
-            'departments': [
+            'departments': [d.id for d in bonus_rule.exclude_departments.all()] if is_ids_only else [
                 {'id': d.id, 'name': d.name} for d in bonus_rule.exclude_departments.all()
             ],
-            'cities': [
+            'cities': [c.id for c in bonus_rule.exclude_cities.all()] if is_ids_only else [
                 {'id': c.id, 'name': c.name} for c in bonus_rule.exclude_cities.all()
             ],
-            'states': [
+            'states': [s.id for s in bonus_rule.exclude_states.all()] if is_ids_only else [
                 {'id': s.id, 'name': s.name} for s in bonus_rule.exclude_states.all()
             ],
-            'countries': [
+            'countries': [c.id for c in bonus_rule.exclude_countries.all()] if is_ids_only else [
                 {'id': c.id, 'name': c.name} for c in bonus_rule.exclude_countries.all()
             ],
             'job_titles_regex': bonus_rule.exclude_job_titles_regex,

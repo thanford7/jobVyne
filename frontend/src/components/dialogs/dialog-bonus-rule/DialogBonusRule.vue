@@ -43,6 +43,7 @@ import CriteriaSection from 'components/dialogs/dialog-bonus-rule/CriteriaSectio
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
+import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
@@ -81,11 +82,6 @@ export default {
       }
     }
   },
-  watch: {
-    bonusRule () {
-      Object.assign(this.formData, this.bonusRule)
-    }
-  },
   methods: {
     async saveBonusRule () {
       const orderIdx = this.employerStore.getEmployerBonusRules(this.user.employer_id).length
@@ -99,6 +95,7 @@ export default {
       }
       await method(url, getAjaxFormData(data))
       await this.employerStore.setEmployerBonusRules(this.user.employer_id, true)
+      await this.employerStore.setEmployerJobs(this.user.employer_id, true)
       this.$emit('ok')
     }
   },
@@ -110,6 +107,9 @@ export default {
       globalStore: useGlobalStore(),
       user
     }
+  },
+  mounted () {
+    Object.assign(this.formData, dataUtil.deepCopy(this.bonusRule))
   }
 }
 </script>

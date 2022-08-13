@@ -5,7 +5,7 @@
     :options="departments"
     @filter="filter"
     option-value="id"
-    option-label="department"
+    option-label="name"
     label="Department"
   />
 </template>
@@ -32,7 +32,7 @@ export default {
         return departments
       }
       const filterRegex = new RegExp(`.*?${this.filterTxt}.*?`, 'i')
-      return departments.filter((d) => d.department.match(filterRegex))
+      return departments.filter((d) => d.name.match(filterRegex))
     }
   },
   methods: {
@@ -48,6 +48,9 @@ export default {
     await this.authStore.setUser()
     await this.employerStore.setEmployerJobs(this.authStore.propUser.employer_id)
     this.isLoaded = true
+  },
+  beforeUnmount () {
+    this.$emit('before-unmount')
   }
 }
 </script>

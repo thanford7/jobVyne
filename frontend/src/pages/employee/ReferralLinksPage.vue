@@ -420,7 +420,7 @@ export default {
       let jobLinkName = ''
       if (departments) {
         const deptString = (departments.length > 1) ? 'departments' : 'department'
-        jobLinkName += ' in the ' + dataUtil.concatWithAnd(departments.map((d) => d.department)) + ' ' + deptString
+        jobLinkName += ' in the ' + dataUtil.concatWithAnd(departments.map((d) => d.name)) + ' ' + deptString
       }
       if (cities && cities.length) {
         jobLinkName += ' in ' + dataUtil.concatWithAnd(this.formData.cities)

@@ -48,6 +48,9 @@ export default {
     await this.authStore.setUser()
     await this.employerStore.setEmployerJobs(this.authStore.propUser.employer_id)
     this.isLoaded = true
+  },
+  beforeUnmount () {
+    this.$emit('before-unmount')
   }
 }
 </script>

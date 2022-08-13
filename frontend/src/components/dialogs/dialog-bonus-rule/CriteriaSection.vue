@@ -18,19 +18,19 @@
       </SeparatorWithText>
     </div>
     <div v-if="isFieldShown(FORM_TITLES.department)" class="col-12">
-      <SelectJobDepartment v-model="formData.departments"/>
+      <SelectJobDepartment v-model="formData.departments" @before-unmount="formData.departments = null"/>
     </div>
     <div v-if="isFieldShown(FORM_TITLES.city)" class="col-12">
-      <SelectJobCity v-model="formData.cities"/>
+      <SelectJobCity v-model="formData.cities" @before-unmount="formData.cities = null"/>
     </div>
     <div v-if="isFieldShown(FORM_TITLES.state)" class="col-12">
-      <SelectJobState v-model="formData.states"/>
+      <SelectJobState v-model="formData.states" @before-unmount="formData.states = null"/>
     </div>
     <div v-if="isFieldShown(FORM_TITLES.country)" class="col-12">
-      <SelectJobCountry v-model="formData.countries"/>
+      <SelectJobCountry v-model="formData.countries" @before-unmount="formData.countries = null"/>
     </div>
     <div v-if="isFieldShown(FORM_TITLES.jobTitle)" class="col-12">
-      <q-input filled title="Job titles" v-model="formData.job_titles_regex">
+      <q-input filled label="Job titles" v-model="formData.job_titles_regex">
         <template v-slot:after>
           <CustomTooltip>
             Job titles uses a regular expression pattern, which will search for a substring match in each job title,
@@ -56,6 +56,7 @@ import SelectJobState from 'components/inputs/SelectJobState.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
+import dataUtil from 'src/utils/data.js'
 
 const FORM_TITLES = {
   department: 'Departments',
@@ -67,7 +68,14 @@ const FORM_TITLES = {
 
 export default {
   name: 'CriteriaSection',
-  components: { CustomTooltip, SelectJobCity, SelectJobDepartment, SelectJobState, SelectJobCountry, SeparatorWithText },
+  components: {
+    CustomTooltip,
+    SelectJobCity,
+    SelectJobDepartment,
+    SelectJobState,
+    SelectJobCountry,
+    SeparatorWithText
+  },
   props: {
     formData: Object,
     isInclusion: Boolean
@@ -76,12 +84,24 @@ export default {
     return {
       FORM_TITLES,
       rules: [
-        { title: FORM_TITLES.department, isShown: false },
-        { title: FORM_TITLES.city, isShown: false },
-        { title: FORM_TITLES.state, isShown: false },
-        { title: FORM_TITLES.country, isShown: false },
-        { title: FORM_TITLES.jobTitle, isShown: false }
+        { title: FORM_TITLES.department, isShown: !dataUtil.isEmpty(this.formData.departments) },
+        { title: FORM_TITLES.city, isShown: !dataUtil.isEmpty(this.formData.cities) },
+        { title: FORM_TITLES.state, isShown: !dataUtil.isEmpty(this.formData.states) },
+        { title: FORM_TITLES.country, isShown: !dataUtil.isEmpty(this.formData.countries) },
+        { title: FORM_TITLES.jobTitle, isShown: Boolean(this.formData.job_titles_regex) }
       ]
+    }
+  },
+  watch: {
+    rules: {
+      handler () {
+        const jobTitleRule = this.rules.find((f) => f.title === FORM_TITLES.jobTitle)
+        if (!jobTitleRule.isShown) {
+          // eslint-disable-next-line vue/no-mutating-props
+          this.formData.job_titles_regex = null
+        }
+      },
+      deep: true
     }
   },
   computed: {

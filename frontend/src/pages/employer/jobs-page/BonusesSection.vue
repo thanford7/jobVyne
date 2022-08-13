@@ -50,7 +50,7 @@
                 </ul>
               </template>
             </div>
-            <div class="col-3 border-right-1-gray-100 q-px-sm">
+            <div class="col-2 border-right-1-gray-100 q-px-sm">
               <div class="text-bold">
                 Time modifiers
                 <CustomTooltip icon_size="16px" :is_include_space="false">
@@ -68,7 +68,33 @@
                 {{ dataUtil.formatCurrency(bonusRule.base_bonus_amount, { currency: bonusRule.bonus_currency.name }) }}
               </div>
             </div>
-            <div class="col-2 q-px-sm"></div>
+            <div class="col-2 border-right-1-gray-100 q-px-sm">
+              <div class="text-bold text-center">Job matches</div>
+              <div class="text-h6 text-center">
+                {{ bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length }}
+              </div>
+            </div>
+            <div class="col-1 q-px-sm">
+              <div class="flex h-100 items-center">
+                <span class="text-center">
+                  <q-btn
+                    title="edit" dense ripple flat padding="4px"
+                    class="q-mb-sm bg-grey-4" icon="edit"
+                    @click="openBonusRuleDialog(bonusRule)"
+                  />
+                  <q-btn
+                    title="copy" dense ripple flat padding="4px"
+                    class="q-mb-sm bg-grey-4" icon="content_copy"
+                    @click="copyBonusRule(bonusRule)"
+                  />
+                  <q-btn
+                    title="delete" dense ripple flat padding="4px"
+                    class="bg-negative" icon="delete"
+                    @click="deleteBonusRule(bonusRule)"
+                  />
+                </span>
+              </div>
+            </div>
           </div>
         </q-card-section>
       </q-card>
@@ -79,8 +105,11 @@
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBonusRule, { loadDialogBonusRuleFn } from 'components/dialogs/dialog-bonus-rule/DialogBonusRule.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
+import bonusUtil from 'src/utils/bonus.js'
 import dataUtil from 'src/utils/data.js'
+import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
@@ -89,40 +118,47 @@ export default {
   components: { CustomTooltip },
   data () {
     return {
+      bonusUtil,
       dataUtil
     }
   },
   computed: {
     bonusRules () {
-      return this.employerStore.getEmployerBonusRules(this.authStore.propUser.employer_id)
+      return this.employerStore.getEmployerBonusRules(this.user.employer_id)
+    },
+    jobs () {
+      return this.employerStore.getEmployerJobs(this.user.employer_id)
     }
   },
   methods: {
+    hasCriteria: bonusUtil.hasCriteria.bind(bonusUtil),
+    hasAnyCriteria: bonusUtil.hasAnyCriteria.bind(bonusUtil),
+    async copyBonusRule (bonusRule) {
+      bonusRule.order_idx = this.employerStore.getEmployerBonusRules(this.user.employer_id).length
+      await this.$api.post('employer/bonus/rule/', getAjaxFormData(bonusRule))
+      await this.employerStore.setEmployerBonusRules(this.user.employer_id, true)
+      await this.employerStore.setEmployerJobs(this.user.employer_id, true)
+    },
+    async deleteBonusRule (bonusRule) {
+      await this.$api.delete(`employer/bonus/rule/${bonusRule.id}/`)
+      await this.employerStore.setEmployerBonusRules(this.user.employer_id, true)
+      await this.employerStore.setEmployerJobs(this.user.employer_id, true)
+    },
     async openBonusRuleDialog (bonusRule) {
       await loadDialogBonusRuleFn()
       return this.q.dialog({
         component: DialogBonusRule,
         componentProps: { bonusRule }
       })
-    },
-    hasCriteria (criteriaVal) {
-      return criteriaVal && criteriaVal.length
-    },
-    hasAnyCriteria (criteriaObject) {
-      for (const criteriaVal of Object.values(criteriaObject)) {
-        if (this.hasCriteria(criteriaVal)) {
-          return true
-        }
-      }
-      return false
     }
   },
   setup () {
     const employerStore = useEmployerStore()
     const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
     const q = useQuasar()
 
-    return { employerStore, authStore, q }
+    return { employerStore, authStore, q, user }
   }
 }
 </script>

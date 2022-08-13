@@ -134,10 +134,10 @@ export const useEmployerStore = defineStore('employer', {
         return null
       }
       const vals = dataUtil.uniqBy(
-        this.employerJobs[employerId].map((j) => ({ department: j.job_department, id: j.job_department_id })),
-        'department'
+        this.employerJobs[employerId].map((j) => ({ name: j.job_department, id: j.job_department_id })),
+        'name'
       )
-      return dataUtil.sortBy(vals, 'department')
+      return dataUtil.sortBy(vals, 'name')
     },
     getJobCities (employerId) {
       if (!this.employerJobLocations[employerId]) {

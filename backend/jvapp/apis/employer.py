@@ -100,12 +100,14 @@ class EmployerJobView(JobVyneAPIView):
     def get(self, request, employer_job_id=None):
         if employer_job_id:
             job = self.get_employer_jobs(employer_job_id=employer_job_id)
-            data = get_serialized_employer_job(job)
+            rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=job.employer_id)
+            data = get_serialized_employer_job(job, rules=rules)
         elif employer_id := self.query_params.get('employer_id'):
             employer_id = employer_id[0]
             job_filter = Q(employer_id=employer_id)
             jobs = self.get_employer_jobs(employer_job_filter=job_filter)
-            data = [get_serialized_employer_job(j) for j in jobs]
+            rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=employer_id)
+            data = [get_serialized_employer_job(j, rules) for j in jobs]
         else:
             return Response('A job ID or employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         

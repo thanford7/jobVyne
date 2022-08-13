@@ -1,4 +1,4 @@
-from collections import Callable, namedtuple
+from collections import Callable
 from dataclasses import dataclass
 
 
@@ -23,3 +23,7 @@ def set_object_attributes(obj, data: dict, form_cfg: dict):
         if val is None and attribute_cfg.is_protect_existing:
             continue
         setattr(obj, key, val)
+        
+        
+def get_list_intersection(list1, list2):
+    return list(set(list1) & set(list2))
