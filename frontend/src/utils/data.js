@@ -331,7 +331,7 @@ class DataUtil {
     }, {})
   }
 
-  isArraysEqual (a, b) {
+  isArraysEqual (a, b, isCheckOrder = false) {
     if (a === b) return true
     if (a === null || b === null) return false
     if (!Array.isArray(a) || !Array.isArray(b)) return false
@@ -340,8 +340,11 @@ class DataUtil {
     // Copy before sorting so other elements aren't effected
     a = [...a]
     b = [...b]
-    a.sort()
-    b.sort()
+
+    if (!isCheckOrder) {
+      a.sort()
+      b.sort()
+    }
 
     for (let i = 0; i < a.length; ++i) {
       if (a[i] !== b[i]) return false
@@ -412,9 +415,12 @@ class DataUtil {
    */
   removeItemFromList (targetList, { itemFindFn, listIdx }) {
     listIdx = this.isNil(listIdx) ? targetList.findIndex(itemFindFn) : listIdx
+    let item = null
     if (listIdx !== -1) {
+      item = targetList[listIdx]
       targetList.splice(listIdx, 1)
     }
+    return item
   }
 
   /**

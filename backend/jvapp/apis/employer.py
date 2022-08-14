@@ -250,6 +250,41 @@ class EmployerBonusRuleView(JobVyneAPIView):
                 bonus_rule_field = getattr(bonus_rule, rule_key)
                 for val in criteriaVals:
                     bonus_rule_field.add(val['id'])
+                    
+                    
+class EmployerBonusRuleOrderView(JobVyneAPIView):
+    
+    @atomic
+    def put(self, request):
+        rules = {
+            r.id: r for r in
+            EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=self.data['employer_id'])
+        }
+        rule_ids = self.data['rule_ids']
+        if len(rules.values()) != len(rule_ids):
+            return Response(
+                'The length of the new rules order is not equal to the existing number of rules',
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not rules:
+            return Response(status=status.HTTP_200_OK)
+        
+        for order_idx, rule_id in enumerate(rule_ids):
+            if not (rule := rules.get(rule_id)):
+                return Response (
+                    f'Rule with ID = {rule_id} does not exist for this employer'
+                )
+            
+            if order_idx == 0:
+                rule.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+            
+            rule.order_idx = order_idx
+            
+        EmployerReferralBonusRule.objects.bulk_update(list(rules.values()), ['order_idx'])
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Referral bonus rules order updated'
+        })
 
 
 class EmployerAuthGroupView(JobVyneAPIView):

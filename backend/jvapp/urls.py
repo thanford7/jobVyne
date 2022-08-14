@@ -10,6 +10,7 @@ urlpatterns = [
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
     re_path('^employer/bonus/rule/(?P<rule_id>[0-9]+)?/?$', employer.EmployerBonusRuleView.as_view()),
+    path('employer/bonus/rule/order/', employer.EmployerBonusRuleOrderView.as_view()),
     re_path('^employer/file/(?P<file_id>[0-9]+)?/?$', employer.EmployerFileView.as_view()),
     re_path('^employer/file-tag/(?P<tag_id>[0-9]+)?/?$', employer.EmployerFileTagView.as_view()),
     re_path('^employer/job/(?P<employer_job_id>[0-9]+)?/?$', employer.EmployerJobView.as_view()),
