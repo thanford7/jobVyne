@@ -25,6 +25,9 @@
         </q-list>
       </q-btn-dropdown>
     </template>
+    <template v-slot:after>
+      <slot name="after"/>
+    </template>
   </q-input>
 </template>
 
@@ -71,16 +74,6 @@ export default {
         mask += '.' + '#'.repeat(this.precision)
       }
       return mask
-    },
-    moneyFormatForComponent () {
-      return {
-        decimal: '.',
-        thousands: ',',
-        prefix: `${this.selectedCurrency.symbol}  `,
-        suffix: ' #',
-        precision: this.precision,
-        masked: true
-      }
     }
   },
   methods: {
@@ -99,7 +92,7 @@ export default {
     const globalStore = useGlobalStore()
     await globalStore.setCurrencies()
     this.currencies = globalStore.currencies
-    this.selectedCurrency = this.currencies.find((c) => c.name === this.defaultCurrency)
+    this.setCurrency(this.currencies.find((c) => c.name === this.defaultCurrency))
     this.isLoaded = true
   }
 }

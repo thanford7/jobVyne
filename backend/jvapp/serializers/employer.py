@@ -17,7 +17,19 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
         'email_domains': employer.email_domains,
         'color_primary': employer.color_primary,
         'color_secondary': employer.color_secondary,
-        'color_accent': employer.color_accent
+        'color_accent': employer.color_accent,
+        'default_bonus_amount': employer.default_bonus_amount or 0,
+        'default_bonus_currency': {
+            'id': employer.default_bonus_currency.id,
+            'name': employer.default_bonus_currency.name,
+            'symbol': employer.default_bonus_currency.symbol
+        } if employer.default_bonus_currency else {},
+        'maximum_bonus_amount': employer.maximum_bonus_amount or 0,
+        'maximum_bonus_currency': {
+            'id': employer.maximum_bonus_currency.id,
+            'name': employer.maximum_bonus_currency.name,
+            'symbol': employer.maximum_bonus_currency.symbol
+        } if employer.maximum_bonus_currency else {}
     }
     
     def get_permission_groups(employee):

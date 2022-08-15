@@ -12,7 +12,7 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule
-from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
+from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_bonus_rule, get_serialized_employer_file, \
@@ -77,7 +77,7 @@ class EmployerView(JobVyneAPIView):
             employer_filter = Q(id=employer_id)
         
         employers = Employer.objects \
-            .select_related('employer_size') \
+            .select_related('employer_size', 'default_bonus_currency', 'maximum_bonus_currency') \
             .prefetch_related(
             'employee',
             'employee__employer_permission_group',
@@ -134,6 +134,32 @@ class EmployerJobView(JobVyneAPIView):
             return jobs[0]
         
         return jobs
+    
+    
+class EmployerBonusDefaultView(JobVyneAPIView):
+    
+    @atomic
+    def put(self, request):
+        if not (employer_id := self.data.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        employer = EmployerView.get_employers(employer_id=employer_id)
+        
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        self.user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, self.user.employer_id)
+        
+        self.data['default_bonus_currency_id'] = self.data['default_bonus_currency']['id']
+        self.data['maximum_bonus_currency_id'] = self.data['maximum_bonus_currency']['id']
+        set_object_attributes(employer, self.data, {
+            'default_bonus_amount': None,
+            'default_bonus_currency_id': None,
+            'maximum_bonus_amount': None,
+            'maximum_bonus_currency_id': None,
+        })
+        employer.save()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Bonus rule defaults updated'
+        })
+        
     
     
 class EmployerBonusRuleView(JobVyneAPIView):

@@ -1,7 +1,11 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader title="Jobs & Referral bonuses"/>
+      <PageHeader title="Jobs & Referral bonuses">
+        Only one bonus rule applies to each job, even if multiple rules match a specific job. If multiple rules can
+        apply to a job, the highest ranked rule applies. You can adjust the rank of the rules by dragging and dropping
+        a rule above or below other rules.
+      </PageHeader>
       <q-tabs
         v-model="tab"
         dense

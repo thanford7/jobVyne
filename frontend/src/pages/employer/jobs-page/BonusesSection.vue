@@ -1,87 +1,131 @@
 <template>
   <div class="row q-gutter-y-md">
+    <div class="col-12 col-md-6 q-pr-md-sm">
+      <MoneyInput
+        label="Default bonus amount"
+        :default-currency="employerBonusDefaults?.default_bonus_currency?.name"
+        v-model="employerBonusDefaults.default_bonus_amount"
+        @update-currency="employerBonusDefaults.default_bonus_currency = $event"
+        @blur="saveBonusDefaults"
+      >
+        <template v-slot:after>
+          <CustomTooltip :is_include_space="false">
+            This is the bonus amount that will be applied to any job that does not match
+            any of the bonus rules listed below.
+          </CustomTooltip>
+        </template>
+      </MoneyInput>
+    </div>
+    <div class="col-12 col-md-6">
+      <MoneyInput
+        label="Maximum bonus amount"
+        :default-currency="employerBonusDefaults?.maximum_bonus_currency?.name"
+        v-model="employerBonusDefaults.maximum_bonus_amount"
+        @update-currency="employerBonusDefaults.maximum_bonus_currency = $event"
+        @blur="saveBonusDefaults"
+      >
+        <template v-slot:after>
+          <CustomTooltip :is_include_space="false">
+            If not $0, this is the maximum bonus amount that will be allowed for any job. This is a safeguard
+            to ensure no bonus rules result in a bonus amount that exceeds the maximum allowable amount.
+          </CustomTooltip>
+        </template>
+      </MoneyInput>
+    </div>
     <div class="col-12">
       <q-btn
         label="Add bonus rule"
         color="primary" ripple
         @click="openBonusRuleDialog"
       />
+      <div
+        class="q-mt-sm q-py-xs q-pl-sm"
+        :style="{
+          backgroundColor: colorUtil.changeAlpha(colorUtil.getPaletteColor('warning'), 0.7),
+          borderRadius: '4px'
+        }"
+      >
+        {{ dataUtil.pluralize('job', jobs.filter((j) => !j.bonus_rule).length) }} without bonus rule
+      </div>
     </div>
     <div class="col-12">
       <DroppableItem class="row" @order-change="saveBonusRuleOrder($event)" :items="bonusRules">
         <template v-slot:default="{ items }">
-          <DraggableItem v-for="bonusRule in items" class="col-12" :item-id="bonusRule.id">
-          <q-card class="rule-card q-mb-md">
-            <q-card-section>
-              <div class="row">
-                <div class="col-5 border-right-1-gray-100 q-pr-sm">
-                  <template
-                    v-if="!hasAnyCriteria(bonusRule.inclusion_criteria) && !hasAnyCriteria(bonusRule.exclusion_criteria)">
-                    <div class="text-bold">Applies to all jobs</div>
-                  </template>
-                  <template v-if="hasAnyCriteria(bonusRule.inclusion_criteria)">
-                    <div class="text-bold">Applies to all jobs with:</div>
-                    <ul>
-                      <template v-for="(criteriaVal, criteriaKey) in bonusRule.inclusion_criteria">
-                        <li v-if="hasCriteria(criteriaVal)">
+          <DraggableItem v-for="(bonusRule, idx) in items" class="col-12" :item-id="bonusRule.id">
+            <q-card class="rule-card q-mb-md">
+              <div class="text-bold q-pa-sm bg-grey-3 border-bottom-1-gray-300">
+                Bonus rule #{{ idx + 1 }}
+              </div>
+              <q-card-section>
+                <div class="row">
+                  <div class="col-5 border-right-1-gray-100 q-pr-sm">
+                    <template
+                      v-if="!hasAnyCriteria(bonusRule.inclusion_criteria) && !hasAnyCriteria(bonusRule.exclusion_criteria)">
+                      <div class="text-bold">Applies to all jobs</div>
+                    </template>
+                    <template v-if="hasAnyCriteria(bonusRule.inclusion_criteria)">
+                      <div class="text-bold">Applies to all jobs with:</div>
+                      <ul>
+                        <template v-for="(criteriaVal, criteriaKey) in bonusRule.inclusion_criteria">
+                          <li v-if="hasCriteria(criteriaVal)">
                       <span v-if="criteriaKey !== 'job_titles_regex'">
                         {{ dataUtil.capitalize(criteriaKey) }}: {{ criteriaVal.map(v => v.name).join(', ') }}
                       </span>
-                          <span v-else>
+                            <span v-else>
                         Job titles matching: {{ criteriaVal }}
                       </span>
-                        </li>
-                      </template>
-                    </ul>
-                  </template>
-                  <template v-if="hasAnyCriteria(bonusRule.exclusion_criteria)">
+                          </li>
+                        </template>
+                      </ul>
+                    </template>
+                    <template v-if="hasAnyCriteria(bonusRule.exclusion_criteria)">
+                      <div class="text-bold">
+                        <span v-if="hasAnyCriteria(bonusRule.inclusion_criteria)">And not with:</span>
+                        <span v-else>Applies to all jobs except those with:</span>
+                      </div>
+                      <ul>
+                        <template v-for="(criteriaVal, criteriaKey) in bonusRule.exclusion_criteria">
+                          <li v-if="hasCriteria(criteriaVal)">
+                      <span v-if="criteriaKey !== 'job_titles_regex'">
+                        {{ dataUtil.capitalize(criteriaKey) }}: {{ criteriaVal.map(v => v.name).join(', ') }}
+                      </span>
+                      <span v-else>
+                        Job titles matching: {{ criteriaVal }}
+                      </span>
+                          </li>
+                        </template>
+                      </ul>
+                    </template>
+                  </div>
+                  <div class="col-2 border-right-1-gray-100 q-px-sm">
                     <div class="text-bold">
-                      <span v-if="hasAnyCriteria(bonusRule.inclusion_criteria)">And not with:</span>
-                      <span v-else>Applies to all jobs except those with:</span>
+                      Time modifiers
+                      <CustomTooltip icon_size="16px" :is_include_space="false">
+                        Time modifiers increase the amount of the referral bonus if the job has not been filled within
+                        the specified number of days after the job was posted. This only applies to new applications
+                        after the specified number of days. If an application was submitted prior to the time
+                        modifier,
+                        the previous referral bonus will apply.
+                      </CustomTooltip>
                     </div>
-                    <ul>
-                      <template v-for="(criteriaVal, criteriaKey) in bonusRule.exclusion_criteria">
-                        <li v-if="hasCriteria(criteriaVal)">
-                      <span v-if="criteriaKey !== 'job_titles_regex'">
-                        {{ dataUtil.capitalize(criteriaKey) }}: {{ criteriaVal.map(v => v.name).join(', ') }}
-                      </span>
-                          <span v-else>
-                        Job titles matching: {{ criteriaVal }}
-                      </span>
-                        </li>
-                      </template>
-                    </ul>
-                  </template>
-                </div>
-                <div class="col-2 border-right-1-gray-100 q-px-sm">
-                  <div class="text-bold">
-                    Time modifiers
-                    <CustomTooltip icon_size="16px" :is_include_space="false">
-                      Time modifiers increase the amount of the referral bonus if the job has not been filled within
-                      the specified number of days after the job was posted. This only applies to new applications
-                      after the specified number of days. If an application was submitted prior to the time
-                      modifier,
-                      the previous referral bonus will apply.
-                    </CustomTooltip>
+                    None
                   </div>
-                  None
-                </div>
-                <div class="col-2 border-right-1-gray-100 q-px-sm">
-                  <div class="text-bold text-center">Bonus amount</div>
-                  <div class="text-h6 text-center">
-                    {{
-                      dataUtil.formatCurrency(bonusRule.base_bonus_amount, { currency: bonusRule.bonus_currency.name })
-                    }}
+                  <div class="col-2 border-right-1-gray-100 q-px-sm">
+                    <div class="text-bold text-center">Bonus amount</div>
+                    <div class="text-h6 text-center">
+                      {{
+                        dataUtil.formatCurrency(bonusRule.base_bonus_amount, { currency: bonusRule.bonus_currency.name })
+                      }}
+                    </div>
                   </div>
-                </div>
-                <div class="col-2 border-right-1-gray-100 q-px-sm">
-                  <div class="text-bold text-center">Job matches</div>
-                  <div class="text-h6 text-center">
-                    {{ bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length }}
+                  <div class="col-2 border-right-1-gray-100 q-px-sm">
+                    <div class="text-bold text-center">Job matches</div>
+                    <div class="text-h6 text-center">
+                      {{ bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length }}
+                    </div>
                   </div>
-                </div>
-                <div class="col-1 q-px-sm">
-                  <div class="flex h-100 items-center rule-btns">
+                  <div class="col-1 q-px-sm">
+                    <div class="flex h-100 items-center rule-btns">
                 <span class="text-center">
                   <q-btn
                     title="edit" dense ripple flat padding="4px"
@@ -99,12 +143,12 @@
                     @click="deleteBonusRule(bonusRule)"
                   />
                 </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </DraggableItem>
+              </q-card-section>
+            </q-card>
+          </DraggableItem>
         </template>
       </DroppableItem>
     </div>
@@ -116,9 +160,11 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBonusRule, { loadDialogBonusRuleFn } from 'components/dialogs/dialog-bonus-rule/DialogBonusRule.vue'
 import DraggableItem from 'components/drag-drop/DraggableItem.vue'
 import DroppableItem from 'components/drag-drop/DroppableItem.vue'
+import MoneyInput from 'components/inputs/MoneyInput.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
 import bonusUtil from 'src/utils/bonus.js'
+import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -126,11 +172,13 @@ import { useEmployerStore } from 'stores/employer-store.js'
 
 export default {
   name: 'BonusesSection',
-  components: { CustomTooltip, DraggableItem, DroppableItem },
+  components: { CustomTooltip, DraggableItem, DroppableItem, MoneyInput },
   data () {
     return {
       bonusUtil,
-      dataUtil
+      colorUtil,
+      dataUtil,
+      employerBonusDefaults: this.getEmployerBonusDefaults()
     }
   },
   computed: {
@@ -144,7 +192,19 @@ export default {
   methods: {
     hasCriteria: bonusUtil.hasCriteria.bind(bonusUtil),
     hasAnyCriteria: bonusUtil.hasAnyCriteria.bind(bonusUtil),
+    getEmployerBonusDefaults () {
+      return dataUtil.pick(
+        this.employerStore.getEmployer(this.user.employer_id),
+        [
+          'default_bonus_amount',
+          'default_bonus_currency',
+          'maximum_bonus_amount',
+          'maximum_bonus_currency'
+        ]
+      )
+    },
     async updateData () {
+      await this.employerStore.setEmployer(this.user.employer_id, true)
       await this.employerStore.setEmployerBonusRules(this.user.employer_id, true)
       await this.employerStore.setEmployerJobs(this.user.employer_id, true)
     },
@@ -163,6 +223,17 @@ export default {
         component: DialogBonusRule,
         componentProps: { bonusRule }
       })
+    },
+    async saveBonusDefaults () {
+      // Do nothing if no data has changed
+      if (dataUtil.isDeepEqual(this.getEmployerBonusDefaults(), this.employerBonusDefaults)) {
+        return
+      }
+      await this.$api.put('employer/bonus/default/', getAjaxFormData({
+        employer_id: this.user.employer_id,
+        ...this.employerBonusDefaults
+      }))
+      await this.updateData()
     },
     async saveBonusRuleOrder (ruleIds) {
       await this.$api.put('employer/bonus/rule/order/', getAjaxFormData({
