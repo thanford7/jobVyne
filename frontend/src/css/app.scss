@@ -44,7 +44,8 @@ body {
 
 .scrollbar-narrow::-webkit-scrollbar,
 .scrollbar-narrow ::-webkit-scrollbar,
-.q-table__container ::-webkit-scrollbar {
+.q-table__container ::-webkit-scrollbar,
+.q-panel.scroll::-webkit-scrollbar {
   height: 6px;
   width: 6px;
 }

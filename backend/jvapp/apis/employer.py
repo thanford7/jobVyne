@@ -225,7 +225,8 @@ class EmployerBonusRuleView(JobVyneAPIView):
                 'include_states',
                 'exclude_states',
                 'include_countries',
-                'exclude_countries'
+                'exclude_countries',
+                'modifier'
             )\
             .filter(filter)
         
@@ -276,6 +277,19 @@ class EmployerBonusRuleView(JobVyneAPIView):
                 bonus_rule_field = getattr(bonus_rule, rule_key)
                 for val in criteriaVals:
                     bonus_rule_field.add(val['id'])
+                    
+        bonus_rule.modifier.all().delete()
+        modifiers_to_save = []
+        for modifier in data.get('modifiers'):
+            modifiers_to_save.append(EmployerReferralBonusRuleModifier(
+                referral_bonus_rule=bonus_rule,
+                type=modifier['type'],
+                amount=modifier['amount'],
+                start_days_after_post=modifier['start_days_after_post']
+            ))
+        
+        if modifiers_to_save:
+            EmployerReferralBonusRuleModifier.objects.bulk_create(modifiers_to_save)
                     
                     
 class EmployerBonusRuleOrderView(JobVyneAPIView):

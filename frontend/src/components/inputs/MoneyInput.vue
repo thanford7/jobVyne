@@ -8,7 +8,7 @@
     :model-value="modelValue"
     @update:model-value="updatePrice($event)"
   >
-    <template v-slot:append>
+    <template v-if="isIncludeCurrencySelection" v-slot:append>
       <q-btn-dropdown
         :label="`${selectedCurrency.symbol} ${selectedCurrency.name}`"
         class="h-100 border-left-1-gray-300" flat square style="margin-right: -12px;"
@@ -45,6 +45,10 @@ export default {
       type: String,
       default: 'USD'
     },
+    isIncludeCurrencySelection: {
+      type: Boolean,
+      default: true
+    },
     precision: {
       type: Number,
       default: 0
@@ -56,6 +60,11 @@ export default {
       isLoaded: false,
       selectedCurrency: null,
       currencies: null
+    }
+  },
+  watch: {
+    defaultCurrency () {
+      this.setCurrency()
     }
   },
   computed: {
@@ -84,6 +93,7 @@ export default {
       this.$emit('update:modelValue', parseFloat(price))
     },
     setCurrency (currency) {
+      currency = currency || this.currencies.find((c) => c.name === this.defaultCurrency)
       this.selectedCurrency = currency
       this.$emit('update-currency', currency)
     }
@@ -92,7 +102,7 @@ export default {
     const globalStore = useGlobalStore()
     await globalStore.setCurrencies()
     this.currencies = globalStore.currencies
-    this.setCurrency(this.currencies.find((c) => c.name === this.defaultCurrency))
+    this.setCurrency()
     this.isLoaded = true
   }
 }

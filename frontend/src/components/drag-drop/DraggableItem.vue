@@ -2,7 +2,7 @@
   <div
     class="draggable"
     :class="draggableClass"
-    draggable="true"
+    :draggable="true"
     @dragstart="startDrag"
     @dragend="endDrag"
     @mouseup="endDrag"

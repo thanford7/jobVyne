@@ -102,8 +102,8 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
         for rule in rules:
             is_match = True
             for ruleKey, negateFn in (
-                ('inclusion_criteria', lambda x: not x),
-                ('exclusion_criteria', lambda x: x),
+                    ('inclusion_criteria', lambda x: not x),
+                    ('exclusion_criteria', lambda x: x),
             ):
                 for criteriaKey, criteriaVal in rule[ruleKey].items():
                     if not criteriaVal:
@@ -114,19 +114,19 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
                         break
                     
                     if (
-                        criteriaKey in ['cities', 'states', 'countries']
-                        and negateFn(get_list_intersection(job_props[criteriaKey], criteriaVal))
+                            criteriaKey in ['cities', 'states', 'countries']
+                            and negateFn(get_list_intersection(job_props[criteriaKey], criteriaVal))
                     ):
                         is_match = False
                         break
                     
                     if (
-                        criteriaKey == 'job_titles_regex'
-                        and negateFn(re.search(criteriaVal, employer_job.job_title, flags=re.IGNORECASE))
+                            criteriaKey == 'job_titles_regex'
+                            and negateFn(re.search(criteriaVal, employer_job.job_title, flags=re.IGNORECASE))
                     ):
                         is_match = False
                         break
-                        
+                
                 if not is_match:
                     break
             
@@ -183,7 +183,15 @@ def get_serialized_employer_bonus_rule(bonus_rule: EmployerReferralBonusRule, is
             'name': bonus_rule.bonus_currency.name,
             'symbol': bonus_rule.bonus_currency.symbol
         },
-        'days_after_hire_payout': bonus_rule.days_after_hire_payout
+        'days_after_hire_payout': bonus_rule.days_after_hire_payout,
+        'modifiers': [
+            {
+                'id': modifier.id,
+                'type': modifier.type,
+                'amount': modifier.amount,
+                'start_days_after_post': modifier.start_days_after_post
+            } for modifier in bonus_rule.modifier.all()
+        ]
     }
 
 

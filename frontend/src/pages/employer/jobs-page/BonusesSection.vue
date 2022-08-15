@@ -1,5 +1,5 @@
 <template>
-  <div class="row q-gutter-y-md">
+  <div class="row q-gutter-y-md" style="min-width: 500px;">
     <div class="col-12 col-md-6 q-pr-md-sm">
       <MoneyInput
         label="Default bonus amount"
@@ -39,6 +39,7 @@
         @click="openBonusRuleDialog"
       />
       <div
+        v-if="jobs.filter((j) => !j.bonus_rule).length"
         class="q-mt-sm q-py-xs q-pl-sm"
         :style="{
           backgroundColor: colorUtil.changeAlpha(colorUtil.getPaletteColor('warning'), 0.7),
@@ -53,12 +54,38 @@
         <template v-slot:default="{ items }">
           <DraggableItem v-for="(bonusRule, idx) in items" class="col-12" :item-id="bonusRule.id">
             <q-card class="rule-card q-mb-md">
-              <div class="text-bold q-pa-sm bg-grey-3 border-bottom-1-gray-300">
-                Bonus rule #{{ idx + 1 }}
+              <div class="row q-pa-sm bg-grey-3 border-bottom-1-gray-300 items-center">
+                <div class="text-bold">
+                  Bonus rule #{{ idx + 1 }} |
+                  Amount:
+                  {{
+                    dataUtil.formatCurrency(bonusRule.base_bonus_amount, { currency: bonusRule.bonus_currency.name })
+                  }}
+                  |
+                  Job matches: {{ bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length }}
+                </div>
+                <q-space/>
+                <div class="rule-btns q-gutter-x-sm">
+                  <q-btn
+                    title="edit" dense ripple flat padding="4px"
+                    class="bg-grey-5" icon="edit"
+                    @click="openBonusRuleDialog(bonusRule)"
+                  />
+                  <q-btn
+                    title="copy" dense ripple flat padding="4px"
+                    class="bg-grey-5" icon="content_copy"
+                    @click="copyBonusRule(bonusRule)"
+                  />
+                  <q-btn
+                    title="delete" dense ripple flat padding="4px"
+                    class="bg-negative" icon="delete"
+                    @click="deleteBonusRule(bonusRule)"
+                  />
+                </div>
               </div>
-              <q-card-section>
+              <q-card-section class="q-pb-sm">
                 <div class="row">
-                  <div class="col-5 border-right-1-gray-100 q-pr-sm">
+                  <div class="col-6 border-right-1-gray-100 q-pr-sm">
                     <template
                       v-if="!hasAnyCriteria(bonusRule.inclusion_criteria) && !hasAnyCriteria(bonusRule.exclusion_criteria)">
                       <div class="text-bold">Applies to all jobs</div>
@@ -89,7 +116,7 @@
                       <span v-if="criteriaKey !== 'job_titles_regex'">
                         {{ dataUtil.capitalize(criteriaKey) }}: {{ criteriaVal.map(v => v.name).join(', ') }}
                       </span>
-                      <span v-else>
+                            <span v-else>
                         Job titles matching: {{ criteriaVal }}
                       </span>
                           </li>
@@ -97,7 +124,7 @@
                       </ul>
                     </template>
                   </div>
-                  <div class="col-2 border-right-1-gray-100 q-px-sm">
+                  <div class="col-6 q-px-sm">
                     <div class="text-bold">
                       Time modifiers
                       <CustomTooltip icon_size="16px" :is_include_space="false">
@@ -108,42 +135,13 @@
                         the previous referral bonus will apply.
                       </CustomTooltip>
                     </div>
-                    None
-                  </div>
-                  <div class="col-2 border-right-1-gray-100 q-px-sm">
-                    <div class="text-bold text-center">Bonus amount</div>
-                    <div class="text-h6 text-center">
-                      {{
-                        dataUtil.formatCurrency(bonusRule.base_bonus_amount, { currency: bonusRule.bonus_currency.name })
-                      }}
-                    </div>
-                  </div>
-                  <div class="col-2 border-right-1-gray-100 q-px-sm">
-                    <div class="text-bold text-center">Job matches</div>
-                    <div class="text-h6 text-center">
-                      {{ bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length }}
-                    </div>
-                  </div>
-                  <div class="col-1 q-px-sm">
-                    <div class="flex h-100 items-center rule-btns">
-                <span class="text-center">
-                  <q-btn
-                    title="edit" dense ripple flat padding="4px"
-                    class="q-mb-sm bg-grey-4" icon="edit"
-                    @click="openBonusRuleDialog(bonusRule)"
-                  />
-                  <q-btn
-                    title="copy" dense ripple flat padding="4px"
-                    class="q-mb-sm bg-grey-4" icon="content_copy"
-                    @click="copyBonusRule(bonusRule)"
-                  />
-                  <q-btn
-                    title="delete" dense ripple flat padding="4px"
-                    class="bg-negative" icon="delete"
-                    @click="deleteBonusRule(bonusRule)"
-                  />
-                </span>
-                    </div>
+                    <ul v-if="bonusRule.modifiers.length">
+                      <li v-for="modifier in bonusRule.modifiers">
+                        <span
+                          v-html="bonusUtil.getModifierSummaryHtml(modifier, bonusRule.base_bonus_amount, bonusRule?.bonus_currency?.name)"/>
+                      </li>
+                    </ul>
+                    <span v-else>None</span>
                   </div>
                 </div>
               </q-card-section>

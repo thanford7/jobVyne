@@ -1,3 +1,5 @@
+from enum import Enum
+
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
@@ -9,7 +11,7 @@ from jvapp.models.user import PermissionName
 __all__ = (
     'Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
-    'EmployerPage', 'EmployerReferralBonusRule'
+    'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier'
 )
 
 
@@ -106,6 +108,21 @@ class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixi
             return query
     
         return query.filter(employer_id=user.employer_id)
+    
+    
+class EmployerReferralBonusRuleModifier(models.Model):
+    
+    class ModifierType(Enum):
+        PERCENT = 'PERCENT'
+        NOMINAL = 'NOMINAL'
+    
+    referral_bonus_rule = models.ForeignKey(EmployerReferralBonusRule, on_delete=models.CASCADE, related_name='modifier')
+    type = models.CharField(max_length=10)
+    amount = models.FloatField()
+    start_days_after_post = models.SmallIntegerField()
+    
+    class Meta:
+        ordering = ('referral_bonus_rule', 'start_days_after_post')
 
 
 #If multiple records have is_default = True, tie break will go to:

@@ -33,6 +33,109 @@
       </div>
       <CriteriaSection :form-data="formData.inclusion_criteria" :is-inclusion="true"/>
       <CriteriaSection :form-data="formData.exclusion_criteria" :is-inclusion="false"/>
+      <div class="row q-gutter-y-sm">
+        <div class="col-12">
+          <SeparatorWithText>
+            <q-btn color="primary" @click="addBonusRuleModifier">
+              <q-icon name="add"/>
+              Add bonus modifier
+              <CustomTooltip icon_color_class="text-white" icon_size="24px">
+                Bonus modifiers are used to increase the bonus amount based on a time period
+                after the job is posted. This can be used to increase employee referrals for
+                hard to fill jobs.
+              </CustomTooltip>
+            </q-btn>
+          </SeparatorWithText>
+        </div>
+        <div class="col-12 q-gutter-y-md">
+          <q-list separator>
+            <q-item v-for="(modifier, idx) in formData.modifiers">
+              <template v-if="modifier.isSelected">
+                <q-item-section class="q-gutter-y-md">
+                  <q-select
+                    filled emit-value map-options
+                    label="Modifier type"
+                    :options="[
+                    { val: MODIFIER_TYPES.NOMINAL, label: 'Dollar increase' },
+                    { val: MODIFIER_TYPES.PERCENT, label: 'Percent increase' }
+                  ]"
+                    v-model="modifier.type"
+                    option-label="label"
+                    option-value="val"
+                  />
+                  <MoneyInput
+                    v-if="modifier.type === MODIFIER_TYPES.NOMINAL"
+                    :is-include-currency-selection="false"
+                    :default-currency="formData?.bonus_currency?.name"
+                    v-model="modifier.amount"
+                    label="Increase amount"
+                  >
+                    <template v-slot:after>
+                      <CustomTooltip :is_include_space="false">
+                        The dollar amount increase from the base bonus amount. The currency denomination
+                        is based on the denomination from the base bonus amount.
+                      </CustomTooltip>
+                    </template>
+                  </MoneyInput>
+                  <q-input
+                    v-else
+                    filled
+                    v-model.number="modifier.amount"
+                    mask="#%" fill-mask="0"
+                    unmasked-value reverse-fill-mask
+                    label="Increase %"
+                  >
+                    <template v-slot:after>
+                      <CustomTooltip :is_include_space="false">
+                        The percentage amount increase from the base bonus amount
+                      </CustomTooltip>
+                    </template>
+                  </q-input>
+                  <q-input
+                    v-model.number="modifier.start_days_after_post"
+                    label="Effective days after post"
+                    type="number"
+                    filled
+                  >
+                    <template v-slot:after>
+                      <CustomTooltip :is_include_space="false">
+                        The number of days after the job is posted at which time the bonus
+                        modifier takes effect.
+                      </CustomTooltip>
+                    </template>
+                  </q-input>
+                </q-item-section>
+                <q-item-section avatar top>
+                  <q-btn
+                    title="confirm" dense ripple flat padding="4px"
+                    class="bg-positive q-mb-sm" icon="check"
+                    @click="confirmBonusRuleModifier(modifier)"
+                  />
+                  <q-btn
+                    title="delete" dense ripple flat padding="4px"
+                    class="bg-negative" icon="delete"
+                    @click="removeBonusRuleModifier(idx)"
+                  />
+                </q-item-section>
+              </template>
+              <template v-else>
+                <q-item-section>
+                  <div v-html="bonusUtil.getModifierSummaryHtml(
+                    modifier, formData.base_bonus_amount, formData?.bonus_currency?.name
+                    )"/>
+                </q-item-section>
+                <q-item-section avatar>
+                  <q-btn
+                    title="edit" dense ripple flat padding="4px"
+                    class="bg-grey-4" icon="edit"
+                    @click="modifier.isSelected = true"
+                  />
+                </q-item-section>
+              </template>
+            </q-item>
+          </q-list>
+        </div>
+      </div>
     </div>
   </DialogBase>
 </template>
@@ -42,7 +145,9 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import CriteriaSection from 'components/dialogs/dialog-bonus-rule/CriteriaSection.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
+import SeparatorWithText from 'components/SeparatorWithText.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
+import bonusUtil, { MODIFIER_TYPES } from 'src/utils/bonus.js'
 import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -61,11 +166,18 @@ export const loadDialogBonusRuleFn = () => {
   })
 }
 
+const bonusRuleModifierTemplate = {
+  type: MODIFIER_TYPES.NOMINAL,
+  amount: 0,
+  start_days_after_post: 30,
+  isSelected: true
+}
+
 export default {
   name: 'DialogBonusRule',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { CustomTooltip, CriteriaSection, MoneyInput, DialogBase },
+  components: { CustomTooltip, CriteriaSection, MoneyInput, DialogBase, SeparatorWithText },
   props: {
     bonusRule: {
       type: Object,
@@ -78,11 +190,25 @@ export default {
         days_after_hire_payout: 90,
         bonus_currency: this.globalStore.currencies.find((c) => c.name === 'USD'),
         inclusion_criteria: {},
-        exclusion_criteria: {}
-      }
+        exclusion_criteria: {},
+        modifiers: []
+      },
+      bonusUtil,
+      MODIFIER_TYPES
     }
   },
   methods: {
+    addBonusRuleModifier () {
+      this.formData.modifiers.push(dataUtil.deepCopy(bonusRuleModifierTemplate))
+      dataUtil.sortBy(this.formData.modifiers, 'start_days_after_post', true)
+    },
+    confirmBonusRuleModifier (modifier) {
+      modifier.isSelected = false
+      dataUtil.sortBy(this.formData.modifiers, 'start_days_after_post', true)
+    },
+    removeBonusRuleModifier (modifierIdx) {
+      dataUtil.removeItemFromList(this.formData.modifiers, { listIdx: modifierIdx })
+    },
     async saveBonusRule () {
       const orderIdx = this.employerStore.getEmployerBonusRules(this.user.employer_id).length
       const data = Object.assign({ employer_id: this.user.employer_id, order_idx: orderIdx },
