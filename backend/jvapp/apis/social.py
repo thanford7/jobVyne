@@ -159,14 +159,14 @@ class SocialLinkJobsView(JobVyneAPIView):
         if len(link_filter.departments.all()):
             jobs_filter &= Q(job_department_id__in=[d.id for d in link_filter.departments.all()])
             
-        if link_filter.cities:
-            jobs_filter &= Q(city_id__in=[c.id for c in link_filter.cities.all()])
+        if len(link_filter.cities.all()):
+            jobs_filter &= Q(locations__city_id__in=[c.id for c in link_filter.cities.all()])
             
         if len(link_filter.states.all()):
-            jobs_filter &= Q(state_id__in=[s.id for s in link_filter.states.all()])
+            jobs_filter &= Q(locations__state_id__in=[s.id for s in link_filter.states.all()])
             
         if len(link_filter.countries.all()):
-            jobs_filter &= Q(country_id__in=[c.id for c in link_filter.countries.all()])
+            jobs_filter &= Q(locations__country_id__in=[c.id for c in link_filter.countries.all()])
             
         if len(link_filter.jobs.all()):
             jobs_filter &= Q(id__in=[j.id for j in link_filter.jobs.all()])

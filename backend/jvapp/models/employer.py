@@ -35,7 +35,6 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     maximum_bonus_amount = models.FloatField(null=True, blank=True)
     maximum_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True, related_name='employer_maximum')
     
-    
     def __str__(self):
         return self.employer_name
     
