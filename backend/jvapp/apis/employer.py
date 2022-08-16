@@ -113,13 +113,26 @@ class EmployerJobView(JobVyneAPIView):
         
         return Response(status=status.HTTP_200_OK, data=data)
     
+    def put(self, request):
+        jobs = EmployerJob.objects.filter(id__in=self.data['job_ids'])
+        jobs_to_update = []
+        for job in jobs:
+            job.referral_bonus = self.data['referral_bonus']
+            job.referral_bonus_currency_id = self.data['referral_bonus_currency']['id']
+            jobs_to_update.append(job)
+        
+        EmployerJob.objects.bulk_update(jobs_to_update, ['referral_bonus', 'referral_bonus_currency_id'], batch_size=1000)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Updated referral bonus for {len(jobs)} {"jobs" if len(jobs) > 1 else "job"}'
+        })
+    
     @staticmethod
     def get_employer_jobs(employer_job_id=None, employer_job_filter=None):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
         
         jobs = EmployerJob.objects\
-            .select_related('job_department', 'employer')\
+            .select_related('job_department', 'employer', 'referral_bonus_currency')\
             .prefetch_related(
                 'locations',
                 'locations__city',

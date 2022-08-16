@@ -30,7 +30,10 @@
           borderRadius: '4px'
         }"
       >
-        {{ dataUtil.pluralize('job', jobs.filter((j) => !j.bonus_rule).length) }} without bonus rule
+        <a href="#" @click="showJobMatches($event)">
+          {{ dataUtil.pluralize('job', jobs.filter((j) => !j.bonus_rule).length) }}
+        </a>
+        without bonus rule
       </div>
     </div>
     <div class="col-12">
@@ -196,7 +199,7 @@ export default {
       this.$router.push({
         name: this.$route.name,
         params: this.$route.params,
-        query: { ruleId: bonusRule.id, tab: 'job' }
+        query: { ruleId: (bonusRule) ? bonusRule.id : -1, tab: 'job' }
       })
     },
     async updateData () {

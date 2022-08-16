@@ -7,7 +7,6 @@ from jvapp.models._customDjangoField import LowercaseCharField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
 from jvapp.models.user import PermissionName
 
-
 __all__ = (
     'Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
@@ -33,7 +32,8 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     # Bonus rules
     default_bonus_amount = models.FloatField(null=True, blank=True)
-    default_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True, related_name='employer_default')
+    default_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True,
+                                               related_name='employer_default')
     
     def __str__(self):
         return self.employer_name
@@ -43,18 +43,19 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_edit(self, user):
         return (
-            user.is_admin
-            or (
-                user.employer_id == self.id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
-            )
+                user.is_admin
+                or (
+                        user.employer_id == self.id
+                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value,
+                                                         user.employer_id)
+                )
         )
     
     def _jv_can_delete(self, user):
         return user.is_admin
-    
-    
-class EmployerJob(AuditFields, OwnerFields):
+
+
+class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
     job_title = models.CharField(max_length=100)
     job_description = models.TextField()
@@ -64,13 +65,24 @@ class EmployerJob(AuditFields, OwnerFields):
     salary_floor = models.FloatField(null=True, blank=True)
     salary_ceiling = models.FloatField(null=True, blank=True)
     referral_bonus = models.FloatField(null=True, blank=True)
+    referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True)
     is_full_time = models.BooleanField(default=True, blank=True)
     locations = models.ManyToManyField('Location')
     
     def __str__(self):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
     
-    
+    def _jv_can_edit(self, user):
+        # For now, the only fields that can be edited from the frontend are the referral bonus fields
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, user.employer_id)
+            )
+        )
+
+
 class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='referral_bonus_rule')
     order_idx = models.SmallIntegerField()
@@ -90,7 +102,7 @@ class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixi
     
     class Meta:
         ordering = ('employer_id', 'order_idx')
-        
+    
     def _jv_can_create(self, user):
         return (
             user.is_admin
@@ -99,22 +111,22 @@ class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixi
                 and user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, user.employer_id)
             )
         )
-
+    
     @classmethod
     def _jv_filter_perm_query(cls, user, query):
         if user.is_admin:
             return query
-    
+        
         return query.filter(employer_id=user.employer_id)
-    
-    
+
+
 class EmployerReferralBonusRuleModifier(models.Model):
-    
     class ModifierType(Enum):
         PERCENT = 'PERCENT'
         NOMINAL = 'NOMINAL'
     
-    referral_bonus_rule = models.ForeignKey(EmployerReferralBonusRule, on_delete=models.CASCADE, related_name='modifier')
+    referral_bonus_rule = models.ForeignKey(EmployerReferralBonusRule, on_delete=models.CASCADE,
+                                            related_name='modifier')
     type = models.CharField(max_length=10)
     amount = models.FloatField()
     start_days_after_post = models.SmallIntegerField()
@@ -123,7 +135,7 @@ class EmployerReferralBonusRuleModifier(models.Model):
         ordering = ('referral_bonus_rule', 'start_days_after_post')
 
 
-#If multiple records have is_default = True, tie break will go to:
+# If multiple records have is_default = True, tie break will go to:
 # (1) employer is not null
 # (2) the greatest id
 def is_default_auth_group(auth_group, auth_groups):
@@ -133,8 +145,8 @@ def is_default_auth_group(auth_group, auth_groups):
     potential_defaults = [g for g in auth_groups if g.is_default and g.user_type_bit == auth_group.user_type_bit]
     potential_defaults.sort(key=lambda group: (-bool(group.employer_id), -group.id))
     return potential_defaults[0].id == auth_group.id
-    
-    
+
+
 class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     name = models.CharField(max_length=150)
     # If true, this auth group will be automatically added to users with the associated user_type_bit
@@ -146,24 +158,25 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     
     class Meta:
         unique_together = ('name', 'employer')
-        
+    
     def __str__(self):
         return f'{self.employer.employer_name if self.employer else "<General>"}-{self.name}'
-        
+    
     def jv_check_can_update_permissions(self, user):
         if not self.jv_can_update_permissions(user):
             self._raise_permission_error(PermissionName.CHANGE_PERMISSIONS.value)
-            
+    
     def jv_can_update_permissions(self, user):
         return user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value, user.employer_id)
-        
+    
     def _jv_can_create(self, user):
         return (
-            user.is_admin
-            or (
-                self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_PERMISSION_GROUPS.value, user.employer_id)
-            )
+                user.is_admin
+                or (
+                        self.employer_id == user.employer_id
+                        and user.has_employer_permission(PermissionName.MANAGE_PERMISSION_GROUPS.value,
+                                                         user.employer_id)
+                )
         )
     
     def _jv_can_edit(self, user):
@@ -174,8 +187,8 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     
     def _jv_can_delete(self, user):
         return self._jv_can_edit(user)
-    
-    
+
+
 class EmployerPermission(models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(null=True, blank=True)
@@ -183,8 +196,8 @@ class EmployerPermission(models.Model):
     
     def __str__(self):
         return self.name
-    
-    
+
+
 class EmployerFile(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file')
     file = models.FileField(
@@ -199,31 +212,31 @@ class EmployerFile(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_create(self, user):
         return (
-            user.is_admin
-            or (
-                self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-            )
+                user.is_admin
+                or (
+                        self.employer_id == user.employer_id
+                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+                )
         )
-    
-    
+
+
 class EmployerFileTag(models.Model, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file_tag')
     name = LowercaseCharField(max_length=100)
     
     class Meta:
         unique_together = ('employer', 'name')
-        
+    
     def _jv_can_create(self, user):
         return (
-            user.is_admin
-            or (
-                self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-            )
+                user.is_admin
+                or (
+                        self.employer_id == user.employer_id
+                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+                )
         )
-        
-        
+
+
 class EmployerPage(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='profile_page', unique=True)
     is_viewable = models.BooleanField(default=False)
@@ -231,11 +244,11 @@ class EmployerPage(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_create(self, user):
         return (
-            user.is_admin
-            or (
-                self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-            )
+                user.is_admin
+                or (
+                        self.employer_id == user.employer_id
+                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+                )
         )
 
 
@@ -244,8 +257,8 @@ class EmployerSize(models.Model):
     
     def __str__(self):
         return self.size
-    
-    
+
+
 class JobDepartment(models.Model):
     name = models.CharField(max_length=50, unique=True)
     

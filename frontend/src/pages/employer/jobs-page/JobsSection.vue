@@ -30,8 +30,14 @@
               removable
               @remove="removeRuleFilter"
             >
-              Jobs matching&nbsp;
-              <a href="#" @click="openShowBonusRuleDialog($event,$route.query.ruleId)">referral bonus rule</a>
+              <span v-if="parseInt($route.query.ruleId) > 0">
+                Jobs matching&nbsp;
+                <a
+                  href="#"
+                  @click="openShowBonusRuleDialog($event,$route.query.ruleId)"
+                >referral bonus rule</a>
+              </span>
+              <span v-else>Jobs without matching bonus rule</span>
             </q-chip>
           </div>
         </template>
@@ -44,9 +50,29 @@
         :columns="jobColumns"
         :filter-method="jobDataFilter"
         filter="jobsFilter"
+        selection="multiple"
+        v-model:selected="selectedJobs"
         no-data-label="No jobs match the filter"
         :rows-per-page-options="[25, 50, 100]"
       >
+        <template v-slot:top>
+          <CustomTooltip v-if="!selectedJobs.length" :is_include_icon="false">
+            <template v-slot:content>
+              <q-btn
+                unelevated
+                :disable="true"
+                label="Edit referral bonus" icon="edit" color="primary"
+              />
+            </template>
+            Select at least one job to edit
+          </CustomTooltip>
+          <q-btn
+            v-else
+            unelevated
+            label="Edit referral bonus" icon="edit" color="primary"
+            @click="openEditJobBonusDialog"
+          />
+        </template>
         <template v-slot:body-cell-locations="props">
           <q-td>
             <template v-if="props.row.locations.length > 1">
@@ -85,8 +111,9 @@
           <q-td>
             <a
               v-if="!dataUtil.isEmpty(props.row.bonus_rule)"
-              href="#" @click="openShowBonusRuleDialog($event, props.row.bonus_rule.id)"
+              href="#" @click="openShowBonusRuleDialog($event, props.row.bonus_rule.id, props.row.bonus)"
             >Bonus rule</a>
+            <span v-else-if="props.row.bonus.type === BONUS_TYPES.DEFAULT">Default</span>
             <span v-else>None</span>
           </q-td>
         </template>
@@ -97,6 +124,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogJobBonus from 'components/dialogs/DialogJobBonus.vue'
 import DialogShowBonusRule from 'components/dialogs/DialogShowBonusRule.vue'
 import FilterCard from 'components/FilterCard.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
@@ -106,6 +134,7 @@ import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
+import { BONUS_TYPES } from 'src/utils/bonus.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import locationUtil from 'src/utils/location.js'
@@ -125,7 +154,14 @@ const jobColumns = [
     sortable: true,
     format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
   },
-  { name: 'bonus', field: row => row.bonus.amount, align: 'center', label: 'Referral bonus', sortable: true },
+  {
+    name: 'bonus',
+    field: row => row.bonus.amount,
+    align: 'center',
+    label: 'Referral bonus',
+    sortable: true,
+    sort: (a, b) => parseInt(a) - parseInt(b)
+  },
   { name: 'bonus_rule', field: 'bonus_rule', align: 'left', label: 'Bonus rule' }
 ]
 
@@ -143,6 +179,7 @@ export default {
   data () {
     return {
       dataUtil,
+      BONUS_TYPES,
       jobsFilter: {
         jobTitle: null,
         departments: null,
@@ -151,7 +188,8 @@ export default {
         countries: null,
         dateRange: null
       },
-      jobColumns
+      jobColumns,
+      selectedJobs: []
     }
   },
   computed: {
@@ -164,13 +202,19 @@ export default {
   },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
-    openShowBonusRuleDialog (e, bonusRuleId) {
+    openEditJobBonusDialog () {
+      return this.q.dialog({
+        component: DialogJobBonus,
+        componentProps: { jobs: this.selectedJobs }
+      })
+    },
+    openShowBonusRuleDialog (e, bonusRuleId, bonus) {
       e.preventDefault()
       bonusRuleId = parseInt(bonusRuleId)
       const bonusRule = this.employerBonusRules.find((rule) => rule.id === bonusRuleId)
       return this.q.dialog({
         component: DialogShowBonusRule,
-        componentProps: { bonusRule }
+        componentProps: { bonusRule, bonus }
       })
     },
     removeRuleFilter () {
@@ -211,7 +255,11 @@ export default {
         if (toDate && dateTimeUtil.isAfter(job.open_date, toDate)) {
           return false
         }
-        if (ruleId && job.bonus_rule && job.bonus_rule.id !== ruleId) {
+        if (ruleId > 0 && job.bonus_rule && job.bonus_rule.id !== ruleId) {
+          return false
+        }
+        // Filter for jobs without a bonus rule
+        if (ruleId === -1 && job.bonus_rule) {
           return false
         }
         return true

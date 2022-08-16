@@ -5,6 +5,12 @@ export const MODIFIER_TYPES = {
   NOMINAL: 'NOMINAL'
 }
 
+export const BONUS_TYPES = {
+  DIRECT: 'DIRECT', // Bonus set directly on job
+  DEFAULT: 'DEFAULT', // No bonus rule - bonus is the default
+  RULE: 'RULE'
+}
+
 class BonusUtil {
   hasCriteria (criteriaVal) {
     return criteriaVal && criteriaVal.length

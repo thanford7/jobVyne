@@ -13,6 +13,9 @@
           class="q-pr-sm"
           style="position: absolute; top: 0; right: 0"
         />
+        <p class="text-gray-500 q-mt-none">
+          <slot name="subTitle"/>
+        </p>
       </q-card-section>
 
       <slot name="fullWidthBody"/>

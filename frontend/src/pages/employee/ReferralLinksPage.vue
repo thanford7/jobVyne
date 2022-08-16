@@ -238,6 +238,11 @@
                       </q-chip>
                     </q-td>
                   </template>
+                  <template v-slot:body-cell-referral_bonus="props">
+                    <q-td key="bonus" class="text-center">
+                      {{ dataUtil.formatCurrency(props.row.bonus.amount, { currency: props.row.bonus.currency.name }) }}
+                    </q-td>
+                  </template>
                 </q-table>
               </div>
             </div>
@@ -321,8 +326,8 @@ const jobColumns = [
     format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
   },
   {
-    name: 'referral_bonus',
-    field: 'referral_bonus',
+    name: 'bonus',
+    field: row => row.bonus.amount,
     label: 'Referral Bonus',
     sortable: true,
     sort: (a, b) => parseInt(a) - parseInt(b),
@@ -361,7 +366,8 @@ export default {
       selectedLinkId: null, // Used to drill into application details
       tab: 'current',
       applicationsColumns,
-      jobColumns
+      jobColumns,
+      dataUtil
     }
   },
   computed: {

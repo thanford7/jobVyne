@@ -1,4 +1,5 @@
 import re
+from enum import Enum
 
 from django.utils import timezone
 
@@ -62,12 +63,24 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
     return data
 
 
+class BONUS_TYPES(Enum):
+    DIRECT = 'DIRECT'  # Bonus set directly on job
+    DEFAULT = 'DEFAULT'  # No bonus rule - bonus is the default
+    RULE = 'RULE'
+
 def calculate_bonus_amount(employer_job, bonus_rule=None):
-    # TODO: Handle case where bonus is set directly on the job. This should override all bonus rules
+    if employer_job.referral_bonus is not None:
+        return {
+            'amount': employer_job.referral_bonus,
+            'currency': get_serialized_currency(employer_job.referral_bonus_currency),
+            'type': BONUS_TYPES.DIRECT.value
+        }
+        
     if not bonus_rule:
         return {
             'amount': employer_job.employer.default_bonus_amount,
-            'currency': get_serialized_currency(employer_job.employer.default_bonus_currency)
+            'currency': get_serialized_currency(employer_job.employer.default_bonus_currency),
+            'type': BONUS_TYPES.DEFAULT.value
         }
 
     # Find the latest bonus modifier if it exists
@@ -90,7 +103,8 @@ def calculate_bonus_amount(employer_job, bonus_rule=None):
     
     return {
         'amount': bonus_amount,
-        'currency': bonus_rule['bonus_currency']
+        'currency': bonus_rule['bonus_currency'],
+        'type': BONUS_TYPES.RULE.value
     }
 
 
@@ -107,6 +121,7 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
         'salary_floor': employer_job.salary_floor,
         'salary_ceiling': employer_job.salary_ceiling,
         'referral_bonus': employer_job.referral_bonus,
+        'referral_bonus_currency': get_serialized_currency(employer_job.referral_bonus_currency),
         'is_full_time': employer_job.is_full_time,
         'locations': [
             {

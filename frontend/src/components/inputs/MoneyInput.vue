@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import dataUtil from 'src/utils/data.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
@@ -65,17 +66,24 @@ export default {
   watch: {
     defaultCurrency () {
       this.setCurrency()
+    },
+    modelValue () {
+      this.placeCursorEnd()
     }
   },
   computed: {
     mask () {
-      let mask = `${this.selectedCurrency.symbol} `
+      let mask = `${this.selectedCurrency.symbol}`
       let digitsStr = ''
-      for (let x = 0; x <= this.modelValue.toString().length; x++) {
-        if ((x - 1) % 3 || x < 3) {
-          digitsStr = '#' + digitsStr
-        } else {
-          digitsStr = '#,' + digitsStr
+      if (dataUtil.isNil(this.modelValue)) {
+        digitsStr = '#'
+      } else {
+        for (let x = 0; x <= this.modelValue.toString().length; x++) {
+          if ((x - 1) % 3 || x < 3) {
+            digitsStr = '#' + digitsStr
+          } else {
+            digitsStr = '#,' + digitsStr
+          }
         }
       }
       mask += digitsStr
@@ -96,6 +104,12 @@ export default {
       currency = currency || this.currencies.find((c) => c.name === this.defaultCurrency)
       this.selectedCurrency = currency
       this.$emit('update-currency', currency)
+    },
+    placeCursorEnd () {
+      const end = this.mask.length
+      const input = this.$el.querySelector('input')
+      input.setSelectionRange(end, end)
+      input.focus()
     }
   },
   async mounted () {
