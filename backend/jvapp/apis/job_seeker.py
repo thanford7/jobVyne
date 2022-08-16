@@ -5,10 +5,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.user import UserView
 from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
+from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 
@@ -111,6 +113,22 @@ class ApplicationView(JobVyneAPIView):
         }
         set_object_attributes(application, data, cfg)
         application.resume = resume or data.get('resume_url')
+        
+        # Calculate referral bonus amount
+        job = EmployerJobView.get_employer_jobs(employer_job_id=data['job_id'])
+        rules = EmployerBonusRuleView.get_employer_bonus_rules(None, employer_id=job.employer_id, is_use_permissions=False)
+        job = get_serialized_employer_job(job, rules=rules)
+        application.referral_bonus = job['bonus']['amount']
+        application.referral_bonus_currency_name = job['bonus']['currency']['name']
+        application.referral_bonus_details = {
+            'type': job['bonus']['type'],
+            'bonus_rule': job['bonus_rule'],
+            'job_bonus': {
+                'amount': job['referral_bonus'],
+                'currency': job['referral_bonus_currency']
+            }
+        }
+        
         application.save()
     
     @staticmethod

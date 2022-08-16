@@ -30,6 +30,9 @@ class JobApplication(JobApplicationFields):
     employer_job = models.ForeignKey(
         'EmployerJob', on_delete=models.CASCADE, related_name='job_application'
     )
+    referral_bonus = models.FloatField(default=0)
+    referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
+    referral_bonus_details = models.JSONField()
     
     class Meta:
         unique_together = ('employer_job', 'email')
