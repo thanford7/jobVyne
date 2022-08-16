@@ -1,11 +1,25 @@
 import re
 
+from django.utils import timezone
+
+from jvapp.models import Currency
 from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
 from jvapp.serializers.content import get_serialized_content_item
 from jvapp.serializers.user import reduce_user_type_bits
 from jvapp.utils.data import get_list_intersection
 from jvapp.utils.datetime import get_datetime_format_or_none
+
+
+def get_serialized_currency(currency: Currency, is_allow_none=True):
+    if is_allow_none and not currency:
+        return {}
+
+    return {
+        'id': currency.id,
+        'name': currency.name,
+        'symbol': currency.symbol
+    }
 
 
 def get_serialized_employer(employer: Employer, is_include_employees: bool = False):
@@ -19,17 +33,7 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
         'color_secondary': employer.color_secondary,
         'color_accent': employer.color_accent,
         'default_bonus_amount': employer.default_bonus_amount or 0,
-        'default_bonus_currency': {
-            'id': employer.default_bonus_currency.id,
-            'name': employer.default_bonus_currency.name,
-            'symbol': employer.default_bonus_currency.symbol
-        } if employer.default_bonus_currency else {},
-        'maximum_bonus_amount': employer.maximum_bonus_amount or 0,
-        'maximum_bonus_currency': {
-            'id': employer.maximum_bonus_currency.id,
-            'name': employer.maximum_bonus_currency.name,
-            'symbol': employer.maximum_bonus_currency.symbol
-        } if employer.maximum_bonus_currency else {}
+        'default_bonus_currency': get_serialized_currency(employer.default_bonus_currency)
     }
     
     def get_permission_groups(employee):
@@ -56,6 +60,38 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
         } for e in employer.employee.all().order_by('-id')]
     
     return data
+
+
+def calculate_bonus_amount(employer_job, bonus_rule=None):
+    # TODO: Handle case where bonus is set directly on the job. This should override all bonus rules
+    if not bonus_rule:
+        return {
+            'amount': employer_job.employer.default_bonus_amount,
+            'currency': get_serialized_currency(employer_job.employer.default_bonus_currency)
+        }
+
+    # Find the latest bonus modifier if it exists
+    active_modifier = None
+    if employer_job.open_date:
+        days_since_post = (timezone.now().date() - employer_job.open_date).days
+        for modifier in bonus_rule['modifiers']:
+            if (
+                modifier['start_days_after_post'] <= days_since_post and
+                ((not active_modifier) or active_modifier['start_days_after_post'] < modifier['start_days_after_post'])
+            ):
+                active_modifier = modifier
+    
+    if not active_modifier:
+        bonus_amount = bonus_rule['base_bonus_amount']
+    elif active_modifier['type'] == EmployerReferralBonusRuleModifier.ModifierType.PERCENT.value:
+        bonus_amount = bonus_rule['base_bonus_amount'] * (1 + (active_modifier['amount'] / 100))
+    else:
+        bonus_amount = bonus_rule['base_bonus_amount'] + active_modifier['amount']
+    
+    return {
+        'amount': bonus_amount,
+        'currency': bonus_rule['bonus_currency']
+    }
 
 
 def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
@@ -137,8 +173,12 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
                     'bonus_currency': rule['bonus_currency'],
                     'days_after_hire_payout': rule['days_after_hire_payout']
                 }
+                data['bonus'] = calculate_bonus_amount(employer_job, bonus_rule=rule)
                 break
-    
+
+    if rules and not data.get('bonus'):
+        data['bonus'] = calculate_bonus_amount(employer_job)
+        
     return data
 
 
@@ -178,11 +218,7 @@ def get_serialized_employer_bonus_rule(bonus_rule: EmployerReferralBonusRule, is
             'job_titles_regex': bonus_rule.exclude_job_titles_regex,
         },
         'base_bonus_amount': bonus_rule.base_bonus_amount,
-        'bonus_currency': {
-            'id': bonus_rule.bonus_currency.id,
-            'name': bonus_rule.bonus_currency.name,
-            'symbol': bonus_rule.bonus_currency.symbol
-        },
+        'bonus_currency': get_serialized_currency(bonus_rule.bonus_currency),
         'days_after_hire_payout': bonus_rule.days_after_hire_payout,
         'modifiers': [
             {

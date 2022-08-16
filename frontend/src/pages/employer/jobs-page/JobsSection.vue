@@ -25,6 +25,15 @@
           <div class="col-12 col-md-4 q-pa-sm" style="font-size: 16px">
             <DateRangeSelector v-model="jobsFilter.dateRange" placeholder="Posted date"/>
           </div>
+          <div v-if="$route.query.ruleId" class="col-12 q-mb-sm q-ml-xs">
+            <q-chip
+              removable
+              @remove="removeRuleFilter"
+            >
+              Jobs matching&nbsp;
+              <a href="#" @click="openShowBonusRuleDialog($event,$route.query.ruleId)">referral bonus rule</a>
+            </q-chip>
+          </div>
         </template>
       </FilterCard>
     </div>
@@ -67,6 +76,20 @@
             </q-chip>
           </q-td>
         </template>
+        <template v-slot:body-cell-bonus="props">
+          <q-td key="bonus" class="text-center">
+            {{ dataUtil.formatCurrency(props.row.bonus.amount, { currency: props.row.bonus.currency.name }) }}
+          </q-td>
+        </template>
+        <template v-slot:body-cell-bonus_rule="props">
+          <q-td>
+            <a
+              v-if="!dataUtil.isEmpty(props.row.bonus_rule)"
+              href="#" @click="openShowBonusRuleDialog($event, props.row.bonus_rule.id)"
+            >Bonus rule</a>
+            <span v-else>None</span>
+          </q-td>
+        </template>
       </q-table>
     </div>
   </div>
@@ -74,6 +97,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogShowBonusRule from 'components/dialogs/DialogShowBonusRule.vue'
 import FilterCard from 'components/FilterCard.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
@@ -100,14 +124,25 @@ const jobColumns = [
     label: 'Posted Date',
     sortable: true,
     format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
-  } // TODO: Add referral bonus min/max
+  },
+  { name: 'bonus', field: row => row.bonus.amount, align: 'center', label: 'Referral bonus', sortable: true },
+  { name: 'bonus_rule', field: 'bonus_rule', align: 'left', label: 'Bonus rule' }
 ]
 
 export default {
   name: 'JobsSection',
-  components: { DateRangeSelector, SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, FilterCard, CustomTooltip },
+  components: {
+    DateRangeSelector,
+    SelectJobCountry,
+    SelectJobState,
+    SelectJobCity,
+    SelectJobDepartment,
+    FilterCard,
+    CustomTooltip
+  },
   data () {
     return {
+      dataUtil,
       jobsFilter: {
         jobTitle: null,
         departments: null,
@@ -122,15 +157,31 @@ export default {
   computed: {
     employerJobs () {
       return this.employerStore.getEmployerJobs(this.user.employer_id)
+    },
+    employerBonusRules () {
+      return this.employerStore.getEmployerBonusRules(this.user.employer_id)
     }
   },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
+    openShowBonusRuleDialog (e, bonusRuleId) {
+      e.preventDefault()
+      bonusRuleId = parseInt(bonusRuleId)
+      const bonusRule = this.employerBonusRules.find((rule) => rule.id === bonusRuleId)
+      return this.q.dialog({
+        component: DialogShowBonusRule,
+        componentProps: { bonusRule }
+      })
+    },
+    removeRuleFilter () {
+      this.$router.replace({ query: dataUtil.omit(this.$route.query, ['ruleId']) })
+    },
     jobDataFilter (jobs) {
       const departmentIds = (this.jobsFilter.departments) ? this.jobsFilter.departments.map((department) => department.id) : []
       const cityIds = (this.jobsFilter.cities) ? this.jobsFilter.cities.map((city) => city.id) : []
       const stateIds = (this.jobsFilter.states) ? this.jobsFilter.states.map((state) => state.id) : []
       const countryIds = (this.jobsFilter.countries) ? this.jobsFilter.countries.map((country) => country.id) : []
+      const ruleId = parseInt(this.$route.query.ruleId)
       const { from: fromDate, to: toDate } = this.jobsFilter.dateRange || {}
       return jobs.filter((job) => {
         const jobCityIds = job.locations.map((l) => l.city_id)
@@ -158,6 +209,9 @@ export default {
           return false
         }
         if (toDate && dateTimeUtil.isAfter(job.open_date, toDate)) {
+          return false
+        }
+        if (ruleId && job.bonus_rule && job.bonus_rule.id !== ruleId) {
           return false
         }
         return true

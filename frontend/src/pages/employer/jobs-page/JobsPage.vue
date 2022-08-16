@@ -14,6 +14,7 @@
         indicator-color="primary"
         align="left"
         narrow-indicator
+        @click="updateTab"
       >
         <q-tab name="bonus" label="Bonuses"/>
         <q-tab name="job" label="Jobs"/>
@@ -35,7 +36,8 @@ import PageHeader from 'components/PageHeader.vue'
 import BonusesSection from 'pages/employer/jobs-page/BonusesSection.vue'
 import JobsSection from 'pages/employer/jobs-page/JobsSection.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
-import { Loading, useMeta, useQuasar } from 'quasar'
+import { Loading, useMeta } from 'quasar'
+import dataUtil from 'src/utils/data.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
@@ -45,7 +47,26 @@ export default {
   components: { BonusesSection, JobsSection, PageHeader },
   data () {
     return {
-      tab: 'bonus'
+      tab: this.$route.query.tab || 'bonus'
+    }
+  },
+  methods: {
+    updateTab () {
+      // Need to use full path instead of updating the query because vue router doesn't pick up
+      // the mutation and doesn't update the url
+      const fullPath = dataUtil.getUrlWithParams({
+        addParams: [{ key: 'tab', val: this.tab }],
+        deleteParams: ['tab']
+      })
+      this.$router.push(fullPath)
+    }
+  },
+  watch: {
+    $route: {
+      handler () {
+        this.tab = this.$route.query.tab
+      },
+      deep: true
     }
   },
   preFetch () {
@@ -75,9 +96,8 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-    const q = useQuasar()
 
-    return { employerStore, authStore, q, user }
+    return { employerStore, authStore, user }
   }
 }
 </script>

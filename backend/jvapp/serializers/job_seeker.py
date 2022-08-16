@@ -23,6 +23,6 @@ def get_serialized_job_application(job_application: JobApplication):
             'id': job_application.employer_job_id,
             'employer_name': job_application.employer_job.employer.employer_name,
             'employer_id': job_application.employer_job.employer_id,
-            'title': job_application.employer_job.jobTitle
+            'title': job_application.employer_job.job_title
         }
     }

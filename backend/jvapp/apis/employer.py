@@ -77,7 +77,7 @@ class EmployerView(JobVyneAPIView):
             employer_filter = Q(id=employer_id)
         
         employers = Employer.objects \
-            .select_related('employer_size', 'default_bonus_currency', 'maximum_bonus_currency') \
+            .select_related('employer_size', 'default_bonus_currency') \
             .prefetch_related(
             'employee',
             'employee__employer_permission_group',
@@ -119,7 +119,7 @@ class EmployerJobView(JobVyneAPIView):
             employer_job_filter = Q(id=employer_job_id)
         
         jobs = EmployerJob.objects\
-            .select_related('job_department')\
+            .select_related('job_department', 'employer')\
             .prefetch_related(
                 'locations',
                 'locations__city',
@@ -148,19 +148,15 @@ class EmployerBonusDefaultView(JobVyneAPIView):
         self.user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, self.user.employer_id)
         
         self.data['default_bonus_currency_id'] = self.data['default_bonus_currency']['id']
-        self.data['maximum_bonus_currency_id'] = self.data['maximum_bonus_currency']['id']
         set_object_attributes(employer, self.data, {
             'default_bonus_amount': None,
             'default_bonus_currency_id': None,
-            'maximum_bonus_amount': None,
-            'maximum_bonus_currency_id': None,
         })
         employer.save()
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Bonus rule defaults updated'
         })
         
-    
     
 class EmployerBonusRuleView(JobVyneAPIView):
     

@@ -1,6 +1,6 @@
 <template>
   <div class="row q-gutter-y-md" style="min-width: 500px;">
-    <div class="col-12 col-md-6 q-pr-md-sm">
+    <div class="col-12 col-md-5">
       <MoneyInput
         label="Default bonus amount"
         :default-currency="employerBonusDefaults?.default_bonus_currency?.name"
@@ -12,22 +12,6 @@
           <CustomTooltip :is_include_space="false">
             This is the bonus amount that will be applied to any job that does not match
             any of the bonus rules listed below.
-          </CustomTooltip>
-        </template>
-      </MoneyInput>
-    </div>
-    <div class="col-12 col-md-6">
-      <MoneyInput
-        label="Maximum bonus amount"
-        :default-currency="employerBonusDefaults?.maximum_bonus_currency?.name"
-        v-model="employerBonusDefaults.maximum_bonus_amount"
-        @update-currency="employerBonusDefaults.maximum_bonus_currency = $event"
-        @blur="saveBonusDefaults"
-      >
-        <template v-slot:after>
-          <CustomTooltip :is_include_space="false">
-            If not $0, this is the maximum bonus amount that will be allowed for any job. This is a safeguard
-            to ensure no bonus rules result in a bonus amount that exceeds the maximum allowable amount.
           </CustomTooltip>
         </template>
       </MoneyInput>
@@ -62,7 +46,15 @@
                     dataUtil.formatCurrency(bonusRule.base_bonus_amount, { currency: bonusRule.bonus_currency.name })
                   }}
                   |
-                  Job matches: {{ bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length }}
+                  Job matches:
+                  <a
+                    v-if="bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length"
+                    href="#"
+                    @click="showJobMatches($event, bonusRule)"
+                  >
+                    {{ bonusUtil.getFilteredJobsFromRule(jobs, bonusRule).length }}
+                  </a>
+                  <span v-else>0</span>
                 </div>
                 <q-space/>
                 <div class="rule-btns q-gutter-x-sm">
@@ -95,12 +87,12 @@
                       <ul>
                         <template v-for="(criteriaVal, criteriaKey) in bonusRule.inclusion_criteria">
                           <li v-if="hasCriteria(criteriaVal)">
-                      <span v-if="criteriaKey !== 'job_titles_regex'">
-                        {{ dataUtil.capitalize(criteriaKey) }}: {{ criteriaVal.map(v => v.name).join(', ') }}
-                      </span>
+                            <span v-if="criteriaKey !== 'job_titles_regex'">
+                              {{ dataUtil.capitalize(criteriaKey) }}: {{ criteriaVal.map(v => v.name).join(', ') }}
+                            </span>
                             <span v-else>
-                        Job titles matching: {{ criteriaVal }}
-                      </span>
+                              Job titles matching: {{ criteriaVal }}
+                            </span>
                           </li>
                         </template>
                       </ul>
@@ -195,11 +187,17 @@ export default {
         this.employerStore.getEmployer(this.user.employer_id),
         [
           'default_bonus_amount',
-          'default_bonus_currency',
-          'maximum_bonus_amount',
-          'maximum_bonus_currency'
+          'default_bonus_currency'
         ]
       )
+    },
+    showJobMatches (e, bonusRule) {
+      e.preventDefault()
+      this.$router.push({
+        name: this.$route.name,
+        params: this.$route.params,
+        query: { ruleId: bonusRule.id, tab: 'job' }
+      })
     },
     async updateData () {
       await this.employerStore.setEmployer(this.user.employer_id, true)
