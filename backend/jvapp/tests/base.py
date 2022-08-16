@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import names
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from jvapp.models import *
@@ -31,6 +34,54 @@ class BaseTestCase(TestCase):
         self.user_employee = self.create_user(
             JobVyneUser.USER_TYPE_EMPLOYEE, first_name='Shark', last_name='Nado', employer_id=self.employer.id
         )
+        self.currency = Currency.objects.get(name='USD')
+        self.job_departments = [self.create_job_department(name) for name in ['Software', 'Product', 'Marketing']]
+        self.cities = [self.create_city(name) for name in ['Boston', 'Denver', 'Miami']]
+        self.states = [self.create_state(name) for name in ['MA', 'CO', 'FL']]
+        self.countries = list(Country.objects.all())
+        self.locations = [self.create_location(*data) for data in [
+            ('Boston, MA, US', self.cities[0], self.states[0], self.countries[0]),
+            ('Denver, CO, US', self.cities[1], self.states[1], self.countries[0]),
+            ('Miami, FL, US', self.cities[2], self.states[2], self.countries[0])
+        ]]
+        self.jobs = [self.create_job(data[0], **data[1]) for data in [
+            (
+                [self.locations[0], self.locations[2]],
+                {
+                    'employer': self.employer,
+                    'job_title': 'Software Engineer - L1',
+                    'job_department': self.job_departments[0],
+                    'open_date': timezone.now().date() - timedelta(days=60),
+                }
+            ),
+            (
+                [self.locations[1]],
+                {
+                    'employer': self.employer,
+                    'job_title': 'Software Engineer - L2',
+                    'job_department': self.job_departments[0],
+                    'open_date': timezone.now().date() - timedelta(days=30),
+                }
+            ),
+            (
+                [self.locations[0]],
+                {
+                    'employer': self.employer,
+                    'job_title': 'Product Manager',
+                    'job_department': self.job_departments[1],
+                    'open_date': timezone.now().date() - timedelta(days=20),
+                }
+            ),
+            (
+                [self.locations[2]],
+                {
+                    'employer': self.employer,
+                    'job_title': 'Product Manager',
+                    'job_department': self.job_departments[1],
+                    'open_date': timezone.now().date() - timedelta(days=40),
+                }
+            )
+        ]]
     
     def make_request(self, url, request_type, data=None):
         url = f'/{api_path}{url}'
@@ -87,3 +138,78 @@ class BaseTestCase(TestCase):
             ).save()
         
         return user
+    
+    def create_currency(self, name, symbol):
+        currency = Currency(name=name, symbol=symbol)
+        currency.save()
+        return currency
+    
+    def create_job_department(self, name):
+        job_department = JobDepartment(name=name)
+        job_department.save()
+        return job_department
+    
+    def create_city(self, name):
+        city = City(name=name)
+        city.save()
+        return city
+    
+    def create_state(self, name):
+        state = State(name=name)
+        state.save()
+        return state
+    
+    def create_country(self, name):
+        country = Country(name=name)
+        country.save()
+        return country
+    
+    def create_location(self, text, city, state, country):
+        location = Location(text=text, city=city, state=state, country=country)
+        location.save()
+        return location
+    
+    def create_job(self, locations, **kwargs):
+        job = EmployerJob(**kwargs)
+        job.save()
+        for location in locations:
+            job.locations.add(location)
+        return job
+    
+    def create_referral_bonus_rule(
+        self, include_departments=None, exclude_departments=None,
+        include_cities=None, exclude_cities=None,
+        include_states=None, exclude_states=None,
+        include_countries=None, exclude_countries=None,
+        **kwargs
+    ):
+        rule = EmployerReferralBonusRule(**kwargs)
+        rule.save()
+        
+        for dept in include_departments or []:
+            rule.include_departments.add(dept)
+        for dept in exclude_departments or []:
+            rule.exclude_departments.add(dept)
+
+        for city in include_cities or []:
+            rule.include_cities.add(city)
+        for city in exclude_cities or []:
+            rule.exclude_cities.add(city)
+
+        for state in include_states or []:
+            rule.include_states.add(state)
+        for state in exclude_states or []:
+            rule.exclude_states.add(state)
+
+        for country in include_countries or []:
+            rule.include_countries.add(country)
+        for country in exclude_countries or []:
+            rule.exclude_countries.add(country)
+            
+        return rule
+        
+    def create_referral_bonus_rule_modifier(self, bonus_rule, **kwargs):
+        modifier = EmployerReferralBonusRuleModifier(**kwargs)
+        modifier.referral_bonus_rule = bonus_rule
+        modifier.save()
+        return modifier

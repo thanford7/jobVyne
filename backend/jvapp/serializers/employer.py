@@ -68,6 +68,7 @@ class BONUS_TYPES(Enum):
     DEFAULT = 'DEFAULT'  # No bonus rule - bonus is the default
     RULE = 'RULE'
 
+
 def calculate_bonus_amount(employer_job, bonus_rule=None):
     if employer_job.referral_bonus is not None:
         return {
