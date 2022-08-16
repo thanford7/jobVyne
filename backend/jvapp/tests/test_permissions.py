@@ -13,7 +13,7 @@ class EmployerGroupPermissionsTestCase(BaseTestCase):
         self.assertEqual(len(perm_groups), 1)
         
         # Default group for Employees is the Employee group
-        self.assertEqual(perm_groups[0].id, self.employer_permission_groups[StandardPermissionGroups.EMPLOYEE.value].id)
+        self.assertEqual(perm_groups[0].permission_group_id, self.employer_permission_groups[StandardPermissionGroups.EMPLOYEE.value].id)
         
         # Create a new default for the EMPLOYEE user type
         new_auth_group = self.create_employer_auth_group(
@@ -23,6 +23,6 @@ class EmployerGroupPermissionsTestCase(BaseTestCase):
         # New employer users should now default to Super employee
         new_user_employer = self.create_user(JobVyneUser.USER_TYPE_EMPLOYEE, employer_id=self.employer.id)
         new_user_employer = JobVyneUser.objects.prefetch_related('employer_permission_group').get(id=new_user_employer.id)
-        perm_groups = new_user_employer.permission_groups.all()
-        self.assertEqual(perm_groups[0].id, new_auth_group.id)
+        perm_groups = new_user_employer.employer_permission_group.all()
+        self.assertEqual(perm_groups[0].permission_group_id, new_auth_group.id)
         
