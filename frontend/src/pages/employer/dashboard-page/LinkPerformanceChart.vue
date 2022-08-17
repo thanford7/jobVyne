@@ -1,7 +1,8 @@
 <template>
   <div v-if="isLoaded">
-    <BaseChart
+    <TimeSeriesChart
       chart-type="bar"
+      chart-title="Submitted applications"
       :raw-data="socialLinks"
       :series-cfgs="seriesCfgs"
       :chart-options="chartOptions"
@@ -10,25 +11,17 @@
 </template>
 
 <script>
-import BaseChart from 'components/charts/BaseChart.vue'
-import dateTimeUtil from 'src/utils/datetime.js'
+import TimeSeriesChart from 'components/charts/TimeSeriesChart.vue'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
 export default {
   name: 'LinkPerformanceChart',
-  components: { BaseChart },
+  components: { TimeSeriesChart },
   data () {
     return {
       isLoaded: false,
-      chartOptions: {
-        xaxis: {
-          // TODO: Add a date picker to select the range
-          categories: dateTimeUtil.getDatesInRange(new Date(2022, 7, 1), new Date()).map((date) => {
-            return dateTimeUtil.getShortDate(date)
-          })
-        }
-      },
+      chartOptions: {},
       seriesCfgs: [
         {
           name: 'Applications',
@@ -36,7 +29,7 @@ export default {
           preGroupFn: (data) => data.reduce((allData, point) => {
             return allData.concat(point) // Flatten applications into a single array
           }, []),
-          groupFn: (application) => dateTimeUtil.getShortDate(application.apply_dt),
+          groupAttributeGetterFn: (application) => application.apply_dt,
           aggFn: (applications) => applications.length
         }
       ]

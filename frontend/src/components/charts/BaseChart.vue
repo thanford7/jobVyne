@@ -1,10 +1,16 @@
 <template>
   <div>
-    <apexchart width="500" :type="chartType" :options="chartOptions" :series="series"/>
+    <div class="text-bold q-pb-sm border-bottom-1-gray-300">{{ chartTitle }}</div>
+    <div class="q-my-sm">
+      <slot name="filters"/>
+    </div>
+    <apexchart :type="chartType" :options="options" :series="series"/>
   </div>
 </template>
 
 <script>
+import { chartProps } from 'components/charts/chartProps.js'
+import dataUtil from 'src/utils/data.js'
 
 /*
 seriesCfg
@@ -12,21 +18,29 @@ seriesCfg
   name: <A unique name to access this series>
   key: <Can be a string or a function to access the element for the series>
   aggFn: <Function to aggregate data points per tick>
-  preGroupFn: <Function to transform data prior to grouping - use case: flattening data in an array>
+  preGroupFn: <Optional: Function to transform data prior to grouping - use case: flattening data in an array>
+  groupAttributeGetterFn: <Optional: Function to get the data attribute that will be passed to the groupFn>
   groupFn: <Function to group data points for each tick>
 }
  */
 
-import dataUtil from 'src/utils/data.js'
-
 export default {
   name: 'BaseChart',
-  props: {
-    chartType: String,
-    chartOptions: Object,
-    rawData: Array,
-    filterFn: [Function, null], // Filters rawData
-    seriesCfgs: Array
+  props: chartProps,
+  data () {
+    return {
+      defaultChartOptions: {
+        chart: { toolbar: { show: false } },
+        plotOptions: {
+          bar: {
+            borderRadius: 6,
+            dataLabels: {
+              position: 'top'
+            }
+          }
+        }
+      }
+    }
   },
   computed: {
     /**
@@ -40,7 +54,8 @@ export default {
         if (cfg.preGroupFn) {
           tickData = cfg.preGroupFn(tickData)
         }
-        tickData = dataUtil.groupBy(tickData, cfg.groupFn)
+        const getterFn = (cfg.groupAttributeGetterFn) ? cfg.groupAttributeGetterFn : (x) => x
+        tickData = dataUtil.groupBy(tickData, (dataPoint) => cfg.groupFn(getterFn(dataPoint)))
         series[cfg.name] = {
           tickData,
           seriesTicks: Object.entries(tickData).reduce((seriesTicks, [tickKey, tickPoints]) => {
@@ -60,6 +75,9 @@ export default {
         series.push({ name: seriesName, data: seriesPoints })
         return series
       }, [])
+    },
+    options () {
+      return dataUtil.mergeDeep({}, this.defaultChartOptions, this.chartOptions)
     }
   }
 }

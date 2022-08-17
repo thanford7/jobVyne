@@ -3,7 +3,9 @@
       <div class="q-ml-sm">
         <PageHeader title="Employer dashboard"/>
         <div class="row q-mt-md">
-          <LinkPerformanceChart/>
+          <div class="col-12 col-md-6 q-pa-sm">
+            <LinkPerformanceChart/>
+          </div>
         </div>
       </div>
   </q-page>

@@ -1,4 +1,5 @@
 import { date } from 'quasar'
+import dataUtil from 'src/utils/data.js'
 
 class DateTimeUtil {
   constructor () {
@@ -14,6 +15,32 @@ class DateTimeUtil {
     return date.formatDate(dateStr, this.longDateFormat)
   }
 
+  getStartOfWeekDate (targetDate, { asString = true } = {}) {
+    if (dataUtil.isString(targetDate)) {
+      targetDate = new Date(targetDate)
+    }
+    const newDate = this.copyDate(targetDate)
+    const day = newDate.getDay()
+    const diff = newDate.getDate() - day + ((day === 0) ? -6 : 1) // adjust when day is sunday
+    newDate.setDate(diff)
+    if (asString) {
+      return this.getShortDate(newDate)
+    }
+    return newDate
+  }
+
+  getMonthYearFromDate (targetDate) {
+    return date.formatDate(targetDate, 'MMM YY')
+  }
+
+  getYearFromDate (targetDate, { asString = true } = {}) {
+    const yearStr = date.formatDate(targetDate, 'YYYY')
+    if (asString) {
+      return yearStr
+    }
+    return parseInt(yearStr)
+  }
+
   today () {
     return new Date()
   }
@@ -24,6 +51,15 @@ class DateTimeUtil {
 
   copyDate (date) {
     return new Date(date.getTime())
+  }
+
+  addDays (date, days, isInPlace = false) {
+    if (!isInPlace) {
+      date = this.copyDate(date)
+    }
+
+    date.setDate(date.getDate() + days)
+    return date
   }
 
   getDatesInRange (startDate, endDate) {

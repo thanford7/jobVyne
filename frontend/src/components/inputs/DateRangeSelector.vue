@@ -1,6 +1,7 @@
 <template>
   <q-input
-    filled clearable
+    filled
+    :clearable="isClearable"
     :model-value="dateRangeText"
     @click="$refs.dateRange.show()"
     @clear="clearRange"
@@ -36,7 +37,12 @@ export default {
     placeholder: {
       type: String,
       default: 'Date'
-    }
+    },
+    isClearable: {
+      type: Boolean,
+      default: true
+    },
+    forceDateRange: [Object, null] // If date range must be populated and a user clears the value, this value will be used
   },
   computed: {
     dateRangeText () {
@@ -58,6 +64,25 @@ export default {
   },
   watch: {
     modelValue () {
+      if (this.forceDateRange && !this.modelValue) {
+        // eslint-disable-next-line vue/no-mutating-props
+        this.modelValue = this.forceDateRange
+      }
+      this.updateDateRange()
+    }
+  },
+  methods: {
+    getStandardizedValue (val) {
+      // Make sure model is always in the form of {to: from: }
+      if (!val || dataUtil.isObject(val)) {
+        return val
+      }
+      return { to: val, from: val }
+    },
+    clearRange () {
+      this.$emit('update:model-value', null)
+    },
+    updateDateRange () {
       // q-date requires a single value to be in string format so we convert back
       if (!this.modelValue) {
         this.dateRange = null
@@ -71,17 +96,8 @@ export default {
       this.dateRange = this.modelValue
     }
   },
-  methods: {
-    getStandardizedValue (val) {
-      // Make sure model is always in the form of {to: from: }
-      if (!val || dataUtil.isObject(val)) {
-        return val
-      }
-      return { to: val, from: val }
-    },
-    clearRange () {
-      this.$emit('update:model-value', null)
-    }
+  mounted () {
+    this.updateDateRange()
   }
 }
 </script>
