@@ -116,7 +116,7 @@ class BaseTestCase(TestCase):
     def create_user(self, user_type_bits, email=None, first_name=None, last_name=None, employer_id=None,
                     auth_group_names=None):
         first_name = first_name or names.get_first_name()
-        last_name = last_name or names.get_full_name()
+        last_name = last_name or names.get_last_name()
         email = email or f'{first_name}_{last_name}@jobvyne.com'
         user = JobVyneUser(
             first_name=first_name,

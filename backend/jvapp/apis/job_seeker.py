@@ -114,12 +114,17 @@ class ApplicationView(JobVyneAPIView):
         set_object_attributes(application, data, cfg)
         application.resume = resume or data.get('resume_url')
         
-        # Calculate referral bonus amount
-        job = EmployerJobView.get_employer_jobs(employer_job_id=data['job_id'])
-        rules = EmployerBonusRuleView.get_employer_bonus_rules(None, employer_id=job.employer_id, is_use_permissions=False)
+        ApplicationView.add_application_referral_bonus(application)
+        application.save()
+        
+    @staticmethod
+    def add_application_referral_bonus(application):
+        job = EmployerJobView.get_employer_jobs(employer_job_id=application.employer_job_id)
+        rules = EmployerBonusRuleView.get_employer_bonus_rules(None, employer_id=job.employer_id,
+                                                               is_use_permissions=False)
         job = get_serialized_employer_job(job, rules=rules)
         application.referral_bonus = job['bonus']['amount']
-        application.referral_bonus_currency_name = job['bonus']['currency']['name']
+        application.referral_bonus_currency_id = job['bonus']['currency']['name']
         application.referral_bonus_details = {
             'type': job['bonus']['type'],
             'bonus_rule': job['bonus_rule'],
@@ -128,8 +133,6 @@ class ApplicationView(JobVyneAPIView):
                 'currency': job['referral_bonus_currency']
             }
         }
-        
-        application.save()
     
     @staticmethod
     def get_applications(application_id=None, application_filter=None):

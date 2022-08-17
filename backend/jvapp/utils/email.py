@@ -12,6 +12,7 @@ from sendgrid.helpers.mail import Mail
 
 from jvapp.utils.logger import getLogger
 
+IS_PRODUCTION = os.getenv('DB') == 'prod'
 EMAIL_ADDRESS_TEST = 'test@jobvyne.com'
 EMAIL_ADDRESS_SEND = 'no-reply@jobvyne.com'  # Email address where all emails originate from
 EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
@@ -67,7 +68,7 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
     :return: SendGrid email response
     """
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
-    if os.getenv('DB') != 'prod':
+    if not IS_PRODUCTION:
         subject = '(Test) ' + subject
     django_context = django_context or {}
     django_context['support_email'] = EMAIL_ADDRESS_SUPPORT
@@ -76,7 +77,7 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
     
     message = Mail(
         from_email=from_email or EMAIL_ADDRESS_SEND,
-        to_emails=to_emails if not settings.DEBUG else EMAIL_ADDRESS_TEST,
+        to_emails=to_emails if IS_PRODUCTION else EMAIL_ADDRESS_TEST,
         subject=subject,
         html_content=htmlContent)
     

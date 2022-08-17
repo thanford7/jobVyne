@@ -118,7 +118,7 @@ class EmployerJobView(JobVyneAPIView):
         jobs_to_update = []
         for job in jobs:
             job.referral_bonus = self.data['referral_bonus']
-            job.referral_bonus_currency_id = self.data['referral_bonus_currency']['id']
+            job.referral_bonus_currency_id = self.data['referral_bonus_currency']['name']
             jobs_to_update.append(job)
         
         EmployerJob.objects.bulk_update(jobs_to_update, ['referral_bonus', 'referral_bonus_currency_id'], batch_size=1000)
@@ -160,7 +160,7 @@ class EmployerBonusDefaultView(JobVyneAPIView):
         employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
         self.user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, self.user.employer_id)
         
-        self.data['default_bonus_currency_id'] = self.data['default_bonus_currency']['id']
+        self.data['default_bonus_currency_id'] = self.data['default_bonus_currency']['name']
         set_object_attributes(employer, self.data, {
             'default_bonus_amount': None,
             'default_bonus_currency_id': None,
@@ -252,7 +252,7 @@ class EmployerBonusRuleView(JobVyneAPIView):
     @staticmethod
     @atomic
     def update_bonus_rule(user, bonus_rule, data):
-        data['bonus_currency_id'] = data['bonus_currency']['id']
+        data['bonus_currency_id'] = data['bonus_currency']['name']
         data['include_job_titles_regex'] = data['inclusion_criteria'].get('job_titles_regex')
         data['exclude_job_titles_regex'] = data['exclusion_criteria'].get('job_titles_regex')
         set_object_attributes(bonus_rule, data, {

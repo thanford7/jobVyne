@@ -32,8 +32,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     # Bonus rules
     default_bonus_amount = models.FloatField(null=True, blank=True)
-    default_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True,
-                                               related_name='employer_default')
+    default_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     
     def __str__(self):
         return self.employer_name
@@ -65,7 +64,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     salary_floor = models.FloatField(null=True, blank=True)
     salary_ceiling = models.FloatField(null=True, blank=True)
     referral_bonus = models.FloatField(null=True, blank=True)
-    referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True)
+    referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     is_full_time = models.BooleanField(default=True, blank=True)
     locations = models.ManyToManyField('Location')
     
@@ -97,7 +96,7 @@ class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixi
     include_job_titles_regex = models.CharField(max_length=500, null=True, blank=True)
     exclude_job_titles_regex = models.CharField(max_length=500, null=True, blank=True)
     base_bonus_amount = models.FloatField()
-    bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT)
+    bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     days_after_hire_payout = models.SmallIntegerField()
     
     class Meta:
