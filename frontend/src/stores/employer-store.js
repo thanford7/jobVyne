@@ -6,6 +6,7 @@ export const useEmployerStore = defineStore('employer', {
     employers: {}, // employerId: {<employer>}
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
+    employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
     employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
@@ -46,6 +47,14 @@ export const useEmployerStore = defineStore('employer', {
           params: { employer_id: employerId }
         })
         this.employerBonusRules[employerId] = resp.data
+      }
+    },
+    async setEmployerSocialLinks (employerId, isForceRefresh = false) {
+      if (!this.employerSocialLinks[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('social-link-filter/', {
+          params: { employer_id: employerId }
+        })
+        this.employerSocialLinks[employerId] = resp.data
       }
     },
     async setEmployerPermissions (isForceRefresh = false) {
@@ -125,6 +134,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployerBonusRules (employerId) {
       return dataUtil.sortBy(this.employerBonusRules[employerId] || [], 'order_idx')
+    },
+    getEmployerSocialLinks (employerId) {
+      return this.employerSocialLinks[employerId] || []
     },
     getEmployerPage (employerId) {
       return this.employerPage[employerId]

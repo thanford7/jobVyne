@@ -22,6 +22,24 @@ class DateTimeUtil {
     return this.today().getFullYear()
   }
 
+  copyDate (date) {
+    return new Date(date.getTime())
+  }
+
+  getDatesInRange (startDate, endDate) {
+    const date = this.copyDate(startDate)
+
+    const dates = []
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (date <= endDate) {
+      dates.push(this.copyDate(date))
+      date.setDate(date.getDate() + 1)
+    }
+
+    return dates
+  }
+
   /**
    * Check whether the targetDate is before the referenceDate
    * @param targetDate {String}
