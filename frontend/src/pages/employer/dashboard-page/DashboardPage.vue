@@ -6,6 +6,9 @@
           <div class="col-12 col-md-6 q-pa-sm">
             <LinkPerformanceChart/>
           </div>
+          <div class="col-12 col-md-6 q-pa-sm">
+            <DeviceTypeChart/>
+          </div>
         </div>
       </div>
   </q-page>
@@ -13,11 +16,12 @@
 
 <script>
 import PageHeader from 'components/PageHeader.vue'
+import DeviceTypeChart from 'pages/employer/dashboard-page/DeviceTypeChart.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
 
 export default {
   name: 'DashboardPage',
-  components: { LinkPerformanceChart, PageHeader }
+  components: { DeviceTypeChart, LinkPerformanceChart, PageHeader }
 }
 </script>
 

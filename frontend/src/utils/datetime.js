@@ -7,6 +7,10 @@ class DateTimeUtil {
     this.longDateFormat = 'MMMM D, YYYY'
   }
 
+  serializeDate (targetDate) {
+    return date.formatDate(targetDate, 'MM/DD/YYYY')
+  }
+
   getShortDate (dateStr) {
     return date.formatDate(dateStr, this.shortDateFormat)
   }
@@ -111,8 +115,22 @@ class DateTimeUtil {
     }
     return normTargetDate > normReferenceDate
   }
+
+  isBetween (targetDate, startDate, endDate, { isStartInclusive = true, isEndInclusive = true } = {}) {
+    return (
+      !this.isAfter(targetDate, endDate, !isEndInclusive) &&
+      !this.isBefore(targetDate, startDate, !isStartInclusive)
+    )
+  }
 }
 
 const dateTimeUtil = new DateTimeUtil()
+
+export const GROUPINGS = {
+  DAY: { key: 'DAY', formatter: dateTimeUtil.getShortDate.bind(dateTimeUtil) },
+  WEEK: { key: 'WEEK', formatter: dateTimeUtil.getStartOfWeekDate.bind(dateTimeUtil) },
+  MONTH: { key: 'MONTH', formatter: dateTimeUtil.getMonthYearFromDate.bind(dateTimeUtil) },
+  YEAR: { key: 'YEAR', formatter: dateTimeUtil.getYearFromDate.bind(dateTimeUtil) }
+}
 
 export default dateTimeUtil

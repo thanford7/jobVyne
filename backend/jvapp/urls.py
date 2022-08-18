@@ -1,11 +1,11 @@
 from django.urls import path, re_path
 
-from jvapp.apis import auth, currency, employer, job_seeker, social, tracking, user, waitlist
+from jvapp.apis import auth, currency, data, employer, job_seeker, social, tracking, user, waitlist
 
 api_path = 'api/v1/'
 
 urlpatterns = [
-    # Data
+    # General Data
     path('currency/', currency.CurrencyView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
@@ -28,6 +28,9 @@ urlpatterns = [
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
     path('waitlist/', waitlist.WaitlistView.as_view()),
+    
+    # Chart Data
+    path('data/link-performance/', data.DataLinkPerformanceView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),

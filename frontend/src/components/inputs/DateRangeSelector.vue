@@ -41,8 +41,7 @@ export default {
     isClearable: {
       type: Boolean,
       default: true
-    },
-    forceDateRange: [Object, null] // If date range must be populated and a user clears the value, this value will be used
+    }
   },
   computed: {
     dateRangeText () {
@@ -64,10 +63,6 @@ export default {
   },
   watch: {
     modelValue () {
-      if (this.forceDateRange && !this.modelValue) {
-        // eslint-disable-next-line vue/no-mutating-props
-        this.modelValue = this.forceDateRange
-      }
       this.updateDateRange()
     }
   },

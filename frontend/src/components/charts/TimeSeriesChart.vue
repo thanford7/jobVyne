@@ -1,16 +1,13 @@
 <template>
   <BaseChart v-bind="passThroughProps">
+    <template v-slot:appendTitle>
+      <slot name="appendTitle"/>
+    </template>
     <template v-slot:filters>
-      <DateRangeSelector
-        dense
-        v-model="dateRange"
-        placeholder="Date range"
-        :is-clearable="false"
-        :force-date-range="forceDateRange"
-      />
       <div class="flex justify-center q-mt-sm">
         <q-btn-toggle
-          v-model="grouping"
+          :model-value="dateGroup"
+          @update:model-value="$emit('update:dateGroup', $event)"
           rounded unelevated
           color="grey-5"
           toggle-color="grey-8"
@@ -29,32 +26,30 @@
 <script>
 import BaseChart from 'components/charts/BaseChart.vue'
 import { chartProps } from 'components/charts/chartProps.js'
-import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
 import dataUtil from 'src/utils/data.js'
-import dateTimeUtil from 'src/utils/datetime.js'
+import dateTimeUtil, { GROUPINGS } from 'src/utils/datetime.js'
 
 const defaultDateRange = {
   from: dateTimeUtil.addDays(new Date(), -6, true),
   to: new Date()
 }
 
-const GROUPINGS = {
-  DAY: { key: 'DAY', formatter: dateTimeUtil.getShortDate.bind(dateTimeUtil) },
-  WEEK: { key: 'WEEK', formatter: dateTimeUtil.getStartOfWeekDate.bind(dateTimeUtil) },
-  MONTH: { key: 'MONTH', formatter: dateTimeUtil.getMonthYearFromDate.bind(dateTimeUtil) },
-  YEAR: { key: 'YEAR', formatter: dateTimeUtil.getYearFromDate.bind(dateTimeUtil) }
-}
-
 export default {
   name: 'TimeSeriesChart',
-  props: chartProps,
-  components: { BaseChart, DateRangeSelector },
+  props: {
+    defaultDateRange: {
+      type: [Object, null],
+      default: () => ({ ...defaultDateRange })
+    },
+    dateGroup: {
+      type: String
+    },
+    ...chartProps
+  },
+  components: { BaseChart },
   data () {
     return {
-      forceDateRange: { ...defaultDateRange },
-      dateRange: { ...defaultDateRange },
-      GROUPINGS,
-      grouping: GROUPINGS.DAY.key
+      GROUPINGS
     }
   },
   computed: {
@@ -63,18 +58,20 @@ export default {
         let val = this[key]
         if (key === 'chartOptions') {
           val = this.updatedChartOptions
-        } else if (key === 'seriesCfgs') {
-          val.forEach((cfg) => {
-            cfg.groupFn = GROUPINGS[this.grouping].formatter
-          })
         }
         props[key] = val
         return props
       }, {})
     },
     updatedChartOptions () {
-      const datesInRange = dateTimeUtil.getDatesInRange(new Date(this.dateRange.from), new Date(this.dateRange.to))
-      const categories = dataUtil.uniqArray(datesInRange.map((date) => GROUPINGS[this.grouping].formatter(date)))
+      const { to, from } = this.dateRange || {}
+      let categories
+      if (!to || !from) {
+        categories = []
+      } else {
+        const datesInRange = dateTimeUtil.getDatesInRange(new Date(from), new Date(to))
+        categories = dataUtil.uniqArray(datesInRange.map((date) => this.GROUPINGS[this.dateGroup].formatter(date)))
+      }
       return dataUtil.mergeDeep({}, this.chartOptions, {
         xaxis: {
           categories
