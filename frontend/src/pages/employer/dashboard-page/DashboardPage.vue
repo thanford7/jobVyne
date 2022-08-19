@@ -3,16 +3,16 @@
       <div class="q-ml-sm">
         <PageHeader title="Employer dashboard"/>
         <div class="row q-mt-md">
-          <div class="col-12 col-md-6 q-pa-sm">
+          <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
             <LinkPerformanceChart/>
           </div>
-          <div class="col-12 col-md-6 q-pa-sm">
-            <EmployeeLeaderBoard/>
+          <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
+            <EmployeeLeaderBoard :is-employer="true"/>
           </div>
-          <div class="col-12 col-md-6 q-pa-sm">
+          <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
             <DeviceTypeChart/>
           </div>
-          <div class="col-12 col-md-6 q-pa-sm">
+          <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
             <PlatformChart/>
           </div>
         </div>

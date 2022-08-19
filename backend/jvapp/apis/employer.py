@@ -413,7 +413,7 @@ class EmployerUserView(JobVyneAPIView):
     
     @atomic
     def post(self, request):
-        user, is_new = UserView.get_or_create_user(self.data)
+        user, is_new = UserView.get_or_create_user(self.user, self.data)
         employer_id = self.data['employer_id']
         if not user.employer_id:
             user.employer_id = employer_id
@@ -442,7 +442,7 @@ class EmployerUserView(JobVyneAPIView):
     
     @atomic
     def put(self, request):
-        users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
+        users = UserView.get_user(self.user, user_filter=Q(id__in=self.data['user_ids']))
         batchCount = 0
         
         def get_unique_permission_key(p):
@@ -517,7 +517,7 @@ class EmployerUserApproveView(JobVyneAPIView):
     def put(self, request):
         """Set unapproved permission groups to approved for selected users
         """
-        users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
+        users = UserView.get_user(self.user, user_filter=Q(id__in=self.data['user_ids']))
         groups_to_update = []
         for user in users:
             user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
@@ -537,7 +537,7 @@ class EmployerUserActivateView(JobVyneAPIView):
     @atomic
     def put(self, request):
         is_deactivate = self.data['is_deactivate']
-        users = UserView.get_user(user_filter=Q(id__in=self.data['user_ids']))
+        users = UserView.get_user(self.user, user_filter=Q(id__in=self.data['user_ids']))
         for user in users:
             user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
             user.is_employer_deactivated = is_deactivate

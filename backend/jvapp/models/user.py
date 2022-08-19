@@ -145,6 +145,16 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         permissions_by_employer = self.get_permissions_by_employer()
         permission_names = [p.name for p in permissions_by_employer.get(employer_id) or []]
         return check_method((name in permission_names for name in permission_name))
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+        
+        if user.is_employer and user.is_employer_verified:
+            return query.filter(employer_id=user.employer_id)
+        
+        return query.filter(id=user.id)
     
     def _jv_can_create(self, user):
         return user.is_admin or (

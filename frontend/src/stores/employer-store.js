@@ -4,6 +4,7 @@ import dataUtil from 'src/utils/data'
 export const useEmployerStore = defineStore('employer', {
   state: () => ({
     employers: {}, // employerId: {<employer>}
+    employees: {}, // employerId: [<employee1>, <employee2>, ...]
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
     employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
@@ -20,6 +21,14 @@ export const useEmployerStore = defineStore('employer', {
       if (!this.employers[employerId] || isForceRefresh) {
         const resp = await this.$api.get(`employer/${employerId}/`)
         this.employers[employerId] = resp.data
+      }
+    },
+    async setEmployees (employerId, isForceRefresh = false) {
+      if (!this.employees[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('user/', {
+          params: { employer_id: employerId }
+        })
+        this.employees[employerId] = resp.data
       }
     },
     async setEmployerJobs (employerId, isForceRefresh = false) {
@@ -115,6 +124,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployer (employerId) {
       return this.employers[employerId]
+    },
+    getEmployees (employerId) {
+      return this.employees[employerId]
     },
     getEmployerFiles (employerId, fileId = null) {
       const files = this.employerFiles[employerId]

@@ -32,7 +32,7 @@ class ApplicationView(JobVyneAPIView):
         if application_id:
             data = get_serialized_job_application(self.get_applications(application_id=application_id))
         elif user_id := self.query_params.get('user_id'):
-            user = UserView.get_user(user_id=user_id)
+            user = UserView.get_user(self.user, user_id=user_id)
             application_filter = Q(email=user.email)
             data = [
                 get_serialized_job_application(ja)

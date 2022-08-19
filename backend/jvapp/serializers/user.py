@@ -12,24 +12,27 @@ def reduce_user_type_bits(permission_groups):
     )
 
 
-def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
+def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isIncludePersonalInfo=False):
     data = {
         'id': user.id,
         'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
-        'email': user.email,
-        'business_email': user.business_email,
         'first_name': user.first_name,
         'last_name': user.last_name,
-        'user_type_bits': user.user_type_bits,
-        'employer_id': user.employer_id,
-        'is_employer_deactivated': user.is_employer_deactivated,
-        'created_dt': get_datetime_format_or_none(user.created_dt),
-        'modified_dt': get_datetime_format_or_none(user.modified_dt),
-        'permissions_by_employer': {
+    }
+    
+    if isIncludeEmployerInfo:
+        data['email'] = user.email
+        data['business_email'] = user.business_email
+        data['user_type_bits'] = user.user_type_bits
+        data['employer_id'] = user.employer_id
+        data['is_employer_deactivated'] = user.is_employer_deactivated
+        data['created_dt'] = get_datetime_format_or_none(user.created_dt)
+        data['modified_dt'] = get_datetime_format_or_none(user.modified_dt)
+        data['permissions_by_employer'] = {
             employer_id: [p.name for p in permissions]
             for employer_id, permissions in user.get_permissions_by_employer().items()
-        },
-        'permission_groups_by_employer': {
+        }
+        data['permission_groups_by_employer'] = {
             employer_id: [{
                 'id': epg.permission_group.id,
                 'name': epg.permission_group.name,
@@ -37,12 +40,11 @@ def get_serialized_user(user: JobVyneUser, isIncludePersonalInfo=False):
                 'is_approved': epg.is_employer_approved
             } for epg in employer_permission_groups]
             for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(True).items()
-        },
-        'user_type_bits_by_employer': {
+        }
+        data['user_type_bits_by_employer'] = {
             employer_id: reduce_user_type_bits([epg.permission_group for epg in employer_permission_groups])
             for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer().items()
         }
-    }
     
     if isIncludePersonalInfo:
         application_template = next((at for at in user.application_template.all()), None)

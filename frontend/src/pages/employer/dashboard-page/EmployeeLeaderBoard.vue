@@ -19,23 +19,33 @@
     <div>
       {{ dateTitle }}
     </div>
-    <q-list>
+    <q-list separator dense>
       <q-item v-for="(appData, idx) in appsByEmployee">
-        <q-item-section avatar class="leader-rank-section q-pl-lg">
-          <div class="leader-rank-section__rank text-h5 font-primary">
-            {{ idx + 1 }}
-          </div>
-          <q-avatar color="primary" text-color="white">
+        <q-item-section avatar>
+          <q-avatar v-if="getUserProfilePicUrl(appData.apps[0])">
+            <img :src="getUserProfilePicUrl(appData.apps[0])">
+          </q-avatar>
+          <q-avatar v-else :style="getAvatarColorStyle()">
             {{ getUserInitials(appData.apps[0]) }}
           </q-avatar>
         </q-item-section>
         <q-item-section>
-          <div class="flex">
-            <div class="text-h5">
+          <div class="flex items-center">
+            <div class="text-h6">
               {{ getUserName(appData.apps[0]) }}
             </div>
+            <q-icon v-if="idx < 3" class="q-ml-sm" size="20px" name="emoji_events" :style="getAwardIconStyle(idx)"/>
             <q-space/>
-            <div class="text-h5">
+            <div
+              v-if="isEmployer"
+              class="text-h6"
+              @dblclick="openDataDialog(appData.apps)"
+              style="cursor: pointer"
+              title="Double click to view applications"
+            >
+              {{ appData.appCount }}
+            </div>
+            <div v-else class="text-h6">
               {{ appData.appCount }}
             </div>
           </div>
@@ -53,14 +63,23 @@
 
 <script>
 import ChartSkeleton from 'components/charts/ChartSkeleton.vue'
+import DialogShowDataTable from 'components/dialogs/DialogShowDataTable.vue'
+import { useQuasar } from 'quasar'
+import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil, { GROUPINGS } from 'src/utils/datetime.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useDataStore } from 'stores/data-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
+
+const TOP_EMPLOYEE_COUNT = 10
 
 export default {
   name: 'EmployeeLeaderBoard',
   components: { ChartSkeleton },
+  props: {
+    isEmployer: Boolean
+  },
   data () {
     return {
       isInitLoaded: false,
@@ -80,7 +99,8 @@ export default {
           apps
         }
       })
-      return dataUtil.sortBy(appsByEmployeeList, { key: 'appCount', direction: -1 }, true)
+      dataUtil.sortBy(appsByEmployeeList, { key: 'appCount', direction: -1 }, true)
+      return appsByEmployeeList.slice(0, TOP_EMPLOYEE_COUNT)
     },
     dateTitle () {
       if (this.dateGroup === GROUPINGS.WEEK.key) {
@@ -90,6 +110,16 @@ export default {
       } else {
         return `Up to ${dateTimeUtil.getShortDate(this.dateRange.to)}`
       }
+    },
+    employees () {
+      const employees = this.employerStore.getEmployees(this.authStore.propUser.employer_id)
+      if (!employees) {
+        return {}
+      }
+      return employees.reduce((employeeMap, employee) => {
+        employeeMap[employee.id] = employee
+        return employeeMap
+      }, {})
     }
   },
   watch: {
@@ -119,6 +149,27 @@ export default {
         }
       }
     },
+    getAvatarColorStyle () {
+      const backgroundColor = colorUtil.getRandomPastelColor()
+      console.log(backgroundColor)
+      return { backgroundColor, color: colorUtil.getInvertedColor(backgroundColor) }
+    },
+    getAwardIconStyle (idx) {
+      let backgroundColor
+      if (idx === 0) {
+        backgroundColor = '#d4af37'
+      } else if (idx === 1) {
+        backgroundColor = '#aaa9ad'
+      } else {
+        backgroundColor = '#b08d57'
+      }
+      return {
+        backgroundColor,
+        color: colorUtil.getInvertedColor(backgroundColor),
+        borderRadius: '25px',
+        padding: '4px'
+      }
+    },
     getUserInitials (app) {
       const firstInitial = (app?.owner_first_name?.length) ? dataUtil.capitalize(app.owner_first_name[0]) : ''
       const lastInital = (app?.owner_last_name?.length) ? dataUtil.capitalize(app.owner_last_name[0]) : ''
@@ -128,6 +179,16 @@ export default {
       const firstName = app.owner_first_name || ''
       const lastName = app.owner_last_name || ''
       return `${firstName} ${lastName}`
+    },
+    getUserProfilePicUrl (app) {
+      const user = this.employees[app.owner_id] || {}
+      return user.profile_picture_url
+    },
+    openDataDialog (apps) {
+      return this.q.dialog({
+        component: DialogShowDataTable,
+        componentProps: { data: apps }
+      })
     },
     async setChartRawData () {
       this.isLoading = true
@@ -147,22 +208,14 @@ export default {
   async mounted () {
     this.authStore = useAuthStore()
     this.dataStore = useDataStore()
+    this.employerStore = useEmployerStore()
     await this.authStore.setUser()
     await this.setChartRawData()
+    await this.employerStore.setEmployees(this.authStore.propUser.employer_id)
     this.isInitLoaded = true
+  },
+  setup () {
+    return { q: useQuasar() }
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.leader-rank-section {
-  position: relative;
-
-  &__rank {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-  }
-}
-</style>

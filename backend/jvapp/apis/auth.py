@@ -80,11 +80,11 @@ class CheckAuthView(APIView):
             return Response(status=status.HTTP_200_OK, data=False)
         
         # Refetch user to pull in related objects
-        user = UserView.get_user(user_id=request.user.id)
+        user = UserView.get_user(request.user, user_id=request.user.id, is_check_permission=False)
         
         return Response(
             status=status.HTTP_200_OK,
-            data=get_serialized_user(user, isIncludePersonalInfo=True)
+            data=get_serialized_user(user, isIncludeEmployerInfo=True, isIncludePersonalInfo=True)
         )
 
 

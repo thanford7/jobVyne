@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.apis.employer import EmployerJobView, EmployerView
 from jvapp.apis.user import UserView
+from jvapp.models import JobApplication, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
@@ -109,15 +110,37 @@ class SocialLinkFilterView(JobVyneAPIView):
             link_filter.jobs.set(job_ids)
             
     @staticmethod
-    def get_link_filters(user, link_filter_id=None, link_filter_filter=None, is_use_permissions=True):
+    def get_link_filters(
+            user, link_filter_id=None, link_filter_filter=None, start_date=None, end_date=None, is_use_permissions=True
+    ):
         if link_filter_id:
             link_filter_filter = Q(id=link_filter_id)
+
+        app_filter = Q()
+        view_filter = Q()
+        if start_date:
+            app_filter &= Q(created_dt__gte=start_date)
+            view_filter &= Q(access_dt__gte=start_date)
+        if end_date:
+            app_filter &= Q(created_dt__lte=end_date)
+            view_filter &= Q(access_dt__lte=end_date)
+        
+        
+        app_prefetch = Prefetch(
+            'job_application',
+            queryset=JobApplication.objects.select_related('employer_job').filter(app_filter)
+        )
+        
+        page_view_prefetch = Prefetch(
+            'page_view',
+            queryset=PageView.objects.filter(view_filter)
+        )
             
         links = SocialLinkFilter.objects\
-            .select_related('employer', 'platform')\
+            .select_related('employer', 'platform', 'owner')\
             .prefetch_related(
                 'departments', 'cities', 'states', 'countries', 'jobs',
-                'job_application', 'job_application__employer_job', 'page_view'
+                app_prefetch, page_view_prefetch
             )\
             .filter(link_filter_filter)
         
@@ -143,11 +166,16 @@ class SocialLinkJobsView(JobVyneAPIView):
         )
         jobs = self.get_jobs_from_filter(link_filter)
         employer = EmployerView.get_employers(employer_id=link_filter.employer_id)
-        profile = UserView.get_user(user_id=link_filter.owner_id)
+        profile = UserView.get_user(self.user, user_id=link_filter.owner_id, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data={
             'jobs': [get_serialized_employer_job(j) for j in jobs],
             'employer': get_serialized_employer(employer),
-            'profile': get_serialized_user(profile)
+            'profile': {
+                'id': profile.id,
+                'profile_picture_url': profile.profile_picture.url if profile.profile_picture else None,
+                'first_name': profile.first_name,
+                'last_name': profile.last_name
+            }
         })
         
     @staticmethod
