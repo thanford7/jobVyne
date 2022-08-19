@@ -5,6 +5,7 @@ class DateTimeUtil {
   constructor () {
     this.shortDateFormat = 'MMM D, YYYY'
     this.longDateFormat = 'MMMM D, YYYY'
+    this.dateTimeFormat = 'MM/DD/YYYY HH:mm:ss'
   }
 
   serializeDate (targetDate) {
@@ -17,6 +18,10 @@ class DateTimeUtil {
 
   getLongDate (dateStr) {
     return date.formatDate(dateStr, this.longDateFormat)
+  }
+
+  getDateTime (dateTimeStr) {
+    return date.formatDate(dateTimeStr, this.dateTimeFormat)
   }
 
   getStartOfWeekDate (targetDate, { asString = true } = {}) {

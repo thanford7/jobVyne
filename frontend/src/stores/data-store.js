@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 
 export const useDataStore = defineStore('data', {
@@ -28,7 +29,7 @@ export const useDataStore = defineStore('data', {
       startDate = dateTimeUtil.serializeDate(startDate)
       endDate = dateTimeUtil.serializeDate(endDate)
       const apiKey = this.makeApiKey(arguments)
-      return this.socialLinkPerformanceData[apiKey]
+      return dataUtil.deepCopy(this.socialLinkPerformanceData[apiKey])
     },
     makeApiKey (args) {
       return JSON.stringify(args)
