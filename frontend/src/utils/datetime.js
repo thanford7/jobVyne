@@ -24,6 +24,19 @@ class DateTimeUtil {
     return date.formatDate(dateTimeStr, this.dateTimeFormat)
   }
 
+  getStartOfMonthDate (targetDate, { asString = true } = {}) {
+    if (dataUtil.isString(targetDate)) {
+      targetDate = new Date(targetDate)
+    }
+    const year = targetDate.getFullYear()
+    const month = targetDate.getMonth()
+    const firstDayOfMonth = new Date(year, month, 1)
+    if (asString) {
+      return this.getShortDate(firstDayOfMonth)
+    }
+    return firstDayOfMonth
+  }
+
   getStartOfWeekDate (targetDate, { asString = true } = {}) {
     if (dataUtil.isString(targetDate)) {
       targetDate = new Date(targetDate)
@@ -40,6 +53,10 @@ class DateTimeUtil {
 
   getMonthYearFromDate (targetDate) {
     return date.formatDate(targetDate, 'MMM YY')
+  }
+
+  getLongMonthYearFromDate (targetDate) {
+    return date.formatDate(targetDate, 'MMMM YYYY')
   }
 
   getYearFromDate (targetDate, { asString = true } = {}) {

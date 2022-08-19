@@ -35,7 +35,8 @@ class DataLinkPerformanceView(JobVyneAPIView):
             common_data = {
                 'link_id': link.id,
                 'owner_id': link.owner_id,
-                'owner_name': f'{link.owner.first_name} {link.owner.last_name}',
+                'owner_first_name': link.owner.first_name,
+                'owner_last_name': link.owner.last_name,
                 'platform_name': link.platform.name if link.platform else None
             }
             for app in link.job_application.filter(app_filter):

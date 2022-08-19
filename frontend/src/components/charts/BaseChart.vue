@@ -145,18 +145,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.chart-container {
-  position: relative;
-
-  &__loading {
-    position: absolute;
-    width: 60%;
-    height: 70%;
-    top: 50%;
-    left: 50%;
-    transform: translateY(-50%) translateX(-50%);
-  }
-}
-</style>

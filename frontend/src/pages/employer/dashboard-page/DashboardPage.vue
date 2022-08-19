@@ -7,6 +7,9 @@
             <LinkPerformanceChart/>
           </div>
           <div class="col-12 col-md-6 q-pa-sm">
+            <EmployeeLeaderBoard/>
+          </div>
+          <div class="col-12 col-md-6 q-pa-sm">
             <DeviceTypeChart/>
           </div>
           <div class="col-12 col-md-6 q-pa-sm">
@@ -20,12 +23,13 @@
 <script>
 import PageHeader from 'components/PageHeader.vue'
 import DeviceTypeChart from 'pages/employer/dashboard-page/DeviceTypeChart.vue'
+import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
 import PlatformChart from 'pages/employer/dashboard-page/PlatformChart.vue'
 
 export default {
   name: 'DashboardPage',
-  components: { PlatformChart, DeviceTypeChart, LinkPerformanceChart, PageHeader }
+  components: { EmployeeLeaderBoard, PlatformChart, DeviceTypeChart, LinkPerformanceChart, PageHeader }
 }
 </script>
 

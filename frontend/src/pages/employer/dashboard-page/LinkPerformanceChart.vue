@@ -10,7 +10,7 @@
       :is-loading="isLoading"
     >
       <template v-slot:appendTitle>
-        <CustomTooltip>
+        <CustomTooltip :is_include_space="false" icon_size="16px">
           A page view is anytime someone visits a jobs page from an employee's link
         </CustomTooltip>
       </template>
