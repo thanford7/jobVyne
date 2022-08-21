@@ -38,12 +38,18 @@ export default {
         {
           name: 'Mobile',
           rawData: this.mobileViews,
-          processedData: this.mobileViews.length
+          processedData: this.mobileViews.reduce((totalViews, g) => {
+            totalViews += g.view_count
+            return totalViews
+          }, 0)
         },
         {
           name: 'Desktop',
           rawData: this.desktopViews,
-          processedData: this.desktopViews.length
+          processedData: this.desktopViews.reduce((totalViews, g) => {
+            totalViews += g.view_count
+            return totalViews
+          }, 0)
         }
       ]
     },

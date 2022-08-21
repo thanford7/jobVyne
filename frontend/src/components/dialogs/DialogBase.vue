@@ -1,7 +1,7 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin" :style="cardStyle">
-      <q-card-section>
+      <q-card-section v-if="isIncludeHeader">
         <div v-if="baseTitleText" class="text-h6">
           {{baseTitleText}}
         </div>
@@ -51,6 +51,10 @@ export default {
       type: Boolean,
       default: true
     },
+    isIncludeHeader: {
+      type: Boolean,
+      default: true
+    },
     width: {
       type: String,
       default: '500px'
@@ -89,7 +93,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-
-</style>

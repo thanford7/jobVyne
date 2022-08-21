@@ -2,7 +2,7 @@
   <q-page padding>
       <div class="q-ml-sm">
         <PageHeader title="Employer dashboard"/>
-        <div class="row q-mt-md">
+        <div class="row q-mt-md q-gutter-y-md">
           <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
             <LinkPerformanceChart/>
           </div>
@@ -15,6 +15,9 @@
           <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
             <PlatformChart/>
           </div>
+          <div class="col-12">
+            <ApplicationsTable/>
+          </div>
         </div>
       </div>
   </q-page>
@@ -22,6 +25,7 @@
 
 <script>
 import PageHeader from 'components/PageHeader.vue'
+import ApplicationsTable from 'pages/employer/dashboard-page/ApplicationsTable.vue'
 import DeviceTypeChart from 'pages/employer/dashboard-page/DeviceTypeChart.vue'
 import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
@@ -29,7 +33,7 @@ import PlatformChart from 'pages/employer/dashboard-page/PlatformChart.vue'
 
 export default {
   name: 'DashboardPage',
-  components: { EmployeeLeaderBoard, PlatformChart, DeviceTypeChart, LinkPerformanceChart, PageHeader }
+  components: { ApplicationsTable, EmployeeLeaderBoard, PlatformChart, DeviceTypeChart, LinkPerformanceChart, PageHeader }
 }
 </script>
 

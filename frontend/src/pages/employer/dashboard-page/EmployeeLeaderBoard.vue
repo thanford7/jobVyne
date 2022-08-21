@@ -151,7 +151,6 @@ export default {
     },
     getAvatarColorStyle () {
       const backgroundColor = colorUtil.getRandomPastelColor()
-      console.log(backgroundColor)
       return { backgroundColor, color: colorUtil.getInvertedColor(backgroundColor) }
     },
     getAwardIconStyle (idx) {

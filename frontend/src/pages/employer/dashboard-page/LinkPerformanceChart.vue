@@ -76,7 +76,10 @@ export default {
     },
     viewData () {
       return Object.entries(this.groupedViewData).reduce((processedData, [groupKey, group]) => {
-        processedData[groupKey] = group.length
+        processedData[groupKey] = group.reduce((totalViews, g) => {
+          totalViews += g.view_count
+          return totalViews
+        }, 0)
         return processedData
       }, {})
     }

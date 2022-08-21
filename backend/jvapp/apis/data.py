@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
@@ -12,10 +14,14 @@ class DataLinkPerformanceView(JobVyneAPIView):
     def get(self, request):
         start_date = get_datetime_or_none(self.query_params.get('start_date'), format='%m/%d/%Y', asDate=True)
         end_date = get_datetime_or_none(self.query_params.get('end_date'), format='%m/%d/%Y', asDate=True)
+        owner_id = self.query_params.get('owner_id')
+        employer_id = self.query_params.get('employer_id')
         q_filter = Q()
-        if owner_id := self.query_params.get('owner_id'):
+        if owner_id:
+            owner_id = int(owner_id)
             q_filter &= Q(owner_id=owner_id)
-        if employer_id := self.query_params.get('employer_id'):
+        if employer_id:
+            employer_id = int(employer_id)
             q_filter &= Q(employer_id=employer_id)
         if not any([owner_id, employer_id]):
             return Response('You must provide an owner ID, or employer ID', status=status.HTTP_400_BAD_REQUEST)
@@ -35,7 +41,7 @@ class DataLinkPerformanceView(JobVyneAPIView):
                 'owner_id': link.owner_id,
                 'owner_first_name': link.owner.first_name,
                 'owner_last_name': link.owner.last_name,
-                'platform_name': link.platform.name if link.platform else None
+                'platform_name': link.platform.name if link.platform else 'Unknown'
             }
             for app in link.job_application.all():
                 application_data = {
@@ -50,22 +56,18 @@ class DataLinkPerformanceView(JobVyneAPIView):
                     **application_data,
                     **common_data
                 })
+            views = defaultdict(int)
             for view in link.page_view.all():
-                view_data = {
-                    'access_dt': get_datetime_format_or_none(view.access_dt),
-                    'is_mobile': bool(view.is_mobile or view.is_tablet),
-                }
-                if is_employer or is_owner:
-                    view_data = {
-                        **view_data,
-                        'city': view.city,
-                        'region': view.region,
-                        'country': view.country,
-                        'latitude': view.latitude,
-                        'longitude': view.longitude,
-                    }
+                views[(
+                    get_datetime_format_or_none(view.access_dt),
+                    bool(view.is_mobile or view.is_tablet)
+                )] += 1
+            
+            for view_key, view_count in views.items():
                 data['views'].append({
-                    **view_data,
+                    'access_dt': view_key[0],
+                    'is_mobile': view_key[1],
+                    'view_count': view_count,
                     **common_data
                 })
 
