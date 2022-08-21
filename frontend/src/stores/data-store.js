@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 
 export const useDataStore = defineStore('data', {
@@ -8,26 +7,22 @@ export const useDataStore = defineStore('data', {
   }),
 
   actions: {
-    async setSocialLinkPerformance (employerId, startDate, endDate) {
+    async getSocialLinkPerformance (startDate, endDate, { employerId, userId }) {
       const apiKey = this.makeApiKey(arguments)
       const data = this.socialLinkPerformanceData[apiKey]
       if (data) {
-        return
+        return data
       }
       const resp = await this.$api.get('data/link-performance/', {
         params: {
           employer_id: employerId,
+          user_id: userId,
           start_dt: dateTimeUtil.serializeDate(startDate, true),
           end_dt: dateTimeUtil.serializeDate(endDate, true, true)
         }
       })
       this.socialLinkPerformanceData[apiKey] = resp.data
-    },
-    getSocialLinkPerformance (employerId, startDate, endDate) {
-      startDate = dateTimeUtil.serializeDate(startDate)
-      endDate = dateTimeUtil.serializeDate(endDate)
-      const apiKey = this.makeApiKey(arguments)
-      return dataUtil.deepCopy(this.socialLinkPerformanceData[apiKey])
+      return resp.data
     },
     makeApiKey (args) {
       return JSON.stringify(args)

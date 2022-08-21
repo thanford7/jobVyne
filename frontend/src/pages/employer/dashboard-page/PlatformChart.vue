@@ -58,17 +58,12 @@ export default {
         return {}
       }
       this.isLoading = true
-      await this.dataStore.setSocialLinkPerformance(
-        this.authStore.propUser.employer_id,
+      this.chartRawData = await this.dataStore.getSocialLinkPerformance(
         this.dateRange.from,
-        this.dateRange.to
+        this.dateRange.to,
+        { employerId: this.authStore.propUser.employer_id }
       )
       this.isLoading = false
-      this.chartRawData = this.dataStore.getSocialLinkPerformance(
-        this.authStore.propUser.employer_id,
-        this.dateRange.from,
-        this.dateRange.to
-      )
     }
   },
   async mounted () {
