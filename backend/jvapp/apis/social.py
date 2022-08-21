@@ -111,19 +111,19 @@ class SocialLinkFilterView(JobVyneAPIView):
             
     @staticmethod
     def get_link_filters(
-            user, link_filter_id=None, link_filter_filter=None, start_date=None, end_date=None, is_use_permissions=True
+            user, link_filter_id=None, link_filter_filter=None, start_dt=None, end_dt=None, is_use_permissions=True
     ):
         if link_filter_id:
             link_filter_filter = Q(id=link_filter_id)
 
         app_filter = Q()
         view_filter = Q()
-        if start_date:
-            app_filter &= Q(created_dt__gte=start_date)
-            view_filter &= Q(access_dt__gte=start_date)
-        if end_date:
-            app_filter &= Q(created_dt__lte=end_date)
-            view_filter &= Q(access_dt__lte=end_date)
+        if start_dt:
+            app_filter &= Q(created_dt__gte=start_dt)
+            view_filter &= Q(access_dt__gte=start_dt)
+        if end_dt:
+            app_filter &= Q(created_dt__lte=end_dt)
+            view_filter &= Q(access_dt__lte=end_dt)
         
         
         app_prefetch = Prefetch(

@@ -6,10 +6,16 @@ class DateTimeUtil {
     this.shortDateFormat = 'MMM D, YYYY'
     this.longDateFormat = 'MMMM D, YYYY'
     this.dateTimeFormat = 'MM/DD/YYYY HH:mm:ss'
+    this.serializeDateFormat = 'MM/DD/YYYY'
+    this.serializeDateTimeFormat = 'MM/DD/YYYY HH:mm:ssZZ'
   }
 
-  serializeDate (targetDate) {
-    return date.formatDate(targetDate, 'MM/DD/YYYY')
+  serializeDate (targetDate, isIncludeTime = false, isEndOfDay = false) {
+    const format = (isIncludeTime) ? this.serializeDateTimeFormat : this.serializeDateFormat
+    if (isEndOfDay) {
+      targetDate = date.addToDate(targetDate, { hours: 23, minutes: 59, seconds: 59 })
+    }
+    return date.formatDate(targetDate, format)
   }
 
   getShortDate (dateStr) {

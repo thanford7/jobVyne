@@ -12,8 +12,8 @@ from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_no
 class DataLinkPerformanceView(JobVyneAPIView):
     
     def get(self, request):
-        start_date = get_datetime_or_none(self.query_params.get('start_date'), format='%m/%d/%Y', asDate=True)
-        end_date = get_datetime_or_none(self.query_params.get('end_date'), format='%m/%d/%Y', asDate=True)
+        start_dt = get_datetime_or_none(self.query_params.get('start_dt'))
+        end_dt = get_datetime_or_none(self.query_params.get('end_dt'))
         owner_id = self.query_params.get('owner_id')
         employer_id = self.query_params.get('employer_id')
         q_filter = Q()
@@ -33,7 +33,7 @@ class DataLinkPerformanceView(JobVyneAPIView):
         
         is_employer = self.user.is_employer and employer_id and self.user.employer_id == employer_id
         for link in SocialLinkFilterView.get_link_filters(
-                self.user, link_filter_filter=q_filter, start_date=start_date, end_date=end_date, is_use_permissions=False
+                self.user, link_filter_filter=q_filter, start_dt=start_dt, end_dt=end_dt, is_use_permissions=False
         ):
             is_owner = link.owner_id == self.user.id
             common_data = {

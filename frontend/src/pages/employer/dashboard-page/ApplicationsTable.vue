@@ -43,7 +43,7 @@
       <template v-slot:header-cell-ownerName="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <TableFilter filter-name="Employee" :has-filter="chartFilters.employees && chartFilters.employees.length">
+          <TableFilter filter-name="Employee" :has-filter="boolean(chartFilters.employees && chartFilters.employees.length)">
             <q-select
               filled use-input use-chips multiple emit-value map-options
               label="Employee"
@@ -59,7 +59,7 @@
       <template v-slot:header-cell-platformName="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <TableFilter filter-name="Platform" :has-filter="chartFilters.platforms && chartFilters.platforms.length">
+          <TableFilter filter-name="Platform" :has-filter="boolean(chartFilters.platforms && chartFilters.platforms.length)">
             <q-select
               filled use-input use-chips multiple emit-value map-options
               label="Platform"
@@ -74,7 +74,7 @@
       <template v-slot:header-cell-jobTitle="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <TableFilter filter-name="Job title" :has-filter="chartFilters.jobTitle && chartFilters.jobTitle.length">
+          <TableFilter filter-name="Job title" :has-filter="boolean(chartFilters.jobTitle && chartFilters.jobTitle.length)">
             <q-input filled borderless debounce="300" v-model="chartFilters.jobTitle" placeholder="Job title">
               <template v-slot:append>
                 <q-icon name="search"/>
@@ -197,6 +197,9 @@ export default {
     }
   },
   methods: {
+    boolean (val) {
+      return Boolean(val)
+    },
     employeeOptionsFilter (filterTxt, update) {
       update(() => {
         this.employeeFilterText = filterTxt

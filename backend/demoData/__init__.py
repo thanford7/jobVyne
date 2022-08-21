@@ -1,7 +1,9 @@
+import datetime
 from datetime import timedelta
 from random import choice, choices, randint, random
 
 import names
+import pytz
 from django.db import IntegrityError
 from django.utils import timezone
 from faker import Faker
@@ -195,7 +197,7 @@ def generate_job_application(social_link_filter, job):
     last_name = names.get_last_name()
     email = fake.ascii_free_email()
     current_dt = timezone.now()
-    application_dt = fake.date_between(current_dt - timedelta(days=7), current_dt)
+    application_dt = fake.date_time_between(current_dt - timedelta(days=7), current_dt).replace(tzinfo=pytz.UTC)
     try:
         application = JobApplication(
             first_name=first_name,
@@ -223,7 +225,7 @@ def generate_page_view(social_link, access_dt=None):
         relative_url=f'social-link-filter/{social_link.id}/',
         social_link_filter=social_link,
         ip_address=ip_address,
-        access_dt=access_dt or fake.date_between(current_dt - timedelta(days=7), current_dt),
+        access_dt=access_dt or fake.date_time_between(current_dt - timedelta(days=7), current_dt).replace(tzinfo=pytz.UTC),
         city=city,
         country=country,
         region=state,
@@ -342,3 +344,5 @@ def create_recurring_data():
             generate_job_application(social_link, choice(jobs))
         for _ in range(view_count):
             generate_page_view(social_link)
+            
+    print('Data creation complete')

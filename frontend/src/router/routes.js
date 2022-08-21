@@ -96,7 +96,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'employee-dashboard',
-        component: () => import('pages/DashboardPage.vue')
+        component: () => import('pages/employee/DashboardPage.vue')
       },
       {
         path: ':key(employee-links)',

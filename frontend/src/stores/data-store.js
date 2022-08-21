@@ -9,8 +9,6 @@ export const useDataStore = defineStore('data', {
 
   actions: {
     async setSocialLinkPerformance (employerId, startDate, endDate) {
-      startDate = dateTimeUtil.serializeDate(startDate)
-      endDate = dateTimeUtil.serializeDate(endDate)
       const apiKey = this.makeApiKey(arguments)
       const data = this.socialLinkPerformanceData[apiKey]
       if (data) {
@@ -19,8 +17,8 @@ export const useDataStore = defineStore('data', {
       const resp = await this.$api.get('data/link-performance/', {
         params: {
           employer_id: employerId,
-          start_date: startDate,
-          end_date: endDate
+          start_dt: dateTimeUtil.serializeDate(startDate, true),
+          end_dt: dateTimeUtil.serializeDate(endDate, true, true)
         }
       })
       this.socialLinkPerformanceData[apiKey] = resp.data
