@@ -1,49 +1,6 @@
 <template>
   <div class="row q-gutter-y-md">
     <div class="col-12">
-      <FilterCard title="Jobs filter" class="q-mb-sm">
-        <template v-slot:filters>
-          <div class="col-12 col-md-4 q-pa-sm">
-            <q-input filled borderless debounce="300" v-model="jobsFilter.jobTitle" placeholder="Job title">
-              <template v-slot:append>
-                <q-icon name="search"/>
-              </template>
-            </q-input>
-          </div>
-          <div class="col-12 col-md-4 q-pa-sm">
-            <SelectJobDepartment v-model="jobsFilter.departments"/>
-          </div>
-          <div class="col-12 col-md-4 q-pa-sm">
-            <SelectJobCity v-model="jobsFilter.cities"/>
-          </div>
-          <div class="col-12 col-md-4 q-pa-sm">
-            <SelectJobState v-model="jobsFilter.states"/>
-          </div>
-          <div class="col-12 col-md-4 q-pa-sm">
-            <SelectJobCountry v-model="jobsFilter.countries"/>
-          </div>
-          <div class="col-12 col-md-4 q-pa-sm" style="font-size: 16px">
-            <DateRangeSelector v-model="jobsFilter.dateRange" placeholder="Posted date"/>
-          </div>
-          <div v-if="$route.query.ruleId" class="col-12 q-mb-sm q-ml-xs">
-            <q-chip
-              removable
-              @remove="removeRuleFilter"
-            >
-              <span v-if="parseInt($route.query.ruleId) > 0">
-                Jobs matching&nbsp;
-                <a
-                  href="#"
-                  @click="openShowBonusRuleDialog($event,$route.query.ruleId)"
-                >referral bonus rule</a>
-              </span>
-              <span v-else>Jobs without matching bonus rule</span>
-            </q-chip>
-          </div>
-        </template>
-      </FilterCard>
-    </div>
-    <div class="col-12">
       <q-table
         :rows="employerJobs"
         row-key="id"
@@ -72,6 +29,70 @@
             label="Edit referral bonus" icon="edit" color="primary"
             @click="openEditJobBonusDialog"
           />
+          <q-chip
+            v-if="$route.query.ruleId"
+            class="q-ml-md"
+            removable
+            @remove="removeRuleFilter"
+          >
+              <span v-if="parseInt($route.query.ruleId) > 0">
+                Jobs matching&nbsp;
+                <a
+                  href="#"
+                  @click="openShowBonusRuleDialog($event,$route.query.ruleId)"
+                >referral bonus rule</a>
+              </span>
+            <span v-else>Jobs without matching bonus rule</span>
+          </q-chip>
+        </template>
+        <template v-slot:header-cell-job_title="props">
+          <q-th :props="props">
+            {{ props.col.label }}
+            <TableFilter filter-name="Job title" :has-filter="jobsFilter.jobTitle && jobsFilter.jobTitle.length">
+              <q-input filled borderless debounce="300" v-model="jobsFilter.jobTitle" placeholder="Job title">
+                <template v-slot:append>
+                  <q-icon name="search"/>
+                </template>
+              </q-input>
+            </TableFilter>
+          </q-th>
+        </template>
+        <template v-slot:header-cell-job_department="props">
+          <q-th :props="props">
+            {{ props.col.label }}
+            <TableFilter filter-name="Job department"
+                         :has-filter="jobsFilter.departments && jobsFilter.departments.length">
+              <SelectJobDepartment v-model="jobsFilter.departments"/>
+            </TableFilter>
+          </q-th>
+        </template>
+        <template v-slot:header-cell-locations="props">
+          <q-th :props="props">
+            {{ props.col.label }}
+            <TableFilter
+              filter-name="Location"
+              :has-filter="(
+                (jobsFilter.cities && jobsFilter.cities.length) ||
+                (jobsFilter.states && jobsFilter.states.length) ||
+                (jobsFilter.countries && jobsFilter.countries.length)
+              )"
+            >
+              <div class="q-gutter-y-sm">
+                <SelectJobCity v-model="jobsFilter.cities"/>
+                <SelectJobState v-model="jobsFilter.states"/>
+                <SelectJobCountry v-model="jobsFilter.countries"/>
+              </div>
+            </TableFilter>
+          </q-th>
+        </template>
+        <template v-slot:header-cell-open_date="props">
+          <q-th :props="props">
+            {{ props.col.label }}
+            <TableFilter filter-name="Job department"
+                         :has-filter="jobsFilter.dateRange">
+              <DateRangeSelector v-model="jobsFilter.dateRange" placeholder="Posted date"/>
+            </TableFilter>
+          </q-th>
         </template>
         <template v-slot:body-cell-locations="props">
           <q-td>
@@ -126,12 +147,12 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogJobBonus from 'components/dialogs/DialogJobBonus.vue'
 import DialogShowBonusRule from 'components/dialogs/DialogShowBonusRule.vue'
-import FilterCard from 'components/FilterCard.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
+import TableFilter from 'components/tables/TableFilter.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
 import { BONUS_TYPES } from 'src/utils/bonus.js'
@@ -173,8 +194,8 @@ export default {
     SelectJobState,
     SelectJobCity,
     SelectJobDepartment,
-    FilterCard,
-    CustomTooltip
+    CustomTooltip,
+    TableFilter
   },
   data () {
     return {
@@ -255,7 +276,7 @@ export default {
         if (toDate && dateTimeUtil.isAfter(job.open_date, toDate)) {
           return false
         }
-        if (ruleId > 0 && job.bonus_rule && job.bonus_rule.id !== ruleId) {
+        if (ruleId > 0 && (!job.bonus_rule || job.bonus_rule.id !== ruleId)) {
           return false
         }
         // Filter for jobs without a bonus rule

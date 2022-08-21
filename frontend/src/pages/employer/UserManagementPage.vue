@@ -22,44 +22,6 @@
         <q-tab-panel name="users">
           <div class="row q-gutter-y-md">
             <div class="col-12">
-              <FilterCard title="User filters">
-                <template v-slot:filters>
-                  <div class="col-12 col-md-4 q-pa-sm">
-                    <q-input filled borderless debounce="300" v-model="userFilter.searchText" placeholder="Search">
-                      <template v-slot:append>
-                        <q-icon name="search"/>
-                        <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
-                          Search by first name, last name, or email
-                        </q-tooltip>
-                      </template>
-                    </q-input>
-                  </div>
-                  <div class="col-12 col-md-4 q-pa-sm">
-                    <SelectUserType
-                      v-model="userFilter.userTypeBitsList"
-                      :is-multi="true"
-                      :is-required="false"
-                    />
-                  </div>
-                  <div class="col-12 col-md-4 q-pa-sm">
-                    <SelectPermissionGroup
-                      v-model="userFilter.permissionGroupIds"
-                      :is-required="false"
-                    />
-                  </div>
-                  <div class="col-12 col-md-4 q-pa-sm">
-                    <SelectYesNo label="Approval Required" v-model="userFilter.isApprovalRequired"/>
-                  </div>
-                  <div class="col-12 col-md-4 q-pa-sm">
-                    <SelectYesNo label="Active" v-model="userFilter.isActive"/>
-                  </div>
-                  <div class="col-12 q-pa-sm">
-                    <a href="#" @click="clearUserFilter">Clear all</a>
-                  </div>
-                </template>
-              </FilterCard>
-            </div>
-            <div class="col-12">
               <q-table
                 ref="employeeTable"
                 :rows="employees || []"
@@ -71,78 +33,132 @@
                 v-model:selected="selectedUsers"
                 :rows-per-page-options="[25, 50, 100]"
               >
-                <template v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)" v-slot:top>
-                  <q-btn-dropdown color="primary" label="User actions">
-                    <q-list>
-                      <q-item clickable v-close-popup @click="openUserModal()">
-                        <q-item-section avatar>
-                          <q-icon name="add"/>
-                        </q-item-section>
-                        <q-item-section>
-                          <q-item-label>Add user</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                      <template v-if="selectedUsers && selectedUsers.length">
-                        <q-item clickable v-close-popup @click="openUserModal(selectedUsers)">
+                <template v-slot:top>
+                  <div class="q-gutter-y-sm flex items-center">
+                    <q-btn-dropdown
+                      v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)"
+                      color="primary" label="User actions">
+                      <q-list>
+                        <q-item clickable v-close-popup @click="openUserModal()">
                           <q-item-section avatar>
-                            <q-icon name="edit"/>
+                            <q-icon name="add"/>
                           </q-item-section>
                           <q-item-section>
-                            <q-item-label>Modify {{ dataUtil.pluralize('user', selectedUsers.length) }}</q-item-label>
+                            <q-item-label>Add user</q-item-label>
                           </q-item-section>
                         </q-item>
-                        <q-item
-                          v-if="deactivatedUserCount"
-                          clickable v-close-popup @click="activateUsers(false)"
-                        >
-                          <q-item-section avatar>
-                            <q-icon name="power"/>
-                          </q-item-section>
-                          <q-item-section>
-                            <q-item-label>Re-activate {{
-                                dataUtil.pluralize('user', deactivatedUserCount)
-                              }}
-                            </q-item-label>
-                          </q-item-section>
-                        </q-item>
-                        <q-item
-                          v-if="activatedUserCount"
-                          clickable v-close-popup @click="activateUsers(true)"
-                        >
-                          <q-item-section avatar>
-                            <q-icon name="power_off"/>
-                          </q-item-section>
-                          <q-item-section>
-                            <q-item-label>Deactivate {{ dataUtil.pluralize('user', activatedUserCount) }}</q-item-label>
-                            <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
-                              User(s) will no longer be able to create links for your company. Any current links will be
-                              re-directed
-                              to a general company page with all open jobs shown.
-                            </q-tooltip>
-                          </q-item-section>
-                        </q-item>
-                        <q-item
-                          v-if="unapprovedUserCount"
-                          clickable v-close-popup @click="approveUsers()"
-                        >
-                          <q-item-section avatar>
-                            <q-icon name="how_to_reg"/>
-                          </q-item-section>
-                          <q-item-section>
-                            <q-item-label>Approve permissions for {{
-                                dataUtil.pluralize('user', unapprovedUserCount)
-                              }}
-                            </q-item-label>
-                            <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
-                              If you don't want to approve all permissions for a specific user. Select the user, click
-                              the "Modify user"
-                              button and remove the permission from the list of permissions for that user.
-                            </q-tooltip>
-                          </q-item-section>
-                        </q-item>
+                        <template v-if="selectedUsers && selectedUsers.length">
+                          <q-item clickable v-close-popup @click="openUserModal(selectedUsers)">
+                            <q-item-section avatar>
+                              <q-icon name="edit"/>
+                            </q-item-section>
+                            <q-item-section>
+                              <q-item-label>Modify {{ dataUtil.pluralize('user', selectedUsers.length) }}</q-item-label>
+                            </q-item-section>
+                          </q-item>
+                          <q-item
+                            v-if="deactivatedUserCount"
+                            clickable v-close-popup @click="activateUsers(false)"
+                          >
+                            <q-item-section avatar>
+                              <q-icon name="power"/>
+                            </q-item-section>
+                            <q-item-section>
+                              <q-item-label>Re-activate {{
+                                  dataUtil.pluralize('user', deactivatedUserCount)
+                                }}
+                              </q-item-label>
+                            </q-item-section>
+                          </q-item>
+                          <q-item
+                            v-if="activatedUserCount"
+                            clickable v-close-popup @click="activateUsers(true)"
+                          >
+                            <q-item-section avatar>
+                              <q-icon name="power_off"/>
+                            </q-item-section>
+                            <q-item-section>
+                              <q-item-label>Deactivate {{
+                                  dataUtil.pluralize('user', activatedUserCount)
+                                }}
+                              </q-item-label>
+                              <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                                User(s) will no longer be able to create links for your company. Any current links will
+                                be
+                                re-directed
+                                to a general company page with all open jobs shown.
+                              </q-tooltip>
+                            </q-item-section>
+                          </q-item>
+                          <q-item
+                            v-if="unapprovedUserCount"
+                            clickable v-close-popup @click="approveUsers()"
+                          >
+                            <q-item-section avatar>
+                              <q-icon name="how_to_reg"/>
+                            </q-item-section>
+                            <q-item-section>
+                              <q-item-label>Approve permissions for {{
+                                  dataUtil.pluralize('user', unapprovedUserCount)
+                                }}
+                              </q-item-label>
+                              <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                                If you don't want to approve all permissions for a specific user. Select the user, click
+                                the "Modify user"
+                                button and remove the permission from the list of permissions for that user.
+                              </q-tooltip>
+                            </q-item-section>
+                          </q-item>
+                        </template>
+                      </q-list>
+                    </q-btn-dropdown>
+                    <q-input
+                      class="q-ml-md-md"
+                      dense filled borderless debounce="300"
+                      v-model="userFilter.searchText" placeholder="Search"
+                    >
+                      <template v-slot:append>
+                        <q-icon name="search"/>
+                        <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                          Search by first name, last name, or email
+                        </q-tooltip>
                       </template>
-                    </q-list>
-                  </q-btn-dropdown>
+                    </q-input>
+                    <div class="q-ml-md-md" style="display: inline-block">
+                      <a href="#" @click="clearUserFilter">Clear all filters</a>
+                    </div>
+                  </div>
+                </template>
+                <template v-slot:header-cell-isApprovalRequired="props">
+                  <q-th :props="props">
+                    {{ props.col.label }}
+                    <TableFilter filter-name="Approval required"
+                                 :has-filter="userFilter.isApprovalRequired && userFilter.isApprovalRequired.length">
+                      <SelectYesNo label="Approval Required" v-model="userFilter.isApprovalRequired"/>
+                    </TableFilter>
+                  </q-th>
+                </template>
+                <template v-slot:header-cell-isEmployerDeactivated="props">
+                  <q-th :props="props">
+                    {{ props.col.label }}
+                    <TableFilter filter-name="Active"
+                                 :has-filter="userFilter.isActive && userFilter.isActive.length">
+                      <SelectYesNo label="Active" v-model="userFilter.isActive"/>
+                    </TableFilter>
+                  </q-th>
+                </template>
+                <template v-slot:header-cell-userTypeBits="props">
+                  <q-th :props="props">
+                    {{ props.col.label }}
+                    <TableFilter filter-name="User type"
+                                 :has-filter="userFilter.userTypeBitsList && userFilter.userTypeBitsList.length">
+                      <SelectUserType
+                        v-model="userFilter.userTypeBitsList"
+                        :is-multi="true"
+                        :is-required="false"
+                      />
+                    </TableFilter>
+                  </q-th>
                 </template>
                 <template v-slot:header-cell-permissionGroups>
                   <q-th class="text-left">
@@ -155,6 +171,13 @@
                         <q-chip label="Unapproved" color="negative" text-color="black"/>
                       </div>
                     </CustomTooltip>
+                    <TableFilter filter-name="Permission group"
+                                 :has-filter="userFilter.permissionGroupIds && userFilter.permissionGroupIds.length">
+                      <SelectPermissionGroup
+                        v-model="userFilter.permissionGroupIds"
+                        :is-required="false"
+                      />
+                    </TableFilter>
                   </q-th>
                 </template>
                 <template v-slot:body-cell-isApprovalRequired="props">
@@ -324,9 +347,9 @@
 </template>
 
 <script>
-import FilterCard from 'components/FilterCard.vue'
 import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import PageHeader from 'components/PageHeader.vue'
+import TableFilter from 'components/tables/TableFilter.vue'
 import { useEmployerStore } from 'stores/employer-store'
 import { useAuthStore } from 'stores/auth-store'
 import { Loading, useMeta, useQuasar } from 'quasar'
@@ -368,7 +391,13 @@ const userColumns = [
   { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
   { name: 'userTypeBits', field: 'user_type_bits', align: 'left', label: 'User types' },
   { name: 'permissionGroups', field: 'permission_groups', align: 'left', label: 'Permission groups' },
-  { name: 'created_dt', field: 'created_dt', align: 'left', label: 'Joined date', format: dateTimeUtil.getShortDate.bind(dateTimeUtil) }
+  {
+    name: 'created_dt',
+    field: 'created_dt',
+    align: 'left',
+    label: 'Joined date',
+    format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
+  }
 ]
 
 const userFilterTemplate = {
@@ -381,7 +410,14 @@ const userFilterTemplate = {
 
 export default {
   name: 'UserManagementPage',
-  components: { FilterCard, SelectYesNo, SelectPermissionGroup, SelectUserType, CustomTooltip, PageHeader },
+  components: {
+    SelectYesNo,
+    SelectPermissionGroup,
+    SelectUserType,
+    CustomTooltip,
+    PageHeader,
+    TableFilter
+  },
   data () {
     return {
       tab: 'users',
