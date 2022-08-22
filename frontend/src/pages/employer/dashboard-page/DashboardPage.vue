@@ -4,7 +4,7 @@
         <PageHeader title="Employer dashboard"/>
         <div class="row q-mt-md q-gutter-y-md">
           <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
-            <LinkPerformanceChart/>
+            <LinkPerformanceChart :is-employer="true"/>
           </div>
           <div class="col-12 col-md-6 col-lg-4 q-pa-sm">
             <EmployeeLeaderBoard :is-employer="true"/>

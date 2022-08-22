@@ -16,7 +16,7 @@ export const useDataStore = defineStore('data', {
       const resp = await this.$api.get('data/link-performance/', {
         params: {
           employer_id: employerId,
-          user_id: userId,
+          owner_id: userId,
           start_dt: dateTimeUtil.serializeDate(startDate, true),
           end_dt: dateTimeUtil.serializeDate(endDate, true, true)
         }

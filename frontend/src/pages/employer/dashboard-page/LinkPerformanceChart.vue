@@ -30,16 +30,24 @@ import { useDataStore } from 'stores/data-store.js'
 
 export default {
   name: 'LinkPerformanceChart',
+  props: {
+    isEmployer: {
+      type: Boolean,
+      default: false
+    },
+    defaultDateRange: [Object, null],
+    defaultDateGroup: [String, null]
+  },
   components: { ChartSkeleton, CustomTooltip, TimeSeriesChart },
   data () {
     return {
       isInitLoaded: false,
       isLoading: false,
-      dateRange: {
+      dateRange: this.defaultDateRange || {
         from: dateTimeUtil.addDays(new Date(), -6, true),
         to: new Date()
       },
-      dateGroup: GROUPINGS.DAY.key,
+      dateGroup: this.defaultDateGroup || GROUPINGS.DAY.key,
       chartRawData: null,
       chartOptions: {}
     }
@@ -95,10 +103,11 @@ export default {
         return {}
       }
       this.isLoading = true
+      const args = (this.isEmployer) ? { employerId: this.authStore.propUser.employer_id } : { userId: this.authStore.propUser.id }
       this.chartRawData = await this.dataStore.getSocialLinkPerformance(
         this.dateRange.from,
         this.dateRange.to,
-        { employerId: this.authStore.propUser.employer_id }
+        args
       )
       this.isLoading = false
     }

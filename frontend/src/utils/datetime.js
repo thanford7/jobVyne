@@ -30,13 +30,14 @@ class DateTimeUtil {
     return date.formatDate(dateTimeStr, this.dateTimeFormat)
   }
 
-  getStartOfMonthDate (targetDate, { asString = true } = {}) {
+  getStartOfMonthDate (targetDate, { asString = true, monthOffset = 0 } = {}) {
     if (dataUtil.isString(targetDate)) {
       targetDate = new Date(targetDate)
     }
     const year = targetDate.getFullYear()
     const month = targetDate.getMonth()
-    const firstDayOfMonth = new Date(year, month, 1)
+    let firstDayOfMonth = new Date(year, month, 1)
+    firstDayOfMonth = date.addToDate(firstDayOfMonth, { months: monthOffset })
     if (asString) {
       return this.getShortDate(firstDayOfMonth)
     }
