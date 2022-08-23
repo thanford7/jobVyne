@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
@@ -8,7 +10,7 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.user import JobVyneUser, UserUnknownEmployer
+from jvapp.models.user import JobVyneUser, UserSocialCredential, UserUnknownEmployer
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import AttributeCfg, set_object_attributes
@@ -207,6 +209,19 @@ class UserEmailVerificationView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{getattr(user, email_key)} successfully verified'
         })
+    
+    
+class UserSocialCredentialsView(JobVyneAPIView):
+    
+    def get(self, request):
+        social_credentials = UserSocialCredential.objects.filter(user_id=self.user.id)
+        data = defaultdict(list)
+        for cred in social_credentials:
+            data[cred.provider].append({
+                'email': cred.email,
+                'provider': cred.provider
+            })
+        return Response(status=status.HTTP_200_OK, data=data)
 
 
 class JobVynePasswordResetForm(PasswordResetForm):

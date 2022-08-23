@@ -19,6 +19,7 @@ from social_django.utils import psa
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.user import UserView
 from jvapp.models import JobVyneUser
+from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
 from jvapp.utils.logger import getLogger
@@ -140,11 +141,28 @@ def social_auth(request, backend):
         # this makes it tough to debug except by examining the server logs.
         return Response('Authentication failed', status=status.HTTP_400_BAD_REQUEST)
     
-    if user.is_active:
+    if user.is_active and data.get('isLogin', True):
         login(request, user)
         return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
-    else:
+    elif not user.is_active:
         return Response('User is not active', status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        try:
+            social_credential = UserSocialCredential.objects.get(
+                user=request.user,
+                provider=backend,
+                email=user.email
+            )
+            social_credential.access_token = access_token
+            social_credential.save()
+        except UserSocialCredential.DoesNotExist:
+            UserSocialCredential(
+                user=request.user,
+                access_token=access_token,
+                provider=backend,
+                email=user.email
+            ).save()
+        return Response(status=status.HTTP_200_OK)
 
 
 class SocialAuthCredentialsView(APIView):

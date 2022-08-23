@@ -239,6 +239,16 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         return self.business_email and get_domain_from_email(self.business_email) in self.employer.email_domains
     
     
+class UserSocialCredential(models.Model):
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='social_credential')
+    access_token = models.CharField(max_length=1000)
+    provider = models.CharField(max_length=32)
+    email = models.EmailField()
+    
+    class Meta:
+        unique_together = ('user', 'provider', 'email')
+    
+    
 class UserEmployerPermissionGroup(models.Model):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='employer_permission_group')
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE)

@@ -51,6 +51,24 @@
           </div>
         </q-item-section>
       </q-item>
+      <q-item
+        v-if="!appsByEmployee || !appsByEmployee.length"
+        class="q-mt-sm"
+      >
+        <q-item-section avatar>
+          <q-icon name="fa-solid fa-bed"/>
+        </q-item-section>
+        <q-item-section>
+          <div class="row">
+            <div class="col-12 text-bold">
+              No employees on the board this week
+            </div>
+            <div class="col-12 text-bold">
+              You could be the first...
+            </div>
+          </div>
+        </q-item-section>
+      </q-item>
     </q-list>
     <q-spinner-ios
       class="chart-container__loading"

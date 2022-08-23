@@ -1,8 +1,9 @@
 <template>
   <q-card>
-    <div class="row q-ml-sm q-py-sm q-pr-md">
-      <div class="text-h6 q-ml-sm">{{ title }}</div>
+    <div class="row q-py-sm q-pr-md border-bottom-1-gray-100 bg-grey-2">
+      <div class="text-h6 q-ml-md">{{ title }}</div>
       <q-space/>
+      <slot name="header"/>
       <q-btn
         color="grey-7"
         flat dense
@@ -12,7 +13,7 @@
     </div>
     <q-slide-transition>
       <div v-show="isUserFilterExpanded" class="row">
-        <slot name="filters"/>
+        <slot name="body"/>
       </div>
     </q-slide-transition>
   </q-card>
@@ -20,7 +21,7 @@
 
 <script>
 export default {
-  name: 'FilterCard',
+  name: 'CollapsableCard',
   props: {
     title: String
   },

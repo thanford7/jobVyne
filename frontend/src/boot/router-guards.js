@@ -17,11 +17,11 @@ export default boot(({ app, router }) => {
     // Handle oauth callback
     if (to.name === 'auth-callback') {
       const provider = to.params.provider
-      const { state, redirectPageUrl, redirectParams, userTypeBit } = JSON.parse(to.query.state)
+      const { state, redirectPageUrl, redirectParams, userTypeBit, isLogin } = JSON.parse(to.query.state)
       try {
         await $api.post(
           `/social/${provider}/`,
-          getAjaxFormData({ code: to.query.code, state, userTypeBit })
+          getAjaxFormData({ code: to.query.code, state, userTypeBit, isLogin })
         )
       } catch (e) {
         return { name: 'error' }

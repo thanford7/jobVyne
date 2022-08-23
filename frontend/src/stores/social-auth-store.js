@@ -12,11 +12,12 @@ This is the process for social authentication:
 
 export const useSocialAuthStore = defineStore('social-auth', {
   state: () => ({
-    socialCfgs: null
+    socialCfgs: null,
+    socialCredentials: null
   }),
 
   actions: {
-    async getOauthUrl (provider, { redirectPageUrl, redirectParams, userTypeBit } = {}) {
+    async getOauthUrl (provider, { redirectPageUrl, redirectParams, userTypeBit, isLogin = true } = {}) {
       if (!this.socialCfgs) {
         const resp = await this.$api.get('social-credentials/')
         this.socialCfgs = resp.data
@@ -27,9 +28,17 @@ export const useSocialAuthStore = defineStore('social-auth', {
         state: providerCfg.auth_params.state,
         redirectPageUrl,
         redirectParams,
-        userTypeBit
+        userTypeBit,
+        isLogin
       })
       return buildURL(providerCfg.auth_url, providerCfg.auth_params)
+    },
+    async setUserSocialCredentials (isForceRefresh) {
+      if (!isForceRefresh && this.socialCredentials) {
+        return
+      }
+      const resp = await this.$api.get('user/social-credentials/')
+      this.socialCredentials = resp.data
     }
   }
 })
