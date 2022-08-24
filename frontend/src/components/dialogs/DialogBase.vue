@@ -1,7 +1,20 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
+  <q-dialog
+    ref="dialogRef"
+    :maximized="isFullScreen"
+    transition-show="slide-up"
+    transition-hide="slide-down"
+    @hide="onDialogHide"
+  >
     <q-card class="q-dialog-plugin" :style="cardStyle">
-      <q-card-section v-if="isIncludeHeader">
+      <q-bar v-if="isFullScreen">
+        {{ baseTitleText }}
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-card-section v-if="isIncludeHeader && !isFullScreen">
         <div v-if="baseTitleText" class="text-h6">
           {{baseTitleText}}
         </div>
@@ -47,6 +60,10 @@ export default {
     baseTitleText: {
       type: [String, null]
     },
+    isFullScreen: {
+      type: Boolean,
+      default: false
+    },
     isIncludeButtons: {
       type: Boolean,
       default: true
@@ -67,6 +84,9 @@ export default {
   ],
   computed: {
     cardStyle () {
+      if (this.isFullScreen) {
+        return
+      }
       return { width: this.width, maxWidth: '95vw' }
     }
   },

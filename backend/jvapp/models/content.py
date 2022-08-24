@@ -4,7 +4,7 @@ from django.db import models
 
 from jvapp.models.abstract import AuditFields
 
-__all__ = ('ContentType', 'ContentItem')
+__all__ = ('ContentType', 'ContentItem', 'SocialContentItem')
 
 
 class ContentType(Enum):
@@ -24,3 +24,9 @@ class ContentItem(AuditFields):
     
     class Meta:
         ordering = ('orderIdx', )
+
+
+class SocialContentItem(models.Model):
+    employer = models.ForeignKey('Employer', null=True, blank=True, on_delete=models.CASCADE, related_name='social_content_item')
+    user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.CASCADE, related_name='social_content_item')
+    content = models.TextField()

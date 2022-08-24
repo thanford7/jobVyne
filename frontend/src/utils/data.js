@@ -519,7 +519,7 @@ class DataUtil {
     }, 0)
   }
 
-  truncateText (text, charCount, isWholeWord = true) {
+  truncateText (text, charCount, { isWholeWord = true, truncateChar = '...' } = {}) {
     if (!text) {
       return ''
     }
@@ -529,10 +529,13 @@ class DataUtil {
     let truncatedText = ''
     let endOfWord = false
     // eslint-disable-next-line no-unmodified-loop-condition
-    while (currentCharCount < charCount && (!isWholeWord || endOfWord)) {
-      truncatedText += text.slice(currentCharCount)
-      endOfWord = (currentCharCount + 1 === charCount) || text.slice(currentCharCount + 1).match(/\s/)
+    while (currentCharCount < charCount || (isWholeWord && !endOfWord)) {
+      truncatedText = text.slice(0, currentCharCount + 1)
+      endOfWord = currentCharCount === text.length || text.slice(currentCharCount + 1, currentCharCount + 2).match(/\s/)
       currentCharCount++
+    }
+    if (truncatedText.length < text.length) {
+      truncatedText = truncatedText + truncateChar
     }
     return truncatedText
   }

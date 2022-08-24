@@ -109,6 +109,12 @@ const routes = [
         name: 'employee-social-accounts',
         meta: { userTypeBits: USER_TYPES.Employee },
         component: () => import('pages/employee/SocialAccountsPage.vue')
+      },
+      {
+        path: ':key(employee-content)',
+        name: 'employee-content',
+        meta: { userTypeBits: USER_TYPES.Employee },
+        component: () => import('pages/employee/ContentPage.vue')
       }
     ]
   },
