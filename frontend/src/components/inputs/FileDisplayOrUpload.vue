@@ -23,7 +23,7 @@
         </a>
       </span>
     </div>
-    <div v-if="fileUrl">
+    <div v-if="fileUrl && isAllowFileUpdate">
       <div class="q-gutter-sm">
         <q-radio v-model="isUpload" :val="true" :label="`Upload new ${label}`"/>
         <q-radio v-model="isUpload" :val="false" :label="`Use current ${label}`"/>
@@ -52,6 +52,10 @@ export default {
     },
     label: {
       type: String
+    },
+    isAllowFileUpdate: {
+      type: Boolean,
+      default: true
     }
   },
   data () {

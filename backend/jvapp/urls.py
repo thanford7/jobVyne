@@ -28,6 +28,7 @@ urlpatterns = [
     re_path('^social-link-jobs/(?P<link_filter_id>\S+)/?$', social.SocialLinkJobsView.as_view()),
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
+    re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
     path('waitlist/', waitlist.WaitlistView.as_view()),
     

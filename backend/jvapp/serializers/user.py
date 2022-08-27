@@ -1,6 +1,6 @@
 import functools
 
-from jvapp.models.user import JobVyneUser
+from jvapp.models.user import JobVyneUser, UserFile
 from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.utils.datetime import get_datetime_format_or_none
 
@@ -56,3 +56,12 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
         data['is_employer_verified'] = user.is_employer_verified
         
     return data
+
+
+def get_serialized_user_file(user_file: UserFile):
+    return {
+        'id': user_file.id,
+        'user_id': user_file.user_id,
+        'url': user_file.file.url,
+        'title': user_file.title
+    }

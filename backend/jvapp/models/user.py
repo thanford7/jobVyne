@@ -2,6 +2,7 @@ from collections import defaultdict
 from enum import Enum
 
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
@@ -9,12 +10,12 @@ from django.db.models import Q
 from django.utils import crypto, timezone
 from django.utils.translation import gettext_lazy as _
 
-from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
+from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
 
 
 __all__ = (
     'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
-    'getUserUploadLocation', 'UserEmployerPermissionGroup'
+    'getUserUploadLocation', 'UserEmployerPermissionGroup', 'UserFile'
 )
 
 from jvapp.utils.email import get_domain_from_email
@@ -25,7 +26,12 @@ def generate_password():
 
 
 def getUserUploadLocation(instance, filename):
-    return f'resumes/{instance.email}/{filename}'
+    if hasattr(instance, 'user_id'):
+        email = instance.user.email
+    else:
+        email = instance.email
+    
+    return f'resumes/{email}/{filename}'
 
 
 # Keep in sync with frontend user-types
@@ -237,7 +243,22 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
             return False
     
         return self.business_email and get_domain_from_email(self.business_email) in self.employer.email_domains
+
+
+class UserFile(models.Model, JobVynePermissionsMixin):
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='file')
+    file = models.FileField(
+        upload_to=getUserUploadLocation,
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_ALL)]
+    )
+    title = models.CharField(max_length=100)
     
+    def __str__(self):
+        return self.title
+    
+    def _jv_can_create(self, user):
+        return self.user_id == user.id
+
     
 class UserSocialCredential(models.Model):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='social_credential')

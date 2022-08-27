@@ -562,9 +562,6 @@ class EmployerFileView(JobVyneAPIView):
     
     @atomic
     def post(self, request):
-        if not self.data['employer_id']:
-            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
         employer_file = EmployerFile()
         file = self.files['file'][0] if self.files.get('file') else None
         self.update_employer_file(employer_file, self.data, self.user, file=file)
@@ -575,9 +572,6 @@ class EmployerFileView(JobVyneAPIView):
     
     @atomic
     def put(self, request, file_id):
-        if not self.data['employer_id']:
-            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
         employer_file = self.get_employer_files(file_id=file_id)
         self.update_employer_file(employer_file, self.data, self.user)
         return Response(status=status.HTTP_200_OK, data={

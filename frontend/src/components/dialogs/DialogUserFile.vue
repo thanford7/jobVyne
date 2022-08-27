@@ -36,38 +36,35 @@
           </CustomTooltip>
         </template>
       </q-input>
-      <FileTagsSelector v-model="formData.tags"/>
     </div>
   </DialogBase>
 </template>
 
 <script>
-import fileUtil, { FILE_TYPES } from 'src/utils/file'
+import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import { useQuasar } from 'quasar'
-import CustomTooltip from 'components/CustomTooltip.vue'
-import { useEmployerStore } from 'stores/employer-store'
-import { useAuthStore } from 'stores/auth-store'
-import FileTagsSelector from 'components/inputs/FileTagsSelector.vue'
-import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests'
+import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
+import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
+import { useAuthStore } from 'stores/auth-store.js'
+import { useContentStore } from 'stores/content-store.js'
 
-export const loadDialogEmployerFileDataFn = () => {
-  const employerStore = useEmployerStore()
+export const loadDialogUserFileDataFn = () => {
+  const contentStore = useContentStore()
   const authStore = useAuthStore()
   return authStore.setUser().then(() => {
     return Promise.all([
-      employerStore.setEmployerFiles(authStore.propUser.employer_id),
-      employerStore.setEmployerFileTags(authStore.propUser.employer_id)
+      contentStore.setUserFiles(authStore.propUser.id)
     ])
   })
 }
 
 export default {
-  name: 'DialogEmployerFile',
+  name: 'DialogUserFile',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { FileTagsSelector, CustomTooltip, FileDisplayOrUpload, DialogBase },
+  components: { CustomTooltip, FileDisplayOrUpload, DialogBase },
   props: {
     file: {
       type: [Object, null]
@@ -94,15 +91,14 @@ export default {
       return fileUtil.getAllowedFileExtensionsStr(this.fileTypeKeys)
     },
     currentFileNames () {
-      const employerFiles = this.employerStore.getEmployerFiles(this.authStore.propUser.employer_id)
-      return employerFiles.map((f) => fileUtil.getFileNameFromUrl(f.url))
+      const userFiles = this.contentStore.getUserFiles(this.authStore.propUser.id)
+      return userFiles.map((f) => fileUtil.getFileNameFromUrl(f.url))
     }
   },
   data () {
     return {
       formData: {
         title: null,
-        tags: null,
         file: null,
         file_url: null
       },
@@ -127,31 +123,29 @@ export default {
       }
     },
     async saveFile () {
-      const employerId = this.authStore.propUser.employer_id
+      const userId = this.authStore.propUser.id
       const data = Object.assign(
         {},
         this.formData,
         this.$refs.fileUpload.getValues(),
-        { employer_id: employerId }
+        { user_id: userId }
       )
       const ajaxData = getAjaxFormData(data, [this.newFileKey])
-      let resp
       if (!this.file) {
-        resp = await this.$api.post('employer/file/', ajaxData)
+        await this.$api.post('user/file/', ajaxData)
       } else {
-        resp = await this.$api.put(`employer/file/${this.file.id}`, ajaxData)
+        await this.$api.put(`user/file/${this.file.id}`, ajaxData)
       }
       await Promise.all([
-        this.employerStore.setEmployerFiles(employerId, true),
-        this.employerStore.setEmployerFileTags(employerId, true)
+        this.contentStore.setUserFiles(userId, true)
       ])
-      this.$emit('ok', resp.data.id)
+      this.$emit('ok')
     }
   },
   setup () {
     return {
       authStore: useAuthStore(),
-      employerStore: useEmployerStore(),
+      contentStore: useContentStore(),
       q: useQuasar()
     }
   }

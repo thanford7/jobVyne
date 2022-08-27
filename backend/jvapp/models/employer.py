@@ -211,11 +211,11 @@ class EmployerFile(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_create(self, user):
         return (
-                user.is_admin
-                or (
-                        self.employer_id == user.employer_id
-                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-                )
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+            )
         )
 
 
@@ -228,11 +228,11 @@ class EmployerFileTag(models.Model, JobVynePermissionsMixin):
     
     def _jv_can_create(self, user):
         return (
-                user.is_admin
-                or (
-                        self.employer_id == user.employer_id
-                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-                )
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+            )
         )
 
 
@@ -243,11 +243,11 @@ class EmployerPage(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_create(self, user):
         return (
-                user.is_admin
-                or (
-                        self.employer_id == user.employer_id
-                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-                )
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+            )
         )
 
 

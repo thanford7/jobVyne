@@ -10,9 +10,9 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.user import JobVyneUser, UserSocialCredential, UserUnknownEmployer
+from jvapp.models.user import JobVyneUser, UserFile, UserSocialCredential, UserUnknownEmployer
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
-from jvapp.serializers.user import get_serialized_user
+from jvapp.serializers.user import get_serialized_user, get_serialized_user_file
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.email import send_email
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
@@ -159,6 +159,78 @@ class UserView(JobVyneAPIView):
                 'token': generate_user_token(user, email_key)
             }
         )
+        
+        
+class UserFileView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (user_id := self.query_params.get('user_id')):
+            return Response('A user ID is required', status=status.HTTP_400_BAD_REQUEST)
+        files = self.get_user_files(user_id)
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[get_serialized_user_file(f) for f in files]
+        )
+    
+    @atomic
+    def post(self, request):
+        user_file = UserFile()
+        file = self.files['file'][0] if self.files.get('file') else None
+        self.update_user_file(user_file, self.data, self.user, file=file)
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                SUCCESS_MESSAGE_KEY: f'Created a new file titled {user_file.title}'
+            }
+        )
+    
+    @atomic
+    def put(self, request, file_id):
+        user_file = UserFile.objects.get(id=file_id)
+        self.update_user_file(user_file, self.data, self.user)
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                SUCCESS_MESSAGE_KEY: f'Updated file titled {user_file.title}'
+            }
+        )
+    
+    @atomic
+    def delete(self, request, file_id):
+        user_file = UserFile.objects.get(id=file_id)
+        user_file.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+        user_file.delete()
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                SUCCESS_MESSAGE_KEY: 'File deleted'
+            }
+        )
+    
+    @staticmethod
+    def get_user_files(user_id):
+        return UserFile.objects.filter(user_id=user_id)
+
+    @staticmethod
+    @atomic
+    def update_user_file(user_file, data, user, file=None):
+        set_object_attributes(user_file, data, {
+            'user_id': None,
+            'title': None
+        })
+    
+        if file:
+            user_file.file = file
+    
+        user_file.title = (
+                user_file.title
+                or getattr(file, 'name', None)
+                or user_file.file.name.split('/')[-1]
+        )
+    
+        permission_type = PermissionTypes.EDIT.value if user_file.id else PermissionTypes.CREATE.value
+        user_file.jv_check_permission(permission_type, user)
+        user_file.save()
         
         
 class UserEmailVerificationGenerateView(JobVyneAPIView):

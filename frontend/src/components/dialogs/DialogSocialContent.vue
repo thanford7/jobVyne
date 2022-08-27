@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    :base-title-text="`${(contentItem.id) ? 'Edit' : 'Create'} content item`"
+    :base-title-text="`${(contentItem.id) ? 'Edit' : 'Create'} template`"
     :primary-button-text="(!contentItem.id) ? 'Create' : 'Update'"
     :is-full-screen="true"
     @ok="saveContent"

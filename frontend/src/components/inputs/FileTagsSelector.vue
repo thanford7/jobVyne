@@ -1,5 +1,6 @@
 <template>
   <q-select
+    v-if="isLoaded"
     filled use-chips multiple
     v-model="tags"
     @update:model-value="$emit('update:model-value', $event)"
@@ -24,11 +25,10 @@
 <script>
 import { useEmployerStore } from 'stores/employer-store'
 import { useAuthStore } from 'stores/auth-store'
-import { Loading } from 'quasar'
 import CustomTooltip from 'components/CustomTooltip.vue'
 
 export default {
-  name: 'EmployerFileTagsSelector',
+  name: 'FileTagsSelector',
   components: { CustomTooltip },
   props: {
     modelValue: {
@@ -37,6 +37,7 @@ export default {
   },
   data () {
     return {
+      isLoaded: false,
       tags: null,
       filterTxt: null
     }
@@ -62,22 +63,19 @@ export default {
       })
     }
   },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    const authStore = useAuthStore()
-    Loading.show()
-
-    return authStore.setUser().then(() => {
-      return Promise.all([
-        employerStore.setEmployerFileTags(authStore.propUser.employer_id)
-      ])
-    }).finally(() => Loading.hide())
-  },
   setup () {
     return {
       authStore: useAuthStore(),
       employerStore: useEmployerStore()
     }
+  },
+  async mounted () {
+    await this.authStore.setUser().then(() => {
+      return Promise.all([
+        this.employerStore.setEmployerFileTags(this.authStore.propUser.employer_id)
+      ])
+    })
+    this.isLoaded = true
   }
 }
 </script>

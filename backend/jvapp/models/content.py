@@ -43,13 +43,13 @@ class SocialContentItem(models.Model, JobVynePermissionsMixin):
     def _jv_can_create(self, user):
         from jvapp.models import PermissionName  # Avoid circular import
         return (
-                user.is_admin
-                or (
-                    self.employer_id == user.employer_id
-                    and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-                )
-                or (
-                    self.user_id == user.id
-                    and ((not user.employer_id) or user.has_employer_permission(PermissionName.ADD_EMPLOYEE_CONTENT.value, user.employer_id))
-                )
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+            )
+            or (
+                self.user_id == user.id
+                and ((not user.employer_id) or user.has_employer_permission(PermissionName.ADD_EMPLOYEE_CONTENT.value, user.employer_id))
+            )
         )
