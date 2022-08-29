@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_dt', models.DateTimeField()),
                 ('modified_dt', models.DateTimeField()),
-                ('file', models.FileField(upload_to=jvapp.models.employer.getEmployerUploadLocation, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg', 'gif', 'mp4', 'm4v', 'mov', 'wmv', 'avi', 'mpg', 'webm', 'doc', 'docx', 'pdf', 'pages', 'gdoc'])])),
+                ('file', models.FileField(upload_to=jvapp.models.employer.get_employer_upload_location, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg', 'gif', 'mp4', 'm4v', 'mov', 'wmv', 'avi', 'mpg', 'webm', 'doc', 'docx', 'pdf', 'pages', 'gdoc'])])),
                 ('title', models.CharField(max_length=100)),
                 ('employer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='file', to='jvapp.employer')),
                 ('tags', models.ManyToManyField(to='jvapp.employerfiletag')),

@@ -114,7 +114,7 @@ const routes = [
         path: ':key(employee-content)',
         name: 'employee-content',
         meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/ContentPage.vue')
+        component: () => import('pages/employee/content-page/ContentPage.vue')
       }
     ]
   },

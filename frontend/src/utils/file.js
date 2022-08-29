@@ -53,6 +53,15 @@ class FileUtil {
     return fileType
   }
 
+  getFileGroup (fileName) {
+    if (this.isImage(fileName)) {
+      return FILE_TYPES.IMAGE.key
+    } else if (this.isVideo(fileName)) {
+      return FILE_TYPES.VIDEO.key
+    }
+    return FILE_TYPES.FILE.key
+  }
+
   isImage (fileName) {
     const fileType = this.getFileType(fileName)
     return FILE_TYPES.IMAGE.allowedExtensions.includes(fileType)
@@ -68,14 +77,17 @@ class FileUtil {
     return FILE_TYPES.FILE.allowedExtensions.includes(fileType)
   }
 
-  filterFilesByTypes (files, fileTypeKeys) {
+  filterFilesByTypes (files, fileTypeKeys, isAddFileGroup = false) {
     // No need to filter if all file types are allowed
-    if (dataUtil.isArraysEqual(fileTypeKeys, Object.keys(FILE_TYPES))) {
+    if (dataUtil.isArraysEqual(fileTypeKeys, Object.keys(FILE_TYPES)) && !isAddFileGroup) {
       return files
     }
     const allowedExtensions = this.getAllowedFileExtensions(fileTypeKeys)
     return (files || []).filter((file) => {
       const fileExt = this.getFileType(file.url)
+      if (isAddFileGroup) {
+        file.group = this.getFileGroup(file.url)
+      }
       return allowedExtensions.includes(fileExt)
     })
   }

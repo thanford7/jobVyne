@@ -11,13 +11,25 @@
         align="left"
         narrow-indicator
       >
-        <q-tab name="new" label="New post"/>
+        <q-tab name="post" label="Posts"/>
         <q-tab name="content" label="Content"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated :keep-alive="true">
-        <q-tab-panel name="new">
+        <q-tab-panel name="post">
           <div class="row q-gutter-y-sm">
-            <div class="col-12 q-gutter-x-sm q-mb-sm"></div>
+            <div class="col-12 q-gutter-x-sm q-gutter-y-md q-mb-sm">
+              <q-btn
+                label="Create post" icon="add" color="primary"
+                @click="openEditContentDialog(null, false)"
+              />
+              <CollapsableCard v-for="post in socialPosts" :title="`Post created at ${dateTimeUtil.getDateTime(post.created_dt)}`">
+                <template v-slot:body>
+                  <div class="q-pa-md" style="white-space: pre-line;">
+                    {{ post.formatted_content }}
+                  </div>
+                </template>
+              </CollapsableCard>
+            </div>
           </div>
         </q-tab-panel>
         <q-tab-panel name="content">
@@ -28,7 +40,7 @@
                   <q-btn
                     unelevated dense
                     label="Add post template" icon="add" color="primary"
-                    @click="openEditContentDialog"
+                    @click="openEditContentDialog(null, true)"
                   />
                 </template>
                 <template v-slot:body>
@@ -38,7 +50,7 @@
                         <div class="flex items-center w-100">
                           {{ dataUtil.truncateText(item.content, 50) }}
                           <q-space/>
-                          <q-btn flat dense icon="edit" text-color="grey-6" @click="openEditContentDialog(item)"/>
+                          <q-btn flat dense icon="edit" text-color="grey-6" @click="openEditContentDialog(item, true)"/>
                           <q-btn flat dense icon="delete" text-color="negative" @click="deleteContentItem(item)"/>
                         </div>
                       </q-item>
@@ -180,30 +192,36 @@
 
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
-import DialogSocialContent from 'components/dialogs/DialogSocialContent.vue'
+import DialogSocialContent, { loadDialogSocialContentFn } from 'components/dialogs/DialogSocialContent.vue'
 import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
-import { Loading, useQuasar } from 'quasar'
+import { Loading, useMeta, useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
+import dateTimeUtil from 'src/utils/datetime.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useContentStore } from 'stores/content-store.js'
+import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'ContentPage',
   components: { CollapsableCard, PageHeader },
   data () {
     return {
-      tab: 'new',
+      tab: 'post',
       isImageDisplayList: true,
       isVideoDisplayList: true,
-      dataUtil
+      dataUtil,
+      dateTimeUtil
     }
   },
   computed: {
     socialContent () {
       return this.contentStore.getSocialContent(this.user.employer_id, this.user.id)
+    },
+    socialPosts () {
+      return this.contentStore.getSocialPosts(null, this.user.id)
     },
     userImages () {
       return this.contentStore.getUserFiles(this.user.id).filter((f) => fileUtil.isImage(f.url))
@@ -221,13 +239,15 @@ export default {
       await this.$api.delete(`user/file/${file.id}`)
       await this.contentStore.setUserFiles(this.user.id, true)
     },
-    openEditContentDialog (contentItem) {
+    async openEditContentDialog (contentItem, isTemplate) {
+      await loadDialogSocialContentFn()
       return this.q.dialog({
         component: DialogSocialContent,
         componentProps: {
-          contentItem,
+          contentItem: contentItem || {},
           user: this.user,
-          isEmployer: false
+          isEmployer: false,
+          isTemplate
         }
       })
     },
@@ -253,13 +273,23 @@ export default {
           authStore.propUser.employer_id,
           authStore.propUser.id
         ),
-        contentStore.setUserFiles(authStore.propUser.id)
+        contentStore.setUserFiles(authStore.propUser.id),
+        contentStore.setSocialPosts(null, authStore.propUser.id)
       ])
     }).finally(() => Loading.hide())
   },
   setup () {
     const authStore = useAuthStore()
+    const globalStore = useGlobalStore()
     const { user } = storeToRefs(authStore)
+
+    const pageTitle = 'User Content'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle
+    }
+    useMeta(metaData)
+
     return {
       contentStore: useContentStore(),
       q: useQuasar(),

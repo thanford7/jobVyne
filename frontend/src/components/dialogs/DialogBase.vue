@@ -40,7 +40,7 @@
       <q-card-actions v-if="isIncludeButtons" align="right" class="text-primary">
         <slot name="buttons">
           <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel" />
-          <q-btn class="bg-accent" flat ripple text-color="white" :label="primaryButtonText" @click="onDialogOK"/>
+          <q-btn class="bg-accent" :disable="!isOKBtnEnabled" flat ripple text-color="white" :label="primaryButtonText" @click="onDialogOK"/>
         </slot>
       </q-card-actions>
     </q-card>
@@ -69,6 +69,10 @@ export default {
       default: true
     },
     isIncludeHeader: {
+      type: Boolean,
+      default: true
+    },
+    isOKBtnEnabled: {
       type: Boolean,
       default: true
     },

@@ -19,3 +19,31 @@ $border-colors-map: get-combined-maps($gray-color-map, $brand-color-map);
     }
   }
 }
+
+@each $weight-name, $weight in $border-weights-map {
+  @each $color-name, $color in $border-colors-map {
+    .border-x-#{$weight-name}-#{$color-name} {
+      border-left: $weight solid $color;
+      border-right: $weight solid $color;
+    }
+    .border-y-#{$weight-name}-#{$color-name} {
+      border-top: $weight solid $color;
+      border-bottom: $weight solid $color;
+    }
+    .border-#{$weight-name}-#{$color-name} {
+      border: $weight solid $color;
+    }
+  }
+}
+
+.border-rounded {
+  border-radius: 6px;
+}
+.border-top-rounded {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+.border-bottom-rounded {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}

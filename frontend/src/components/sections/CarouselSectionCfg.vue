@@ -1,10 +1,11 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
   <div v-if="isLoaded">
-    <EmployerFilesSelector
-      :ref="`employerFilesSelector-${sectionIdx}`"
+    <SelectFiles
+      :ref="`selectFiles-${sectionIdx}`"
       :file-type-keys="[FILE_TYPES.IMAGE.key]"
       :is-emit-id-only="true"
+      :is-employer="true"
       v-model="section.item_parts[0].picture_ids"
     >
       <template v-slot:after>
@@ -15,7 +16,7 @@
         >Add new image
         </q-btn>
       </template>
-    </EmployerFilesSelector>
+    </SelectFiles>
     <q-toggle
       v-model="section.item_parts[0].is_allow_autoplay"
       label="Auto-scroll"
@@ -38,7 +39,7 @@
 <script>
 import CarouselSection from 'components/sections/CarouselSection.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
-import EmployerFilesSelector from 'components/inputs/EmployerFilesSelector.vue'
+import SelectFiles from 'components/inputs/SelectFiles.vue'
 import LiveView from 'components/sections/LiveView.vue'
 import SectionHeader from 'components/sections/SectionHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
@@ -50,7 +51,7 @@ import { useQuasar } from 'quasar'
 
 export default {
   name: 'CarouselSectionCfg',
-  components: { SectionHeader, CarouselSection, CustomTooltip, EmployerFilesSelector, LiveView },
+  components: { SectionHeader, CarouselSection, CustomTooltip, SelectFiles, LiveView },
   props: {
     section: Object,
     sectionIdx: Number
@@ -68,12 +69,9 @@ export default {
         component: DialogEmployerFile,
         componentProps: { fileTypeKeys: [FILE_TYPES.IMAGE.key] }
       }
-      return this.q.dialog(cfg).onOk((pictureId) => {
-        const pictureFile = this.employerStore.getEmployerFiles(
-          this.user.employer_id, pictureId
-        )
-        const refKey = `employerFilesSelector-${sectionIdx}`
-        this.$refs[refKey].addFile(pictureFile)
+      return this.q.dialog(cfg).onOk(() => {
+        const refKey = `selectFiles-${sectionIdx}`
+        this.$refs[refKey].updateFiles()
       })
     }
   },

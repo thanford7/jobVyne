@@ -13,7 +13,9 @@ class DateTimeUtil {
   serializeDate (targetDate, isIncludeTime = false, isEndOfDay = false) {
     const format = (isIncludeTime) ? this.serializeDateTimeFormat : this.serializeDateFormat
     if (isEndOfDay) {
-      targetDate = date.addToDate(targetDate, { hours: 23, minutes: 59, seconds: 59 })
+      targetDate = date.addToDate(targetDate, { hours: 23, minutes: 59, seconds: 59, millisecond: 0 })
+    } else {
+      targetDate = date.addToDate(targetDate, { hours: 0, minutes: 0, seconds: 0, millisecond: 0 })
     }
     return date.formatDate(targetDate, format)
   }

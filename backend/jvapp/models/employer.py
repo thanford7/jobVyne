@@ -14,14 +14,14 @@ __all__ = (
 )
 
 
-def getEmployerUploadLocation(instance, filename):
+def get_employer_upload_location(instance, filename):
     employer_id = instance.employer_id if hasattr(instance, 'employer_id') else instance.id
     return f'employers/{employer_id}/{filename}'
 
 
 class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer_name = models.CharField(max_length=150, unique=True)
-    logo = models.ImageField(upload_to=getEmployerUploadLocation, null=True, blank=True)
+    logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
     email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
     
@@ -200,7 +200,7 @@ class EmployerPermission(models.Model):
 class EmployerFile(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='file')
     file = models.FileField(
-        upload_to=getEmployerUploadLocation,
+        upload_to=get_employer_upload_location,
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_ALL)]
     )
     title = models.CharField(max_length=100)

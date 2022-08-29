@@ -15,6 +15,7 @@ from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.email import send_email
+from jvapp.utils.oauth import OAUTH_CFGS
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
     get_user_key_from_token
 
@@ -289,8 +290,13 @@ class UserSocialCredentialsView(JobVyneAPIView):
         social_credentials = UserSocialCredential.objects.filter(user_id=self.user.id)
         data = defaultdict(list)
         for cred in social_credentials:
-            data[cred.provider].append({
+            # Google is only used for authentication, not for social sharing
+            if cred.provider == 'google-oauth2':
+                continue
+            name = OAUTH_CFGS[cred.provider]['name']
+            data[name].append({
                 'email': cred.email,
+                'platform_name': name,
                 'provider': cred.provider
             })
         return Response(status=status.HTTP_200_OK, data=data)

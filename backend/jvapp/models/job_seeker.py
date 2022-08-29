@@ -1,7 +1,7 @@
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from jvapp.models.user import getUserUploadLocation
+from jvapp.models.user import get_user_upload_location
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePermissionsMixin
 
 __all__ = ('JobApplication', 'JobApplicationTemplate')
@@ -14,7 +14,7 @@ class JobApplicationFields(AuditFields):
     phone_number = models.CharField(max_length=25, null=True, blank=True)
     linkedin_url = models.CharField(max_length=75, null=True, blank=True)
     resume = models.FileField(
-        upload_to=getUserUploadLocation,
+        upload_to=get_user_upload_location,
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_FILE)]
     )
 

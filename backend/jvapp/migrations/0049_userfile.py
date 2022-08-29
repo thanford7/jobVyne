@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             name='UserFile',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file', models.FileField(upload_to=jvapp.models.user.getUserUploadLocation, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg', 'gif', 'mp4', 'm4v', 'mov', 'wmv', 'avi', 'mpg', 'webm', 'doc', 'docx', 'pdf', 'txt', 'rtf'])])),
+                ('file', models.FileField(upload_to=jvapp.models.user.get_user_upload_location, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg', 'gif', 'mp4', 'm4v', 'mov', 'wmv', 'avi', 'mpg', 'webm', 'doc', 'docx', 'pdf', 'txt', 'rtf'])])),
                 ('title', models.CharField(max_length=100)),
                 ('tags', models.ManyToManyField(to='jvapp.employerfiletag')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='file', to=settings.AUTH_USER_MODEL)),

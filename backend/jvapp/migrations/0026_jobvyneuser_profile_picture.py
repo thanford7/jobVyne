@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='jobvyneuser',
             name='profile_picture',
-            field=models.ImageField(blank=True, null=True, upload_to=jvapp.models.user.getUserUploadLocation),
+            field=models.ImageField(blank=True, null=True, upload_to=jvapp.models.user.get_user_upload_location),
         ),
     ]

@@ -24,10 +24,10 @@
           <div class="row">
             <div class="col-12">
               <q-table
-                :rows="socialStore.getOwnSocialLinkFilters()"
+                :rows="socialStore.getSocialLinkFilters(authStore.propUser.id)"
                 :columns="linkColumns"
                 row-key="id"
-                :rows-per-page-options="[5, 10, 15]"
+                :rows-per-page-options="[15, 25, 50]"
               >
                 <template v-slot:top>
                   <q-btn ripple color="primary" label="Create new link" @click="tab = 'create'"/>
@@ -40,11 +40,7 @@
                     <q-td key="departments" :props="props">
                       <q-chip
                         v-for="dept in props.row.departments"
-                        :key="dept.id"
-                        dense
-                        color="blue-grey-7"
-                        text-color="white"
-                        size="13px"
+                        dense color="blue-grey-7" text-color="white" size="13px"
                       >
                         {{ dept.name }}
                       </q-chip>
@@ -55,11 +51,7 @@
                     <q-td key="departments" :props="props">
                       <q-chip
                         v-for="loc in getLocations(props.row)"
-                        :key="loc.key"
-                        dense
-                        :color="loc.color"
-                        text-color="white"
-                        size="13px"
+                        dense :color="loc.color" text-color="white" size="13px"
                       >
                         {{ loc.name }}
                       </q-chip>
@@ -396,28 +388,7 @@ export default {
   methods: {
     copyText: dataUtil.copyText.bind(dataUtil),
     getFullLocation: locationUtil.getFullLocation,
-    getLocations (row) {
-      const locations = []
-      dataUtil.getForceArray(row.cities).forEach((city) => {
-        city.type = 'city'
-        city.key = `city-${city.id}`
-        city.color = 'blue-8'
-        locations.push(city)
-      })
-      dataUtil.getForceArray(row.states).forEach((state) => {
-        state.type = 'state'
-        state.key = `state-${state.id}`
-        state.color = 'teal-8'
-        locations.push(state)
-      })
-      dataUtil.getForceArray(row.countries).forEach((country) => {
-        country.type = 'country'
-        country.key = `country-${country.id}`
-        country.color = 'blue-grey-8'
-        locations.push(country)
-      })
-      return locations
-    },
+    getLocations: locationUtil.getFormattedLocations.bind(locationUtil),
     getJobLinkUrl (jobLink) {
       const id = (jobLink) ? jobLink.id : this.linkId
       return `${window.location.origin}/jobs-link/${id}`
@@ -507,7 +478,7 @@ export default {
     return authStore.setUser().then(() => {
       return Promise.all([
         socialStore.setPlatforms(),
-        socialStore.setSocialLinkFilters(),
+        socialStore.setSocialLinkFilters(authStore.propUser.id),
         employerStore.setEmployer(authStore.propUser.employer_id),
         employerStore.setEmployerJobs(authStore.propUser.employer_id)
       ])

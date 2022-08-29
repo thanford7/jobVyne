@@ -1,103 +1,209 @@
 <template>
   <DialogBase
-    :base-title-text="`${(contentItem.id) ? 'Edit' : 'Create'} template`"
+    :base-title-text="`${(contentItem.id) ? 'Edit' : 'Create'} ${(isTemplate) ? 'template': 'post'}`"
     :primary-button-text="(!contentItem.id) ? 'Create' : 'Update'"
     :is-full-screen="true"
-    @ok="saveContent"
+    :is-o-k-btn-enabled="isValidForm"
+    @ok="save"
+    @show="focusInput"
   >
     <div class="row q-mt-md q-gutter-y-md">
       <div class="col-12 col-md-6 q-pr-md-sm">
         <q-input
+          ref="contentInput"
           v-model="formData.content" type="textarea" filled
           label="Content"
           :hint="characterLengthText"
         />
+        <PostLiveView
+          :content="formData.content"
+          :file="formData.file"
+          :job-link="formData.jobLink"
+          @content-update="formData.formattedContent = $event"
+        />
       </div>
-      <div class="col-12 col-md-6">
-        <CollapsableCard :is-dense="true" flat bordered>
-          <template v-slot:header-left>
-            <span class="text-bold">Placeholder content</span>
+      <div class="col-12 col-md-6 q-pl-md-sm border-left-1-gray-100">
+        <BaseExpansionItem
+          v-if="!isTemplate"
+          :is-include-separator="false"
+          title="Starting template" class="content-expansion"
+        >
+          <q-table
+            dense flat
+            :hide-header="true"
+            :hide-bottom="true"
+            :columns="templateTableColumns"
+            :rows="templateTableRows"
+          >
+            <template v-slot:body-cell-action="props">
+              <q-td>
+                <q-btn
+                  unelevated dense label="Add" color="grey-6"
+                  @click="addContent(props.row.content)"
+                />
+              </q-td>
+            </template>
+          </q-table>
+        </BaseExpansionItem>
+        <BaseExpansionItem
+          title="Placeholder content" class="content-expansion"
+          :is-include-separator="false"
+        >
+          <template v-slot:header>
             <CustomTooltip>
               This content will be filled in dynamically based on the link or
               job you choose to post
             </CustomTooltip>
           </template>
-          <template v-slot:body>
-            <div class="q-pa-sm">
-              <q-table
-                dense flat
-                :hide-bottom="true"
-                :columns="placeholderTableColumns"
-                :rows="placeholderTableRows"
-              >
-                <template v-slot:body-cell-action="props">
-                  <q-td>
-                    <q-btn
-                      unelevated dense label="Add" color="grey-6"
-                      @click="addPlaceholder(props.row.placeholder)"
-                    />
-                  </q-td>
-                </template>
-                <template v-slot:body-cell-example="props">
-                  <q-td :props="props">
-                    <div v-html="props.row.example"/>
-                  </q-td>
-                </template>
-              </q-table>
-            </div>
-          </template>
-        </CollapsableCard>
+          <q-table
+            dense flat
+            :hide-bottom="true"
+            :columns="placeholderTableColumns"
+            :rows="placeholderTableRows"
+          >
+            <template v-slot:body-cell-action="props">
+              <q-td>
+                <q-btn
+                  unelevated dense label="Add" color="grey-6"
+                  @click="addContent(props.row.placeholder)"
+                />
+              </q-td>
+            </template>
+          </q-table>
+        </BaseExpansionItem>
+        <template v-if="!isTemplate">
+          <BaseExpansionItem
+            title="Photos/Videos" class="content-expansion"
+            :is-include-separator="false"
+          >
+            <SelectFiles
+              v-model="formData.file"
+              :file-type-keys="[
+                FILE_TYPES.IMAGE.key,
+                FILE_TYPES.VIDEO.key
+              ]"
+              :is-multi-select="false"
+              :is-employer="false"
+            />
+          </BaseExpansionItem>
+          <BaseExpansionItem
+            title="Jobs link" class="content-expansion"
+            :is-include-separator="false"
+          >
+            <SelectJobLink v-model="formData.jobLink"/>
+          </BaseExpansionItem>
+          <BaseExpansionItem
+            v-if="socialAuthStore.socialCredentials"
+            title="Auto-post" class="content-expansion"
+            :is-include-separator="false"
+          >
+            <template v-slot:header>
+              <CustomTooltip>
+                Once you create this post, it will automatically be posted to the selected social accounts.
+              </CustomTooltip>
+            </template>
+            <template v-for="(creds, platform) in socialAuthStore.socialCredentials">
+              <div class="text-bold">{{ platform }}</div>
+              <q-checkbox v-for="cred in creds" v-model="formData[`${platform}|${cred.email}`]" :label="cred.email"/>
+            </template>
+          </BaseExpansionItem>
+        </template>
       </div>
     </div>
   </DialogBase>
 </template>
 
 <script>
-import CollapsableCard from 'components/CollapsableCard.vue'
+import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import SelectFiles from 'components/inputs/SelectFiles.vue'
+import SelectJobLink from 'components/inputs/SelectJobLink.vue'
+import PostLiveView from 'pages/employee/content-page/PostLiveView.vue'
 import dataUtil from 'src/utils/data.js'
+import { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
+import { useAuthStore } from 'stores/auth-store.js'
 import { useContentStore } from 'stores/content-store.js'
+import { useSocialAuthStore } from 'stores/social-auth-store.js'
+
+export const loadDialogSocialContentFn = () => {
+  const contentStore = useContentStore()
+  const socialAuthStore = useSocialAuthStore()
+  const authStore = useAuthStore()
+  return authStore.setUser().then(() => {
+    return Promise.all([
+      contentStore.setSocialContent(authStore.propUser.employer_id, authStore.propUser.id),
+      socialAuthStore.setUserSocialCredentials()
+    ])
+  })
+}
+
+export const SOCIAL_CONTENT_PLACEHOLDERS = {
+  EMPLOYER: '{{employer}}',
+  JOB_LINK: '{{link}}',
+  JOBS_LIST: '{{jobs-list}}'
+}
 
 export default {
   name: 'DialogSocialContent',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { CustomTooltip, CollapsableCard, DialogBase },
+  components: { PostLiveView, SelectJobLink, SelectFiles, BaseExpansionItem, CustomTooltip, DialogBase },
   props: {
     contentItem: {
       type: [Object, null],
       default: () => ({})
     },
     user: Object,
-    isEmployer: Boolean
+    isEmployer: Boolean,
+    isTemplate: Boolean
   },
   data () {
     return {
-      formData: { ...this.contentItem },
-      contentStore: null
+      formData: (this.contentItem) ? { ...this.contentItem } : {},
+      contentStore: null,
+      socialAuthStore: null,
+      FILE_TYPES
     }
   },
   computed: {
+    isValidForm () {
+      return Boolean(this.formData.formattedContent && this.formData.formattedContent.length)
+    },
+    socialCredentials () {
+      if (!this.socialAuthStore) {
+        return null
+      }
+      return this.socialAuthStore.socialCredentials
+    },
     placeholderTableColumns () {
       return [
         { name: 'action', field: 'action', align: 'center' },
         { name: 'name', field: 'name', align: 'left', label: 'Name' },
         { name: 'placeholder', field: 'placeholder', align: 'left', label: 'Placeholder' },
-        { name: 'example', field: 'example', align: 'left', label: 'Example' }
+        { name: 'example', field: 'example', align: 'left', label: 'Example', style: 'white-space: pre-line;' }
       ]
     },
     placeholderTableRows () {
       return [
-        { name: 'Employer', placeholder: '{{employer}}', example: 'Google' },
-        { name: 'Jobs page link', placeholder: '{{link}}', example: 'www.jobvyne.com/jobs-link/ad8audafdi' },
+        { name: 'Employer', placeholder: SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, example: 'Google' },
+        { name: 'Jobs page link', placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, example: 'www.jobvyne.com/jobs-link/ad8audafdi' },
         {
           name: 'Open jobs list',
-          placeholder: '{{jobs-list}}',
-          example: '- Software engineer<br>- Product manager<br>- Market analyst'
+          placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST,
+          example: '- Software engineer\n- Product manager\n- Market analyst'
         }
       ]
+    },
+    templateTableColumns () {
+      return [
+        { name: 'action', field: 'action', align: 'center' },
+        { name: 'content', field: 'content', align: 'left', label: 'Template', classes: 'table-wrap' }
+      ]
+    },
+    templateTableRows () {
+      return this.contentStore.getSocialContent(this.user.employer_id, this.user.id)
     },
     characterLengthText () {
       const placeholderRegex = /\{\{.*?}}/
@@ -111,14 +217,51 @@ export default {
       return `At least ${dataUtil.pluralize('character', charLength)} (doesn't include placeholders)`
     }
   },
+  watch: {
+    socialCredentials () {
+      if (!this.socialCredentials) {
+        return
+      }
+      Object.values(this.socialCredentials).forEach((creds) => {
+        creds.forEach((cred) => {
+          this.formData[`${cred.platform_name}|${cred.email}`] = false
+        })
+      })
+    }
+  },
   methods: {
-    addPlaceholder (placeholder) {
+    addContent (content) {
       if (!this.formData.content) {
         this.formData.content = ''
       }
-      this.formData.content += placeholder
+      this.formData.content += content
     },
-    async saveContent () {
+    focusInput () {
+      this.$refs.contentInput.focus()
+    },
+    async save () {
+      if (this.isTemplate) {
+        await this.saveTemplate()
+      } else {
+        await this.savePost()
+      }
+    },
+    async savePost () {
+      const method = (this.formData.id) ? this.$api.put : this.$api.post
+      let data = (this.isEmployer) ? { employer_id: this.user.employer_id } : { user_id: this.user.id }
+      data = Object.assign(data, dataUtil.pick(this.formData, ['content', 'formattedContent']))
+      if (this.formData.file) {
+        if (this.formData.file.isEmployer) {
+          data.employer_file_id = this.formData.file.id
+        } else {
+          data.user_file_id = this.formData.file.id
+        }
+      }
+      await method('social-post/', getAjaxFormData(data))
+      // await
+      this.$emit('ok')
+    },
+    async saveTemplate () {
       const method = (this.formData.id) ? this.$api.put : this.$api.post
       const data = (this.isEmployer) ? { employer_id: this.user.employer_id } : { user_id: this.user.id }
       await method('social-content-item/', getAjaxFormData({
@@ -131,6 +274,14 @@ export default {
   },
   mounted () {
     this.contentStore = useContentStore()
+    this.socialAuthStore = useSocialAuthStore()
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.content-expansion .q-expansion-item__content {
+  max-height: 20vh;
+  overflow-y: scroll;
+}
+</style>

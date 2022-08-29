@@ -27,8 +27,12 @@
         </q-item>
       </q-expansion-item>
     </template>
-    <template v-slot:selected-item="{ opt, toggleOption }">
-      <q-chip removable @remove="toggleOption(opt)">{{ getOptionLabel(opt) }}</q-chip>
+    <template v-slot:selected-item="{ opt, removeAtIndex, tabindex, index }">
+      <q-chip
+        removable
+        @remove="removeAtIndex(index)"
+        :tabindex="tabindex"
+      >{{ getOptionLabel(opt) }}</q-chip>
     </template>
   </q-select>
 </template>

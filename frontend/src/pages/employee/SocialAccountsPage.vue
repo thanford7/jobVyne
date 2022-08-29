@@ -42,10 +42,11 @@
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
 import PageHeader from 'components/PageHeader.vue'
-import { Loading } from 'quasar'
+import { Loading, useMeta } from 'quasar'
 import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import { useAuthStore } from 'stores/auth-store.js'
+import { useGlobalStore } from 'stores/global-store.js'
 import { useSocialAuthStore } from 'stores/social-auth-store.js'
 
 export default {
@@ -54,8 +55,8 @@ export default {
   data () {
     return {
       colorUtil,
-      SOCIAL_KEY_LINKED_IN: 'linkedin-oauth2',
-      SOCIAL_KEY_FACEBOOK: 'facebook'
+      SOCIAL_KEY_LINKED_IN: 'LinkedIn',
+      SOCIAL_KEY_FACEBOOK: 'Facebook'
     }
   },
   methods: {
@@ -87,6 +88,14 @@ export default {
     }).finally(() => Loading.hide())
   },
   setup () {
+    const globalStore = useGlobalStore()
+    const pageTitle = 'Social Accounts'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle
+    }
+    useMeta(metaData)
+
     return {
       socialAuthStore: useSocialAuthStore()
     }

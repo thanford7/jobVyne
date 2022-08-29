@@ -8,7 +8,9 @@ export const useDataStore = defineStore('data', {
 
   actions: {
     async getSocialLinkPerformance (startDate, endDate, { employerId, userId }) {
-      const apiKey = this.makeApiKey(arguments)
+      startDate = dateTimeUtil.serializeDate(startDate, true)
+      endDate = dateTimeUtil.serializeDate(endDate, true, true)
+      const apiKey = this.makeApiKey(startDate, endDate, employerId, userId)
       const data = this.socialLinkPerformanceData[apiKey]
       if (data) {
         return data
@@ -17,15 +19,15 @@ export const useDataStore = defineStore('data', {
         params: {
           employer_id: employerId,
           owner_id: userId,
-          start_dt: dateTimeUtil.serializeDate(startDate, true),
-          end_dt: dateTimeUtil.serializeDate(endDate, true, true)
+          start_dt: startDate,
+          end_dt: endDate
         }
       })
       this.socialLinkPerformanceData[apiKey] = resp.data
       return resp.data
     },
-    makeApiKey (args) {
-      return JSON.stringify(args)
+    makeApiKey (startDate, endDate, employerId, userId) {
+      return JSON.stringify(arguments)
     }
   }
 })

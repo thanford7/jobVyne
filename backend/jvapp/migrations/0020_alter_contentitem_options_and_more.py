@@ -49,21 +49,21 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='employer',
             name='logo',
-            field=models.ImageField(blank=True, null=True, upload_to=jvapp.models.employer.getEmployerUploadLocation),
+            field=models.ImageField(blank=True, null=True, upload_to=jvapp.models.employer.get_employer_upload_location),
         ),
         migrations.AlterField(
             model_name='employerfile',
             name='file',
-            field=models.FileField(upload_to=jvapp.models.employer.getEmployerUploadLocation, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg', 'gif', 'mp4', 'm4v', 'mov', 'wmv', 'avi', 'mpg', 'webm', 'doc', 'docx', 'pdf', 'txt', 'rtf'])]),
+            field=models.FileField(upload_to=jvapp.models.employer.get_employer_upload_location, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg', 'gif', 'mp4', 'm4v', 'mov', 'wmv', 'avi', 'mpg', 'webm', 'doc', 'docx', 'pdf', 'txt', 'rtf'])]),
         ),
         migrations.AlterField(
             model_name='jobapplication',
             name='resume',
-            field=models.FileField(upload_to=jvapp.models.job_seeker.getUserUploadLocation, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'txt', 'rtf'])]),
+            field=models.FileField(upload_to=jvapp.models.job_seeker.get_user_upload_location, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'txt', 'rtf'])]),
         ),
         migrations.AlterField(
             model_name='jobapplicationtemplate',
             name='resume',
-            field=models.FileField(upload_to=jvapp.models.job_seeker.getUserUploadLocation, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'txt', 'rtf'])]),
+            field=models.FileField(upload_to=jvapp.models.job_seeker.get_user_upload_location, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'txt', 'rtf'])]),
         ),
     ]

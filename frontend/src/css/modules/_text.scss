@@ -39,3 +39,10 @@ $responsive-font-size-map: (
     }
   }
 }
+
+@media (max-width: 600px) {
+  .text-h6--mobile {
+    font-size: 0.8rem;
+    font-weight: bold;
+  }
+}

@@ -4,6 +4,7 @@ from django.conf import settings
 OAUTH_CFGS = {
     'google-oauth2': {
         'backend_key': 'GOOGLE',
+        'name': 'Google',
         'token_url': 'https://oauth2.googleapis.com/token',
         'auth_url': 'https://accounts.google.com/o/oauth2/v2/auth',
         'auth_params': {
@@ -16,6 +17,7 @@ OAUTH_CFGS = {
     },
     'facebook': {
         'backend_key': 'FACEBOOK',
+        'name': 'Facebook',
         'token_url': 'https://graph.facebook.com/v14.0/oauth/access_token',
         'auth_url': 'https://www.facebook.com/v14.0/dialog/oauth',
         'auth_params': {
@@ -27,6 +29,7 @@ OAUTH_CFGS = {
     },
     'linkedin-oauth2': {
         'backend_key': 'LINKEDIN',
+        'name': 'LinkedIn',
         'token_url': 'https://www.linkedin.com/oauth/v2/accessToken',
         'auth_url': 'https://www.linkedin.com/oauth/v2/authorization',
         'auth_params': {

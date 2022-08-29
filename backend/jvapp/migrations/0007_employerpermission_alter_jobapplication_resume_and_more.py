@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='jobapplication',
             name='resume',
-            field=models.FileField(upload_to=jvapp.models.job_seeker.getUserUploadLocation, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'pages', 'gdoc'])]),
+            field=models.FileField(upload_to=jvapp.models.job_seeker.get_user_upload_location, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'pages', 'gdoc'])]),
         ),
         migrations.AlterField(
             model_name='jobapplicationtemplate',
@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='jobapplicationtemplate',
             name='resume',
-            field=models.FileField(upload_to=jvapp.models.job_seeker.getUserUploadLocation, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'pages', 'gdoc'])]),
+            field=models.FileField(upload_to=jvapp.models.job_seeker.get_user_upload_location, validators=[django.core.validators.FileExtensionValidator(allowed_extensions=['doc', 'docx', 'pdf', 'pages', 'gdoc'])]),
         ),
         migrations.AlterField(
             model_name='jobvyneuser',

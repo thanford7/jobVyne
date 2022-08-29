@@ -15,7 +15,7 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermi
 
 __all__ = (
     'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
-    'getUserUploadLocation', 'UserEmployerPermissionGroup', 'UserFile'
+    'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile'
 )
 
 from jvapp.utils.email import get_domain_from_email
@@ -25,13 +25,13 @@ def generate_password():
     return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')
 
 
-def getUserUploadLocation(instance, filename):
+def get_user_upload_location(instance, filename):
     if hasattr(instance, 'user_id'):
         email = instance.user.email
     else:
         email = instance.email
     
-    return f'resumes/{email}/{filename}'
+    return f'user/{email}/{filename}'
 
 
 # Keep in sync with frontend user-types
@@ -120,7 +120,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
-    profile_picture = models.ImageField(upload_to=getUserUploadLocation, null=True, blank=True)
+    profile_picture = models.ImageField(upload_to=get_user_upload_location, null=True, blank=True)
     is_email_verified = models.BooleanField(default=False)
     business_email = models.EmailField(_('business email address'), unique=True, null=True, blank=True)
     is_business_email_verified = models.BooleanField(default=False)
@@ -248,7 +248,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
 class UserFile(models.Model, JobVynePermissionsMixin):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='file')
     file = models.FileField(
-        upload_to=getUserUploadLocation,
+        upload_to=get_user_upload_location,
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_ALL)]
     )
     title = models.CharField(max_length=100)

@@ -268,7 +268,8 @@ export default {
         this.dateRange.from,
         this.dateRange.to,
         { employerId: this.authStore.propUser.employer_id }
-      ).applications
+      )
+      this.chartRawData = this.chartRawData.applications || []
       this.isLoading = false
       this.chartRawData.forEach((application) => {
         application.owner_full_name = `${application.owner_first_name} ${application.owner_last_name}`
