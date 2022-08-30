@@ -65,8 +65,14 @@ export default boot(({ app, ssrContext, store, router }) => {
 
   api.interceptors.response.use(function (response) {
     const successMessage = response?.data?.successMessage
+    const errorMessages = response?.data?.errorMessages
     if (successMessage) {
       emitter.emit(AJAX_EVENTS.SUCCESS, successMessage)
+    }
+    if (errorMessages && errorMessages.length) {
+      errorMessages.forEach((errorMsg) => {
+        emitter.emit(AJAX_EVENTS.ERROR, { message: errorMsg })
+      })
     }
     return response
   }, function (error) {

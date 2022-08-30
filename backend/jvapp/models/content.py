@@ -6,7 +6,7 @@ from django.db.models import Q
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO, AuditFields, JobVynePermissionsMixin
 
-__all__ = ('ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile')
+__all__ = ('ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
 
 
 def get_post_upload_location(instance, filename):
@@ -71,7 +71,7 @@ class SocialPost(AuditFields, JobVynePermissionsMixin):
     formatted_content = models.TextField()
     
     class Meta:
-        ordering = ('created_dt',)
+        ordering = ('-created_dt',)
 
     @classmethod
     def _jv_filter_perm_query(cls, user, query):
@@ -99,3 +99,13 @@ class SocialPostFile(models.Model):
         upload_to=get_post_upload_location,
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_VIDEO + ALLOWED_UPLOADS_IMAGE)]
     )
+
+
+class SocialPostAudit(models.Model):
+    social_post = models.ForeignKey('SocialPost', on_delete=models.CASCADE, related_name='audit')
+    email = models.EmailField()
+    platform = models.CharField(max_length=20)
+    posted_dt = models.DateTimeField()
+    
+    class Meta:
+        ordering = ('-posted_dt',)

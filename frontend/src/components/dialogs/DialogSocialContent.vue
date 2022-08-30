@@ -19,7 +19,7 @@
           :content="formData.content"
           :file="formData.file"
           :job-link="formData.jobLink"
-          @content-update="formData.formattedContent = $event"
+          @content-update="formData.formatted_content = $event"
         />
       </div>
       <div class="col-12 col-md-6 q-pl-md-sm border-left-1-gray-100">
@@ -104,7 +104,7 @@
             </template>
             <template v-for="(creds, platform) in socialAuthStore.socialCredentials">
               <div class="text-bold">{{ platform }}</div>
-              <q-checkbox v-for="cred in creds" v-model="formData[`${platform}|${cred.email}`]" :label="cred.email"/>
+              <q-checkbox v-for="cred in creds" v-model="formData.post_accounts[`${platform}|${cred.email}`]" :label="cred.email"/>
             </template>
           </BaseExpansionItem>
         </template>
@@ -161,7 +161,7 @@ export default {
   },
   data () {
     return {
-      formData: (this.contentItem) ? { ...this.contentItem } : {},
+      formData: (this.contentItem) ? { ...this.contentItem, post_accounts: {} } : { post_accounts: {} },
       contentStore: null,
       socialAuthStore: null,
       FILE_TYPES
@@ -169,7 +169,7 @@ export default {
   },
   computed: {
     isValidForm () {
-      return Boolean(this.formData.formattedContent && this.formData.formattedContent.length)
+      return Boolean(this.formData.formatted_content && this.formData.formatted_content.length)
     },
     socialCredentials () {
       if (!this.socialAuthStore) {
@@ -224,7 +224,7 @@ export default {
       }
       Object.values(this.socialCredentials).forEach((creds) => {
         creds.forEach((cred) => {
-          this.formData[`${cred.platform_name}|${cred.email}`] = false
+          this.formData.post_accounts[`${cred.platform_name}|${cred.email}`] = false
         })
       })
     }
@@ -249,7 +249,7 @@ export default {
     async savePost () {
       const method = (this.formData.id) ? this.$api.put : this.$api.post
       let data = (this.isEmployer) ? { employer_id: this.user.employer_id } : { user_id: this.user.id }
-      data = Object.assign(data, dataUtil.pick(this.formData, ['content', 'formattedContent']))
+      data = Object.assign(data, dataUtil.pick(this.formData, ['content', 'formatted_content']))
       if (this.formData.file) {
         if (this.formData.file.isEmployer) {
           data.employer_file_id = this.formData.file.id
@@ -257,8 +257,23 @@ export default {
           data.user_file_id = this.formData.file.id
         }
       }
+
+      data.post_accounts = Object.entries(this.formData.post_accounts).reduce((data, [key, isShare]) => {
+        if (!isShare) {
+          return data
+        }
+        const [platform, email] = key.split('|')
+        const cred = this.socialCredentials[platform].find((c) => c.email === email)
+        data.push(cred)
+        return data
+      }, [])
+
       await method('social-post/', getAjaxFormData(data))
-      // await
+      if (this.isEmployer) {
+        await this.contentStore.setSocialPosts(this.user.employer_id, null, true)
+      } else {
+        await this.contentStore.setSocialPosts(null, this.user.id, true)
+      }
       this.$emit('ok')
     },
     async saveTemplate () {

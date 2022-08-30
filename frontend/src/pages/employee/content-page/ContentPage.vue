@@ -22,10 +22,84 @@
                 label="Create post" icon="add" color="primary"
                 @click="openEditContentDialog(null, false)"
               />
-              <CollapsableCard v-for="post in socialPosts" :title="`Post created at ${dateTimeUtil.getDateTime(post.created_dt)}`">
+              <CollapsableCard v-for="post in socialPosts"
+                               :title="`Post created at ${dateTimeUtil.getDateTime(post.created_dt)}`">
+                <template v-slot:header>
+                  <q-btn flat dense icon="share" text-color="grey-6" @click="openSharePostDialog(post)"/>
+                  <q-btn flat dense icon="delete" text-color="negative" @click="deletePost(post)"/>
+                </template>
                 <template v-slot:body>
-                  <div class="q-pa-md" style="white-space: pre-line;">
-                    {{ post.formatted_content }}
+                  <div class="w-100">
+                    <div class="q-mb-xs border-bottom-1-gray-100">
+                      <div class="q-pa-sm">
+                        <div style="display: inline-block;">
+                          <span class="copy-target" style="display: none">{{ post.formatted_content }}</span>
+                          <q-btn
+                            dense ripple unelevated icon="content_copy"
+                            size="sm"
+                            @click="dataUtil.copyText"
+                          >
+                            Copy post text
+                          </q-btn>
+                        </div>
+                        <div class="q-ml-sm" style="display: inline-block;">
+                          <span class="copy-target" style="display: none">{{ post.content }}</span>
+                          <q-btn
+                            dense ripple unelevated icon="content_copy"
+                            size="sm"
+                            @click="dataUtil.copyText"
+                          >
+                            Copy post template
+                          </q-btn>
+                        </div>
+                        <q-btn
+                          v-for="file in post.files"
+                          dense ripple unelevated icon="file_download"
+                          size="sm" type="a"
+                          :href="file.url" target="_blank" download
+                          class="q-ml-sm"
+                        >
+                          Download {{ fileUtil.getFileNameFromUrl(file.url) }}
+                        </q-btn>
+                      </div>
+                    </div>
+                    <div class="q-pa-md" style="white-space: pre-line;">
+                      <div class="row">
+                        <div class="col-12 col-md-8 q-pr-md-sm">
+                          {{ post.formatted_content }}
+                          <div v-for="file in post.files" class="q-mt-lg">
+                            <img
+                              v-if="fileUtil.isImage(file.url)"
+                              :src="file.url" :alt="file.title"
+                              style="max-height: 150px"
+                            >
+                            <video
+                              v-if="fileUtil.isVideo(file.url)"
+                              style="max-height: 150px"
+                            >
+                              <source :src="file.url">
+                            </video>
+                          </div>
+                        </div>
+                        <div class="col-12 col-md-4 q-pl-md-sm border-left-1-gray-100">
+                          <div class="text-bold">
+                            Post history
+                            <CustomTooltip :is_include_space="false" icon_size="16px">
+                              This shows which platforms you posted to and at what time
+                            </CustomTooltip>
+                          </div>
+                          <ul v-if="post.posts.length">
+                            <li v-for="postItem in post.posts" class="text-small">
+                              Posted to {{ postItem.platform }} on {{ dateTimeUtil.getDateTime(postItem.posted_dt) }} from
+                              {{ postItem.email }} account
+                            </li>
+                          </ul>
+                          <div v-else class="text-small q-mt-sm">
+                            Content has not been posted to any social platforms
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </template>
               </CollapsableCard>
@@ -192,6 +266,8 @@
 
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
+import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogShareSocialPost, { loadDialogShareSocialPostFn } from 'components/dialogs/DialogShareSocialPost.vue'
 import DialogSocialContent, { loadDialogSocialContentFn } from 'components/dialogs/DialogSocialContent.vue'
 import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
 import PageHeader from 'components/PageHeader.vue'
@@ -200,20 +276,22 @@ import { Loading, useMeta, useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
+import { openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useContentStore } from 'stores/content-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'ContentPage',
-  components: { CollapsableCard, PageHeader },
+  components: { CustomTooltip, CollapsableCard, PageHeader },
   data () {
     return {
       tab: 'post',
       isImageDisplayList: true,
       isVideoDisplayList: true,
       dataUtil,
-      dateTimeUtil
+      dateTimeUtil,
+      fileUtil
     }
   },
   computed: {
@@ -233,7 +311,15 @@ export default {
   methods: {
     async deleteContentItem (contentItem) {
       await this.$api.delete(`social-content-item/${contentItem.id}`)
-      await this.contentStore.setSocialContent(this.user.employer_id, this.user.id)
+      await this.contentStore.setSocialContent(this.user.employer_id, this.user.id, true)
+    },
+    async deletePost (post) {
+      openConfirmDialog(this.q, 'Are you sure you want to delete this post? It will only be deleted from JobVyne. If it has been posted to any social media sites, it will continue to exist there.', {
+        okFn: async () => {
+          await this.$api.delete(`social-post/${post.id}`)
+          await this.contentStore.setSocialPosts(null, this.user.id, true)
+        }
+      })
     },
     async deleteUserFile (file) {
       await this.$api.delete(`user/file/${file.id}`)
@@ -249,6 +335,13 @@ export default {
           isEmployer: false,
           isTemplate
         }
+      })
+    },
+    async openSharePostDialog (post) {
+      await loadDialogShareSocialPostFn()
+      return this.q.dialog({
+        component: DialogShareSocialPost,
+        componentProps: { post }
       })
     },
     async openUserFileDialog (mediaItem, isVideo) {

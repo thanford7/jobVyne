@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 
 
 SUCCESS_MESSAGE_KEY = 'successMessage'
+ERROR_MESSAGES_KEY = 'errorMessages'
 
 
 def get_files(request):

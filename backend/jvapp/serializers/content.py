@@ -19,6 +19,9 @@ def get_serialized_social_post(social_post: SocialPost):
         'employer_id': social_post.employer_id,
         'content': social_post.content,
         'formatted_content': social_post.formatted_content,
-        'files': [{'id': f.id, 'url': f.file.url} for f in social_post.file.all()],
+        'files': [{'id': f.id, 'url': f.file.url, 'title': f.file.name} for f in social_post.file.all()],
+        'posts': [{
+            'email': a.email, 'platform': a.platform, 'posted_dt': get_datetime_format_or_none(a.posted_dt)
+        } for a in social_post.audit.all()],
         'created_dt': get_datetime_format_or_none(social_post.created_dt)
     }

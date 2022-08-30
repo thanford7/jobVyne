@@ -40,7 +40,14 @@
       <q-card-actions v-if="isIncludeButtons" align="right" class="text-primary">
         <slot name="buttons">
           <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel" />
-          <q-btn class="bg-accent" :disable="!isOKBtnEnabled" flat ripple text-color="white" :label="primaryButtonText" @click="onDialogOK"/>
+          <q-btn
+            class="bg-accent"
+            :disable="!isOKBtnEnabled"
+            flat ripple text-color="white"
+            :label="primaryButtonText"
+            :loading="isLoading"
+            @click="onOkClick"
+          />
         </slot>
       </q-card-actions>
     </q-card>
@@ -76,6 +83,13 @@ export default {
       type: Boolean,
       default: true
     },
+    isLoading: {
+      type: Boolean,
+      default: false
+    },
+    okFn: {
+      type: [Function, null]
+    },
     width: {
       type: String,
       default: '500px'
@@ -92,6 +106,15 @@ export default {
         return
       }
       return { width: this.width, maxWidth: '95vw' }
+    }
+  },
+  methods: {
+    async onOkClick () {
+      if (this.okFn) {
+        await this.okFn().finally(() => this.onDialogOK())
+      } else {
+        this.onDialogOK()
+      }
     }
   },
   setup () {
