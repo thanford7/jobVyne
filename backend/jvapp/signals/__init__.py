@@ -69,4 +69,4 @@ def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
                     )
                 )
 
-    UserEmployerPermissionGroup.objects.bulk_create(groups_to_add)
+    UserEmployerPermissionGroup.objects.bulk_create(groups_to_add, ignore_conflicts=True)
