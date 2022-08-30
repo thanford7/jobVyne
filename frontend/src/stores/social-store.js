@@ -20,7 +20,7 @@ export const useSocialStore = defineStore('social', {
       }
 
       const resp = await this.$api.get(
-        'social-link-filter',
+        'social-link-filter/',
         { params: { owner_id: userId } }
       )
       this.socialLinkFilters = resp.data

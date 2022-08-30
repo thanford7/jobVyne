@@ -24,7 +24,7 @@ export const useContentStore = defineStore('content', {
         return
       }
       const resp = await this.$api.get(
-        'social-post',
+        'social-post/',
         { params: { user_id: userId, employer_id: employerId } }
       )
       this.socialPosts[key] = resp.data

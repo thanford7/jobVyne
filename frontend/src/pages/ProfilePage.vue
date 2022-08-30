@@ -361,7 +361,7 @@ export default {
     potentialEmployers () {
       const personal = this.employerStore.getEmployersFromDomain(this.authStore.propUser.email) || []
       const business = this.employerStore.getEmployersFromDomain(this.authStore.propUser.business_email) || []
-      return [...personal, ...business]
+      return dataUtil.uniqArray([...personal, ...business])
     },
     supportedEmailDomains () {
       if (!this.employer.email_domains) {
