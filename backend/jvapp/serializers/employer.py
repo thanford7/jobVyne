@@ -40,11 +40,11 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
     def get_permission_groups(employee):
         return [
             p.permission_group
-            for p in employee.get_employer_permission_groups_by_employer(True)[employer.id]
+            for p in employee.get_employer_permission_groups_by_employer(permission_groups=employee.employer_permission_group.all())[employer.id]
         ]
     
     if is_include_employees:
-        data['employees'] = [{
+        data['employees'] = sorted([{
             'id': e.id,
             'email': e.email,
             'first_name': e.first_name,
@@ -56,9 +56,9 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
                 'name': epg.permission_group.name,
                 'user_type_bit': epg.permission_group.user_type_bit,
                 'is_approved': epg.is_employer_approved
-            } for epg in e.get_employer_permission_groups_by_employer(True)[employer.id]],
+            } for epg in e.get_employer_permission_groups_by_employer(permission_groups=e.employer_permission_group.all())[employer.id]],
             'created_dt': get_datetime_format_or_none(e.created_dt),
-        } for e in employer.employee.all().order_by('-id')]
+        } for e in employer.employee.all()], key=lambda x: x['id'], reverse=True)
     
     return data
 

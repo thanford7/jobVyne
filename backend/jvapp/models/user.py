@@ -181,16 +181,18 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
             .prefetch_related('permission_group__permissions') \
             .filter(filter)
 
-    def get_permissions_by_employer(self, is_include_non_approved=False):
-        employer_permission_groups = self.get_user_employer_permissions(is_include_non_approved)
+    # Note there is a performance penalty if permission_groups is not provided since it requires a DB fetch
+    def get_permissions_by_employer(self, permission_groups=None, is_include_non_approved=False):
+        employer_permission_groups = permission_groups or self.get_user_employer_permissions(is_include_non_approved)
         permissions = defaultdict(list)
         for employer_permission_group in employer_permission_groups:
             for permission in employer_permission_group.permission_group.permissions.all():
                 permissions[employer_permission_group.employer_id].append(permission)
         return permissions
 
-    def get_employer_permission_groups_by_employer(self, is_include_non_approved=False):
-        employer_permission_groups = self.get_user_employer_permissions(is_include_non_approved)
+    # Note there is a performance penalty if permission_groups is not provided since it requires a DB fetch
+    def get_employer_permission_groups_by_employer(self, permission_groups=None, is_include_non_approved=False):
+        employer_permission_groups = permission_groups or self.get_user_employer_permissions(is_include_non_approved)
         groups = defaultdict(list)
         for employer_permission_group in employer_permission_groups:
             groups[employer_permission_group.employer_id].append(employer_permission_group)

@@ -28,9 +28,11 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
         data['is_employer_deactivated'] = user.is_employer_deactivated
         data['created_dt'] = get_datetime_format_or_none(user.created_dt)
         data['modified_dt'] = get_datetime_format_or_none(user.modified_dt)
+        
+        approved_permission_groups = [p for p in user.employer_permission_group.all() if p.is_employer_approved]
         data['permissions_by_employer'] = {
             employer_id: [p.name for p in permissions]
-            for employer_id, permissions in user.get_permissions_by_employer().items()
+            for employer_id, permissions in user.get_permissions_by_employer(permission_groups=approved_permission_groups).items()
         }
         data['permission_groups_by_employer'] = {
             employer_id: [{
@@ -39,11 +41,11 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
                 'user_type_bit': epg.permission_group.user_type_bit,
                 'is_approved': epg.is_employer_approved
             } for epg in employer_permission_groups]
-            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(True).items()
+            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(permission_groups=user.employer_permission_group.all()).items()
         }
         data['user_type_bits_by_employer'] = {
             employer_id: reduce_user_type_bits([epg.permission_group for epg in employer_permission_groups])
-            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer().items()
+            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(permission_groups=approved_permission_groups).items()
         }
     
     if isIncludePersonalInfo:

@@ -79,11 +79,11 @@ class EmployerView(JobVyneAPIView):
         employers = Employer.objects \
             .select_related('employer_size', 'default_bonus_currency') \
             .prefetch_related(
-            'employee',
-            'employee__employer_permission_group',
-            'employee__employer_permission_group__permission_group',
-            'employee__employer_permission_group__permission_group__permissions'
-        ) \
+                'employee',
+                'employee__employer_permission_group',
+                'employee__employer_permission_group__permission_group',
+                'employee__employer_permission_group__permission_group__permissions'
+            ) \
             .filter(employer_filter)
         
         if employer_id:
