@@ -238,111 +238,113 @@ def generate_page_view(social_link, access_dt=None):
 
 
 def create_ancillary_data():
-    employer = generate_employer('Google')
-    users = [generate_user(employer) for _ in range(40)]
-    
-    departments = [
-        generate_job_department(dept)
-        for dept in ['Software Engineering', 'Product Management', 'Sales', 'Marketing', 'Strategy']
-    ]
-    
-    locations = []
-    cities = set()
-    states = set()
-    countries = set()
-    for location_data in (
-        ('Austin', 'TX', 'USA'),
-        ('Dallas', 'TX', 'USA'),
-        ('Los Angeles', 'CA', 'USA'),
-        ('San Francisco', 'CA', 'USA'),
-        ('Denver', 'CO', 'USA'),
-        ('Boston', 'MA', 'USA')
-    ):
-        city = generate_city(location_data[0])
-        state = generate_state(location_data[1])
-        country = generate_country(location_data[2])
-        cities.add(city)
-        states.add(state)
-        countries.add(country)
-        locations.append(generate_location(', '.join(location_data), city, state, country))
-
-    cities = list(cities)
-    states = list(states)
-    countries = list(countries)
-
-    current_dt = timezone.now()
-    jobs = []
-    for job_title, dept in (
-        ('Software Engineer - L1', departments[0]),
-        ('Software Engineer - L3', departments[0]),
-        ('Software Engineer Manager', departments[0]),
-        ('Product Manager', departments[1]),
-        ('Senior Product Manager', departments[1]),
-        ('Sales Development Representative', departments[2]),
-        ('Sales Director', departments[2]),
-        ('Digital Marketing Analyst', departments[3]),
-        ('Strategy Consultant', departments[4]),
-    ):
-        for _ in range(randint(1, 4)):
-            locations = list({location for location in choices(locations, k=randint(1, 3))})
-            open_date = fake.date_between(current_dt - timedelta(days=60), current_dt)
-            salary_floor = randint(60000, 120000)
-            salary_ceiling = salary_floor + randint(10000, 40000)
-            jobs.append(generate_employer_job(
-                employer, job_title, dept, open_date, locations,
-                salary_floor=salary_floor, salary_ceiling=salary_ceiling
-            ))
-    
-    platforms = list(SocialPlatform.objects.all())
-    for user in users:
-        for _ in range(randint(2, 5)):
-            include_department = randint(0, 1)
-            include_cities = randint(0, 1)
-            include_states = randint(0, 1)
-            include_country = randint(0, 1)
-            social_department = [choice(departments)] if include_department else None
-            social_cities = list({city for city in choices(cities)}) if include_cities else None
-            social_states = list({state for state in choices(states)}) if include_states else None
-            social_country = [choice(countries)] if include_country else None
-            generate_social_link(
-                user, employer, platform=choice(platforms),
-                departments=social_department, cities=social_cities,
-                states=social_states, countries=social_country
-            )
-    
-    bonus_rules = []
-    for idx, data in enumerate((
-        (1500, {
-            'include_departments': departments[0:2]
-        }),
-        (2500, {
-            'include_states': [states[1], states[3]]
-        }),
-        (3000, {
-            'exclude_cities': cities[2:4]
-        }),
-    )):
-        bonus = data[0]
-        kwargs = data[1]
-        bonus_rules.append(generate_employer_referral_bonus_rule(employer, idx, bonus, **kwargs))
+    for employer_name in ('Google', 'Vandelay Industries'):
+        employer = generate_employer(employer_name)
+        users = [generate_user(employer) for _ in range(40)]
         
-    generate_bonus_rule_modifier(bonus_rules[1], 1000, 30)
-    generate_bonus_rule_modifier(bonus_rules[1], 50, 50, type=EmployerReferralBonusRuleModifier.ModifierType.PERCENT.value)
+        departments = [
+            generate_job_department(dept)
+            for dept in ['Software Engineering', 'Product Management', 'Sales', 'Marketing', 'Strategy']
+        ]
+        
+        locations = []
+        cities = set()
+        states = set()
+        countries = set()
+        for location_data in (
+            ('Austin', 'TX', 'USA'),
+            ('Dallas', 'TX', 'USA'),
+            ('Los Angeles', 'CA', 'USA'),
+            ('San Francisco', 'CA', 'USA'),
+            ('Denver', 'CO', 'USA'),
+            ('Boston', 'MA', 'USA')
+        ):
+            city = generate_city(location_data[0])
+            state = generate_state(location_data[1])
+            country = generate_country(location_data[2])
+            cities.add(city)
+            states.add(state)
+            countries.add(country)
+            locations.append(generate_location(', '.join(location_data), city, state, country))
+    
+        cities = list(cities)
+        states = list(states)
+        countries = list(countries)
+    
+        current_dt = timezone.now()
+        jobs = []
+        for job_title, dept in (
+            ('Software Engineer - L1', departments[0]),
+            ('Software Engineer - L3', departments[0]),
+            ('Software Engineer Manager', departments[0]),
+            ('Product Manager', departments[1]),
+            ('Senior Product Manager', departments[1]),
+            ('Sales Development Representative', departments[2]),
+            ('Sales Director', departments[2]),
+            ('Digital Marketing Analyst', departments[3]),
+            ('Strategy Consultant', departments[4]),
+        ):
+            for _ in range(randint(1, 4)):
+                locations = list({location for location in choices(locations, k=randint(1, 3))})
+                open_date = fake.date_between(current_dt - timedelta(days=60), current_dt)
+                salary_floor = randint(60000, 120000)
+                salary_ceiling = salary_floor + randint(10000, 40000)
+                jobs.append(generate_employer_job(
+                    employer, job_title, dept, open_date, locations,
+                    salary_floor=salary_floor, salary_ceiling=salary_ceiling
+                ))
+        
+        platforms = list(SocialPlatform.objects.all())
+        for user in users:
+            for _ in range(randint(2, 5)):
+                include_department = randint(0, 1)
+                include_cities = randint(0, 1)
+                include_states = randint(0, 1)
+                include_country = randint(0, 1)
+                social_department = [choice(departments)] if include_department else None
+                social_cities = list({city for city in choices(cities)}) if include_cities else None
+                social_states = list({state for state in choices(states)}) if include_states else None
+                social_country = [choice(countries)] if include_country else None
+                generate_social_link(
+                    user, employer, platform=choice(platforms),
+                    departments=social_department, cities=social_cities,
+                    states=social_states, countries=social_country
+                )
+        
+        bonus_rules = []
+        for idx, data in enumerate((
+            (1500, {
+                'include_departments': departments[0:2]
+            }),
+            (2500, {
+                'include_states': [states[1], states[3]]
+            }),
+            (3000, {
+                'exclude_cities': cities[2:4]
+            }),
+        )):
+            bonus = data[0]
+            kwargs = data[1]
+            bonus_rules.append(generate_employer_referral_bonus_rule(employer, idx, bonus, **kwargs))
+            
+        generate_bonus_rule_modifier(bonus_rules[1], 1000, 30)
+        generate_bonus_rule_modifier(bonus_rules[1], 50, 50, type=EmployerReferralBonusRuleModifier.ModifierType.PERCENT.value)
     
     
 def create_recurring_data():
-    employer = Employer.objects.get(employer_name='Google')
-    users = JobVyneUser.objects.filter(employer=employer)
-    social_link_filters = SocialLinkFilter.objects.filter(owner_id__in=[u.id for u in users])
-    for social_link in social_link_filters:
-        jobs = SocialLinkJobsView.get_jobs_from_filter(social_link)
-        if not jobs:
-            continue
-        application_count = int(poisson(lam=3.0))
-        view_count = int(application_count * randint(10, 100) * random())
-        for _ in range(application_count):
-            generate_job_application(social_link, choice(jobs))
-        for _ in range(view_count):
-            generate_page_view(social_link)
+    employers = Employer.objects.filter(employer_name__in=('Google', 'Vandelay Industries'))
+    for employer in employers:
+        users = JobVyneUser.objects.filter(employer=employer)
+        social_link_filters = SocialLinkFilter.objects.filter(owner_id__in=[u.id for u in users])
+        for social_link in social_link_filters:
+            jobs = SocialLinkJobsView.get_jobs_from_filter(social_link)
+            if not jobs:
+                continue
+            application_count = int(poisson(lam=3.0))
+            view_count = int(application_count * randint(10, 100) * random())
+            for _ in range(application_count):
+                generate_job_application(social_link, choice(jobs))
+            for _ in range(view_count):
+                generate_page_view(social_link)
             
     print('Data creation complete')
