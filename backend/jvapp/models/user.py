@@ -114,7 +114,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         USER_TYPE_EMPLOYER
     ]
     
-    # Permissions for these user types must be approved by another user with the appropriate priveleges
+    # Permissions for these user types must be approved by another user with the appropriate privileges
     USER_TYPES_APPROVAL_REQUIRED = [USER_TYPE_EMPLOYER]
     
     username = None
