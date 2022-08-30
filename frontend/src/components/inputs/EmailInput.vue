@@ -5,7 +5,7 @@
     filled
     :label="label"
     lazy-rules
-    :rules="[ val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'Please enter a valid email']"
+    :rules="rules"
   />
 </template>
 
@@ -19,6 +19,32 @@ export default {
     label: {
       type: String,
       default: 'Email'
+    },
+    isRequired: {
+      type: Boolean,
+      default: true
+    },
+    additionalRules: {
+      type: Array,
+      default: () => ([])
+    }
+  },
+  computed: {
+    rules () {
+      const rules = [
+        (val) => {
+          if (this.isRequired && (!val || !val.length)) {
+            return 'An email is required'
+          }
+          if (val && val.length > 0 && !formUtil.isGoodEmail(val)) {
+            return 'Please enter a valid email'
+          }
+          return true
+        },
+        ...this.additionalRules
+      ]
+
+      return rules
     }
   },
   data () {

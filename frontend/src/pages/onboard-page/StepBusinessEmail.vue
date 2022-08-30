@@ -4,7 +4,15 @@
     title="Add a business email"
   >
     <div class="col-12 col-md-6">
-      <EmailInput v-model="email" label="Business email" @blur="formData.business_email = email"/>
+      <EmailInput
+        v-model="email"
+        label="Business email"
+        :is-required="false"
+        :additional-rules="[
+          val => val !== personalEmail || 'Business email must be different than personal email'
+        ]"
+        @blur="formData.business_email = email"
+      />
     </div>
     <template v-slot:buttons>
       <slot name="backButton"></slot>
@@ -21,6 +29,7 @@ export default {
   name: 'StepBusinessEmail',
   components: { BaseStep, EmailInput },
   props: {
+    personalEmail: String,
     formData: Object,
     potentialEmployers: [Array, null]
   },

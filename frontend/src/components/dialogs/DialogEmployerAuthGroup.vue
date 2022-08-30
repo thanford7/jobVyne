@@ -16,12 +16,14 @@
     />
     <SelectUserType
       v-model="formData.user_type_bit"
+      :allowed-user-types="[USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE]"
     />
   </DialogBase>
 </template>
 
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import { USER_TYPE_EMPLOYEE, USER_TYPE_EMPLOYER } from 'src/utils/user-types.js'
 import { useEmployerStore } from 'stores/employer-store'
 import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
@@ -37,7 +39,9 @@ export default {
       formData: {
         name: null,
         user_type_bit: null
-      }
+      },
+      USER_TYPE_EMPLOYER,
+      USER_TYPE_EMPLOYEE
     }
   },
   computed: {

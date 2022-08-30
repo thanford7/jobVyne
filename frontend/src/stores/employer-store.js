@@ -18,6 +18,9 @@ export const useEmployerStore = defineStore('employer', {
 
   actions: {
     async setEmployer (employerId, isForceRefresh = false) {
+      if (!employerId) {
+        return
+      }
       if (!this.employers[employerId] || isForceRefresh) {
         const resp = await this.$api.get(`employer/${employerId}/`)
         this.employers[employerId] = resp.data
@@ -105,13 +108,12 @@ export const useEmployerStore = defineStore('employer', {
         this.employerPage[employerId] = resp.data
       }
     },
-    async getEmployersFromDomain (email) {
+    async setEmployersFromDomain (email, isForceRefresh = false) {
       if (!email) {
-        return null
+        return
       }
-      const employer = this.employersFromEmail[email]
-      if (employer) {
-        return employer
+      if (this.employersFromEmail[email] && !isForceRefresh) {
+        return
       }
       const resp = await this.$api.get(
         'employer-from-domain/',
@@ -119,8 +121,10 @@ export const useEmployerStore = defineStore('employer', {
           params: { email }
         }
       )
-      this.employersFromEmail[email] = resp.data // Cache the response
-      return resp.data
+      this.employersFromEmail[email] = resp.data
+    },
+    getEmployersFromDomain (email) {
+      return this.employersFromEmail[email]
     },
     getEmployer (employerId) {
       return this.employers[employerId]

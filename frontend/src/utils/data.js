@@ -33,6 +33,16 @@ class DataUtil {
     return this.formatCurrency(salaryCeiling)
   }
 
+  getBitsFromList (bitList) {
+    if (!Array.isArray(bitList)) {
+      return bitList
+    }
+    return bitList.reduce((allBits, bit) => {
+      allBits |= bit
+      return allBits
+    }, 0)
+  }
+
   copyText (e) {
     const utilStore = useUtilStore()
     const targetEl = e.currentTarget

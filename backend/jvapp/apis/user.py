@@ -69,17 +69,21 @@ class UserView(JobVyneAPIView):
         user = self.get_user(self.user, user_id=user_id)
         user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
         
+        # Make sure business email is not a duplicate
+        new_business_email = self.data.get('business_email')
+        if new_business_email and new_business_email == user.email:
+            return Response('Business email cannot be the same as your personal email', status=status.HTTP_400_BAD_REQUEST)
+        
         # Reset email verification if this is a new email
-        if new_business_email := self.data.get('business_email'):
-            if new_business_email != user.business_email:
-                user.is_business_email_verified = False
+        if new_business_email != user.business_email:
+            user.is_business_email_verified = False
         
         set_object_attributes(user, self.data, {
-            'first_name': AttributeCfg(is_protect_existing=True),
-            'last_name': AttributeCfg(is_protect_existing=True),
-            'business_email': AttributeCfg(is_protect_existing=True),
+            'first_name': AttributeCfg(is_ignore_excluded=True),
+            'last_name': AttributeCfg(is_ignore_excluded=True),
+            'business_email': AttributeCfg(is_ignore_excluded=True),
             'user_type_bits': None,
-            'employer_id': AttributeCfg(is_protect_existing=True),
+            'employer_id': AttributeCfg(is_ignore_excluded=True),
         })
         
         if 'profile_picture_url' in self.data and not self.data['profile_picture_url']:

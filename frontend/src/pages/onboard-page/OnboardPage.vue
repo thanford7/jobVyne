@@ -129,12 +129,17 @@ export default {
     return {
       stepIdx: 0,
       formData,
-      potentialEmployers: null,
       colorUtil,
       userTypesCfg
     }
   },
   computed: {
+    potentialEmployers () {
+      return [
+        ...dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.user.email)),
+        ...dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.formData.business_email))
+      ]
+    },
     steps () {
       const all = [
         { component: 'StepUserType', props: { formData: this.formData, userTypesCfg: this.userTypesCfg } }
@@ -159,27 +164,23 @@ export default {
       if (isNeedsBusinessEmail) {
         all.push({
           component: 'StepBusinessEmail',
-          props: { formData: this.formData, potentialEmployers: this.potentialEmployers }
+          props: { formData: this.formData, potentialEmployers: this.potentialEmployers, personalEmail: this.user.email }
         })
       }
 
       // If we still can't identify the user's employer after they provide a business email, we'll
       // need to manually intervene
-      const updatedPotentialEmployers = [
-        ...dataUtil.getForceArray(this.potentialEmployers),
-        ...dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.formData.business_email))
-      ]
-      if (isNeedsBusinessEmail && !updatedPotentialEmployers.length) {
+      if (isNeedsBusinessEmail && !this.potentialEmployers.length) {
         all.push({
           component: 'StepUnknownEmployer',
           props: { formData: this.formData }
         })
       }
 
-      if (!this.user.employer_id && updatedPotentialEmployers.length) { // TODO: Update to length > 1
+      if (!this.user.employer_id && this.potentialEmployers.length) { // TODO: Update to length > 1
         all.push({
           component: 'StepSelectEmployer',
-          props: { formData: this.formData, potentialEmployers: updatedPotentialEmployers }
+          props: { formData: this.formData, potentialEmployers: this.potentialEmployers }
         })
       }
       return all
@@ -197,21 +198,20 @@ export default {
     }
   },
   async mounted () {
-    const fromEmail = await this.employerStore.getEmployersFromDomain(this.user.email)
-    const fromBusinessEmail = await this.employerStore.getEmployersFromDomain(this.user.business_email)
-    this.potentialEmployers = dataUtil.uniqArray([
-      ...dataUtil.getForceArray(fromEmail),
-      ...dataUtil.getForceArray(fromBusinessEmail)
-    ])
-
     this.formData.first_name = this.user.first_name
     this.formData.last_name = this.user.last_name
   },
   preFetch () {
     const authStore = useAuthStore()
+    const employerStore = useEmployerStore()
     Loading.show()
 
-    return authStore.setUser().finally(() => {
+    return authStore.setUser().then(() => {
+      return Promise.all([
+        employerStore.setEmployersFromDomain(authStore.propUser.email),
+        employerStore.setEmployersFromDomain(authStore.propUser.business_email)
+      ])
+    }).finally(() => {
       Loading.hide()
     })
   },

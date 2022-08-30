@@ -29,9 +29,9 @@ class UserTypeUtil {
     }
   }
 
-  getUserTypeList (userTypeBits, isInBits, excludeBits = USER_TYPES.Admin | USER_TYPES.Candidate) {
+  getUserTypeList (userTypeBits, isInBits, { excludeBits = USER_TYPES.Admin | USER_TYPES.Candidate, includeBits } = {}) {
     return Object.entries(USER_TYPES).reduce((typeList, [userTypeName, userTypeBit]) => {
-      const isExcluded = userTypeBit & excludeBits
+      const isExcluded = (userTypeBit & excludeBits) || (includeBits && !(userTypeBit & includeBits))
       if (!isExcluded && (userTypeBits & userTypeBit)) {
         typeList.push((isInBits) ? userTypeBit : userTypeName)
       }

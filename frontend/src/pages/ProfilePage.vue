@@ -8,7 +8,7 @@
             <template v-slot:avatar>
               <q-icon name="warning"/>
             </template>
-            <template v-if="isCompanyUser">
+            <template v-if="isCompanyUser && user.employer_id">
               You must verify an email that is covered under your company's email domains.
               Use the "Send verification email" button in the
               <a href="/user/profile/?tab=security">"Security" profile section</a>
@@ -20,6 +20,16 @@
               If your primary email is not covered under any of these domains, go to the <a
               href="/user/profile/?tab=general">"General" profile section</a>
               to add your business email.
+            </template>
+            <template v-else-if="isCompanyUser && !user.employer_id && potentialEmployers.length">
+              As an employee or employer user, you must first select your employer. You can select
+              your employer in the <a href="/user/profile/?tab=general">"General" profile section</a>.
+            </template>
+            <template v-else-if="isCompanyUser && !user.employer_id && !potentialEmployers.length">
+              As an employee or employer user, you must first select your employer. Your current email
+              address does not match with any employers on the JobVyne platform. If you have not yet
+              added your business email, add it in the <a href="/user/profile/?tab=general">"General" profile section</a>.
+              If your employer is still not found, you can use the help menu to receive assistance from the JobVyne team.
             </template>
             <template v-else>
               You must verify your email before getting access to most JobVyne features. Use the "Send verification
@@ -109,7 +119,30 @@
               />
             </div>
             <div class="col-12 col-md-6 q-pl-md-sm">
-              <EmailInput v-model="userData.business_email" label="Business email"/>
+              <EmailInput
+                v-model="userData.business_email"
+                label="Business email"
+                :is-required="false"
+                :additional-rules="[
+                  val => val !== userData.email || 'Business email must be different than personal email'
+                ]"
+              />
+            </div>
+            <div class="col-12 col-md-6 q-pr-md-sm">
+              <q-select
+                filled emit-value map-options
+                v-model="userData.employer_id"
+                :options="potentialEmployers"
+                autocomplete="name"
+                option-value="id"
+                option-label="name"
+                label="Employer"
+                lazy-rules
+                :rules="[val => val || 'Please select an option']"
+              />
+            </div>
+            <div class="col-12 col-md-6 q-pl-md-sm">
+              <SelectUserType v-model="userData.user_type_bits" :is-multi="true"/>
             </div>
           </div>
         </q-tab-panel>
@@ -279,6 +312,7 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmailInput from 'components/inputs/EmailInput.vue'
 import PasswordInput from 'components/inputs/PasswordInput.vue'
+import SelectUserType from 'components/inputs/SelectUserType.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
@@ -300,7 +334,7 @@ const userPermissionGroupColumns = [
 
 export default {
   name: 'ProfilePage',
-  components: { PasswordInput, CustomTooltip, EmailInput, FileDisplayOrUpload, PageHeader, SeparatorWithText },
+  components: { SelectUserType, PasswordInput, CustomTooltip, EmailInput, FileDisplayOrUpload, PageHeader, SeparatorWithText },
   data () {
     return {
       tab: 'general',
@@ -323,6 +357,11 @@ export default {
         return {}
       }
       return this.employerStore.getEmployer(this.user.employer_id)
+    },
+    potentialEmployers () {
+      const personal = this.employerStore.getEmployersFromDomain(this.authStore.propUser.email) || []
+      const business = this.employerStore.getEmployersFromDomain(this.authStore.propUser.business_email) || []
+      return [...personal, ...business]
     },
     supportedEmailDomains () {
       if (!this.employer.email_domains) {
@@ -424,11 +463,11 @@ export default {
     Loading.show()
 
     return authStore.setUser().then(() => {
-      if (authStore.propUser.employer_id) {
-        return Promise.all([
-          employerStore.setEmployer(authStore.propUser.employer_id)
-        ])
-      }
+      return Promise.all([
+        employerStore.setEmployer(authStore.propUser.employer_id),
+        employerStore.setEmployersFromDomain(authStore.propUser.email),
+        employerStore.setEmployersFromDomain(authStore.propUser.business_email)
+      ])
     }).finally(() => {
       Loading.hide()
     })

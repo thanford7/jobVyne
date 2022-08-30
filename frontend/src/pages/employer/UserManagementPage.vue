@@ -154,6 +154,7 @@
                                  :has-filter="userFilter.userTypeBitsList && userFilter.userTypeBitsList.length">
                       <SelectUserType
                         v-model="userFilter.userTypeBitsList"
+                        :allowed-user-types="[USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE]"
                         :is-multi="true"
                         :is-required="false"
                       />
@@ -435,7 +436,9 @@ export default {
       dataUtil,
       userTypeUtil,
       dateTimeUtil,
-      PERMISSION_NAMES: pagePermissionsUtil.PERMISSION_NAMES
+      PERMISSION_NAMES: pagePermissionsUtil.PERMISSION_NAMES,
+      USER_TYPE_EMPLOYER,
+      USER_TYPE_EMPLOYEE
     }
   },
   computed: {
