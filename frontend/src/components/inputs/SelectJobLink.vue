@@ -11,6 +11,7 @@
     option-value="id"
     option-label="platformName"
     label="Job link"
+    :rules="rules"
   >
     <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
       <BaseExpansionItem :title="opt.platformName">
@@ -79,6 +80,10 @@ export default {
     isEmitIdOnly: {
       type: Boolean,
       default: false
+    },
+    isRequired: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
@@ -94,6 +99,14 @@ export default {
     }
   },
   computed: {
+    rules () {
+      if (!this.isRequired) {
+        return []
+      }
+      return [
+        (val) => val || 'Job link is required'
+      ]
+    },
     socialLinks () {
       let links = this.socialStore.getSocialLinkFilters(this.authStore.propUser.id)
       links = Object.entries(dataUtil.groupBy(links, 'platform_name')).map(([platformName, platformLinks]) => {

@@ -4,6 +4,7 @@
     :primary-button-text="(!contentItem.id) ? 'Create' : 'Update'"
     :is-full-screen="true"
     :is-o-k-btn-enabled="isValidForm"
+    :ok-btn-help-text="validationHelpText"
     @ok="save"
     @show="focusInput"
   >
@@ -16,6 +17,7 @@
           :hint="characterLengthText"
         />
         <PostLiveView
+          v-if="!isTemplate"
           :content="formData.content"
           :file="formData.file"
           :job-link="formData.jobLink"
@@ -90,7 +92,7 @@
             title="Jobs link" class="content-expansion"
             :is-include-separator="false"
           >
-            <SelectJobLink v-model="formData.jobLink"/>
+            <SelectJobLink v-model="formData.jobLink" :is-required="true"/>
           </BaseExpansionItem>
           <BaseExpansionItem
             v-if="socialAuthStore.socialCredentials"
@@ -169,7 +171,19 @@ export default {
   },
   computed: {
     isValidForm () {
-      return Boolean(this.formData.formatted_content && this.formData.formatted_content.length)
+      return Boolean(
+        this.formData.content && this.formData.content.length &&
+        (this.isTemplate || this.formData.jobLink)
+      )
+    },
+    validationHelpText () {
+      if (this.isValidForm) {
+        return null
+      } else if (this.isTemplate) {
+        return 'Template content is required'
+      } else {
+        return 'Content and jobs link are required'
+      }
     },
     socialCredentials () {
       if (!this.socialAuthStore) {

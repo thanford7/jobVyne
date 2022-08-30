@@ -9,14 +9,14 @@
     <q-card class="q-dialog-plugin" :style="cardStyle">
       <q-bar v-if="isFullScreen">
         {{ baseTitleText }}
-        <q-space />
+        <q-space/>
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-card-section v-if="isIncludeHeader && !isFullScreen">
         <div v-if="baseTitleText" class="text-h6">
-          {{baseTitleText}}
+          {{ baseTitleText }}
         </div>
         <q-btn
           flat unelevated ripple
@@ -39,8 +39,22 @@
 
       <q-card-actions v-if="isIncludeButtons" align="right" class="text-primary">
         <slot name="buttons">
-          <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel" />
+          <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel"/>
+          <CustomTooltip v-if="okBtnHelpText" class="q-ml-sm" :is_include_icon="false">
+            <template v-slot:content>
+              <q-btn
+                class="bg-accent"
+                :disable="!isOKBtnEnabled"
+                flat ripple text-color="white"
+                :label="primaryButtonText"
+                :loading="isLoading"
+                @click="onOkClick"
+              />
+            </template>
+            {{ okBtnHelpText }}
+          </CustomTooltip>
           <q-btn
+            v-else
             class="bg-accent"
             :disable="!isOKBtnEnabled"
             flat ripple text-color="white"
@@ -55,10 +69,12 @@
 </template>
 
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import { useDialogPluginComponent } from 'quasar'
 
 export default {
   name: 'DialogBase',
+  components: { CustomTooltip },
   props: {
     primaryButtonText: {
       type: String,
@@ -82,6 +98,9 @@ export default {
     isOKBtnEnabled: {
       type: Boolean,
       default: true
+    },
+    okBtnHelpText: {
+      type: [String, null]
     },
     isLoading: {
       type: Boolean,
