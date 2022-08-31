@@ -22,6 +22,7 @@
 </template>
 
 <script>
+import dataUtil from 'src/utils/data.js'
 import { ref } from 'vue'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
@@ -44,7 +45,8 @@ export default {
   computed: {
     pictures () {
       const files = this.employerStore.getEmployerFiles(this.employerId)
-      return files.filter((f) => this.pictureIds.includes(f.id))
+      const pictureIds = dataUtil.getForceArray(this.pictureIds)
+      return files.filter((f) => pictureIds.includes(f.id))
     }
   },
   async mounted () {

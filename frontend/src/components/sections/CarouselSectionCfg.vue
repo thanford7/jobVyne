@@ -6,7 +6,8 @@
       :file-type-keys="[FILE_TYPES.IMAGE.key]"
       :is-emit-id-only="true"
       :is-employer="true"
-      v-model="section.item_parts[0].picture_ids"
+      :is-multi-select="true"
+      v-model:employer-file-ids="section.item_parts[0].picture_ids"
     >
       <template v-slot:after>
         <q-btn

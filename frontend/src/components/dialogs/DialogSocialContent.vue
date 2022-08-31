@@ -19,7 +19,7 @@
         <PostLiveView
           v-if="!isTemplate"
           :content="formData.content"
-          :file="formData.file"
+          :file="formData.employer_file || formData.user_file"
           :job-link="formData.jobLink"
           @content-update="formData.formatted_content = $event"
         />
@@ -79,7 +79,8 @@
             :is-include-separator="false"
           >
             <SelectFiles
-              v-model="formData.file"
+              v-model:employer-file-ids="formData.employer_file"
+              v-model:user-file-ids="formData.user_file"
               :file-type-keys="[
                 FILE_TYPES.IMAGE.key,
                 FILE_TYPES.VIDEO.key
@@ -106,7 +107,8 @@
             </template>
             <template v-for="(creds, platform) in socialAuthStore.socialCredentials">
               <div class="text-bold">{{ platform }}</div>
-              <q-checkbox v-for="cred in creds" v-model="formData.post_accounts[`${platform}|${cred.email}`]" :label="cred.email"/>
+              <q-checkbox v-for="cred in creds" v-model="formData.post_accounts[`${platform}|${cred.email}`]"
+                          :label="cred.email"/>
             </template>
           </BaseExpansionItem>
         </template>
@@ -202,7 +204,11 @@ export default {
     placeholderTableRows () {
       return [
         { name: 'Employer', placeholder: SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, example: 'Google' },
-        { name: 'Jobs page link', placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, example: 'www.jobvyne.com/jobs-link/ad8audafdi' },
+        {
+          name: 'Jobs page link',
+          placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK,
+          example: 'www.jobvyne.com/jobs-link/ad8audafdi'
+        },
         {
           name: 'Open jobs list',
           placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST,
@@ -264,12 +270,10 @@ export default {
       const method = (this.formData.id) ? this.$api.put : this.$api.post
       let data = (this.isEmployer) ? { employer_id: this.user.employer_id } : { user_id: this.user.id }
       data = Object.assign(data, dataUtil.pick(this.formData, ['content', 'formatted_content']))
-      if (this.formData.file) {
-        if (this.formData.file.isEmployer) {
-          data.employer_file_id = this.formData.file.id
-        } else {
-          data.user_file_id = this.formData.file.id
-        }
+      if (this.formData.employer_file) {
+        data.employer_file_id = this.formData.employer_file.id
+      } else if (this.formData.user_file) {
+        data.user_file_id = this.formData.user_file.id
       }
 
       data.post_accounts = Object.entries(this.formData.post_accounts).reduce((data, [key, isShare]) => {

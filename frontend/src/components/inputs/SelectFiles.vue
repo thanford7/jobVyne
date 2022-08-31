@@ -2,15 +2,15 @@
   <q-select
     v-if="isLoaded"
     ref="select"
+    :model-value="selectedFiles"
+    @update:model-value="emitFiles"
     filled use-chips
     :multiple="isMultiSelect"
-    v-model="files"
-    @update:model-value="emitModelValue"
     :options="fileOptions"
     autocomplete="title"
     use-input
     @filter="filterFiles"
-    option-value="id"
+    option-value="compositeId"
     option-label="title"
     :label="label"
   >
@@ -62,7 +62,9 @@
         removable
         @remove="removeAtIndex(index)"
         :tabindex="tabindex"
-      >{{ opt.title }}</q-chip>
+        :class="log(opt)"
+      >{{ opt.title }}
+      </q-chip>
     </template>
     <template v-slot:after>
       <slot name="after"/>
@@ -80,8 +82,11 @@ import fileUtil, { FILE_TYPES } from 'src/utils/file'
 export default {
   name: 'SelectFiles',
   props: {
-    modelValue: {
-      type: [Object, Array, null]
+    employerFileIds: {
+      type: [Array, Object, Number, null]
+    },
+    userFileIds: {
+      type: [Array, Object, Number, null]
     },
     isEmitIdOnly: {
       type: Boolean,
@@ -100,7 +105,6 @@ export default {
   data () {
     return {
       isLoaded: false,
-      files: null,
       filterTxt: null,
       fileUtil
     }
@@ -109,12 +113,34 @@ export default {
     label () {
       return `Select ${fileUtil.getFileLabel(this.fileTypeKeys)}s`
     },
-    fileOptions () {
+    selectedFiles () {
+      const normalizedEmployerFileIds = this.normalizeFileIds(this.employerFileIds)
+      const normalizedUserFileIds = this.normalizeFileIds(this.userFileIds)
+      if (!this.isMultiSelect) {
+        if (normalizedEmployerFileIds) {
+          return this.getFileFromId(normalizedEmployerFileIds, true)
+        } else if (normalizedUserFileIds) {
+          return this.getFileFromId(normalizedUserFileIds, false)
+        } else {
+          return null
+        }
+      }
+      const files = []
+      dataUtil.getForceArray(normalizedEmployerFileIds).forEach((id) => {
+        files.push(this.getFileFromId(id, true))
+      })
+      dataUtil.getForceArray(normalizedUserFileIds).forEach((id) => {
+        files.push(this.getFileFromId(id, false))
+      })
+      return files
+    },
+    allowedFiles () {
       let allowedFiles = fileUtil.filterFilesByTypes(
         this.employerStore.getEmployerFiles(this.authStore.propUser.employer_id),
         this.fileTypeKeys,
         true
       ).map((v) => {
+        v.compositeId = this.getCompositeId(v.id, true)
         v.isEmployer = true
         return v
       })
@@ -126,24 +152,32 @@ export default {
             this.fileTypeKeys,
             true
           ).map((v) => {
+            v.compositeId = this.getCompositeId(v.id, false)
             v.isEmployer = false
             return v
           })
         ]
       }
+      return allowedFiles
+    },
+    groupedFiles () {
       const groupFn = (this.isEmployer) ? (f) => dataUtil.capitalize(f.group) : (f) => `${dataUtil.capitalize(f.group)} ${(f.isEmployer) ? '(Employer)' : '(Yours)'}`
-      allowedFiles = Object.entries(dataUtil.groupBy(allowedFiles, groupFn)).map(([fileGroup, files]) => {
+      const groupedFiles = Object.entries(dataUtil.groupBy(this.allowedFiles, groupFn)).map(([fileGroup, files]) => {
         return {
           fileGroup,
           files
         }
       })
-      dataUtil.sortBy(allowedFiles, 'fileGroup', true)
+      dataUtil.sortBy(groupedFiles, 'fileGroup', true)
+      return groupedFiles
+    },
+    fileOptions () {
+      const files = dataUtil.deepCopy(this.groupedFiles)
       if (!this.filterTxt || this.filterTxt === '') {
-        return allowedFiles
+        return files
       }
       const filterRegex = new RegExp(`.*?${this.filterTxt}.*?`, 'i')
-      allowedFiles.forEach((fileGroup) => {
+      files.forEach((fileGroup) => {
         fileGroup.files = fileGroup.files.filter((file) => {
           return (
             file.title.match(filterRegex) ||
@@ -151,10 +185,13 @@ export default {
           )
         })
       })
-      return allowedFiles
+      return files
     }
   },
   methods: {
+    log (val) {
+      console.log(val)
+    },
     async updateFiles () {
       await Promise.all([
         this.employerStore.setEmployerFiles(this.authStore.propUser.employer_id),
@@ -166,14 +203,45 @@ export default {
         this.filterTxt = filterTxt
       })
     },
-    emitModelValue (value) {
-      if (this.isEmitIdOnly) {
-        value = (value && value.length) ? value.map(v => v.id) : value
-      }
-      this.$emit('update:model-value', value)
+    getCompositeId (id, isEmployerFile) {
+      return (isEmployerFile) ? `employer-${id}` : `user-${id}`
+    },
+    getFileFromId (id, isEmployerFile) {
+      const compositeId = this.getCompositeId(id, isEmployerFile)
+      return this.allowedFiles.find((f) => f.compositeId === compositeId)
     },
     getOptionProps (itemProps) {
       return dataUtil.omit(itemProps, ['id', 'onClick', 'onMousemove'])
+    },
+    emitFiles (files) {
+      if (!files) {
+        this.$emit('update:employer-file-ids', null)
+        this.$emit('update:user-file-ids', null)
+        return
+      }
+      if (!this.isMultiSelect) {
+        if (files.isEmployer) {
+          this.$emit('update:employer-file-ids', (this.isEmitIdOnly) ? files.id : files)
+          this.$emit('update:user-file-ids', null)
+        } else {
+          this.$emit('update:employer-file-ids', null)
+          this.$emit('update:user-file-ids', (this.isEmitIdOnly) ? files.id : files)
+        }
+        return
+      }
+      const employerFiles = files.filter((f) => f.isEmployer).map((f) => (this.isEmitIdOnly) ? f.id : f)
+      const userFiles = files.filter((f) => !f.isEmployer).map((f) => (this.isEmitIdOnly) ? f.id : f)
+      this.$emit('update:employer-file-ids', employerFiles)
+      this.$emit('update:user-file-ids', userFiles)
+    },
+    normalizeFileIds (fileIds) {
+      if (!fileIds || Number.isInteger(fileIds)) {
+        return fileIds
+      } else if (Array.isArray(fileIds)) {
+        return fileIds.map((f) => (dataUtil.isObject(f)) ? f.id : f)
+      } else {
+        return fileIds.id
+      }
     }
   },
   async mounted () {
