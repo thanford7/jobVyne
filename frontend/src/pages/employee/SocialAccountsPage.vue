@@ -13,7 +13,7 @@
               <q-btn
                 unelevated dense
                 label="Connect account" icon="power" color="primary"
-                @click="redirectAuthUrl(SOCIAL_KEY_LINKED_IN)"
+                @click="redirectAuthUrl('linkedin-oauth2')"
               />
             </template>
             <template v-slot:body>
