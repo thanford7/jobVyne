@@ -12,7 +12,6 @@ from jvapp.models import PageView
 
 __all__ = ('PageTrackView',)
 
-from jvapp.utils.logger import getLogger
 
 geo_locator = GeoIP2()
 
@@ -20,7 +19,12 @@ geo_locator = GeoIP2()
 # Check whether the same IP address viewed the page within this number of minutes
 # If so, don't save a new view record. The assumption is that this is just a page refresh
 UNIQUE_VIEW_LOOKBACK_MINUTES = 30
-logger = getLogger()
+
+
+def parse_ip_address(address):
+    if not address:
+        return None
+    return address.split(',')[0].strip()
 
 
 class PageTrackView(APIView):
@@ -32,9 +36,7 @@ class PageTrackView(APIView):
         page_view.relative_url = request.data['relative_url']
         page_view.social_link_filter_id = request.data.get('filter_id')
         
-        page_view.ip_address = meta.get('HTTP_X_FORWARDED_FOR') or meta.get('REMOTE_ADDR')
-        logger.info(f'HTTP_X_FORWARDED_FOR: {meta.get("HTTP_X_FORWARDED_FOR")}')
-        logger.info(f'REMOTE_ADDR: {meta.get("REMOTE_ADDR")}')
+        page_view.ip_address = parse_ip_address(meta.get('HTTP_X_FORWARDED_FOR')) or parse_ip_address(meta.get('REMOTE_ADDR'))
         page_view.access_dt = timezone.now()
         
         location_data = None
