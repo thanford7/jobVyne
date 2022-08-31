@@ -33,6 +33,8 @@ class PageTrackView(APIView):
         page_view.social_link_filter_id = request.data.get('filter_id')
         
         page_view.ip_address = meta.get('HTTP_X_FORWARDED_FOR') or meta.get('REMOTE_ADDR')
+        logger.inf(f'HTTP_X_FORWARDED_FOR: {meta.get("HTTP_X_FORWARDED_FOR")}')
+        logger.inf(f'REMOTE_ADDR: {meta.get("REMOTE_ADDR")}')
         page_view.access_dt = timezone.now()
         
         location_data = None
@@ -57,13 +59,9 @@ class PageTrackView(APIView):
             access_dt__gt=timezone.now() - timedelta(minutes=UNIQUE_VIEW_LOOKBACK_MINUTES)
         )
         
-        # if not len(recent_page_views):
-        try:
+        if not len(recent_page_views):
             page_view.save()
-        except Exception as e:
-            logger.info(e)
 
-        logger.info('Returning response')
         return Response(status=status.HTTP_200_OK)
 
 
