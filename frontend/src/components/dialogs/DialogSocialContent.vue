@@ -79,21 +79,39 @@
             :is-include-separator="false"
           >
             <SelectFiles
+              ref="selectFiles"
               v-model:employer-file-ids="formData.employer_file"
               v-model:user-file-ids="formData.user_file"
               :file-type-keys="[
-                FILE_TYPES.IMAGE.key,
-                FILE_TYPES.VIDEO.key
+                FILE_TYPES.IMAGE.key
               ]"
               :is-multi-select="false"
               :is-employer="false"
-            />
+            >
+              <template v-slot:after>
+                <q-btn
+                  unelevated ripple color="primary" stretch
+                  class="h-100"
+                  @click="openFileModal"
+                >Add new
+                </q-btn>
+              </template>
+            </SelectFiles>
           </BaseExpansionItem>
           <BaseExpansionItem
             title="Jobs link" class="content-expansion"
             :is-include-separator="false"
           >
-            <SelectJobLink v-model="formData.jobLink" :is-required="true"/>
+            <SelectJobLink v-model="formData.jobLink" :is-required="true">
+              <template v-slot:after>
+                <q-btn
+                  unelevated ripple color="primary" stretch
+                  class="h-100"
+                  @click="openSociaLinkModal"
+                >Add new
+                </q-btn>
+              </template>
+            </SelectJobLink>
           </BaseExpansionItem>
           <BaseExpansionItem
             v-if="socialAuthStore.socialCredentials"
@@ -121,9 +139,13 @@
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
+import DialogSocialLink from 'components/dialogs/DialogSocialLink.vue'
+import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
 import SelectFiles from 'components/inputs/SelectFiles.vue'
 import SelectJobLink from 'components/inputs/SelectJobLink.vue'
 import PostLiveView from 'pages/employee/content-page/PostLiveView.vue'
+import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
@@ -292,6 +314,7 @@ export default {
       } else {
         await this.contentStore.setSocialPosts(null, this.user.id, true)
       }
+      await this.contentStore.setSocialContent(this.user.employer_id, this.user.id, true)
       this.$emit('ok')
     },
     async saveTemplate () {
@@ -303,6 +326,31 @@ export default {
       }))
       await this.contentStore.setSocialContent(this.user.employer_id, this.user.id, true)
       this.$emit('ok')
+    },
+    async openFileModal () {
+      const cfg = {
+        componentProps: { fileTypeKeys: [FILE_TYPES.IMAGE.key] }
+      }
+      if (this.isEmployer) {
+        await loadDialogEmployerFileDataFn()
+        cfg.component = DialogEmployerFile
+      } else {
+        await loadDialogUserFileDataFn()
+        cfg.component = DialogUserFile
+      }
+      return this.q.dialog(cfg).onOk(() => {
+        this.$refs.selectFiles.updateFiles()
+      })
+    },
+    async openSociaLinkModal () {
+      return this.q.dialog({
+        component: DialogSocialLink
+      })
+    }
+  },
+  setup () {
+    return {
+      q: useQuasar()
     }
   },
   mounted () {

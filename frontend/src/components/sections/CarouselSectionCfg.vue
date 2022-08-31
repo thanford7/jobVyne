@@ -11,7 +11,7 @@
     >
       <template v-slot:after>
         <q-btn
-          unelevated ripple color="primary"
+          unelevated ripple color="primary" stretch
           class="h-100"
           @click="openEmployerFileModal(sectionIdx)"
         >Add new image

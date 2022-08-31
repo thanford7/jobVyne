@@ -61,6 +61,9 @@
         {{ socialUtil.getLinkTextDescription(opt) }}
       </q-chip>
     </template>
+    <template v-slot:after>
+      <slot name="after"/>
+    </template>
   </q-select>
 </template>
 

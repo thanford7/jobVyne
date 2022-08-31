@@ -130,26 +130,7 @@
                 </div>
               </div>
               <div class="col-12 col-md-6">
-                <q-select
-                  filled
-                  v-model="formData.platform"
-                  :options="socialStore.platforms"
-                  autocomplete="name"
-                  option-value="name"
-                  option-label="name"
-                  label="Platform"
-                >
-                  <template v-slot:option="scope">
-                    <q-item v-bind="scope.itemProps">
-                      <q-item-section avatar>
-                        <img :src="scope.opt.logo" alt="Logo" style="max-height: 20px">
-                      </q-item-section>
-                      <q-item-section>
-                        <q-item-label>{{ scope.opt.name }}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
+                <SelectPlatform v-model="formData.platform"/>
               </div>
             </div>
             <div class="row">
@@ -291,7 +272,9 @@ import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
+import SelectPlatform from 'components/inputs/SelectPlatform.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
+import jobsUtil from 'src/utils/jobs.js'
 import locationUtil from 'src/utils/location.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
@@ -350,7 +333,7 @@ const formDataTemplate = {
 }
 
 export default {
-  components: { SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, PageHeader, CustomTooltip },
+  components: { SelectPlatform, SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, PageHeader, CustomTooltip },
   data () {
     return {
       formData: { ...formDataTemplate },
@@ -427,28 +410,7 @@ export default {
       return text
     },
     jobDataFilter (rows) {
-      const departmentIds = (this.formData.departments) ? this.formData.departments.map((department) => department.id) : []
-      const cityIds = (this.formData.cities) ? this.formData.cities.map((city) => city.id) : []
-      const stateIds = (this.formData.states) ? this.formData.states.map((state) => state.id) : []
-      const countryIds = (this.formData.countries) ? this.formData.countries.map((country) => country.id) : []
-      return rows.filter((job) => {
-        const jobCityIds = job.locations.map((l) => l.city_id)
-        const jobStateIds = job.locations.map((l) => l.state_id)
-        const jobCountryIds = job.locations.map((l) => l.country_id)
-        if (this.formData.departments?.length && !departmentIds.includes(job.job_department_id)) {
-          return false
-        }
-        if (this.formData.cities?.length && !dataUtil.getArrayIntersection(cityIds, jobCityIds).length) {
-          return false
-        }
-        if (this.formData.states?.length && !dataUtil.getArrayIntersection(stateIds, jobStateIds).length) {
-          return false
-        }
-        if (this.formData.countries?.length && !dataUtil.getArrayIntersection(countryIds, jobCountryIds).length) {
-          return false
-        }
-        return true
-      })
+      return jobsUtil.filterJobs(this.formData, rows)
     },
     async saveLink () {
       const data = {
@@ -477,7 +439,6 @@ export default {
 
     return authStore.setUser().then(() => {
       return Promise.all([
-        socialStore.setPlatforms(),
         socialStore.setSocialLinkFilters(authStore.propUser.id),
         employerStore.setEmployer(authStore.propUser.employer_id),
         employerStore.setEmployerJobs(authStore.propUser.employer_id)

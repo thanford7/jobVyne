@@ -68,14 +68,10 @@ class SocialContentItemView(JobVyneAPIView):
         if not any([employer_id, user_id]):
             return Response('An employer ID or user ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        item = SocialContentItem(
-            employer_id=employer_id,
-            user_id=user_id,
-            content=self.data['content']
-        )
-        item.jv_check_permission(PermissionTypes.CREATE.value, self.user)
-        item.save()
-        return Response(status=status.HTTP_200_OK)
+        self.create_social_content_item(employer_id, user_id, self.data['content'], self.user)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully created new template'
+        })
     
     @atomic
     def delete(self, request, item_id):
@@ -83,6 +79,22 @@ class SocialContentItemView(JobVyneAPIView):
         item.jv_check_permission(PermissionTypes.DELETE.value, self.user)
         item.delete()
         return Response(status=status.HTTP_200_OK)
+    
+    @staticmethod
+    def create_social_content_item(employer_id, user_id, content, user):
+        filter = Q(employer_id=employer_id) | Q(user_id=user_id)
+        current_content = {ci for ci in SocialContentItem.objects.filter(filter)}
+        if content in current_content:
+            return
+        
+        item = SocialContentItem(
+            employer_id=employer_id,
+            user_id=user_id,
+            content=content
+        )
+        item.jv_check_permission(PermissionTypes.CREATE.value, user)
+        item.save()
+        return item
 
 
 class SocialPostView(JobVyneAPIView):
@@ -120,6 +132,7 @@ class SocialPostView(JobVyneAPIView):
             user_id=user_id
         )
         self.update_social_post(self.user, post, self.data)
+        SocialContentItemView.create_social_content_item(employer_id, user_id, self.data['content'], self.user)
         ShareSocialPostView.post_to_accounts(self.user, post.id, self.data['post_accounts'])
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Post created'
