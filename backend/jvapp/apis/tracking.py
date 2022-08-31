@@ -33,8 +33,8 @@ class PageTrackView(APIView):
         page_view.social_link_filter_id = request.data.get('filter_id')
         
         page_view.ip_address = meta.get('HTTP_X_FORWARDED_FOR') or meta.get('REMOTE_ADDR')
-        logger.inf(f'HTTP_X_FORWARDED_FOR: {meta.get("HTTP_X_FORWARDED_FOR")}')
-        logger.inf(f'REMOTE_ADDR: {meta.get("REMOTE_ADDR")}')
+        logger.info(f'HTTP_X_FORWARDED_FOR: {meta.get("HTTP_X_FORWARDED_FOR")}')
+        logger.info(f'REMOTE_ADDR: {meta.get("REMOTE_ADDR")}')
         page_view.access_dt = timezone.now()
         
         location_data = None
