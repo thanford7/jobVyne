@@ -12,12 +12,15 @@ from jvapp.models import PageView
 
 __all__ = ('PageTrackView',)
 
+from jvapp.utils.logger import getLogger
+
 geo_locator = GeoIP2()
 
 
 # Check whether the same IP address viewed the page within this number of minutes
 # If so, don't save a new view record. The assumption is that this is just a page refresh
 UNIQUE_VIEW_LOOKBACK_MINUTES = 30
+logger = getLogger()
 
 
 class PageTrackView(APIView):
@@ -26,6 +29,8 @@ class PageTrackView(APIView):
     def post(self, request):
         meta = request.META
         page_view = PageView()
+        logger.info('Creating page view')
+        logger.info(f'Relative URL: {request.data["relative_url"]}')
         page_view.relative_url = request.data['relative_url']
         page_view.social_link_filter_id = request.data.get('filter_id')
         
@@ -35,10 +40,13 @@ class PageTrackView(APIView):
         location_data = None
         if page_view.ip_address:
             try:
+                logger.info('Getting location data')
                 location_data = geo_locator.city(page_view.ip_address)
             except Exception:
                 pass
         if location_data:
+            logger.info('Got location data')
+            logger.info(location_data)
             page_view.city = location_data['city']
             page_view.country = location_data['country_name']
             page_view.region = location_data['region']
@@ -46,6 +54,7 @@ class PageTrackView(APIView):
             page_view.longitude = location_data['longitude']
     
         if user_agent_str := meta.get('HTTP_USER_AGENT'):
+            logger.info('Setting user agent data')
             set_user_agent_data(page_view, user_agent_str)
             
         recent_page_views = PageView.objects.filter(
@@ -55,12 +64,14 @@ class PageTrackView(APIView):
         )
         
         if not len(recent_page_views):
+            logger.info('Saving page view')
             page_view.save()
             
         return Response(status=status.HTTP_200_OK)
 
 
 def set_user_agent_data(page_view, user_agent_str):
+    logger.info(f'Parsing user agent string: {user_agent_str}')
     user_agent = parse(user_agent_str)
     page_view.browser = user_agent.browser.family
     page_view.browser_version = user_agent.browser.version_string

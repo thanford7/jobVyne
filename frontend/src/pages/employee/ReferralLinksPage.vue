@@ -462,7 +462,7 @@ export default {
       }
       const resp = await this.$api.post('social-link-filter/', getAjaxFormData(data))
       this.linkId = resp.data.id
-      this.socialStore.setSocialLinkFilters(true)
+      await this.socialStore.setSocialLinkFilters(this.user.id, true)
     },
     resetLinkForm () {
       this.formData = { ...formDataTemplate }

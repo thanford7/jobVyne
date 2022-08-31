@@ -62,7 +62,6 @@
         removable
         @remove="removeAtIndex(index)"
         :tabindex="tabindex"
-        :class="log(opt)"
       >{{ opt.title }}
       </q-chip>
     </template>
@@ -189,9 +188,6 @@ export default {
     }
   },
   methods: {
-    log (val) {
-      console.log(val)
-    },
     async updateFiles () {
       await Promise.all([
         this.employerStore.setEmployerFiles(this.authStore.propUser.employer_id),
