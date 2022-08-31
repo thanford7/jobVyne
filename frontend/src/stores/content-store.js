@@ -9,7 +9,7 @@ export const useContentStore = defineStore('content', {
 
   actions: {
     async setSocialContent (employerId, userId, isForceRefresh = false) {
-      const key = this.makeKey(employerId, userId)
+      const key = this.makeKey(arguments)
       if (this.socialContent[key] && !isForceRefresh) {
         return
       }
@@ -18,14 +18,14 @@ export const useContentStore = defineStore('content', {
       })
       this.socialContent[key] = resp.data
     },
-    async setSocialPosts (employerId, userId, isForceRefresh = false) {
-      const key = this.makeKey(employerId, userId)
+    async setSocialPosts (employerId, userId, pageNumber, isForceRefresh = false) {
+      const key = this.makeKey(arguments)
       if (!isForceRefresh && this.socialPosts[key]) {
         return
       }
       const resp = await this.$api.get(
         'social-post/',
-        { params: { user_id: userId, employer_id: employerId } }
+        { params: { user_id: userId, employer_id: employerId, page_count: pageNumber } }
       )
       this.socialPosts[key] = resp.data
     },
@@ -39,16 +39,16 @@ export const useContentStore = defineStore('content', {
       this.userFiles[userId] = resp.data
     },
     getSocialContent (employerId, userId) {
-      return this.socialContent[this.makeKey(employerId, userId)]
+      return this.socialContent[this.makeKey(arguments)]
     },
-    getSocialPosts (employerId, userId) {
-      return this.socialPosts[this.makeKey(employerId, userId)]
+    getSocialPosts (employerId, userId, pageNumber) {
+      return this.socialPosts[this.makeKey(arguments)]
     },
     getUserFiles (userId) {
       return this.userFiles[userId]
     },
-    makeKey (employerId, userId) {
-      return JSON.stringify([employerId, userId])
+    makeKey () {
+      return JSON.stringify(arguments)
     }
   }
 })

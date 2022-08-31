@@ -2,6 +2,7 @@ import json
 import re
 
 import requests
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -105,6 +106,8 @@ class SocialPostView(JobVyneAPIView):
         if not any([employer_id, user_id]):
             return Response('An employer ID or user ID is required', status=status.HTTP_400_BAD_REQUEST)
         
+        page_count = self.query_params.get('page_count', 1)
+        
         filters = []
         if employer_id:
             filters.append(Q(employer_id=employer_id))
@@ -118,7 +121,11 @@ class SocialPostView(JobVyneAPIView):
                 filter |= f
         
         posts = self.get_social_posts(self.user, filter=filter)
-        return Response(status=status.HTTP_200_OK, data=[get_serialized_social_post(post) for post in posts])
+        paged_posts = Paginator(posts, per_page=5)
+        return Response(status=status.HTTP_200_OK, data={
+            'total_page_count': paged_posts.num_pages,
+            'posts': [get_serialized_social_post(post) for post in paged_posts.get_page(page_count)]
+        })
     
     @atomic
     def post(self, request):

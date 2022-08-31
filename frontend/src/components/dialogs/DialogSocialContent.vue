@@ -310,9 +310,9 @@ export default {
 
       await method('social-post/', getAjaxFormData(data))
       if (this.isEmployer) {
-        await this.contentStore.setSocialPosts(this.user.employer_id, null, true)
+        await this.contentStore.setSocialPosts(this.user.employer_id, null, 1, true)
       } else {
-        await this.contentStore.setSocialPosts(null, this.user.id, true)
+        await this.contentStore.setSocialPosts(null, this.user.id, 1, true)
       }
       await this.contentStore.setSocialContent(this.user.employer_id, this.user.id, true)
       this.$emit('ok')

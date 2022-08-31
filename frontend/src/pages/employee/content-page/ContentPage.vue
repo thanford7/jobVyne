@@ -90,7 +90,8 @@
                           </div>
                           <ul v-if="post.posts.length">
                             <li v-for="postItem in post.posts" class="text-small">
-                              Posted to {{ postItem.platform }} on {{ dateTimeUtil.getDateTime(postItem.posted_dt) }} from
+                              Posted to {{ postItem.platform }} on {{ dateTimeUtil.getDateTime(postItem.posted_dt) }}
+                              from
                               {{ postItem.email }} account
                             </li>
                           </ul>
@@ -104,6 +105,13 @@
                 </template>
               </CollapsableCard>
             </div>
+            <q-pagination
+              v-if="socialPostPagesCount > 1"
+              v-model="pageNumber"
+              :max-pages="5"
+              :max="socialPostPagesCount"
+              direction-links
+            />
           </div>
         </q-tab-panel>
         <q-tab-panel name="content">
@@ -289,6 +297,7 @@ export default {
       tab: 'post',
       isImageDisplayList: true,
       isVideoDisplayList: true,
+      pageNumber: 1,
       dataUtil,
       dateTimeUtil,
       fileUtil
@@ -299,13 +308,25 @@ export default {
       return this.contentStore.getSocialContent(this.user.employer_id, this.user.id)
     },
     socialPosts () {
-      return this.contentStore.getSocialPosts(null, this.user.id)
+      const postContent = this.contentStore.getSocialPosts(null, this.user.id, this.pageNumber) || {}
+      return postContent.posts
+    },
+    socialPostPagesCount () {
+      const postContent = this.contentStore.getSocialPosts(null, this.user.id, this.pageNumber) || {}
+      return postContent.total_page_count
     },
     userImages () {
       return this.contentStore.getUserFiles(this.user.id).filter((f) => fileUtil.isImage(f.url))
     },
     userVideos () {
       return this.contentStore.getUserFiles(this.user.id).filter((f) => fileUtil.isVideo(f.url))
+    }
+  },
+  watch: {
+    pageNumber: {
+      async handler () {
+        await this.contentStore.setSocialPosts(null, this.user.id, this.pageNumber)
+      }
     }
   },
   methods: {
@@ -317,7 +338,7 @@ export default {
       openConfirmDialog(this.q, 'Are you sure you want to delete this post? It will only be deleted from JobVyne. If it has been posted to any social media sites, it will continue to exist there.', {
         okFn: async () => {
           await this.$api.delete(`social-post/${post.id}`)
-          await this.contentStore.setSocialPosts(null, this.user.id, true)
+          await this.contentStore.setSocialPosts(null, this.user.id, 1, true)
         }
       })
     },
@@ -367,7 +388,7 @@ export default {
           authStore.propUser.id
         ),
         contentStore.setUserFiles(authStore.propUser.id),
-        contentStore.setSocialPosts(null, authStore.propUser.id)
+        contentStore.setSocialPosts(null, authStore.propUser.id, 1)
       ])
     }).finally(() => Loading.hide())
   },
