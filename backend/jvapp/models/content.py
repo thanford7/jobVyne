@@ -69,6 +69,7 @@ class SocialPost(AuditFields, JobVynePermissionsMixin):
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.CASCADE, related_name='social_post')
     content = models.TextField()
     formatted_content = models.TextField()
+    social_platform = models.ForeignKey('SocialPlatform', on_delete=models.PROTECT)
     
     class Meta:
         ordering = ('-created_dt',)

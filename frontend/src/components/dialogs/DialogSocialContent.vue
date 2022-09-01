@@ -1,7 +1,7 @@
 <template>
   <DialogBase
-    :base-title-text="`${(contentItem.id) ? 'Edit' : 'Create'} ${(isTemplate) ? 'template': 'post'}`"
-    :primary-button-text="(!contentItem.id) ? 'Create' : 'Update'"
+    :base-title-text="titleText"
+    :primary-button-text="btnText"
     :is-full-screen="true"
     :is-o-k-btn-enabled="isValidForm"
     :ok-btn-help-text="validationHelpText"
@@ -21,6 +21,7 @@
           :content="formData.content"
           :file="formData.employer_file || formData.user_file"
           :job-link="formData.jobLink"
+          :max-char-count="platformCfg.characterLimit"
           @content-update="formData.formatted_content = $event"
         />
       </div>
@@ -82,10 +83,8 @@
               ref="selectFiles"
               v-model:employer-file-ids="formData.employer_file"
               v-model:user-file-ids="formData.user_file"
-              :file-type-keys="[
-                FILE_TYPES.IMAGE.key
-              ]"
-              :is-multi-select="false"
+              :file-type-keys="platformCfg.allowedMedia"
+              :is-multi-select="platformCfg.isMultiMedia"
               :is-employer="false"
             >
               <template v-slot:after>
@@ -102,7 +101,7 @@
             title="Jobs link" class="content-expansion"
             :is-include-separator="false"
           >
-            <SelectJobLink v-model="formData.jobLink" :is-required="true">
+            <SelectJobLink v-model="formData.jobLink" :is-required="true" :platform-filter="[platform.name]">
               <template v-slot:after>
                 <q-btn
                   unelevated ripple color="primary" stretch
@@ -114,8 +113,8 @@
             </SelectJobLink>
           </BaseExpansionItem>
           <BaseExpansionItem
-            v-if="socialAuthStore.socialCredentials"
-            title="Auto-post" class="content-expansion"
+            v-if="socialAuthStore.socialCredentials[platform.name]"
+            :title="`Auto-post to ${platform.name}`" class="content-expansion"
             :is-include-separator="false"
           >
             <template v-slot:header>
@@ -123,11 +122,11 @@
                 Once you create this post, it will automatically be posted to the selected social accounts.
               </CustomTooltip>
             </template>
-            <template v-for="(creds, platform) in socialAuthStore.socialCredentials">
-              <div class="text-bold">{{ platform }}</div>
-              <q-checkbox v-for="cred in creds" v-model="formData.post_accounts[`${platform}|${cred.email}`]"
-                          :label="cred.email"/>
-            </template>
+            <q-checkbox
+              v-for="cred in socialAuthStore.socialCredentials[platform.name]"
+              v-model="formData.post_accounts[cred.email]"
+              :label="cred.email"
+            />
           </BaseExpansionItem>
         </template>
       </div>
@@ -149,6 +148,7 @@ import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
+import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useContentStore } from 'stores/content-store.js'
 import { useSocialAuthStore } from 'stores/social-auth-store.js'
@@ -181,6 +181,7 @@ export default {
       type: [Object, null],
       default: () => ({})
     },
+    platform: [Object, null],
     user: Object,
     isEmployer: Boolean,
     isTemplate: Boolean
@@ -194,10 +195,29 @@ export default {
     }
   },
   computed: {
+    titleText () {
+      let text
+      if (this.isTemplate) {
+        text = 'template'
+      } else {
+        text = `${this.platform.name} post`
+      }
+      return `${this.btnText} ${text}`
+    },
+    btnText () {
+      return (!this.contentItem.id) ? 'Create' : 'Update'
+    },
+    platformCfg () {
+      if (this.isTemplate) {
+        return
+      }
+      return socialUtil.platformCfgs[this.platform.name]
+    },
     isValidForm () {
       return Boolean(
         this.formData.content && this.formData.content.length &&
-        (this.isTemplate || this.formData.jobLink)
+        (this.isTemplate || this.formData.jobLink) &&
+        (!this.platformCfg || this.formData.formatted_content.length <= this.platformCfg.characterLimit)
       )
     },
     validationHelpText () {
@@ -206,11 +226,15 @@ export default {
       } else if (this.isTemplate) {
         return 'Template content is required'
       } else {
-        return 'Content and jobs link are required'
+        let text = 'Content and jobs link are required'
+        if (this.platformCfg.characterLimit) {
+          text += `. Total character limit cannot exceed ${this.platformCfg.characterLimit} characters`
+        }
+        return text
       }
     },
     socialCredentials () {
-      if (!this.socialAuthStore) {
+      if (this.isTemplate || !this.socialAuthStore) {
         return null
       }
       return this.socialAuthStore.socialCredentials
@@ -264,10 +288,8 @@ export default {
       if (!this.socialCredentials) {
         return
       }
-      Object.values(this.socialCredentials).forEach((creds) => {
-        creds.forEach((cred) => {
-          this.formData.post_accounts[`${cred.platform_name}|${cred.email}`] = false
-        })
+      dataUtil.getForceArray(this.socialCredentials[this.platform.name]).forEach((cred) => {
+        this.formData.post_accounts[cred.email] = false
       })
     }
   },
@@ -291,19 +313,21 @@ export default {
     async savePost () {
       const method = (this.formData.id) ? this.$api.put : this.$api.post
       let data = (this.isEmployer) ? { employer_id: this.user.employer_id } : { user_id: this.user.id }
-      data = Object.assign(data, dataUtil.pick(this.formData, ['content', 'formatted_content']))
+      data = Object.assign(data,
+        dataUtil.pick(this.formData, ['content', 'formatted_content']),
+        { platform_id: this.platform.id }
+      )
       if (this.formData.employer_file) {
         data.employer_file_id = this.formData.employer_file.id
       } else if (this.formData.user_file) {
         data.user_file_id = this.formData.user_file.id
       }
 
-      data.post_accounts = Object.entries(this.formData.post_accounts).reduce((data, [key, isShare]) => {
+      data.post_accounts = Object.entries(this.formData.post_accounts).reduce((data, [email, isShare]) => {
         if (!isShare) {
           return data
         }
-        const [platform, email] = key.split('|')
-        const cred = this.socialCredentials[platform].find((c) => c.email === email)
+        const cred = this.socialCredentials[this.platform.name].find((c) => c.email === email)
         data.push(cred)
         return data
       }, [])
@@ -344,7 +368,10 @@ export default {
     },
     async openSociaLinkModal () {
       return this.q.dialog({
-        component: DialogSocialLink
+        component: DialogSocialLink,
+        componentProps: {
+          platform: this.platform
+        }
       })
     }
   },

@@ -5,7 +5,7 @@
     @ok="saveLink"
   >
     <div class="q-gutter-y-md">
-      <SelectPlatform v-model="formData.platform"/>
+      <SelectPlatform v-if="!this.platform" v-model="formData.platform"/>
       <div>
         <span class="text-bold">Job filters</span>
         <CustomTooltip icon_size="16px">
@@ -53,7 +53,8 @@ export default {
   inheritAttrs: false,
   components: { DialogBase, SelectPlatform, SelectJobDepartment, SelectJobCity, SelectJobState, SelectJobCountry },
   props: {
-    socialLink: [Object, null]
+    socialLink: [Object, null],
+    platform: [Object, null]
   },
   data () {
     return {
@@ -69,7 +70,12 @@ export default {
       return (!this.formData.id) ? 'Create' : 'Update'
     },
     titleText () {
-      return `${this.buttonText} social link`
+      let text = this.buttonText
+      if (this.platform) {
+        text += ` ${this.platform.name}`
+      }
+      text += ' social link'
+      return text
     },
     jobs () {
       return this.employerStore.getEmployerJobs(this.authStore.propUser.employer_id)
@@ -98,6 +104,9 @@ export default {
       await this.$api.post('social-link-filter/', getAjaxFormData(data))
       await this.socialStore.setSocialLinkFilters(user.id, true)
     }
+  },
+  mounted () {
+    this.formData.platform = this.platform
   }
 }
 </script>

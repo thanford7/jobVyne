@@ -2,7 +2,6 @@ import uuid
 
 from django.db import models
 
-from jvapp.models._customDjangoField import SeparatedValueField
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
 
 __all__ = ('SocialPlatform', 'SocialLinkFilter')

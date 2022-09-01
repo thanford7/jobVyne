@@ -18,12 +18,28 @@
         <q-tab-panel name="post">
           <div class="row q-gutter-y-sm">
             <div class="col-12 q-gutter-x-sm q-gutter-y-md q-mb-sm">
-              <q-btn
-                label="Create post" icon="add" color="primary"
-                @click="openEditContentDialog(null, false)"
-              />
-              <CollapsableCard v-for="post in socialPosts"
-                               :title="`Post created at ${dateTimeUtil.getDateTime(post.created_dt)}`">
+              <q-btn-dropdown icon="add" label="Create post" color="primary">
+                <q-list>
+                  <q-item
+                    v-for="platform in availableSocialPlatforms"
+                    clickable v-close-popup @click="openEditContentDialog(null, false, platform)"
+                  >
+                    <q-item-section avatar>
+                      <img :src="platform.logo" alt="Logo" style="max-height: 20px">
+                    </q-item-section>
+                    <q-item-section>
+                      {{ platform.name }}
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
+              <CollapsableCard v-for="post in socialPosts">
+                <template v-slot:header-left>
+                  <img :src="post.platform.logo" alt="Social platform logo" style="max-height: 32px">
+                  <div class="text-h6 text-h6--mobile q-ml-md">
+                    Post created at {{ dateTimeUtil.getDateTime(post.created_dt) }}
+                  </div>
+                </template>
                 <template v-slot:header>
                   <q-btn flat dense icon="share" text-color="grey-6" @click="openSharePostDialog(post)"/>
                   <q-btn flat dense icon="delete" text-color="negative" @click="deletePost(post)"/>
@@ -90,8 +106,7 @@
                           </div>
                           <ul v-if="post.posts.length">
                             <li v-for="postItem in post.posts" class="text-small">
-                              Posted to {{ postItem.platform }} on {{ dateTimeUtil.getDateTime(postItem.posted_dt) }}
-                              from
+                              Posted on {{ dateTimeUtil.getDateTime(postItem.posted_dt) }} from
                               {{ postItem.email }} account
                             </li>
                           </ul>
@@ -288,6 +303,7 @@ import { openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useContentStore } from 'stores/content-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
+import { useSocialStore } from 'stores/social-store.js'
 
 export default {
   name: 'ContentPage',
@@ -304,6 +320,12 @@ export default {
     }
   },
   computed: {
+    availableSocialPlatforms () {
+      // Limit social platforms to those where we have set up an API connection
+      return this.socialStore.platforms.filter((platform) => {
+        return ['LinkedIn'].includes(platform.name)
+      })
+    },
     socialContent () {
       return this.contentStore.getSocialContent(this.user.employer_id, this.user.id)
     },
@@ -346,7 +368,7 @@ export default {
       await this.$api.delete(`user/file/${file.id}`)
       await this.contentStore.setUserFiles(this.user.id, true)
     },
-    async openEditContentDialog (contentItem, isTemplate) {
+    async openEditContentDialog (contentItem, isTemplate, platform = null) {
       await loadDialogSocialContentFn()
       return this.q.dialog({
         component: DialogSocialContent,
@@ -354,7 +376,8 @@ export default {
           contentItem: contentItem || {},
           user: this.user,
           isEmployer: false,
-          isTemplate
+          isTemplate,
+          platform
         }
       })
     },
@@ -378,6 +401,7 @@ export default {
   },
   preFetch () {
     const contentStore = useContentStore()
+    const socialStore = useSocialStore()
     const authStore = useAuthStore()
     Loading.show()
 
@@ -388,7 +412,8 @@ export default {
           authStore.propUser.id
         ),
         contentStore.setUserFiles(authStore.propUser.id),
-        contentStore.setSocialPosts(null, authStore.propUser.id, 1)
+        contentStore.setSocialPosts(null, authStore.propUser.id, 1),
+        socialStore.setPlatforms()
       ])
     }).finally(() => Loading.hide())
   },
@@ -406,6 +431,7 @@ export default {
 
     return {
       contentStore: useContentStore(),
+      socialStore: useSocialStore(),
       q: useQuasar(),
       user
     }

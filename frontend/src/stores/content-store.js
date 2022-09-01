@@ -9,7 +9,7 @@ export const useContentStore = defineStore('content', {
 
   actions: {
     async setSocialContent (employerId, userId, isForceRefresh = false) {
-      const key = this.makeKey(arguments)
+      const key = this.makeKey(employerId, userId)
       if (this.socialContent[key] && !isForceRefresh) {
         return
       }
@@ -19,7 +19,7 @@ export const useContentStore = defineStore('content', {
       this.socialContent[key] = resp.data
     },
     async setSocialPosts (employerId, userId, pageNumber, isForceRefresh = false) {
-      const key = this.makeKey(arguments)
+      const key = this.makeKey(employerId, userId, pageNumber)
       if (!isForceRefresh && this.socialPosts[key]) {
         return
       }
@@ -39,10 +39,10 @@ export const useContentStore = defineStore('content', {
       this.userFiles[userId] = resp.data
     },
     getSocialContent (employerId, userId) {
-      return this.socialContent[this.makeKey(arguments)]
+      return this.socialContent[this.makeKey(employerId, userId)]
     },
     getSocialPosts (employerId, userId, pageNumber) {
-      return this.socialPosts[this.makeKey(arguments)]
+      return this.socialPosts[this.makeKey(employerId, userId, pageNumber)]
     },
     getUserFiles (userId) {
       return this.userFiles[userId]

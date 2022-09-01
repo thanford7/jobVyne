@@ -31,8 +31,10 @@
         </div>
       </div>
     </div>
-    <div class="text-small text-gray-500 q-pl-sm q-pt-xs">
+    <div class="text-small text-gray-500 q-pl-sm q-pt-xs" :class="(isCharacterLimitExceeded) ? 'text-negative' : ''">
+      <q-icon v-if="isCharacterLimitExceeded" name="dangerous"/>
       {{ characterLengthText }}
+      <span v-if="maxCharCount"> of {{ maxCharCount }} limit</span>
     </div>
   </div>
 </template>
@@ -52,7 +54,8 @@ export default {
   props: {
     content: [String, null],
     jobLink: [Object, null],
-    file: [Object, null]
+    file: [Object, null],
+    maxCharCount: [Number, null]
   },
   data () {
     return {
@@ -82,17 +85,23 @@ export default {
         return ''
       }
       let formattedContent = this.content
-        .replace(SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, this.employer.name)
+        .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, this.employer.name)
       if (this.jobLink) {
         formattedContent = formattedContent
-          .replace(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, `${window.location.origin}/jobs-link/${this.jobLink.id}`)
-          .replace(SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST, this.jobTitles.map((j) => `- ${j}`).join('\n'))
+          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, `${window.location.origin}/jobs-link/${this.jobLink.id}`)
+          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST, this.jobTitles.map((j) => `- ${j}`).join('\n'))
       }
       return formattedContent
     },
     characterLengthText () {
       const charLength = this.formattedContent.length
       return `${dataUtil.pluralize('character', charLength)}`
+    },
+    isCharacterLimitExceeded () {
+      if (!this.maxCharCount) {
+        return false
+      }
+      return this.formattedContent.length > this.maxCharCount
     }
   },
   watch: {

@@ -87,6 +87,9 @@ export default {
     isRequired: {
       type: Boolean,
       default: false
+    },
+    platformFilter: { // If provided, only links for these platforms will be shown
+      type: [Array, null]
     }
   },
   data () {
@@ -112,6 +115,7 @@ export default {
     },
     socialLinks () {
       let links = this.socialStore.getSocialLinkFilters(this.authStore.propUser.id)
+      links = links.filter((link) => !this.platformFilter || this.platformFilter.includes(link.platform_name))
       links = Object.entries(dataUtil.groupBy(links, 'platform_name')).map(([platformName, platformLinks]) => {
         return {
           platformName: (platformName === 'null') ? this.globalStore.nullValueStr : platformName,

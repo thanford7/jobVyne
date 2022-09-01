@@ -14,7 +14,7 @@ from jvapp.models import EmployerFile, SocialContentItem, SocialPost, SocialPost
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.content import get_serialized_social_post
-from jvapp.utils.data import set_object_attributes
+from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.oauth import OAUTH_CFGS
 
 
@@ -84,7 +84,7 @@ class SocialContentItemView(JobVyneAPIView):
     @staticmethod
     def create_social_content_item(employer_id, user_id, content, user):
         filter = Q(employer_id=employer_id) | Q(user_id=user_id)
-        current_content = {ci for ci in SocialContentItem.objects.filter(filter)}
+        current_content = {ci.content for ci in SocialContentItem.objects.filter(filter)}
         if content in current_content:
             return
         
@@ -159,7 +159,8 @@ class SocialPostView(JobVyneAPIView):
     def update_social_post(user, post, data):
         set_object_attributes(post, data, {
             'content': None,
-            'formatted_content': None
+            'formatted_content': None,
+            'social_platform_id': AttributeCfg(form_name='platform_id')
         })
         
         permission_type = PermissionTypes.EDIT.value if post.id else PermissionTypes.CREATE.value
@@ -190,7 +191,7 @@ class SocialPostView(JobVyneAPIView):
             filter = Q(id=post_id)
         
         posts = SocialPost.objects \
-            .select_related('user', 'employer') \
+            .select_related('user', 'employer', 'social_platform') \
             .prefetch_related('file', 'audit') \
             .filter(filter)
         posts = SocialPost.jv_filter_perm(user, posts)
