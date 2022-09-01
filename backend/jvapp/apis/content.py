@@ -15,6 +15,7 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.content import get_serialized_social_post
 from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.oauth import OAUTH_CFGS
 
 
@@ -119,6 +120,17 @@ class SocialPostView(JobVyneAPIView):
                 filter = f
             else:
                 filter |= f
+                
+        if filter_params := self.query_params.get('filter_params'):
+            filter_params = json.loads(filter_params)
+            add_filters = Q()
+            if start_date := filter_params.get('start_date'):
+                add_filters &= Q(created_dt__gte=get_datetime_or_none(start_date))
+            if end_date := filter_params.get('end_date'):
+                add_filters &= Q(created_dt__lte=get_datetime_or_none(end_date))
+            if platform_ids := filter_params.get('platform_ids'):
+                add_filters &= Q(social_platform_id__in=platform_ids)
+            filter &= add_filters
         
         posts = self.get_social_posts(self.user, filter=filter)
         paged_posts = Paginator(posts, per_page=5)

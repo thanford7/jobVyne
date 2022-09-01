@@ -1,7 +1,7 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader title="Social content"/>
+      <PageHeader title="Social posts and content"/>
       <q-tabs
         v-model="tab"
         dense
@@ -33,6 +33,20 @@
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
+              <CollapsableCard title="Post filters" :is-dense="true">
+                <template v-slot:body>
+                  <div class="col-12 q-pa-sm">
+                    <div class="row q-gutter-y-sm">
+                      <div class="col-12 col-md-6 q-pr-md-sm">
+                        <SelectPlatform v-model="postFilter.platforms" :is-multi="true"/>
+                      </div>
+                      <div class="col-12 col-md-6 q-pl-md-sm">
+                        <DateRangeSelector v-model="postFilter.dateRange" placeholder="Post date"/>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </CollapsableCard>
               <CollapsableCard v-for="post in socialPosts">
                 <template v-slot:header-left>
                   <img :src="post.platform.logo" alt="Social platform logo" style="max-height: 32px">
@@ -293,6 +307,8 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogShareSocialPost, { loadDialogShareSocialPostFn } from 'components/dialogs/DialogShareSocialPost.vue'
 import DialogSocialContent, { loadDialogSocialContentFn } from 'components/dialogs/DialogSocialContent.vue'
 import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
+import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
+import SelectPlatform from 'components/inputs/SelectPlatform.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta, useQuasar } from 'quasar'
@@ -307,13 +323,14 @@ import { useSocialStore } from 'stores/social-store.js'
 
 export default {
   name: 'ContentPage',
-  components: { CustomTooltip, CollapsableCard, PageHeader },
+  components: { DateRangeSelector, SelectPlatform, CustomTooltip, CollapsableCard, PageHeader },
   data () {
     return {
       tab: 'post',
       isImageDisplayList: true,
       isVideoDisplayList: true,
       pageNumber: 1,
+      postFilter: {},
       dataUtil,
       dateTimeUtil,
       fileUtil
@@ -330,11 +347,13 @@ export default {
       return this.contentStore.getSocialContent(this.user.employer_id, this.user.id)
     },
     socialPosts () {
-      const postContent = this.contentStore.getSocialPosts(null, this.user.id, this.pageNumber) || {}
+      const filterParams = this.getSocialPostFilterParams()
+      const postContent = this.contentStore.getSocialPosts(null, this.user.id, this.pageNumber, filterParams) || {}
       return postContent.posts
     },
     socialPostPagesCount () {
-      const postContent = this.contentStore.getSocialPosts(null, this.user.id, this.pageNumber) || {}
+      const filterParams = this.getSocialPostFilterParams()
+      const postContent = this.contentStore.getSocialPosts(null, this.user.id, this.pageNumber, filterParams) || {}
       return postContent.total_page_count
     },
     userImages () {
@@ -345,9 +364,15 @@ export default {
     }
   },
   watch: {
+    postFilter: {
+      async handler () {
+        await this.setSocialPosts()
+      },
+      deep: true
+    },
     pageNumber: {
       async handler () {
-        await this.contentStore.setSocialPosts(null, this.user.id, this.pageNumber)
+        await this.setSocialPosts()
       }
     }
   },
@@ -360,7 +385,7 @@ export default {
       openConfirmDialog(this.q, 'Are you sure you want to delete this post? It will only be deleted from JobVyne. If it has been posted to any social media sites, it will continue to exist there.', {
         okFn: async () => {
           await this.$api.delete(`social-post/${post.id}`)
-          await this.contentStore.setSocialPosts(null, this.user.id, 1, true)
+          await this.contentStore.setSocialPosts(null, this.user.id, 1, { isForceRefresh: true })
         }
       })
     },
@@ -397,6 +422,25 @@ export default {
           fileTypeKeys: (isVideo) ? [FILE_TYPES.VIDEO.key] : [FILE_TYPES.IMAGE.key]
         }
       })
+    },
+    getSocialPostFilterParams () {
+      const filterParams = {}
+      const startDate = this.postFilter?.dateRange?.from
+      if (startDate) {
+        filterParams.start_date = dateTimeUtil.serializeDate(startDate, true)
+      }
+      const endDate = this.postFilter?.dateRange?.to
+      if (endDate) {
+        filterParams.end_date = dateTimeUtil.serializeDate(endDate, true, true)
+      }
+      if (this.postFilter?.platforms?.length) {
+        filterParams.platform_ids = this.postFilter.platforms.map((p) => p.id)
+      }
+      return filterParams
+    },
+    async setSocialPosts () {
+      const filterParams = this.getSocialPostFilterParams()
+      await this.contentStore.setSocialPosts(null, this.user.id, this.pageNumber, { filterParams })
     }
   },
   preFetch () {

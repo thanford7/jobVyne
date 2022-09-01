@@ -2,6 +2,8 @@
   <q-select
     v-if="isLoaded"
     filled
+    :multiple="isMulti"
+    :use-chips="isMulti"
     :options="socialStore.platforms"
     autocomplete="name"
     option-value="name"
@@ -26,6 +28,12 @@ import { useSocialStore } from 'stores/social-store.js'
 
 export default {
   name: 'SelectPlatform',
+  props: {
+    isMulti: {
+      type: Boolean,
+      default: false
+    }
+  },
   data () {
     return {
       isLoaded: false,

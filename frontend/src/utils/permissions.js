@@ -88,7 +88,7 @@ class PagePermissionsUtil {
           {
             icon: 'dynamic_feed',
             key: 'employee-content',
-            label: 'Content',
+            label: 'Posts and Content',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           }
         ]
@@ -162,7 +162,7 @@ class PagePermissionsUtil {
           {
             icon: 'dynamic_feed',
             key: 'employer-content',
-            label: 'Content',
+            label: 'Posts and Content',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
             isPermittedViewFn: isUserEmployerFn,
             isPermittedFn: (permissionGroups, permissions) => {

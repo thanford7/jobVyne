@@ -8,10 +8,10 @@ def get_datetime_format_or_none(val):
     return None
 
 
-def get_datetime_or_none(dateStr, format='%m/%d/%Y %H:%M:%S%z', asDate=False):
+def get_datetime_or_none(dateStr, format='%m/%d/%Y %H:%M:%S%z', as_date=False):
     if not dateStr:
         return None
     dt = datetime.strptime(dateStr, format)
-    if asDate:
+    if as_date:
         return dt.date()
     return dt

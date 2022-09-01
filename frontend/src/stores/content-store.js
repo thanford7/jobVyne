@@ -18,14 +18,14 @@ export const useContentStore = defineStore('content', {
       })
       this.socialContent[key] = resp.data
     },
-    async setSocialPosts (employerId, userId, pageNumber, isForceRefresh = false) {
-      const key = this.makeKey(employerId, userId, pageNumber)
+    async setSocialPosts (employerId, userId, pageNumber, { isForceRefresh = false, filterParams = {} } = {}) {
+      const key = this.makeKey(employerId, userId, pageNumber, filterParams)
       if (!isForceRefresh && this.socialPosts[key]) {
         return
       }
       const resp = await this.$api.get(
         'social-post/',
-        { params: { user_id: userId, employer_id: employerId, page_count: pageNumber } }
+        { params: { user_id: userId, employer_id: employerId, page_count: pageNumber, filter_params: filterParams } }
       )
       this.socialPosts[key] = resp.data
     },
@@ -41,8 +41,8 @@ export const useContentStore = defineStore('content', {
     getSocialContent (employerId, userId) {
       return this.socialContent[this.makeKey(employerId, userId)]
     },
-    getSocialPosts (employerId, userId, pageNumber) {
-      return this.socialPosts[this.makeKey(employerId, userId, pageNumber)]
+    getSocialPosts (employerId, userId, pageNumber, filterParams = {}) {
+      return this.socialPosts[this.makeKey(employerId, userId, pageNumber, filterParams)]
     },
     getUserFiles (userId) {
       return this.userFiles[userId]
