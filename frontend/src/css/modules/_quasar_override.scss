@@ -17,3 +17,9 @@
     color: inherit  // Used to make sure q-expansion-item icons get the same color as the rest of the text
   }
 }
+
+a.q-btn.a-style {
+  color: -webkit-link;
+  text-decoration: underline;
+  padding: 0;
+}

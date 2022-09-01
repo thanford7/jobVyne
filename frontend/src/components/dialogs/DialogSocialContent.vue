@@ -1,5 +1,6 @@
 <template>
   <DialogBase
+    ref="baseDialog"
     :base-title-text="titleText"
     :primary-button-text="btnText"
     :is-full-screen="true"
@@ -113,7 +114,6 @@
             </SelectJobLink>
           </BaseExpansionItem>
           <BaseExpansionItem
-            v-if="socialAuthStore.socialCredentials[platform.name]"
             :title="`Auto-post to ${platform.name}`" class="content-expansion"
             :is-include-separator="false"
           >
@@ -127,6 +127,16 @@
               v-model="formData.post_accounts[cred.email]"
               :label="cred.email"
             />
+            <div v-if="!socialAuthStore.socialCredentials[platform.name] || !socialAuthStore.socialCredentials[platform.name].length">
+              You do not have a {{ platform.name }} account connected. Go to the
+              <q-btn
+                class="a-style"
+                flat no-caps dense type="a"
+                :to="{ name: 'employee-social-accounts' }"
+                @click="closeDialog"
+              >social accounts page</q-btn>
+              for one-click set-up.
+            </div>
           </BaseExpansionItem>
         </template>
       </div>
@@ -373,6 +383,9 @@ export default {
           platform: this.platform
         }
       })
+    },
+    closeDialog () {
+      this.$refs.baseDialog.$refs.dialogRef.hide()
     }
   },
   setup () {
