@@ -17,6 +17,7 @@ def get_serialized_social_post(social_post: SocialPost):
     return {
         'id': social_post.id,
         'user_id': social_post.user_id,
+        'user_name': f'{social_post.user.first_name} {social_post.user.last_name}' if social_post.user else None,
         'employer_id': social_post.employer_id,
         'content': social_post.content,
         'formatted_content': social_post.formatted_content,

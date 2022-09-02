@@ -104,13 +104,18 @@ class SocialPostView(JobVyneAPIView):
     def get(self, request):
         employer_id = self.query_params.get('employer_id')
         user_id = self.query_params.get('user_id')
+        is_employees = self.query_params.get('is_employees')
         if not any([employer_id, user_id]):
             return Response('An employer ID or user ID is required', status=status.HTTP_400_BAD_REQUEST)
+        if is_employees and not employer_id:
+            return Response('An employer ID is required to fetch employee posts', status=status.HTTP_400_BAD_REQUEST)
         
         page_count = self.query_params.get('page_count', 1)
         
         filters = []
-        if employer_id:
+        if employer_id and is_employees:
+            filters.append(Q(user__employer_id=employer_id))
+        elif employer_id:
             filters.append(Q(employer_id=employer_id))
         if user_id:
             filters.append(Q(user_id=user_id))

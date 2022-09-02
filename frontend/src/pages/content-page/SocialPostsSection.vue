@@ -25,7 +25,7 @@
             <div class="row q-ml-md">
               <div class="col-12">
                 <div class="text-h6 text-h6--mobile">
-                  Post<span v-if="isEmployer"> template</span>
+                  Post<span v-if="isEmployer"> template</span><span v-if="isEmployees"> by {{ post.user_name }}</span>
                 </div>
               </div>
               <div class="col-12 text-small text-grey-8" style="margin-top: -6px;">
@@ -95,7 +95,7 @@
                   <div class="col-12 col-md-4 q-pl-md-sm border-left-1-gray-100">
                     <template v-if="isEmployer">
                       <div class="text-h5">{{ post.child_posts_count }}</div>
-                      <div class="text-grey-7">Employee posts</div>
+                      <div class="text-grey-7">Employee {{ dataUtil.pluralize('post', post.child_posts_count, false) }}</div>
                     </template>
                     <template v-else>
                       <div class="text-bold">
@@ -169,6 +169,9 @@ export default {
     }
   },
   computed: {
+    isEmployees () {
+      return !this.isEmployer && !this.isUserView
+    },
     socialPostContent () {
       if (!this.user) {
         return {}
@@ -177,7 +180,7 @@ export default {
       const postContent = this.contentStore.getSocialPosts(
         (this.isEmployer) ? this.user.employer_id : null,
         (this.isEmployer) ? null : this.user.id,
-        this.pageNumber, filterParams
+        this.pageNumber, filterParams, this.isEmployees
       ) || {}
       return postContent
     },
@@ -218,7 +221,10 @@ export default {
       return filterParams
     },
     async setSocialPosts (isForceRefresh = false) {
-      const kwargs = { filterParams: this.getSocialPostFilterParams() }
+      const kwargs = {
+        filterParams: this.getSocialPostFilterParams(),
+        isEmployees: this.isEmployees
+      }
       if (isForceRefresh) {
         kwargs.isForceRefresh = true
         this.pageNumber = 1

@@ -15,8 +15,9 @@
         align="left"
         narrow-indicator
       >
-        <q-tab name="post" label="Posts"/>
+        <q-tab name="post" :label="(isEmployer) ? 'Post templates' : 'Posts'"/>
         <q-tab v-if="!isEmployer" name="employer_post_template" label="Employer Post Templates"/>
+        <q-tab v-if="isEmployer" name="employee_post" label="Employee Posts"/>
         <q-tab name="content" label="Content"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated :keep-alive="true">
@@ -71,6 +72,18 @@
                 :is-user-view="true"
                 :is-editable="false"
                 @update-posts="updateSocialPosts()"
+              />
+            </div>
+          </div>
+        </q-tab-panel>
+        <q-tab-panel v-if="isEmployer" name="employee_post">
+          <div class="row q-gutter-y-sm q-mt-md">
+            <div class="col-12 q-gutter-x-sm q-gutter-y-md q-mb-sm">
+              <SocialPostsSection
+                ref="socialPostsTemplate"
+                :is-employer="false"
+                :is-user-view="false"
+                :is-editable="false"
               />
             </div>
           </div>
@@ -420,7 +433,7 @@ export default {
       return Promise.all([
         this.contentStore.setSocialContent(
           this.user.employer_id,
-          this.user.id
+          (this.isEmployer) ? null : this.user.id
         ),
         this.contentStore.setUserFiles(this.user.id),
         this.setSocialPosts(),
