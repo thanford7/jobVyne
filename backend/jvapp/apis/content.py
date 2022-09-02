@@ -135,6 +135,8 @@ class SocialPostView(JobVyneAPIView):
                 add_filters &= Q(created_dt__lte=get_datetime_or_none(end_date))
             if platform_ids := filter_params.get('platform_ids'):
                 add_filters &= Q(social_platform_id__in=platform_ids)
+            if employee_ids := filter_params.get('employee_ids'):
+                add_filters &= Q(user_id__in=employee_ids)
             filter &= add_filters
         
         posts = self.get_social_posts(self.user, filter=filter)

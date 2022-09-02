@@ -10,6 +10,9 @@
             <div class="col-12 col-md-6 q-pl-md-sm">
               <DateRangeSelector v-model="postFilter.dateRange" placeholder="Post date"/>
             </div>
+            <div v-if="isEmployees" class="col-12 col-md-6 q-pr-md-sm">
+              <SelectEmployee v-model="postFilter.employee_ids"/>
+            </div>
           </div>
         </div>
       </template>
@@ -137,6 +140,7 @@ import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogShareSocialPost, { loadDialogShareSocialPostFn } from 'components/dialogs/DialogShareSocialPost.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
+import SelectEmployee from 'components/inputs/SelectEmployee.vue'
 import SelectPlatform from 'components/inputs/SelectPlatform.vue'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
@@ -156,7 +160,7 @@ export default {
     },
     isEditable: Boolean
   },
-  components: { CollapsableCard, CustomTooltip, SelectPlatform, DateRangeSelector },
+  components: { SelectEmployee, CollapsableCard, CustomTooltip, SelectPlatform, DateRangeSelector },
   data () {
     return {
       isLoaded: false,
@@ -217,6 +221,9 @@ export default {
       }
       if (this.postFilter?.platforms?.length) {
         filterParams.platform_ids = this.postFilter.platforms.map((p) => p.id)
+      }
+      if (this.postFilter?.employee_ids?.length) {
+        filterParams.employee_ids = this.postFilter.employee_ids
       }
       return filterParams
     },
