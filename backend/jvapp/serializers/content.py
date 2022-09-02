@@ -25,5 +25,6 @@ def get_serialized_social_post(social_post: SocialPost):
         'posts': [{
             'email': a.email, 'platform': a.platform, 'posted_dt': get_datetime_format_or_none(a.posted_dt)
         } for a in social_post.audit.all()],
+        'child_posts_count': social_post.child_post.count(),
         'created_dt': get_datetime_format_or_none(social_post.created_dt)
     }

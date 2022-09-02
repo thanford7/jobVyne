@@ -28,7 +28,7 @@
       </div>
       <div class="col-12 col-md-6 q-pl-md-sm border-left-1-gray-100">
         <BaseExpansionItem
-          v-if="!isTemplate"
+          v-if="!isTemplate && templateTableRows && templateTableRows.length"
           :is-include-separator="false"
           title="Starting template" class="content-expansion"
         >
@@ -86,7 +86,7 @@
               v-model:user-file-ids="formData.user_file"
               :file-type-keys="platformCfg.allowedMedia"
               :is-multi-select="platformCfg.isMultiMedia"
-              :is-employer="false"
+              :is-employer="isEmployer"
             >
               <template v-slot:after>
                 <q-btn
@@ -99,6 +99,7 @@
             </SelectFiles>
           </BaseExpansionItem>
           <BaseExpansionItem
+            v-if="!isEmployer"
             title="Jobs link" class="content-expansion"
             :is-include-separator="false"
           >
@@ -114,6 +115,7 @@
             </SelectJobLink>
           </BaseExpansionItem>
           <BaseExpansionItem
+            v-if="!isEmployer"
             :title="`Auto-post to ${platform.name}`" class="content-expansion"
             :is-include-separator="false"
           >
@@ -153,7 +155,7 @@ import DialogSocialLink from 'components/dialogs/DialogSocialLink.vue'
 import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
 import SelectFiles from 'components/inputs/SelectFiles.vue'
 import SelectJobLink from 'components/inputs/SelectJobLink.vue'
-import PostLiveView from 'pages/employee/content-page/PostLiveView.vue'
+import PostLiveView from 'pages/content-page/PostLiveView.vue'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { FILE_TYPES } from 'src/utils/file.js'
@@ -226,7 +228,8 @@ export default {
     isValidForm () {
       return Boolean(
         this.formData.content && this.formData.content.length &&
-        (this.isTemplate || this.formData.jobLink) &&
+        this.formData.content.includes(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK) &&
+        (this.isTemplate || this.isEmployer || this.formData.jobLink) &&
         (!this.platformCfg || this.formData.formatted_content.length <= this.platformCfg.characterLimit)
       )
     },
@@ -236,7 +239,12 @@ export default {
       } else if (this.isTemplate) {
         return 'Template content is required'
       } else {
-        let text = 'Content and jobs link are required'
+        let text
+        if (this.isEmployer) {
+          text = 'Content and jobs page link placeholder are required'
+        } else {
+          text = 'Content, jobs page link placeholder, and jobs link are required'
+        }
         if (this.platformCfg.characterLimit) {
           text += `. Total character limit cannot exceed ${this.platformCfg.characterLimit} characters`
         }
@@ -279,7 +287,10 @@ export default {
       ]
     },
     templateTableRows () {
-      return this.contentStore.getSocialContent(this.user.employer_id, this.user.id)
+      return this.contentStore.getSocialContent(
+        this.user.employer_id,
+        (this.isEmployer) ? null : this.user.id
+      )
     },
     characterLengthText () {
       const placeholderRegex = /\{\{.*?}}/
@@ -348,7 +359,11 @@ export default {
       } else {
         await this.contentStore.setSocialPosts(null, this.user.id, 1, { isForceRefresh: true })
       }
-      await this.contentStore.setSocialContent(this.user.employer_id, this.user.id, true)
+      await this.contentStore.setSocialContent(
+        this.user.employer_id,
+        (this.isEmployer) ? null : this.user.id,
+        true
+      )
       this.$emit('ok')
     },
     async saveTemplate () {

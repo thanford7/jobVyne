@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isLoaded">
+  <div v-if="isLoaded" :style="(isHidden) ? 'display: none;' : ''">
     <div class="border-1-gray-100 border-rounded q-mt-md">
       <div class="text-bold bg-gray-300 q-pa-sm border-top-rounded">
         Live view
@@ -55,7 +55,11 @@ export default {
     content: [String, null],
     jobLink: [Object, null],
     file: [Object, null],
-    maxCharCount: [Number, null]
+    maxCharCount: [Number, null],
+    isHidden: {
+      type: Boolean,
+      default: false
+    }
   },
   data () {
     return {
@@ -127,12 +131,12 @@ export default {
     this.employerStore = useEmployerStore()
     this.socialStore = useSocialStore()
     await this.authStore.setUser().then(() => {
-      this.user = this.authStore.propUser
       return Promise.all([
-        this.employerStore.setEmployer(this.user.employer_id),
-        this.socialStore.setSocialLinkFilters(this.user.id)
+        this.employerStore.setEmployer(this.authStore.propUser.employer_id),
+        this.socialStore.setSocialLinkFilters(this.authStore.propUser.id)
       ])
     })
+    this.user = this.authStore.propUser
     this.isLoaded = true
   }
 }

@@ -133,7 +133,7 @@ class SocialPostView(JobVyneAPIView):
             filter &= add_filters
         
         posts = self.get_social_posts(self.user, filter=filter)
-        paged_posts = Paginator(posts, per_page=5)
+        paged_posts = Paginator(posts, per_page=8)
         return Response(status=status.HTTP_200_OK, data={
             'total_page_count': paged_posts.num_pages,
             'posts': [get_serialized_social_post(post) for post in paged_posts.get_page(page_count)]
@@ -204,7 +204,7 @@ class SocialPostView(JobVyneAPIView):
         
         posts = SocialPost.objects \
             .select_related('user', 'employer', 'social_platform') \
-            .prefetch_related('file', 'audit') \
+            .prefetch_related('file', 'audit', 'child_post') \
             .filter(filter)
         posts = SocialPost.jv_filter_perm(user, posts)
         if post_id:
@@ -221,22 +221,51 @@ class ShareSocialPostView(JobVyneAPIView):
         if not (post_id := self.data.get('post_id')):
             return Response('A post ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        errors = self.post_to_accounts(self.user, post_id, self.data['post_accounts'])
+        errors = self.post_to_accounts(
+            self.user, post_id, self.data['post_accounts'],
+            owner_id=self.data.get('owner_id'),
+            formatted_content=self.data.get('formatted_content')
+        )
         data = {}
         if errors:
             data[ERROR_MESSAGES_KEY] = errors
+        else:
+            data[SUCCESS_MESSAGE_KEY] = 'Successfully posted'
         
         return Response(status=status.HTTP_200_OK, data=data)
         
     @staticmethod
-    def post_to_accounts(user, post_id, post_accounts):
+    def post_to_accounts(user, post_id, post_accounts, owner_id=False, formatted_content=None):
+        errors = []
         post = SocialPostView.get_social_posts(user, post_id=post_id)
+        if owner_id and not formatted_content:
+            errors.append('You must provide formatted content when copying a social post')
+            return errors
+        
+        # Copy a post template that an employer created and assign it to the user that is posting
+        if owner_id:
+            new_post = SocialPost(
+                user_id=owner_id,
+                content=post.content,
+                formatted_content=formatted_content,
+                social_platform=post.social_platform,
+                original_post=post  # Allows us to track how many employees shared an employer's post
+            )
+            new_post.jv_check_permission(PermissionTypes.CREATE.value, user)
+            new_post.save()
+            for file in post.file.all():
+                SocialPostFile(
+                    social_post=new_post,
+                    file=file.file
+                ).save()
+            
+            post = new_post
+        
         file = next((f for f in post.file.all()), None)
         social_credentials = {
             (cred.provider, cred.email): cred for cred in UserSocialCredential.objects.filter(user_id=user.id)
         }
     
-        errors = []
         for post_account in post_accounts:
             cred = social_credentials.get((post_account['provider'], post_account['email']))
             if not cred:
