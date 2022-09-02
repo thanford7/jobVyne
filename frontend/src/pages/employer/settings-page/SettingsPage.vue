@@ -122,7 +122,7 @@
           </div>
         </q-tab-panel>
         <q-tab-panel name="integration">
-          <IntegrationSection/>
+          <IntegrationSection :ats-data="employerData.ats_cfg" @update-employer="updateEmployerData()"/>
         </q-tab-panel>
       </q-tab-panels>
     </div>
@@ -206,6 +206,9 @@ export default {
         `employer/${this.employerData.id}/`,
         getAjaxFormData(data, [this.newLogoKey])
       )
+      await this.updateEmployerData()
+    },
+    async updateEmployerData () {
       await this.employerStore.setEmployer(this.user.employer_id, true)
       this.currentEmployerData = this.getEmployerDataCopy()
       this.employerData = this.getEmployerDataCopy()

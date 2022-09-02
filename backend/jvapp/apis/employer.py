@@ -17,7 +17,7 @@ from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, Is
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
-from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.data import AttributeCfg, is_obfuscated_string, set_object_attributes
 
 __all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
 
@@ -37,9 +37,9 @@ class EmployerView(JobVyneAPIView):
             employer = self.get_employers(employer_id=employer_id)
             data = get_serialized_employer(
                 employer,
-                is_include_employees=(not isinstance(self.user, AnonymousUser)) and (
-                        self.user.is_admin
-                        or (self.user.employer_id == employer_id and self.user.is_employer)
+                is_employer=(not isinstance(self.user, AnonymousUser)) and (
+                    self.user.is_admin
+                    or (self.user.employer_id == employer_id and self.user.is_employer)
                 )
             )
         else:
@@ -82,7 +82,8 @@ class EmployerView(JobVyneAPIView):
                 'employee',
                 'employee__employer_permission_group',
                 'employee__employer_permission_group__permission_group',
-                'employee__employer_permission_group__permission_group__permissions'
+                'employee__employer_permission_group__permission_group__permissions',
+                'ats_cfg'
             ) \
             .filter(employer_filter)
         
@@ -92,6 +93,46 @@ class EmployerView(JobVyneAPIView):
             return employers[0]
         
         return employers
+    
+    
+class EmployerAtsView(JobVyneAPIView):
+    
+    @atomic
+    def post(self, request):
+        if not (employer_id := self.data.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        ats = EmployerAts(employer_id=employer_id)
+        self.update_ats(self.user, ats, self.data)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully created ATS configuration'
+        })
+
+    @atomic
+    def put(self, request):
+        if not (ats_id := self.data.get('id')):
+            return Response('An ATS ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        ats = EmployerAts.objects.get(id=ats_id)
+        self.update_ats(self.user, ats, self.data)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully updated ATS configuration'
+        })
+    
+    @staticmethod
+    @atomic
+    def update_ats(user, ats, data):
+        set_object_attributes(ats, data, {
+            'name': None,
+            'email': None
+        })
+        api_key = data.get('api_key')
+        if api_key and not is_obfuscated_string(api_key):
+            ats.api_key = api_key
+        
+        permission_type = PermissionTypes.EDIT.value if ats.id else PermissionTypes.CREATE.value
+        ats.jv_check_permission(permission_type, user)
+        ats.save()
 
 
 class EmployerJobView(JobVyneAPIView):

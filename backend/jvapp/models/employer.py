@@ -8,7 +8,7 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermi
 from jvapp.models.user import PermissionName
 
 __all__ = (
-    'Employer', 'EmployerJob', 'EmployerSize', 'JobDepartment',
+    'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier'
 )
@@ -42,16 +42,34 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_edit(self, user):
         return (
-                user.is_admin
-                or (
-                        user.employer_id == self.id
-                        and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value,
-                                                         user.employer_id)
-                )
+            user.is_admin
+            or (
+                user.employer_id == self.id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
+            )
         )
     
     def _jv_can_delete(self, user):
         return user.is_admin
+    
+    
+class EmployerAts(AuditFields, JobVynePermissionsMixin):
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='ats_cfg')
+    name = models.CharField(max_length=20)
+    email = models.EmailField()
+    api_key = models.CharField(max_length=50)
+    
+    class Meta:
+        unique_together = ('employer', 'name')
+    
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                user.employer_id == self.id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
+            )
+        )
 
 
 class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):

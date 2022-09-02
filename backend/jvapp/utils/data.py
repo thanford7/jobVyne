@@ -27,3 +27,14 @@ def set_object_attributes(obj, data: dict, form_cfg: dict):
         
 def get_list_intersection(list1, list2):
     return list(set(list1) & set(list2))
+
+
+def obfuscate_string(text, allowed_chars=5):
+    allowed_chars = min(allowed_chars, len(text))
+    cut_off = len(text) - allowed_chars
+    return '*' * (cut_off) + text[cut_off:]
+
+
+def is_obfuscated_string(text, allowed_chars=5):
+    obs_text = obfuscate_string(text, allowed_chars=allowed_chars)
+    return obs_text == text

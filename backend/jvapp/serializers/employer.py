@@ -8,7 +8,7 @@ from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
 from jvapp.serializers.content import get_serialized_content_item
 from jvapp.serializers.user import reduce_user_type_bits
-from jvapp.utils.data import get_list_intersection
+from jvapp.utils.data import get_list_intersection, obfuscate_string
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -23,7 +23,7 @@ def get_serialized_currency(currency: Currency, is_allow_none=True):
     }
 
 
-def get_serialized_employer(employer: Employer, is_include_employees: bool = False):
+def get_serialized_employer(employer: Employer, is_employer: bool = False):
     data = {
         'id': employer.id,
         'name': employer.employer_name,
@@ -43,7 +43,14 @@ def get_serialized_employer(employer: Employer, is_include_employees: bool = Fal
             for p in employee.get_employer_permission_groups_by_employer(permission_groups=employee.employer_permission_group.all())[employer.id]
         ]
     
-    if is_include_employees:
+    if is_employer:
+        ats_cfg = next((c for c in employer.ats_cfg.all()), None)
+        data['ats_cfg'] = {
+            'id': ats_cfg.id,
+            'name': ats_cfg.name,
+            'email': ats_cfg.email,
+            'api_key': obfuscate_string(ats_cfg.api_key)
+        } if ats_cfg else None
         data['employees'] = sorted([{
             'id': e.id,
             'email': e.email,
