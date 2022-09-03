@@ -1,6 +1,6 @@
 from django.urls import path, re_path
 
-from jvapp.apis import auth, content, currency, data, employer, job_seeker, social, tracking, user, waitlist
+from jvapp.apis import ats, auth, content, currency, data, employer, job_seeker, social, tracking, user, waitlist
 
 api_path = 'api/v1/'
 
@@ -37,6 +37,9 @@ urlpatterns = [
     
     # Chart Data
     path('data/link-performance/', data.DataLinkPerformanceView.as_view()),
+    
+    # ATS operations
+    path('ats/jobs/', ats.AtsJobsView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),
