@@ -79,12 +79,15 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     job_department = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
     open_date = models.DateField(null=True, blank=True)
     close_date = models.DateField(null=True, blank=True)
+    salary_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True, to_field='name', default='USD', related_name='job')
     salary_floor = models.FloatField(null=True, blank=True)
     salary_ceiling = models.FloatField(null=True, blank=True)
     referral_bonus = models.FloatField(null=True, blank=True)
     referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
-    is_full_time = models.BooleanField(default=True, blank=True)
+    employment_type = models.CharField(max_length=30, null=True, blank=True)
     locations = models.ManyToManyField('Location')
+    
+    ats_job_key = models.CharField(max_length=50, null=True, blank=True)
     
     def __str__(self):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'

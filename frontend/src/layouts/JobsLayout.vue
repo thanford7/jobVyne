@@ -93,7 +93,7 @@
                                 Remote
                               </q-chip>
                               <q-chip color="grey-7" text-color="white" size="md" icon="schedule">
-                                {{ (job.is_full_time) ? 'Full-Time' : 'Part-Time' }}
+                                {{ job.employment_type }}
                               </q-chip>
                             </div>
                             <div>

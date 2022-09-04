@@ -119,6 +119,7 @@ def calculate_bonus_amount(employer_job, bonus_rule=None):
 def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
     data = {
         'id': employer_job.id,
+        'ats_job_key': employer_job.ats_job_key,
         'employer_id': employer_job.employer_id,
         'job_title': employer_job.job_title,
         'job_description': employer_job.job_description,
@@ -126,11 +127,12 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
         'job_department_id': employer_job.job_department_id,
         'open_date': get_datetime_format_or_none(employer_job.open_date),
         'close_date': get_datetime_format_or_none(employer_job.close_date),
+        'salary_currency': get_serialized_currency(employer_job.salary_currency),
         'salary_floor': employer_job.salary_floor,
         'salary_ceiling': employer_job.salary_ceiling,
         'referral_bonus': employer_job.referral_bonus,
         'referral_bonus_currency': get_serialized_currency(employer_job.referral_bonus_currency),
-        'is_full_time': employer_job.is_full_time,
+        'employment_type': employer_job.employment_type,
         'locations': [
             {
                 'is_remote': l.is_remote,
