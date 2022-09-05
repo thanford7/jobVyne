@@ -73,6 +73,12 @@ class EmployerAts(AuditFields, JobVynePermissionsMixin):
 
 
 class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
+    UPDATE_FIELDS = [
+        'job_title', 'job_description', 'job_department', 'open_date', 'close_date',
+        'salary_currency', 'salary_floor', 'salary_ceiling', 'employment_type',
+        'ats_job_key', 'modified_dt'
+    ]
+    
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
     job_title = models.CharField(max_length=100)
     job_description = models.TextField()

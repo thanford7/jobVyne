@@ -1,17 +1,37 @@
 import base64
 import json
 import re
+from dataclasses import dataclass
+from datetime import date
 
 import requests
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis.geocoding import get_location
 from jvapp.models import EmployerAts, EmployerJob, JobDepartment
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.location import LocationLookup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.response import convert_resp_to_django_resp, is_good_response
+
+
+@dataclass
+class JobData:
+    ats_job_key: str
+    job_title: str
+    job_description: str = None
+    open_date: date = None
+    close_date: date = None
+    department_name: str = None
+    employment_type: str = None
+    salary_floor: float = None
+    salary_ceiling: float = None
+    salary_currency_type: str = None
+    locations: list = None
 
 
 def is_response_object(obj):
@@ -19,9 +39,12 @@ def is_response_object(obj):
 
 
 class BaseAts:
+    BATCH_SIZE = 500
+    
     def __init__(self, ats_cfg):
         self.ats_cfg = ats_cfg
         self.request_headers = self.get_request_headers()
+        self.location_lookups = self.get_location_lookups()
         
     def get_request_headers(self):
         return {}
@@ -29,11 +52,97 @@ class BaseAts:
     def get_current_jobs(self, employer_id):
         return {
             job.ats_job_key or f'JOBVYNE-{job.id}': job
-            for job in EmployerJob.objects.filter(employer_id=employer_id, close_date__isnull=True)
+            for job in EmployerJob.objects.prefetch_related('locations').filter(employer_id=employer_id, close_date__isnull=True)
         }
     
     def get_job_departments(self):
         return {dept.name: dept for dept in JobDepartment.objects.all()}
+    
+    def get_locations(self):
+        pass
+    
+    def get_location_lookups(self):
+        return {l.text: l.location for l in LocationLookup.objects.select_related('location').all()}
+    
+    def get_or_create_location(self, location_text):
+        location = self.location_lookups.get(location_text)
+        if not location:
+            return get_location(location_text)
+        return location
+        
+    def get_noramlized_job_data(self, job):
+        return JobData()  # Override
+
+    def save_jobs(self, employer_id, jobs):
+        current_jobs = self.get_current_jobs(employer_id)
+        job_departments = self.get_job_departments()
+        process_count = 0
+        jobs_count = len(jobs)
+        JobLocationsModel = EmployerJob.locations.through
+        create_jobs = []
+        update_jobs = []
+        create_job_locations = []
+        clear_location_job_ids = []
+        now = timezone.now()
+        while process_count < jobs_count:
+            batch_jobs = jobs[process_count:process_count + self.BATCH_SIZE]
+            for job in batch_jobs:
+                job_data = self.get_noramlized_job_data(job)
+                current_job = current_jobs.get(job_data.ats_job_key) or EmployerJob(
+                    employer_id=employer_id,
+                    created_dt=now
+                )
+                current_job.modified_dt = now
+                is_new = not bool(current_job.id)
+                current_job.ats_job_key = job_data.ats_job_key
+                current_job.job_title = job_data.job_title
+                current_job.job_description = job_data.job_description
+                current_job.open_date = job_data.open_date
+                current_job.close_date = job_data.close_date
+                job_department = None
+                if job_data.department_name and not (job_department := job_departments.get(job_data.department_name)):
+                    job_department = JobDepartment(name=job_data.department_name)
+                    job_department.save()
+                current_job.job_department = job_department
+                current_job.employment_type = job_data.employment_type
+                current_job.salary_floor = job_data.salary_floor
+                current_job.salary_ceiling = job_data.salary_ceiling
+                current_job.salary_currency_id = job_data.salary_currency_type
+                if (not is_new) and {l.id for l in job_data.locations} != {l.id for l in current_job.locations.all()}:
+                    clear_location_job_ids.append(current_job.id)
+                    for location in job_data.locations:
+                        create_job_locations.append(JobLocationsModel(location=location, employerjob=current_job))
+                if is_new:
+                    for location in job_data.locations:
+                        create_job_locations.append(JobLocationsModel(location=location, employerjob=current_job))
+            
+                jobs_list = update_jobs if not is_new else create_jobs
+                jobs_list.append(current_job)
+                process_count += 1
+            
+            # Create and update jobs
+            new_jobs = EmployerJob.objects.bulk_create(create_jobs)
+            # Update job id so many to many models can be saved
+            # bulk_create returns objects in the same order that they are provided
+            for new_job, job in zip(new_jobs, create_jobs):
+                job.id = new_job.id
+            EmployerJob.objects.bulk_update(update_jobs, EmployerJob.UPDATE_FIELDS)
+            
+            # Remove and add new locations
+            JobLocationsModel.objects.filter(employerjob_id__in=clear_location_job_ids).delete()
+            JobLocationsModel.objects.bulk_create(create_job_locations)
+            
+            create_jobs = []
+            update_jobs = []
+            create_job_locations = []
+            clear_location_job_ids = []
+            
+        # Close any jobs that weren't created/updated
+        close_jobs = EmployerJob.objects.filter(modified_dt__lt=now, ats_job_key__isnull=False)
+        for job in close_jobs:
+            job.close_date = now.date()
+        EmployerJob.objects.bulk_update(close_jobs, ['close_date'])
+
 
 class GreenhouseAts(BaseAts):
     datetime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
@@ -84,37 +193,27 @@ class GreenhouseAts(BaseAts):
             self.job_posts_url,
             {'active': 'true', 'live': 'true', 'full_content': 'true'}
         )
+    
+    def get_noramlized_job_data(self, job):
+        # TODO: Need to make custom field keys configurable for each employer
+        custom_fields = job['custom_fields']
+        salary_range = custom_fields.get('salary_range')
+        locations = [self.get_or_create_location(office['location']['name']) for office in job['offices']]
+        data = JobData(
+            ats_job_key=str(job['id']),
+            job_title=job['name'],
+            job_description=job['content'],
+            open_date=self.parse_datetime_str(job['opened_at'], as_date=True),
+            close_date=self.parse_datetime_str(job['closed_at'], as_date=True),
+            department_name=job['departments'][0]['name'] if job['departments'] else None,
+            employment_type=custom_fields.get('employment_type'),
+            salary_floor=salary_range.get('min_value') if salary_range else None,
+            salary_ceiling=salary_range.get('max_value') if salary_range else None,
+            salary_currency_type=salary_range.get('unit') if salary_range else None,
+            locations=[l for l in locations if l]
+        )
+        return data
 
-    def save_jobs(self, employer_id, jobs):
-        current_jobs = self.get_current_jobs(employer_id)
-        job_departments = self.get_job_departments()
-        create_jobs = []
-        update_jobs = []
-        for job in jobs:
-            current_job = current_jobs.get(job['id']) or EmployerJob(employer_id=employer_id)
-            current_job.ats_job_key = job['id']
-            current_job.job_title = job['name']
-            current_job.job_description = job['content']
-            current_job.open_date = self.parse_datetime_str(job['opened_at'], as_date=True)
-            current_job.close_date = self.parse_datetime_str(job['closed_at'], as_date=True)
-            job_department_name = job['departments'][0]['name'] if job['departments'] else None
-            job_department = None
-            if job_department_name and not (job_department := job_departments.get(job_department_name)):
-                job_department = JobDepartment(name=job_department_name)
-                job_department.save()
-            current_job.job_department = job_department
-            
-            # TODO: Need to make custom fields configurable for each employer
-            current_job.employment_type = job['custom_fields'].get('employment_type')
-            salary_range = job['custom_fields'].get('salary_range')
-            if salary_range:
-                current_job.salary_floor = salary_range.get('min_value')
-                current_job.salary_ceiling = salary_range.get('max_value')
-                current_job.salary_currency_id = salary_range.get('unit')
-            # locations
-            jobs_list = update_jobs if current_job.id else create_jobs
-            jobs_list.append(current_job)
-            
     def get_request_headers(self):
         encoded_api_key_b = base64.b64encode(f'{self.ats_cfg.api_key}:'.encode())  # Must be in bytes to encode
         encoded_api_key = str(encoded_api_key_b, encoding='utf-8')  # Convert back to string val so it can be concattenated
@@ -135,9 +234,8 @@ class GreenhouseAts(BaseAts):
         last_page = int(last_page_match.group('page'))
         return page < last_page
     
-    @staticmethod
-    def parse_datetime_str(dt, as_date=False):
-        return get_datetime_or_none(dt, format='', as_date=as_date)
+    def parse_datetime_str(self, dt, as_date=False):
+        return get_datetime_or_none(dt, format=self.datetime_format, as_date=as_date)
 
 
 ats_map = {
@@ -157,9 +255,10 @@ class AtsJobsView(JobVyneAPIView):
         ats_api = ats_map[ats_cfg.name](ats_cfg)
         
         jobs = ats_api.get_jobs()
+        ats_api.save_jobs(ats_cfg.employer_id, jobs)
         
         # If we get a response back, something has gone wrong
         if is_response_object(jobs):
             return convert_resp_to_django_resp(jobs)
         
-        return Response(status=status.HTTP_200_OK, data=jobs)
+        return Response(status=status.HTTP_200_OK)

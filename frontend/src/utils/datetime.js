@@ -111,6 +111,12 @@ class DateTimeUtil {
     return dates
   }
 
+  sortDatesFn (firstDate, secondDate) {
+    const a = new Date(firstDate)
+    const b = new Date(secondDate)
+    return b - a
+  }
+
   /**
    * Check whether the targetDate is before the referenceDate
    * @param targetDate {String}

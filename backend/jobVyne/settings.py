@@ -330,4 +330,5 @@ with open(file_path, 'w') as outfile:
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = file_path
 
 # Geolocation
-GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'
+GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'  # This is for location lookup of an IP address
+GOOGLE_MAPS_KEY = env('GOOGLE_MAPS_KEY')  # This is for reverse geolocation lookup

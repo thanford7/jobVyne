@@ -173,6 +173,7 @@ const jobColumns = [
     align: 'left',
     label: 'Posted Date',
     sortable: true,
+    sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil),
     format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
   },
   {
