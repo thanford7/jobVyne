@@ -96,6 +96,9 @@ class BaseAts:
     def get_ats_user_id(self):
         raise NotImplementedError()
     
+    def get_custom_fields(self):
+        raise NotImplementedError()
+    
     def get_noramlized_job_data(self, job):
         raise NotImplementedError()
     
@@ -179,6 +182,7 @@ class BaseAts:
 class GreenhouseAts(BaseAts):
     datetime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
     candidates_url = 'https://harvest.greenhouse.io/v1/candidates'
+    custom_fields_url = 'https://harvest.greenhouse.io/v1/custom_fields/job'
     jobs_url = 'https://harvest.greenhouse.io/v1/jobs'
     job_posts_url = 'https://harvest.greenhouse.io/v1/job_posts'
     job_stages_url = 'https://harvest.greenhouse.io/v1/job_stages'
@@ -204,6 +208,16 @@ class GreenhouseAts(BaseAts):
             has_next_page = self.has_next_page(resp, page)
             page += 1
         return data
+    
+    def get_data(self, url, params):
+        resp = requests.get(
+            url,
+            headers=self.get_request_headers(),
+            params=params
+        )
+        if not is_good_response(resp):
+            raise AtsError(f'Could not fetch data: {get_resp_error_message(resp)}')
+        return self.get_resp_data(resp)
     
     def get_jobs(self):
         posts = self.get_job_posts()
@@ -233,8 +247,8 @@ class GreenhouseAts(BaseAts):
     
     def get_noramlized_job_data(self, job):
         custom_fields = job['custom_fields']
-        employment_type_key = self.get_normalized_field_key(self.ats_cfg.employment_type_field_key) or 'employment_type'
-        salary_range_key = self.get_normalized_field_key(self.ats_cfg.salary_range_field_key) or 'salary_range'
+        employment_type_key = self.ats_cfg.employment_type_field_key or 'employment_type'
+        salary_range_key = self.ats_cfg.salary_range_field_key or 'salary_range'
         salary_range = custom_fields.get(salary_range_key)
         locations = [self.get_or_create_location(office['location']['name']) for office in job['offices']]
         data = JobData(
@@ -251,7 +265,10 @@ class GreenhouseAts(BaseAts):
             locations=[l for l in locations if l]
         )
         return data
-    
+
+    def get_custom_fields(self):
+        return self.get_data(self.custom_fields_url, {})
+        
     def create_application(self, application):
         # Check whether candidate exists
         candidates = self.get_paginated_data(self.candidates_url, {'email': application.email})
@@ -353,12 +370,6 @@ class GreenhouseAts(BaseAts):
     
     def parse_datetime_str(self, dt, as_date=False):
         return get_datetime_or_none(dt, format=self.datetime_format, as_date=as_date)
-    
-    @staticmethod
-    def get_normalized_field_key(field_name):
-        if not field_name:
-            return None
-        return field_name.lower().replace(' ', '_')
 
 
 ats_map = {
@@ -400,3 +411,10 @@ class AtsStagesView(AtsBaseView):
     def get(self, request):
         stages = self.ats_api.get_job_stages()
         return Response(status=status.HTTP_200_OK, data=stages)
+
+
+class AtsCustomFieldsView(AtsBaseView):
+    
+    def get(self, request):
+        fields = self.ats_api.get_custom_fields()
+        return Response(status=status.HTTP_200_OK, data=fields)

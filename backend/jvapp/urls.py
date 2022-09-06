@@ -39,6 +39,7 @@ urlpatterns = [
     path('data/link-performance/', data.DataLinkPerformanceView.as_view()),
     
     # ATS operations
+    path('ats/custom-fields/', ats.AtsCustomFieldsView.as_view()),
     path('ats/jobs/', ats.AtsJobsView.as_view()),
     path('ats/stages/', ats.AtsStagesView.as_view()),
 
