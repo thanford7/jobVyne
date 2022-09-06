@@ -116,6 +116,13 @@
                           </q-card-actions>
                         </q-card>
                       </div>
+                      <q-pagination
+                        v-if="jobPagesCount > 1"
+                        v-model="pageNumber"
+                        :max-pages="5"
+                        :max="jobPagesCount"
+                        direction-links
+                      />
                     </div>
                   </div>
                 </q-page>
@@ -177,11 +184,20 @@ export default {
       profile: null,
       isLoaded: false,
       jobApplication: null,
+      jobPagesCount: null,
+      pageNumber: 1,
       dateTimeUtil,
       formUtil
     }
   },
   components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
+  watch: {
+    pageNumber: {
+      async handler () {
+        await this.loadData()
+      }
+    }
+  },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
@@ -199,6 +215,18 @@ export default {
         this.isRightDrawerOpen = true
       }
       scrollUtil.scrollToElement(document.getElementById(`job-${jobId}`))
+    },
+    async loadData () {
+      Loading.show()
+      const resp = await this.$api.get(`social-link-jobs/${this.$route.params.filterId}`, {
+        params: { page_count: this.pageNumber }
+      })
+      const { jobs, employer, profile, total_page_count: totalPageCount } = resp.data
+      this.jobs = jobs
+      this.employer = employer
+      this.profile = profile
+      this.jobPagesCount = totalPageCount
+      Loading.hide()
     },
     getJobApplication (jobId) {
       if (!this.applications) {
@@ -243,16 +271,14 @@ export default {
   },
   async mounted () {
     if (!this.$route.meta.isExample) {
-      const resp = await this.$api.get(`social-link-jobs/${this.$route.params.filterId}`)
-      const { jobs, employer, profile } = resp.data
-      this.jobs = jobs
-      this.employer = employer
-      this.profile = profile
+      await this.loadData()
     } else {
+      Loading.show()
       await this.employerStore.setEmployer(this.$route.params.employerId)
       this.jobs = []
       this.employer = this.employerStore.getEmployer(this.$route.params.employerId)
       this.profile = null
+      Loading.hide()
     }
 
     await this.employerStore.setEmployerPage(this.employer.id)

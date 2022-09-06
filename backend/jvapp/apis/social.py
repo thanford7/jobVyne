@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -14,7 +15,6 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
 from jvapp.serializers.social import *
-from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import set_object_attributes
 
 __all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView')
@@ -159,16 +159,19 @@ class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
     def get(self, request, link_filter_id):
+        page_count = self.query_params.get('page_count', 1)
         link_filter = SocialLinkFilterView.get_link_filters(
             self.user,
             link_filter_id=link_filter_id,
             is_use_permissions=False  # This is a public page
         )
         jobs = self.get_jobs_from_filter(link_filter)
+        paged_jobs = Paginator(jobs, per_page=5)
         employer = EmployerView.get_employers(employer_id=link_filter.employer_id)
         profile = UserView.get_user(self.user, user_id=link_filter.owner_id, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data={
-            'jobs': [get_serialized_employer_job(j) for j in jobs],
+            'total_page_count': paged_jobs.num_pages,
+            'jobs': [get_serialized_employer_job(j) for j in paged_jobs.get_page(page_count)],
             'employer': get_serialized_employer(employer),
             'profile': {
                 'id': profile.id,

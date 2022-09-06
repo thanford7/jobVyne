@@ -418,7 +418,7 @@ export default {
         employer_id: this.user.employer_id,
         platform_id: this.formData?.platform?.id,
         department_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.departments?.map((dept) => dept.id)),
-        cities: dataUtil.getArrayWithValuesOrNone(this.formData.cities),
+        city_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.cities?.map((city) => city.id)),
         state_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.states?.map((state) => state.id)),
         country_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.countries?.map((country) => country.id))
       }
