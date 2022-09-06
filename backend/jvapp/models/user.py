@@ -15,7 +15,7 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermi
 
 __all__ = (
     'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
-    'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile'
+    'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate'
 )
 
 from jvapp.utils.email import get_domain_from_email
@@ -270,6 +270,15 @@ class UserSocialCredential(models.Model):
     
     class Meta:
         unique_together = ('user', 'provider', 'email')
+        
+        
+class UserEmployerCandidate(models.Model):
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='candidate_key')
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
+    ats_candidate_key = models.CharField(max_length=30)
+    
+    class Meta:
+        unique_together = ('user', 'employer')
     
     
 class UserEmployerPermissionGroup(models.Model):

@@ -58,6 +58,9 @@ class EmployerAts(AuditFields, JobVynePermissionsMixin):
     name = models.CharField(max_length=20)
     email = models.EmailField()
     api_key = models.CharField(max_length=50)
+    job_stage_name = models.CharField(max_length=50, null=True, blank=True)
+    employment_type_field_key = models.CharField(max_length=30, null=True, blank=True)
+    salary_range_field_key = models.CharField(max_length=30, null=True, blank=True)
     
     class Meta:
         unique_together = ('employer', 'name')

@@ -103,9 +103,7 @@
                               </q-chip>
                             </div>
                             <q-separator class="q-mt-sm"/>
-                            <p>
-                              {{ job.job_description }}
-                            </p>
+                            <div v-html="formUtil.sanitizeHtml(job.job_description)"></div>
                           </q-card-section>
                           <q-separator dark/>
                           <q-card-actions v-if="!getJobApplication(job.id)">
@@ -152,6 +150,7 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
+import formUtil from 'src/utils/form.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { ref } from 'vue'
@@ -178,7 +177,8 @@ export default {
       profile: null,
       isLoaded: false,
       jobApplication: null,
-      dateTimeUtil
+      dateTimeUtil,
+      formUtil
     }
   },
   components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },

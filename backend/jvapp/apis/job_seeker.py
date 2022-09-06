@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.db.models import Q
 from django.db.transaction import atomic
 from rest_framework import status
@@ -5,11 +6,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.ats import get_ats_api, is_response_object
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.user import UserView
-from jvapp.models import JobVyneUser
+from jvapp.models import EmployerAts, JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
+from jvapp.models.user import UserEmployerCandidate
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.utils.data import AttributeCfg, set_object_attributes
@@ -33,7 +36,7 @@ class ApplicationView(JobVyneAPIView):
             data = get_serialized_job_application(self.get_applications(application_id=application_id))
         elif user_id := self.query_params.get('user_id'):
             user = UserView.get_user(self.user, user_id=user_id)
-            application_filter = Q(email=user.email)
+            application_filter = Q(email=user.email) | Q(user_id=user.id)
             data = [
                 get_serialized_job_application(ja)
                 for ja in self.get_applications(application_filter=application_filter)
@@ -49,14 +52,15 @@ class ApplicationView(JobVyneAPIView):
         
         return Response(status=status.HTTP_200_OK, data=data)
     
-    @atomic
     def post(self, request):
+        # Don't make this atomic in case the push to the ATS fails, we still want to capture the user's application
         email = self.data.get('email')
         job_id = self.data.get('job_id')
         if not all((email, job_id)):
             return Response('Email and job ID are required', status=status.HTTP_400_BAD_REQUEST)
         
         # Check if the user has an account, but is not logged in
+        # TODO: Consider always creating a user account if the applicant is new
         if not self.user.is_authenticated:
             try:
                 user = JobVyneUser.objects.get(email=email)
@@ -73,7 +77,7 @@ class ApplicationView(JobVyneAPIView):
         # Save application to Django model
         application = JobApplication()
         resume = self.files['resume'][0] if self.files.get('resume') else None
-        self.create_application(application, self.data, resume)
+        self.create_application(user, application, self.data, resume)
         
         if user:
             # Save or update application template to Django model
@@ -90,11 +94,27 @@ class ApplicationView(JobVyneAPIView):
             if not user.is_candidate:
                 user.user_type_bits |= JobVyneUser.USER_TYPE_CANDIDATE
                 user.save()
-        
-        # Push application to ATS integration
-        
+
         # Refetch application to get related models
         application = self.get_applications(application_id=application.id)
+        
+        # Push application to ATS integration
+        if application.employer_job.ats_job_key:
+            ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
+            ats_api = get_ats_api(ats_cfg)
+            ats_candidate_key, ats_application_key = ats_api.create_application(application)
+            if user:
+                try:
+                    UserEmployerCandidate(
+                        user=user,
+                        employer=application.employer_job.employer,
+                        ats_candidate_key=ats_candidate_key
+                    ).save()
+                except IntegrityError:
+                    pass
+                    
+            application.ats_application_key = ats_application_key
+            application.save()
         
         return Response(
             status=status.HTTP_200_OK,
@@ -105,7 +125,8 @@ class ApplicationView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_application(application, data, resume):
+    def create_application(user, application, data, resume):
+        application.user = user
         cfg = {
             'employer_job_id': AttributeCfg(form_name='job_id'),
             'social_link_filter_id': AttributeCfg(form_name='filter_id'),

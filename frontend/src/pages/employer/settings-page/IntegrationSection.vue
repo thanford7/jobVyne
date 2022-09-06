@@ -8,7 +8,7 @@
     <div class="col-12">
       <q-select
         filled clearable emit-value map-options
-        label="ATS name"
+        label="ATS Name"
         v-model="atsFormData.name"
         :options="[
           {val: 'greenhouse', label: 'Greenhouse'}
@@ -64,6 +64,43 @@
           </template>
         </q-input>
       </div>
+      <div class="col-12">
+        <q-input filled label="Employment Type Field Name" v-model="atsFormData.employment_type_field_key">
+          <template v-slot:after>
+            <CustomTooltip>
+              The employment type (e.g. full time) is a custom field so it is necessary to provide the name
+              of the field. To get the field name:
+              <ol>
+                <li>Navigate to your Greenhouse admin website</li>
+                <li>Click the "Configure" link (gear icon at the top right of the page)</li>
+                <li>Click the "Custom Options" navigation link</li>
+                <li>Click the "Jobs" navigations link (under "Company Custom Fields")</li>
+                <li>The employment type field will be listed as one of the Job fields</li>
+              </ol>
+            </CustomTooltip>
+          </template>
+        </q-input>
+      </div>
+      <div class="col-12">
+        <q-input filled label="Salary Range Field Name" v-model="atsFormData.salary_range_field_key">
+          <template v-slot:after>
+            <CustomTooltip>
+              The salary range (e.g. $50,000-$60,000) is a custom field so it is necessary to provide the name
+              of the field. To get the field name:
+              <ol>
+                <li>Navigate to your Greenhouse admin website</li>
+                <li>Click the "Configure" link (gear icon at the top right of the page)</li>
+                <li>Click the "Custom Options" navigation link</li>
+                <li>Click the "Jobs" navigations link (under "Company Custom Fields")</li>
+                <li>The salary range field will be listed as one of the Job fields</li>
+              </ol>
+            </CustomTooltip>
+          </template>
+        </q-input>
+      </div>
+      <div v-if="atsData.id" class="col-12">
+        <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id"/>
+      </div>
     </template>
     <div class="col-12">
       <q-btn label="Test connection" color="primary" @click="updateJobs"/>
@@ -73,6 +110,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import SelectAtsJobStage from 'components/inputs/SelectAtsJobStage.vue'
 import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -80,7 +118,7 @@ import { useEmployerStore } from 'stores/employer-store.js'
 
 export default {
   name: 'IntegrationSection',
-  components: { CustomTooltip },
+  components: { SelectAtsJobStage, CustomTooltip },
   props: {
     atsData: [Object, null]
   },

@@ -17,6 +17,23 @@ from jvapp.models.location import LocationLookup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.response import convert_resp_to_django_resp, is_good_response
+from jvapp.utils.sanitize import sanitizer
+
+
+class AtsError(Exception):
+    pass
+
+
+def get_resp_error_message(resp):
+    return f'({resp.status_code}) {resp.text}'
+
+
+def get_base64_encoded_str(text):
+    # Must be in bytes to encode
+    if not isinstance(text, bytes):
+        text = text.encode()
+    encoded_text = base64.b64encode(text)
+    return str(encoded_text, encoding='utf-8')  # Convert back to string val
 
 
 @dataclass
@@ -40,19 +57,25 @@ def is_response_object(obj):
 
 class BaseAts:
     BATCH_SIZE = 500
+    JOBVYNE_TAG = 'JOBVYNE'
     
     def __init__(self, ats_cfg):
         self.ats_cfg = ats_cfg
-        self.request_headers = self.get_request_headers()
         self.location_lookups = self.get_location_lookups()
-        
+        self.ats_user_id = self.get_ats_user_id()
+    
     def get_request_headers(self):
         return {}
+    
+    @staticmethod
+    def get_resp_data(resp):
+        return json.loads(resp.text)
     
     def get_current_jobs(self, employer_id):
         return {
             job.ats_job_key or f'JOBVYNE-{job.id}': job
-            for job in EmployerJob.objects.prefetch_related('locations').filter(employer_id=employer_id, close_date__isnull=True)
+            for job in
+            EmployerJob.objects.prefetch_related('locations').filter(employer_id=employer_id, close_date__isnull=True)
         }
     
     def get_job_departments(self):
@@ -69,10 +92,19 @@ class BaseAts:
         if not location:
             return get_location(location_text)
         return location
-        
+    
+    def get_ats_user_id(self):
+        raise NotImplementedError()
+    
     def get_noramlized_job_data(self, job):
-        return JobData()  # Override
-
+        raise NotImplementedError()
+    
+    def get_job_stages(self):
+        raise NotImplementedError()
+    
+    def create_application(self, application):
+        raise NotImplementedError()
+    
     def save_jobs(self, employer_id, jobs):
         current_jobs = self.get_current_jobs(employer_id)
         job_departments = self.get_job_departments()
@@ -96,7 +128,7 @@ class BaseAts:
                 is_new = not bool(current_job.id)
                 current_job.ats_job_key = job_data.ats_job_key
                 current_job.job_title = job_data.job_title
-                current_job.job_description = job_data.job_description
+                current_job.job_description = sanitizer.clean(job_data.job_description) if job_data.job_description else None
                 current_job.open_date = job_data.open_date
                 current_job.close_date = job_data.close_date
                 job_department = None
@@ -115,7 +147,7 @@ class BaseAts:
                 if is_new:
                     for location in job_data.locations:
                         create_job_locations.append(JobLocationsModel(location=location, employerjob=current_job))
-            
+                
                 jobs_list = update_jobs if not is_new else create_jobs
                 jobs_list.append(current_job)
                 process_count += 1
@@ -136,7 +168,7 @@ class BaseAts:
             update_jobs = []
             create_job_locations = []
             clear_location_job_ids = []
-            
+        
         # Close any jobs that weren't created/updated
         close_jobs = EmployerJob.objects.filter(modified_dt__lt=now, ats_job_key__isnull=False)
         for job in close_jobs:
@@ -146,9 +178,11 @@ class BaseAts:
 
 class GreenhouseAts(BaseAts):
     datetime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+    candidates_url = 'https://harvest.greenhouse.io/v1/candidates'
     jobs_url = 'https://harvest.greenhouse.io/v1/jobs'
     job_posts_url = 'https://harvest.greenhouse.io/v1/job_posts'
     job_stages_url = 'https://harvest.greenhouse.io/v1/job_stages'
+    users_url = 'https://harvest.greenhouse.io/v1/users'
     
     def get_paginated_data(self, url, params):
         data = []
@@ -157,7 +191,7 @@ class GreenhouseAts(BaseAts):
         while has_next_page:
             resp = requests.get(
                 url,
-                headers=self.request_headers,
+                headers=self.get_request_headers(),
                 params={
                     'page': page,
                     'per_page': 500,
@@ -165,7 +199,7 @@ class GreenhouseAts(BaseAts):
                 }
             )
             if not is_good_response(resp):
-                return resp
+                raise AtsError(f'Could not fetch data: {get_resp_error_message(resp)}')
             data += self.get_resp_data(resp)
             has_next_page = self.has_next_page(resp, page)
             page += 1
@@ -194,10 +228,14 @@ class GreenhouseAts(BaseAts):
             {'active': 'true', 'live': 'true', 'full_content': 'true'}
         )
     
+    def get_job_stages(self):
+        return self.get_paginated_data(self.job_stages_url, {})
+    
     def get_noramlized_job_data(self, job):
-        # TODO: Need to make custom field keys configurable for each employer
         custom_fields = job['custom_fields']
-        salary_range = custom_fields.get('salary_range')
+        employment_type_key = self.get_normalized_field_key(self.ats_cfg.employment_type_field_key) or 'employment_type'
+        salary_range_key = self.get_normalized_field_key(self.ats_cfg.salary_range_field_key) or 'salary_range'
+        salary_range = custom_fields.get(salary_range_key)
         locations = [self.get_or_create_location(office['location']['name']) for office in job['offices']]
         data = JobData(
             ats_job_key=str(job['id']),
@@ -206,25 +244,104 @@ class GreenhouseAts(BaseAts):
             open_date=self.parse_datetime_str(job['opened_at'], as_date=True),
             close_date=self.parse_datetime_str(job['closed_at'], as_date=True),
             department_name=job['departments'][0]['name'] if job['departments'] else None,
-            employment_type=custom_fields.get('employment_type'),
+            employment_type=custom_fields.get(employment_type_key),
             salary_floor=salary_range.get('min_value') if salary_range else None,
             salary_ceiling=salary_range.get('max_value') if salary_range else None,
             salary_currency_type=salary_range.get('unit') if salary_range else None,
             locations=[l for l in locations if l]
         )
         return data
-
-    def get_request_headers(self):
-        encoded_api_key_b = base64.b64encode(f'{self.ats_cfg.api_key}:'.encode())  # Must be in bytes to encode
-        encoded_api_key = str(encoded_api_key_b, encoding='utf-8')  # Convert back to string val so it can be concattenated
+    
+    def create_application(self, application):
+        # Check whether candidate exists
+        candidates = self.get_paginated_data(self.candidates_url, {'email': application.email})
+        resume = get_base64_encoded_str(application.resume.open('rb').read()) if application.resume else None
+        ats_job_key = application.employer_job.ats_job_key
+        application_data = {
+            'job_id': ats_job_key,
+            'source_id': None,
+            'initial_stage_id': self.get_initial_job_application_stage_id(ats_job_key),
+            'attachments': [{
+                'filename': application.resume.name.split('/')[-1],
+                'type': 'resume',
+                'content': resume,
+                'content_type': 'multipart/form-data'
+            }] if resume else []
+        }
+        
+        if candidates:
+            candidate = candidates[0]
+            url = f'{self.candidates_url}/{candidate["id"]}/applications'
+            resp = requests.post(
+                url,
+                headers=self.get_request_headers(is_user_id=True),
+                json=application_data
+            )
+            if not is_good_response(resp):
+                raise AtsError(f'Could not save candidate: {get_resp_error_message(resp)}')
+            candidate_data = self.get_resp_data(resp)
+            ats_candidate_key = str(candidate_data['candidate_id'])
+            ats_application_key = str(candidate_data['id'])
+        else:
+            post_data = {
+                'first_name': application.first_name,
+                'last_name': application.last_name,
+                'email_addresses': [{
+                    'value': application.email,
+                    'type': 'personal'
+                }],
+                'phone_numbers': [{
+                    'value': application.phone_number,
+                    'type': 'mobile'
+                }] if application.phone_number else [],
+                'social_media_addresses': [{
+                    'value': application.linkedin_url
+                }] if application.linkedin_url else [],
+                'tags': [self.JOBVYNE_TAG],
+                'applications': [application_data]
+            }
+            resp = requests.post(
+                self.candidates_url,
+                headers=self.get_request_headers(is_user_id=True),
+                json=post_data
+            )
+            if not is_good_response(resp):
+                raise AtsError(f'Could not save candidate: {get_resp_error_message(resp)}')
+            candidate_data = self.get_resp_data(resp)
+            ats_candidate_key = str(candidate_data['id'])
+            ats_application_key = str(candidate_data['application_ids'][0])
+            
+        return ats_candidate_key, ats_application_key
+    
+    def get_initial_job_application_stage_id(self, ats_job_key):
+        stages = self.get_job_stages()
+        stage_name = self.ats_cfg.job_stage_name
+        for stage in stages:
+            if (
+                str(stage['job_id']) == ats_job_key
+                and ((stage_name and stage['name'] == stage_name) or (not stage_name and stage['priority'] == 0))
+            ):
+                return stage['id']
+        return None
+    
+    def get_ats_user_id(self):
+        resp = requests.get(
+            self.users_url,
+            headers=self.get_request_headers(),
+            params={
+                'email': self.ats_cfg.email
+            }
+        )
+        if not is_good_response(resp):
+            raise AtsError(f'Unable to fetch user: {get_resp_error_message(resp)}')
+        return str(self.get_resp_data(resp)['id'])
+    
+    def get_request_headers(self, is_user_id=False):
+        encoded_api_key = get_base64_encoded_str(f'{self.ats_cfg.api_key}:')
         return {
-            'On-Behalf-Of': self.ats_cfg.email,
+            'On-Behalf-Of': self.ats_user_id if is_user_id else self.ats_cfg.email,
             'Authorization': f'Basic {encoded_api_key}'
         }
-    
-    @staticmethod
-    def get_resp_data(resp):
-        return json.loads(resp.text)
     
     @staticmethod
     def has_next_page(resp, page):
@@ -236,6 +353,12 @@ class GreenhouseAts(BaseAts):
     
     def parse_datetime_str(self, dt, as_date=False):
         return get_datetime_or_none(dt, format=self.datetime_format, as_date=as_date)
+    
+    @staticmethod
+    def get_normalized_field_key(field_name):
+        if not field_name:
+            return None
+        return field_name.lower().replace(' ', '_')
 
 
 ats_map = {
@@ -243,22 +366,37 @@ ats_map = {
 }
 
 
-class AtsJobsView(JobVyneAPIView):
+def get_ats_api(ats_cfg: EmployerAts):
+    return ats_map[ats_cfg.name](ats_cfg)
+
+
+class AtsBaseView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
     
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        ats_id = self.data.get('ats_id') or self.query_params.get('ats_id')
+        if not ats_id:
+            raise ValueError('An ATS ID is required')
+
+        self.ats_cfg = EmployerAts.objects.get(id=ats_id)
+        self.check_permission()
+        self.ats_api = get_ats_api(self.ats_cfg)
+        
+    def check_permission(self):
+        self.ats_cfg.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+
+
+class AtsJobsView(AtsBaseView):
+    
     def put(self, request):
-        if not (ats_id := self.data.get('ats_id')):
-            return Response('An ATS ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
-        ats_cfg = EmployerAts.objects.get(id=ats_id)
-        ats_cfg.jv_check_permission(PermissionTypes.EDIT.value, self.user)
-        ats_api = ats_map[ats_cfg.name](ats_cfg)
-        
-        jobs = ats_api.get_jobs()
-        ats_api.save_jobs(ats_cfg.employer_id, jobs)
-        
-        # If we get a response back, something has gone wrong
-        if is_response_object(jobs):
-            return convert_resp_to_django_resp(jobs)
-        
+        jobs = self.ats_api.get_jobs()
+        self.ats_api.save_jobs(self.ats_cfg.employer_id, jobs)
         return Response(status=status.HTTP_200_OK)
+    
+    
+class AtsStagesView(AtsBaseView):
+    
+    def get(self, request):
+        stages = self.ats_api.get_job_stages()
+        return Response(status=status.HTTP_200_OK, data=stages)

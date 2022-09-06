@@ -124,7 +124,10 @@ class EmployerAtsView(JobVyneAPIView):
     def update_ats(user, ats, data):
         set_object_attributes(ats, data, {
             'name': None,
-            'email': None
+            'email': None,
+            'job_stage_name': None,
+            'employment_type_field_key': None,
+            'salary_range_field_key': None
         })
         api_key = data.get('api_key')
         if api_key and not is_obfuscated_string(api_key):

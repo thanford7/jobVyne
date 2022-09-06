@@ -40,6 +40,7 @@ urlpatterns = [
     
     # ATS operations
     path('ats/jobs/', ats.AtsJobsView.as_view()),
+    path('ats/stages/', ats.AtsStagesView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),

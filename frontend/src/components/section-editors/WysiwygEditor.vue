@@ -43,39 +43,7 @@
 </template>
 
 <script>
-import sanitizeHtml from 'sanitize-html'
-
-// Needs to align with backend sanitization cfg (sanitize.py)
-const colorMatch = [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/] // Match HEX and RGB
-const sizeMatch = [/^-?\d+(?:px|em|%)$/, /0/] // Match any positive/negative number with px, em, or %
-const sanitizeCfg = {
-  allowedAttributes: {
-    '*': ['class', 'style'],
-    a: ['href', 'name', 'target', 'title', 'id', 'rel']
-  },
-  allowedStyles: {
-    '*': {
-      'background-color': colorMatch,
-      'border-bottom-color': colorMatch,
-      'border-collapse': [/^collapse$/, /^separate$/],
-      'border-color': colorMatch,
-      'border-left-color': colorMatch,
-      'border-right-color': colorMatch,
-      'border-top-color': colorMatch,
-      color: colorMatch,
-      float: [/^left$/, /^right$/, /^none$/, /^inline-start$/, /^inline-end$/],
-      'font-size': sizeMatch,
-      'font-weight': [/^normal$/, /^bold$/, /^lighter$/, /^bolder$/],
-      height: sizeMatch,
-      'text-align': [/^left$/, /^right$/, /^center$/],
-      'text-decoration': [/^underline$/, /^overline$/, /^none$/],
-      'text-indent': sizeMatch,
-      'vertical-align': [/^baseline$/, /^sub$/, /^super$/, /^text-top$/, /^text-bottom$/, /^middle$/, /^top$/, /^bottom$/],
-      'white-space': [/^normal$/, /^nowrap$/, /^pre$/, /^pre-wrap$/, /^pre-line$/, /^break-spaces$/],
-      width: sizeMatch
-    }
-  }
-}
+import formUtil from 'src/utils/form.js'
 
 export default {
   name: 'WysiwygEditor',
@@ -89,14 +57,9 @@ export default {
       default: 'Start typing...'
     }
   },
-  data () {
-    return {
-      sanitizeHtml
-    }
-  },
   methods: {
     updateSanitizeHtml () {
-      const sanitizedHtml = sanitizeHtml(this.modelValue, sanitizeCfg)
+      const sanitizedHtml = formUtil.sanitizeHtml(this.modelValue)
       this.$emit('update:modelValue', sanitizedHtml)
     }
   }

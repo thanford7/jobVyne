@@ -24,6 +24,7 @@ class JobApplicationFields(AuditFields):
 
 class JobApplication(JobApplicationFields):
     
+    user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link_filter = models.ForeignKey(
         'SocialLinkFilter', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
     )
@@ -33,6 +34,8 @@ class JobApplication(JobApplicationFields):
     referral_bonus = models.FloatField(default=0)
     referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     referral_bonus_details = models.JSONField()
+    
+    ats_application_key = models.CharField(max_length=30, null=True, blank=True)
     
     class Meta:
         unique_together = ('employer_job', 'email')

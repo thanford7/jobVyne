@@ -49,7 +49,10 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
             'id': ats_cfg.id,
             'name': ats_cfg.name,
             'email': ats_cfg.email,
-            'api_key': obfuscate_string(ats_cfg.api_key)
+            'api_key': obfuscate_string(ats_cfg.api_key),
+            'job_stage_name': ats_cfg.job_stage_name,
+            'employment_type_field_key': ats_cfg.employment_type_field_key,
+            'salary_range_field_key': ats_cfg.salary_range_field_key
         } if ats_cfg else None
         data['employees'] = sorted([{
             'id': e.id,
