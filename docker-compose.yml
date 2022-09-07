@@ -81,6 +81,22 @@ services:
     depends_on:
       - db
 
+  cron:
+    container_name: cron
+    build:
+      context: ./backend
+      dockerfile: Dockerfile-Cron
+    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && cron -f"
+    volumes:
+      - ./backend:/cron-jobs
+    networks:
+      - main
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+
+
 volumes:
   db-data:
 

@@ -171,7 +171,7 @@ class EmployerJobView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_employer_jobs(employer_job_id=None, employer_job_filter=None):
+    def get_employer_jobs(employer_job_id=None, employer_job_filter=None, order_by='-open_date'):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
         
@@ -183,7 +183,8 @@ class EmployerJobView(JobVyneAPIView):
                 'locations__state',
                 'locations__country'
             )\
-            .filter(employer_job_filter)
+            .filter(employer_job_filter)\
+            .order_by(order_by)
         
         if employer_job_id:
             if not jobs:
