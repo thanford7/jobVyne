@@ -103,7 +103,7 @@
                               </q-chip>
                             </div>
                             <q-separator class="q-mt-sm"/>
-                            <div v-html="formUtil.sanitizeHtml(job.job_description)"></div>
+                            <div class="q-pa-sm" v-html="formUtil.sanitizeHtml(job.job_description)"></div>
                           </q-card-section>
                           <q-separator dark/>
                           <q-card-actions v-if="!getJobApplication(job.id)">

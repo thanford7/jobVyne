@@ -19,3 +19,21 @@ sanitization_cfg = {
 }
 
 sanitizer = Cleaner(**sanitization_cfg)
+
+
+def get_replace_tag_html(html_text: str, tag_map: dict):
+    """
+    :param tag_map: Should be in the form {<tag to be replaced>: <tag to replace with>}
+        example: {h1: b}
+    """
+    
+    for tag, tag_to_replace in tag_map.items():
+        opening_tag = f'<{tag}>'
+        opening_replace_tag = f'<{tag_to_replace}>'
+        closing_tag = f'</{tag}>'
+        closing_replace_tag = f'</{tag_to_replace}>'
+        
+        html_text = html_text.replace(opening_tag, opening_replace_tag)
+        html_text = html_text.replace(closing_tag, closing_replace_tag)
+        
+    return html_text

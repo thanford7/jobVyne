@@ -16,8 +16,8 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.location import LocationLookup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_or_none
-from jvapp.utils.response import convert_resp_to_django_resp, is_good_response
-from jvapp.utils.sanitize import sanitizer
+from jvapp.utils.response import is_good_response
+from jvapp.utils.sanitize import get_replace_tag_html, sanitizer
 
 
 class AtsError(Exception):
@@ -131,7 +131,13 @@ class BaseAts:
                 is_new = not bool(current_job.id)
                 current_job.ats_job_key = job_data.ats_job_key
                 current_job.job_title = job_data.job_title
-                current_job.job_description = sanitizer.clean(job_data.job_description) if job_data.job_description else None
+                if job_data.job_description:
+                    current_job.job_description = get_replace_tag_html(
+                        sanitizer.clean(job_data.job_description),
+                        {'h1': 'b', 'h2': 'b', 'h3': 'b', 'h4': 'b', 'h5': 'b', 'h6': 'b'}
+                    )
+                else:
+                    current_job.job_description = None
                 current_job.open_date = job_data.open_date
                 current_job.close_date = job_data.close_date
                 job_department = None
