@@ -48,7 +48,7 @@
                         {{ globalStore.nullValueAnyStr }}
                       </span>
                     </q-td>
-                    <q-td key="departments" :props="props">
+                    <q-td key="locations" :props="props">
                       <q-chip
                         v-for="loc in getLocations(props.row)"
                         dense :color="loc.color" text-color="white" size="13px"

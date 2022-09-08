@@ -1,18 +1,19 @@
+from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.db.models import Q
 from django.db.transaction import atomic
 from rest_framework import status
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
-from jvapp.apis.ats import get_ats_api, is_response_object
+from jvapp.apis.ats import get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.user import UserView
 from jvapp.models import EmployerAts, JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
 from jvapp.models.user import UserEmployerCandidate
+from jvapp.permissions.general import IsAuthenticatedOrPost
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.utils.data import AttributeCfg, set_object_attributes
@@ -29,24 +30,32 @@ APPLICATION_SAVE_CFG = {
 
 
 class ApplicationView(JobVyneAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrPost]
     
     def get(self, request, application_id=None):
+        user_id = self.query_params.get('user_id')
+        employer_id = self.query_params.get('employer_id')
         if application_id:
-            data = get_serialized_job_application(self.get_applications(application_id=application_id))
-        elif user_id := self.query_params.get('user_id'):
-            user = UserView.get_user(self.user, user_id=user_id)
-            application_filter = Q(email=user.email) | Q(user_id=user.id)
-            data = [
-                get_serialized_job_application(ja)
-                for ja in self.get_applications(application_filter=application_filter)
-            ]
-        elif employer_id := self.query_params.get('employer_id'):
-            application_filter = Q(employer_job__employer_id=employer_id)
-            data = [
-                get_serialized_job_application(ja)
-                for ja in self.get_applications(application_filter=application_filter)
-            ]
+            data = get_serialized_job_application(self.get_applications(self.user, application_id=application_id))
+        elif any([user_id, employer_id]):
+            page_count = self.query_params.get('page_count')
+            if user_id:
+                user = UserView.get_user(self.user, user_id=user_id)
+                application_filter = Q(email=user.email) | Q(user_id=user.id)
+            else:
+                application_filter = Q(employer_job__employer_id=employer_id)
+            applications = self.get_applications(self.user, application_filter=application_filter)
+            if page_count:
+                paged_applications = Paginator(applications, per_page=25)
+                data = {
+                    'total_page_count': paged_applications.num_pages,
+                    'applications': [get_serialized_job_application(ja) for ja in paged_applications.get_page(page_count)]
+                }
+            else:
+                data = [
+                    get_serialized_job_application(ja)
+                    for ja in applications
+                ]
         else:
             return Response('Unrecognized job application filter', status=status.HTTP_400_BAD_REQUEST)
         
@@ -70,7 +79,11 @@ class ApplicationView(JobVyneAPIView):
             user = self.user
         
         # Check if this person has already applied
-        applications = self.get_applications(application_filter=Q(email=email, employer_job_id=job_id))
+        applications = self.get_applications(
+            self.user,
+            application_filter=Q(email=email, employer_job_id=job_id),
+            is_ignore_permissions=True
+        )
         if len(applications):
             return Response('You have already applied to this job', status=status.HTTP_400_BAD_REQUEST)
         
@@ -96,7 +109,11 @@ class ApplicationView(JobVyneAPIView):
                 user.save()
 
         # Refetch application to get related models
-        application = self.get_applications(application_id=application.id)
+        application = self.get_applications(
+            self.user,
+            application_id=application.id,
+            is_ignore_permissions=True
+        )
         
         # Push application to ATS integration
         if application.employer_job.ats_job_key:
@@ -156,17 +173,26 @@ class ApplicationView(JobVyneAPIView):
         }
     
     @staticmethod
-    def get_applications(application_id=None, application_filter=None):
+    def get_applications(user, application_id=None, application_filter=None, is_ignore_permissions=False):
         if application_id:
             application_filter = Q(id=application_id)
         
         applications = JobApplication.objects \
+            .prefetch_related(
+                'employer_job__locations',
+                'employer_job__locations__city',
+                'employer_job__locations__state',
+                'employer_job__locations__country',
+            )\
             .select_related(
-            'social_link_filter',
-            'employer_job',
-            'employer_job__employer'
-        ) \
+                'social_link_filter',
+                'employer_job',
+                'employer_job__employer',
+            ) \
             .filter(application_filter)
+        
+        if not is_ignore_permissions:
+            applications = JobApplication.jv_filter_perm(user, applications)
         
         if application_id:
             if not applications:

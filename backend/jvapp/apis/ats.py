@@ -260,7 +260,7 @@ class GreenhouseAts(BaseAts):
         data = JobData(
             ats_job_key=str(job['id']),
             job_title=job['name'],
-            job_description=job['content'],
+            job_description=job.get('content', ''),
             open_date=self.parse_datetime_str(job['opened_at'], as_date=True),
             close_date=self.parse_datetime_str(job['closed_at'], as_date=True),
             department_name=job['departments'][0]['name'] if job['departments'] else None,

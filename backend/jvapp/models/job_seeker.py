@@ -1,7 +1,8 @@
 from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.db.models import Q
 
-from jvapp.models.user import get_user_upload_location
+from jvapp.models.user import PermissionName, get_user_upload_location
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePermissionsMixin
 
 __all__ = ('JobApplication', 'JobApplicationTemplate')
@@ -22,7 +23,7 @@ class JobApplicationFields(AuditFields):
         abstract = True
 
 
-class JobApplication(JobApplicationFields):
+class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link_filter = models.ForeignKey(
@@ -39,6 +40,18 @@ class JobApplication(JobApplicationFields):
     
     class Meta:
         unique_together = ('employer_job', 'email')
+        
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+        
+        if user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_JOBS.value, user.employer_id):
+            filter = Q(employer_job__employer_id=user.employer_id) | Q(user_id=user.id)
+        else:
+            filter = Q(user_id=user.id)
+
+        return query.filter(filter)
 
 
 class JobApplicationTemplate(JobApplicationFields, JobVynePermissionsMixin):

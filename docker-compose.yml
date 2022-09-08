@@ -85,16 +85,40 @@ services:
     container_name: cron
     build:
       context: ./backend
-      dockerfile: Dockerfile-Cron
-    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && cron -f"
+      dockerfile: Dockerfile
+    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py ats_jobs --schedule_minutes 5"
     volumes:
-      - ./backend:/cron-jobs
+      - ./backend:/backend
     networks:
       - main
     env_file:
       - ./backend/.env
     depends_on:
       - db
+
+#  cron:
+#    container_name: cron
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile-Celery
+#    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && celery -A cron-jobs worker -l INFO"
+#    volumes:
+#      - ./backend:/cron-jobs
+#    networks:
+#      - main
+#    env_file:
+#      - ./backend/.env
+#    depends_on:
+#      - db
+#      - rabbitmq
+#
+#  rabbitmq:
+#    image: rabbitmq:latest
+#    networks:
+#      - main
+#    ports:
+#      - "5672:5672"
+#    restart: on-failure
 
 
 volumes:

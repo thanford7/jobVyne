@@ -125,7 +125,6 @@ class SocialLinkFilterView(JobVyneAPIView):
             app_filter &= Q(created_dt__lte=end_dt)
             view_filter &= Q(access_dt__lte=end_dt)
         
-        
         app_prefetch = Prefetch(
             'job_application',
             queryset=JobApplication.objects.select_related('employer_job').filter(app_filter)

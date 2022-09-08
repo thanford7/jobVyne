@@ -84,7 +84,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'candidate-dashboard',
-        component: () => import('pages/DashboardPage.vue')
+        component: () => import('pages/candidate/DashboardPage.vue')
       }
     ]
   },

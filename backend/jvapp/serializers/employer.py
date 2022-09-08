@@ -7,6 +7,7 @@ from jvapp.models import Currency
 from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
 from jvapp.serializers.content import get_serialized_content_item
+from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.user import reduce_user_type_bits
 from jvapp.utils.data import get_list_intersection, obfuscate_string
 from jvapp.utils.datetime import get_datetime_format_or_none
@@ -136,18 +137,7 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
         'referral_bonus': employer_job.referral_bonus,
         'referral_bonus_currency': get_serialized_currency(employer_job.referral_bonus_currency),
         'employment_type': employer_job.employment_type,
-        'locations': [
-            {
-                'is_remote': l.is_remote,
-                'text': l.text,
-                'city': l.city.name if l.city else None,
-                'city_id': l.city_id,
-                'state': l.state.name if l.state else None,
-                'state_id': l.state_id,
-                'country': l.country.name if l.country else None,
-                'country_id': l.country_id
-            } for l in employer_job.locations.all()
-        ]
+        'locations': [get_serialized_location(l) for l in employer_job.locations.all()]
     }
     
     if rules:

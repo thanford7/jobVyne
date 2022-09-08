@@ -33,27 +33,41 @@ def get_or_create_country(country_name):
 
 def get_location(location_text):
     try:
-        # TODO: Handle remote locations
         location_lookup = LocationLookup.objects.select_related('location').get(text=location_text)
         return location_lookup.location
     except LocationLookup.DoesNotExist:
         resp = requests.get(BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
         raw_data = json.loads(resp.content)
         data = parse_location_resp(raw_data)
+        is_remote = 'remote' in location_text.lower()
         if not data:
-            return None
-        try:
-            location = Location.objects.get(city__name=data['city'], state__name=data['state'], country__name=data['country'])
-        except Location.DoesNotExist:
-            location = Location(
-                text=location_text,
-                city=get_or_create_city(data.get('city')),
-                state=get_or_create_state(data.get('state')),
-                country=get_or_create_country(data.get('country')),
-                latitude=data.get('latitude'),
-                longitude=data.get('longitude')
-            )
-            location.save()
+            try:
+                location = Location.objects.get(text=location_text)
+            except Location.DoesNotExist:
+                location = Location(
+                    text=location_text,
+                    is_remote=is_remote
+                )
+                location.save()
+        else:
+            try:
+                location = Location.objects.get(
+                    is_remote=is_remote,
+                    city__name=data['city'],
+                    state__name=data['state'],
+                    country__name=data['country']
+                )
+            except Location.DoesNotExist:
+                location = Location(
+                    text=location_text,
+                    is_remote=is_remote,
+                    city=get_or_create_city(data.get('city')),
+                    state=get_or_create_state(data.get('state')),
+                    country=get_or_create_country(data.get('country')),
+                    latitude=data.get('latitude'),
+                    longitude=data.get('longitude')
+                )
+                location.save()
             
         LocationLookup(
             text=location_text,

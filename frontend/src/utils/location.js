@@ -24,16 +24,24 @@ class LocationUtil {
     return locations
   }
 
-  getFullLocation ({ city, state, country }) {
-    return [city, state, country].reduce((location, locPart) => {
+  getFullLocation ({ is_remote: isRemote, city, state, country, text }) {
+    if (!city && !state && !country) {
+      return text
+    }
+    let location = [city, state, country].reduce((location, locPart) => {
       if (!locPart) {
         return location
       }
-      if (!location) {
+      if (!location.length) {
         return locPart
       }
       return location + ', ' + locPart
-    }, null)
+    }, '')
+    if (isRemote) {
+      const remoteText = (location.length) ? 'Remote: ' : 'Remote'
+      location = `${remoteText}${location}`
+    }
+    return location
   }
 }
 

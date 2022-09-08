@@ -64,41 +64,43 @@
           </template>
         </q-input>
       </div>
+      <template v-if="atsData.id">
+        <div class="col-12">
+          <SelectAtsCustomField
+            label="Employment Type Field"
+            :ats_id="atsData.id"
+            v-model="atsFormData.employment_type_field_key"
+          >
+            <template v-slot:after>
+              <CustomTooltip>
+                The employment type (e.g. full time) is a custom field so it is necessary to provide the name
+                of the field
+              </CustomTooltip>
+            </template>
+          </SelectAtsCustomField>
+        </div>
+        <div class="col-12">
+          <SelectAtsCustomField
+            label="Salary Range Field"
+            :ats_id="atsData.id"
+            v-model="atsFormData.salary_range_field_key"
+          >
+            <template v-slot:after>
+              <CustomTooltip>
+                The salary range (e.g. $50,000-$60,000) is a custom field so it is necessary to provide the name
+                of the field
+              </CustomTooltip>
+            </template>
+          </SelectAtsCustomField>
+        </div>
+        <div class="col-12">
+          <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id"/>
+        </div>
+      </template>
       <div class="col-12">
-        <SelectAtsCustomField
-          label="Employment Type Field"
-          :ats_id="atsData.id"
-          v-model="atsFormData.employment_type_field_key"
-        >
-          <template v-slot:after>
-            <CustomTooltip>
-              The employment type (e.g. full time) is a custom field so it is necessary to provide the name
-              of the field
-            </CustomTooltip>
-          </template>
-        </SelectAtsCustomField>
-      </div>
-      <div class="col-12">
-        <SelectAtsCustomField
-          label="Salary Range Field"
-          :ats_id="atsData.id"
-          v-model="atsFormData.salary_range_field_key"
-        >
-          <template v-slot:after>
-            <CustomTooltip>
-              The salary range (e.g. $50,000-$60,000) is a custom field so it is necessary to provide the name
-              of the field
-            </CustomTooltip>
-          </template>
-        </SelectAtsCustomField>
-      </div>
-      <div v-if="atsData.id" class="col-12">
-        <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id"/>
+        <q-btn label="Test connection" color="primary" @click="updateJobs"/>
       </div>
     </template>
-    <div class="col-12">
-      <q-btn label="Test connection" color="primary" @click="updateJobs"/>
-    </div>
   </div>
 </template>
 

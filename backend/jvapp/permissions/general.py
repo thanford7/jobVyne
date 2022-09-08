@@ -9,3 +9,12 @@ class IsAuthenticatedOrPostOrRead(permissions.BasePermission):
         
         user = request.user
         return user and user.is_authenticated
+   
+ 
+class IsAuthenticatedOrPost(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            return True
+        
+        user = request.user
+        return user and user.is_authenticated
