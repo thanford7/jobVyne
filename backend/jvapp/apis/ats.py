@@ -79,7 +79,7 @@ class BaseAts:
         }
     
     def get_job_departments(self):
-        return {dept.name: dept for dept in JobDepartment.objects.all()}
+        return {dept.name.lower(): dept for dept in JobDepartment.objects.all()}
     
     def get_locations(self):
         pass
@@ -141,7 +141,7 @@ class BaseAts:
                 current_job.open_date = job_data.open_date
                 current_job.close_date = job_data.close_date
                 job_department = None
-                if job_data.department_name and not (job_department := job_departments.get(job_data.department_name)):
+                if job_data.department_name and not (job_department := job_departments.get(job_data.department_name.lower())):
                     job_department = JobDepartment(name=job_data.department_name)
                     job_department.save()
                 current_job.job_department = job_department
