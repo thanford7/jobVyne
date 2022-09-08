@@ -102,6 +102,12 @@ class EmployerAtsView(JobVyneAPIView):
         if not (employer_id := self.data.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
+        # Delete any existing ats configurations before adding the new one
+        if existing_ats := EmployerAts.objects.filter(employer_id=employer_id):
+            for delete_ats in existing_ats:
+                delete_ats.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+            existing_ats.delete()
+        
         ats = EmployerAts(employer_id=employer_id)
         self.update_ats(self.user, ats, self.data)
         return Response(status=status.HTTP_200_OK, data={
@@ -117,6 +123,15 @@ class EmployerAtsView(JobVyneAPIView):
         self.update_ats(self.user, ats, self.data)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully updated ATS configuration'
+        })
+    
+    @atomic
+    def delete(self, request, ats_id):
+        ats = EmployerAts.objects.get(id=ats_id)
+        ats.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+        ats.delete()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully deleted ATS configuration'
         })
     
     @staticmethod

@@ -64,7 +64,7 @@
           </template>
         </q-input>
       </div>
-      <template v-if="atsData.id">
+      <template v-if="atsData && atsData.id">
         <div class="col-12">
           <SelectAtsCustomField
             label="Employment Type Field"
@@ -99,6 +99,9 @@
       </template>
       <div class="col-12">
         <q-btn label="Test connection" color="primary" @click="updateJobs"/>
+        <span v-if="isGoodConnection" class="text-positive">
+          &nbsp;<q-icon name="check_circle"/> Connection successful
+        </span>
       </div>
     </template>
   </div>
@@ -108,8 +111,9 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import SelectAtsCustomField from 'components/inputs/greenhouse/SelectAtsCustomField.vue'
 import SelectAtsJobStage from 'components/inputs/greenhouse/SelectAtsJobStage.vue'
+import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
-import { getAjaxFormData } from 'src/utils/requests.js'
+import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
@@ -123,7 +127,9 @@ export default {
     return {
       atsFormData: {},
       authStore: useAuthStore(),
-      employerStore: useEmployerStore()
+      employerStore: useEmployerStore(),
+      q: useQuasar(),
+      isGoodConnection: false
     }
   },
   computed: {
@@ -134,6 +140,19 @@ export default {
   watch: {
     atsData () {
       this.resetAtsFormData()
+    },
+    atsFormData: {
+      handler () {
+        if (!this.atsData) {
+          return
+        }
+        if (this.atsFormData.name !== this.atsData.name) {
+          this.atsFormData.id = null
+        } else {
+          this.atsFormData.id = this.atsData.id
+        }
+      },
+      deep: true
     }
   },
   methods: {
@@ -141,15 +160,31 @@ export default {
       this.atsFormData = (this.atsData) ? { ...this.atsData } : {}
     },
     async saveAts () {
-      const method = (this.atsData && this.atsData.id) ? this.$api.put : this.$api.post
-      await method('employer/ats/', getAjaxFormData({
-        ...this.atsFormData,
-        employer_id: this.authStore.propUser.employer_id
-      }))
-      this.$emit('updateEmployer')
+      if (this?.atsData?.id && !this.atsFormData.id) {
+        openConfirmDialog(
+          this.q,
+          'Are you sure you want to delete the ATS configuration? The configuration will not be retrievable once deleted.',
+          {
+            okFn: async () => {
+              await this.$api.delete(`employer/ats/${this.atsData.id}/`)
+              this.$emit('updateEmployer')
+            }
+          }
+        )
+      } else {
+        const method = (this.atsData && this.atsData.id) ? this.$api.put : this.$api.post
+        await method('employer/ats/', getAjaxFormData({
+          ...this.atsFormData,
+          employer_id: this.authStore.propUser.employer_id
+        }))
+        this.$emit('updateEmployer')
+      }
     },
     async updateJobs () {
-      await this.$api.put('ats/jobs/', getAjaxFormData({ ats_id: this.atsData.id }))
+      const resp = await this.$api.put('ats/jobs/', getAjaxFormData({ ats_id: this.atsData.id }))
+      if (resp.status === 200) {
+        this.isGoodConnection = true
+      }
     }
   },
   mounted () {
