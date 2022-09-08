@@ -96,13 +96,13 @@
         <div class="col-12">
           <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id"/>
         </div>
-      </template>
-      <div class="col-12">
-        <q-btn label="Test connection" color="primary" @click="updateJobs"/>
-        <span v-if="isGoodConnection" class="text-positive">
+        <div class="col-12">
+          <q-btn label="Test connection" color="primary" @click="updateJobs"/>
+          <span v-if="isGoodConnection" class="text-positive">
           &nbsp;<q-icon name="check_circle"/> Connection successful
         </span>
-      </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>

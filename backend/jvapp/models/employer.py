@@ -69,7 +69,7 @@ class EmployerAts(AuditFields, JobVynePermissionsMixin):
         return (
             user.is_admin
             or (
-                user.employer_id == self.id
+                user.employer_id == self.employer_id
                 and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
             )
         )
