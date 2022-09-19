@@ -171,12 +171,6 @@ const generalMenuList = [
     key: 'feedback',
     label: 'Send Feedback',
     separator: false
-  },
-  {
-    icon: 'help',
-    key: 'help',
-    label: 'Help',
-    separator: false
   }
 ]
 

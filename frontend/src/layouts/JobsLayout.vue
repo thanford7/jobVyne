@@ -62,7 +62,10 @@
                             Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
                           </div>
                           <q-card-section>
-                            <h6>{{ job.job_title }}</h6>
+                            <h6 class="q-mb-none">{{ job.job_title }}</h6>
+                            <div class="text-grey-7 q-mb-sm">
+                              Posted on: {{ dateTimeUtil.getShortDate(job.open_date) }}
+                            </div>
                             <div>
                               <q-chip color="grey-7" text-color="white" size="md" icon="domain">
                                 {{ job.job_department }}
@@ -95,10 +98,8 @@
                               <q-chip color="grey-7" text-color="white" size="md" icon="schedule">
                                 {{ job.employment_type }}
                               </q-chip>
-                            </div>
-                            <div>
                               <q-chip v-if="getSalaryRange(job.salary_floor, job.salary_ceiling)" color="grey-7"
-                                      text-color="white" size="md" icon="laptop">
+                                      text-color="white" size="md" icon="attach_money">
                                 {{ getSalaryRange(job.salary_floor, job.salary_ceiling) }}
                               </q-chip>
                             </div>

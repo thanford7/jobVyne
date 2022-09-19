@@ -106,7 +106,7 @@
             <td class="bg-grey-3 text-bold">Custom Fields</td>
           </tr>
           <tr>
-            <td>Get: Get custom fields</td>
+            <td>Get: Get Custom Fields</td>
           </tr>
           </tbody>
         </table>

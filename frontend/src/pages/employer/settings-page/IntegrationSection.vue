@@ -1,6 +1,6 @@
 <template>
   <div class="row q-gutter-y-md">
-    <div class="text-h6">Application Tracking System</div>
+    <div class="text-h6">Applicant Tracking System</div>
     <div v-if="hasChanged" class="col-12">
       <q-btn ripple label="Save" icon="save" color="primary" @click="saveAts"/>
       <q-btn ripple label="Undo" icon="undo" color="grey-6" class="q-ml-sm" @click="resetAtsFormData"/>
@@ -19,7 +19,7 @@
     </div>
     <template v-if="atsFormData.name === 'greenhouse'">
       <div class="col-12">
-        <q-input filled label="Admin User Email" v-model="atsFormData.email">
+        <q-input filled label="Greenhouse User Email" v-model="atsFormData.email">
           <template v-slot:after>
             <span class="text-small">
               <a href="#" @click.prevent="showGreenhouseUserDialog">Show instructions</a>

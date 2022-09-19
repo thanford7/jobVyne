@@ -5,7 +5,7 @@
   >
     <div class="q-gutter-y-md">
       All candidates submitted from JobVyne to Greenhouse must have a "referrer" user. You
-      must create a "Site Admin" user in Greenhouse which JobVyne can use as the referrer for candidates.
+      must create a "Basic" user in Greenhouse which JobVyne can use as the referrer for candidates.
       To do so:
       <ol>
         <li>Navigate to your Greenhouse admin website</li>
@@ -14,10 +14,9 @@
         <li>Click the "Add Users" button</li>
         <li>Enter "jobvyne-partner@jobvyne.com" for the user email</li>
         <li>
-          Click the "Assign" button for the "Site Admin" permission. This permission is required because
-          allow JobVyne to send candidates for all open jobs.
+          Click the "Assign" button for the "Basic" permission
         </li>
-        <li>Leave all boxes unchecked for "User-Specific Permissions" and "Developer Permissions"</li>
+        <li>Leave all boxes unchecked for "Developer Permissions"</li>
         <li>Click the "Save" button</li>
         <li>Enter the user email you used into this form field ("Admin User Email")</li>
       </ol>
