@@ -1,3 +1,5 @@
+import re
+
 from bleach.css_sanitizer import CSSSanitizer
 from bleach.sanitizer import Cleaner
 
@@ -37,3 +39,22 @@ def get_replace_tag_html(html_text: str, tag_map: dict):
         html_text = html_text.replace(closing_tag, closing_replace_tag)
         
     return html_text
+
+
+def make_links_secure(html_text: str):
+    return re.sub('href="(?P<link>.*?)"', make_secure_link, html_text)
+
+
+def make_secure_link(re_match):
+    link = re_match.group('link')
+    if not link:
+        return 'href=""'
+    
+    link_protocol = re.match('^(?P<protocol>.*?)://', link)
+    
+    # If there is no protocol or the protocol is insecure, make it secure
+    if not link_protocol or link_protocol == 'http':
+        return f'href="https://{link}"'
+    
+    # This could be something like a mail protocol so keep as is
+    return f'href="{link}"'

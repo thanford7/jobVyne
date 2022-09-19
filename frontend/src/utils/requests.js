@@ -33,11 +33,11 @@ export const getAjaxFormData = (data, mediaFields = null) => {
   return ajaxData
 }
 
-export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) => {
+export const openDialog = ($q, title, message, { isCancel = false, okFn, cancelFn, dismissFn } = {}) => {
   return $q.dialog({
-    title: 'Confirm',
+    title,
     message,
-    cancel: true,
+    cancel: isCancel,
     persistent: true
   }).onOk(() => {
     if (okFn) {
@@ -53,4 +53,10 @@ export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) =>
       dismissFn()
     }
   })
+}
+
+export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) => {
+  return openDialog($q, 'Confirm', message,
+    { isCancel: true, okFn, cancelFn, dismissFn }
+  )
 }

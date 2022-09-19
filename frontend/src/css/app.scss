@@ -15,7 +15,7 @@ body {
   scrollbar-width: 10px; /*thin;*/
   scrollbar-color: $primary $white;
   scrollbar-gutter: stable;
-  -webkit-user-select: none;
+  //-webkit-user-select: none;
 }
 
 *::-webkit-scrollbar {

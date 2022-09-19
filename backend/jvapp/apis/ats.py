@@ -17,7 +17,7 @@ from jvapp.models.location import LocationLookup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.response import is_good_response
-from jvapp.utils.sanitize import get_replace_tag_html, sanitizer
+from jvapp.utils.sanitize import get_replace_tag_html, make_links_secure, sanitizer
 
 
 class AtsError(Exception):
@@ -134,8 +134,9 @@ class BaseAts:
                 if job_data.job_description:
                     current_job.job_description = get_replace_tag_html(
                         sanitizer.clean(job_data.job_description),
-                        {'h1': 'b', 'h2': 'b', 'h3': 'b', 'h4': 'b', 'h5': 'b', 'h6': 'b'}
+                        {'h1': 'h6', 'h2': 'h6', 'h3': 'h6', 'h4': 'h6', 'h5': 'h6'}
                     )
+                    current_job.job_description = make_links_secure(current_job.job_description)
                 else:
                     current_job.job_description = None
                 current_job.open_date = job_data.open_date

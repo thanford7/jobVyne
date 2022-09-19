@@ -21,46 +21,18 @@
       <div class="col-12">
         <q-input filled label="Admin User Email" v-model="atsFormData.email">
           <template v-slot:after>
-            <CustomTooltip>
-              All candidates submitted from JobVyne to Greenhouse must have a "referrer" user. You
-              must create a "Site Admin" user in Greenhouse which JobVyne can use as the referrer for candidates.
-              To do so:
-              <ol>
-                <li>Navigate to your Greenhouse admin website</li>
-                <li>Click the "Configure" link (gear icon at the top right of the page)</li>
-                <li>Click the "Users" link</li>
-                <li>Click the "Add Users" button</li>
-                <li>Enter "jobvyne-partner@jobvyne.com" for the user email</li>
-                <li>
-                  Click the "Assign" button for the "Site Admin" permission. This permission is required because
-                  allow JobVyne to send candidates for all open jobs.
-                </li>
-                <li>Leave all boxes unchecked for "User-Specific Permissions" and "Developer Permissions"</li>
-                <li>Click the "Save" button</li>
-                <li>Enter the user email you used into this form field ("Admin User Email")</li>
-              </ol>
-            </CustomTooltip>
+            <span class="text-small">
+              <a href="#" @click.prevent="showGreenhouseUserDialog">Show instructions</a>
+            </span>
           </template>
         </q-input>
       </div>
       <div class="col-12">
         <q-input filled label="Harvest API Key" v-model="atsFormData.api_key">
           <template v-slot:after>
-            <CustomTooltip>
-              You must create an API key for JobVyne to connect to your Greenhouse instance. To do so:
-              <ol>
-                <li>Navigate to your Greenhouse admin website</li>
-                <li>Click the "Configure" link (gear icon at the top right of the page)</li>
-                <li>Click the "Dev Center" navigation link</li>
-                <li>Click the "API Credentials" navigations link</li>
-                <li>Click the "Create New API Key" button</li>
-                <li>Select "Harvest" for API Type</li>
-                <li>Select "JobVyne" for Partner</li>
-                <li>Enter a description (suggested: "JobVyne API")</li>
-                <li>Click the "Create" button</li>
-                <li>Copy the API Key and paste it into this form field ("Harvest API Key")</li>
-              </ol>
-            </CustomTooltip>
+            <span class="text-small">
+              <a href="#" @click.prevent="showGreenhouseApiKeyDialog">Show instructions</a>
+            </span>
           </template>
         </q-input>
       </div>
@@ -111,6 +83,8 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import SelectAtsCustomField from 'components/inputs/greenhouse/SelectAtsCustomField.vue'
 import SelectAtsJobStage from 'components/inputs/greenhouse/SelectAtsJobStage.vue'
+import DialogGreenhouseApiKey from 'pages/employer/settings-page/DialogGreenhouseApiKey.vue'
+import DialogGreenhouseUser from 'pages/employer/settings-page/DialogGreenhouseUser.vue'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
@@ -185,6 +159,16 @@ export default {
       if (resp.status === 200) {
         this.isGoodConnection = true
       }
+    },
+    showGreenhouseUserDialog () {
+      return this.q.dialog({
+        component: DialogGreenhouseUser
+      })
+    },
+    showGreenhouseApiKeyDialog () {
+      return this.q.dialog({
+        component: DialogGreenhouseApiKey
+      })
     }
   },
   mounted () {
