@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    base-title-text="Create admin user instructions"
+    base-title-text="Create user instructions"
     :is-include-buttons="false"
   >
     <div class="q-gutter-y-md">

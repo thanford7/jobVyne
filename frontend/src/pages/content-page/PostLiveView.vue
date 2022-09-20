@@ -20,11 +20,11 @@
           <img
             v-if="fileUtil.isImage(file.url)"
             :src="file.url" :alt="file.title"
-            class="w-100"
+            style="width: 30%;"
           >
           <video
             v-if="fileUtil.isVideo(file.url)"
-            class="w-100"
+            style="width: 30%;"
           >
             <source :src="file.url">
           </video>

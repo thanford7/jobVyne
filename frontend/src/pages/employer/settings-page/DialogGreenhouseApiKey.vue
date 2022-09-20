@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    base-title-text="Create admin user instructions"
+    base-title-text="Create Harvest API key instructions"
     :is-include-buttons="false"
   >
     <div class="q-gutter-y-md">
