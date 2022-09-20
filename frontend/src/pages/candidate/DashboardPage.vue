@@ -23,6 +23,18 @@
                 </span>
               </q-td>
             </template>
+            <template v-slot:body-cell-jobStatus="props">
+              <q-td key="jobStatus" :props="props">
+                <q-chip
+                  dense
+                  :color="(props.row.employer_job.is_open) ? 'positive' : 'negative'"
+                  :text-color="(props.row.employer_job.is_open) ? 'black' : 'white'"
+                  size="13px"
+                >
+                  {{ (props.row.employer_job.is_open) ? 'Open' : 'Closed' }}
+                </q-chip>
+              </q-td>
+            </template>
           </q-table>
         </div>
       </div>
@@ -51,7 +63,8 @@ const applicationColumns = [
     label: 'Application date',
     format: dateTimeUtil.getShortDate.bind(dateTimeUtil),
     sortable: true
-  }
+  },
+  { name: 'jobStatus', field: (app) => app.employer_job.is_open, align: 'left', label: 'Job status', sortable: true }
 ]
 
 export default {

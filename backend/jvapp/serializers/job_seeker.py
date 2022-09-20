@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from jvapp.models.job_seeker import *
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.datetime import get_datetime_format_or_none
@@ -25,6 +27,7 @@ def get_serialized_job_application(job_application: JobApplication):
             'employer_name': job_application.employer_job.employer.employer_name,
             'employer_id': job_application.employer_job.employer_id,
             'title': job_application.employer_job.job_title,
-            'locations': [get_serialized_location(l) for l in job_application.employer_job.locations.all()]
+            'locations': [get_serialized_location(l) for l in job_application.employer_job.locations.all()],
+            'is_open': (not job_application.employer_job.close_date) or (job_application.employer_job.close_date < timezone.now().date())
         }
     }

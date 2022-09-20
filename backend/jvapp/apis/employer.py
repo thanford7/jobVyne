@@ -3,6 +3,7 @@ from functools import reduce
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -186,9 +187,11 @@ class EmployerJobView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_employer_jobs(employer_job_id=None, employer_job_filter=None, order_by='-open_date'):
+    def get_employer_jobs(employer_job_id=None, employer_job_filter=None, order_by='-open_date', isIncludeClosed=False):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
+        elif not isIncludeClosed:
+            employer_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
         
         jobs = EmployerJob.objects\
             .select_related('job_department', 'employer', 'referral_bonus_currency')\
