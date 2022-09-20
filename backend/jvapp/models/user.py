@@ -26,7 +26,7 @@ def generate_password():
 
 
 def get_user_upload_location(instance, filename):
-    if hasattr(instance, 'user_id'):
+    if hasattr(instance, 'user_id') and instance.user:
         email = instance.user.email
     else:
         email = instance.email

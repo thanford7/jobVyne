@@ -186,6 +186,7 @@ class ApplicationView(JobVyneAPIView):
             )\
             .select_related(
                 'social_link_filter',
+                'social_link_filter__owner',
                 'employer_job',
                 'employer_job__employer',
             ) \

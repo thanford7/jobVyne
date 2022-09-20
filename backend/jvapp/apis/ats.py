@@ -93,6 +93,13 @@ class BaseAts:
             return get_location(location_text)
         return location
     
+    def get_referrer_name_from_application(self, application):
+        referrer = application.social_link_filter.owner
+        return f'{referrer.first_name} {referrer.last_name}'
+    
+    def get_job_title_from_application(self, application):
+        return application.employer_job.job_title
+    
     def get_ats_user_id(self):
         raise NotImplementedError()
     
@@ -283,7 +290,10 @@ class GreenhouseAts(BaseAts):
         ats_job_key = application.employer_job.ats_job_key
         application_data = {
             'job_id': ats_job_key,
-            'source_id': None,
+            'referrer': {
+                'type': 'id',
+                'value': self.ats_user_id
+            },
             'initial_stage_id': self.get_initial_job_application_stage_id(ats_job_key),
             'attachments': [{
                 'filename': application.resume.name.split('/')[-1],
@@ -334,6 +344,22 @@ class GreenhouseAts(BaseAts):
             candidate_data = self.get_resp_data(resp)
             ats_candidate_key = str(candidate_data['id'])
             ats_application_key = str(candidate_data['application_ids'][0])
+            
+        # Add a note to the candidate so we know who referred them
+        note_url = f'https://harvest.greenhouse.io/v1/candidates/{ats_candidate_key}/activity_feed/notes'
+        resp = requests.post(
+            note_url,
+            headers=self.get_request_headers(is_user_id=True),
+            json={
+                'user_id': self.ats_user_id,
+                'body': f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
+                    for the {self.get_job_title_from_application(application)} position
+                    ''',
+                'visibility': 'public'
+            }
+        )
+        if not is_good_response(resp):
+            raise AtsError(f'Could not save the note on candidate: {get_resp_error_message(resp)}')
             
         return ats_candidate_key, ats_application_key
     
