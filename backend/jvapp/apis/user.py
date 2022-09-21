@@ -1,4 +1,5 @@
 from collections import defaultdict
+from string import Template
 
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
@@ -10,10 +11,13 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.geocoding import get_location
+from jvapp.models import Employer
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.user import JobVyneUser, UserFile, UserSocialCredential, UserUnknownEmployer
+from jvapp.models.user import JobVyneUser, UserEmployeeProfileQuestion, UserEmployeeProfileResponse, UserFile, \
+    UserSocialCredential, \
+    UserUnknownEmployer
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
-from jvapp.serializers.user import get_serialized_user, get_serialized_user_file
+from jvapp.serializers.user import get_serialized_user, get_serialized_user_file, get_serialized_user_profile
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import send_email
@@ -86,6 +90,7 @@ class UserView(JobVyneAPIView):
             'business_email': AttributeCfg(is_ignore_excluded=True),
             'user_type_bits': None,
             'employer_id': AttributeCfg(is_ignore_excluded=True),
+            'is_profile_viewable': AttributeCfg(is_ignore_excluded=True),
             'job_title': AttributeCfg(is_ignore_excluded=True),
             'employment_start_date': AttributeCfg(is_ignore_excluded=True)
         })
@@ -99,13 +104,28 @@ class UserView(JobVyneAPIView):
         if home_location_text := self.data.get('home_location_text'):
             location = get_location(home_location_text)
             user.home_location = location
-        
+
         user.save()
+        
+        if responses := self.data.get('profile_questions'):
+            new_responses = []
+            user.profile_response.all().delete()
+            for response in responses:
+                if not response['response']:
+                    continue
+                new_responses.append(UserEmployeeProfileResponse(
+                    question_id=response['question_id'],
+                    user_id=self.user.id,
+                    answer=response['response']
+                ))
+            UserEmployeeProfileResponse.objects.bulk_create(new_responses)
         
         if unknown_employer_name := self.data.get('unknown_employer_name'):
             UserUnknownEmployer(user=user, employer_name=unknown_employer_name).save()
         
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'User updated successfully'
+        })
     
     @staticmethod
     def get_user(user, user_id=None, user_email=None, user_filter=None, is_check_permission=True):
@@ -120,7 +140,9 @@ class UserView(JobVyneAPIView):
                 'application_template',
                 'employer_permission_group',
                 'employer_permission_group__permission_group',
-                'employer_permission_group__permission_group__permissions'
+                'employer_permission_group__permission_group__permissions',
+                'profile_response',
+                'profile_response__question'
             ) \
             .filter(user_filter)
         
@@ -172,6 +194,14 @@ class UserView(JobVyneAPIView):
                 'token': generate_user_token(user, email_key)
             }
         )
+        
+        
+class UserProfileView(JobVyneAPIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request, user_id):
+        user = UserView.get_user(self.user, user_id=user_id, is_check_permission=False)
+        return Response(status=status.HTTP_200_OK, data=get_serialized_user_profile(user))
         
         
 class UserFileView(JobVyneAPIView):
@@ -312,6 +342,27 @@ class UserSocialCredentialsView(JobVyneAPIView):
                 'provider': cred.provider
             })
         return Response(status=status.HTTP_200_OK, data=data)
+    
+    
+class UserEmployeeProfileQuestionsView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        employer = Employer.objects.get(id=employer_id)
+        formatted_questions = []
+        user_responses = {
+            response.question_id: response.answer
+            for response in UserEmployeeProfileResponse.objects.filter(user_id=self.user.id)
+        }
+        for question in UserEmployeeProfileQuestion.objects.all():
+            question_template = Template(question.text)
+            formatted_questions.append({
+                'question_id': question.id,
+                'question': question_template.substitute(employer_name=employer.employer_name),
+                'response': user_responses.get(question.id)
+            })
+        return Response(status=status.HTTP_200_OK, data=formatted_questions)
 
 
 class JobVynePasswordResetForm(PasswordResetForm):

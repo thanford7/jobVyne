@@ -1,4 +1,5 @@
 import functools
+from string import Template
 
 from jvapp.models.user import JobVyneUser, UserFile
 from jvapp.serializers.job_seeker import base_application_serializer
@@ -14,15 +15,7 @@ def reduce_user_type_bits(permission_groups):
 
 
 def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isIncludePersonalInfo=False):
-    data = {
-        'id': user.id,
-        'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'job_title': user.job_title,
-        'employment_start_date': user.employment_start_date,
-        'home_location': get_serialized_location(user.home_location) if user.home_location else None
-    }
+    data = get_serialized_user_profile(user, is_get_profile=True)
     
     if isIncludeEmployerInfo:
         data['email'] = user.email
@@ -36,7 +29,8 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
         approved_permission_groups = [p for p in user.employer_permission_group.all() if p.is_employer_approved]
         data['permissions_by_employer'] = {
             employer_id: [p.name for p in permissions]
-            for employer_id, permissions in user.get_permissions_by_employer(permission_groups=approved_permission_groups).items()
+            for employer_id, permissions in
+            user.get_permissions_by_employer(permission_groups=approved_permission_groups).items()
         }
         data['permission_groups_by_employer'] = {
             employer_id: [{
@@ -45,22 +39,49 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
                 'user_type_bit': epg.permission_group.user_type_bit,
                 'is_approved': epg.is_employer_approved
             } for epg in employer_permission_groups]
-            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(permission_groups=user.employer_permission_group.all()).items()
+            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(
+                permission_groups=user.employer_permission_group.all()).items()
         }
         data['user_type_bits_by_employer'] = {
             employer_id: reduce_user_type_bits([epg.permission_group for epg in employer_permission_groups])
-            for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(permission_groups=approved_permission_groups).items()
+            for employer_id, employer_permission_groups in
+            user.get_employer_permission_groups_by_employer(permission_groups=approved_permission_groups).items()
         }
     
     if isIncludePersonalInfo:
         application_template = next((at for at in user.application_template.all()), None)
-        data['application_template'] = base_application_serializer(application_template) if application_template else None
+        data['application_template'] = base_application_serializer(
+            application_template) if application_template else None
         data['is_email_verified'] = user.is_email_verified
         data['is_email_employer_permitted'] = user.is_email_employer_permitted
         data['is_business_email_verified'] = user.is_business_email_verified
         data['is_business_email_employer_permitted'] = user.is_business_email_employer_permitted
         data['is_employer_verified'] = user.is_employer_verified
-        
+    
+    return data
+
+
+def get_serialized_user_profile(user: JobVyneUser, is_get_profile=False):
+    data = {
+        'id': user.id,
+        'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'job_title': user.job_title,
+        'employment_start_date': user.employment_start_date,
+        'home_location': get_serialized_location(user.home_location) if user.home_location else None,
+        'is_profile_viewable': user.is_profile_viewable
+    }
+    
+    if is_get_profile or user.is_profile_viewable:
+        data['profile_responses'] = [
+            {
+                'question_id': response.question_id,
+                'question': Template(response.question.text).substitute(employer_name=user.employer.employer_name),
+                'response': response.answer
+            } for response in user.profile_response.all()
+        ]
+    
     return data
 
 

@@ -7,7 +7,7 @@
           <q-btn
             type="a"
             color="primary"
-            :to="{ name: 'jobs-link-example', params: { employerId: user.employer_id} }"
+            :to="{ name: 'jobs-link-example', params: { employerId: user.employer_id, tab: 'company'} }"
             target="_blank"
           >
             <q-icon name="launch"/>

@@ -5,6 +5,31 @@
         Your profile will be displayed on all jobs pages which job seekers are directed to when they click on one of
         your referral links. Adding profile information helps job seekers understand your company better and increases
         the likelihood that they will apply to a job.
+        <div class="col-12 q-mt-sm">
+          <q-btn
+            type="a"
+            color="primary"
+            :to="{
+              name: 'jobs-link-example',
+              params: { employerId: user.employer_id, ownerId: user.id, tab: 'me'}
+            }"
+            target="_blank"
+          >
+            <q-icon name="launch"/>
+            &nbsp;Live site view
+          </q-btn>
+          <q-toggle
+            v-model="userData.is_profile_viewable"
+            color="primary"
+            @update:model-value="saveUserChanges"
+          >
+            Is viewable
+            <CustomTooltip :is_include_space="false">
+              When off, your profile will not be shown on any job pages. It is recommended to turn on page viewing
+              so job seekers can learn more about you and your company.
+            </CustomTooltip>
+          </q-toggle>
+        </div>
       </PageHeader>
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12 q-gutter-x-sm q-mb-sm">
@@ -18,6 +43,9 @@
             ripple label="Save" color="accent" icon="save"
             @click="saveUserChanges"
           />
+        </div>
+        <div class="col-12">
+          <div class="text-h6">Basic info</div>
         </div>
         <div class="col-12">
           <SelectOrDisplayProfilePic ref="profileUpload" :user-data="userData"/>
@@ -49,6 +77,23 @@
             </template>
           </q-input>
         </div>
+        <div class="col-12">
+          <div class="text-h6">
+            Profile questions
+            <CustomTooltip :is_include_space="false">
+              Fill out one or more questions to have your profile displayed on all
+              of the jobs pages from your links.
+            </CustomTooltip>
+          </div>
+        </div>
+        <div v-for="question in userData.profile_questions" class="col-12">
+          <q-input
+            v-model="question.response"
+            filled autogrow
+            :label="question.question"
+            type="textarea"
+          />
+        </div>
       </div>
     </div>
   </q-page>
@@ -65,7 +110,6 @@ import dataUtil from 'src/utils/data.js'
 import locationUtil from 'src/utils/location.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
-import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
@@ -82,19 +126,6 @@ export default {
       return !dataUtil.isDeepEqual(this.currentUserData, this.userData)
     }
   },
-  preFetch () {
-    const authStore = useAuthStore()
-    const employerStore = useEmployerStore()
-    Loading.show()
-
-    return authStore.setUser().then(() => {
-      return Promise.all([
-        employerStore.setEmployer(authStore.propUser.employer_id)
-      ])
-    }).finally(() => {
-      Loading.hide()
-    })
-  },
   methods: {
     async saveUserChanges () {
       const data = Object.assign({},
@@ -103,11 +134,15 @@ export default {
       )
       await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(data, [this.$refs.profileUpload.newProfilePictureKey]))
       await this.authStore.setUser(true)
+      await this.authStore.setUserEmployeeQuestions(this.user.employer_id)
       this.userData = this.getUserData()
       this.currentUserData = this.getUserData()
     },
     getUserData () {
-      const userData = dataUtil.deepCopy(this.user)
+      const userData = Object.assign(
+        dataUtil.deepCopy(this.user),
+        { profile_questions: dataUtil.deepCopy(this.authStore.getUserEmployeeQuestions(this.user.employer_id)) }
+      )
       if (userData.home_location) {
         userData.home_location_text = locationUtil.getFullLocation(userData.home_location)
       }
@@ -117,9 +152,20 @@ export default {
       this.userData = this.getUserData()
     }
   },
+  preFetch () {
+    const authStore = useAuthStore()
+    Loading.show()
+
+    return authStore.setUser().then(() => {
+      return Promise.all([
+        authStore.setUserEmployeeQuestions(authStore.propUser.employer_id)
+      ])
+    }).finally(() => {
+      Loading.hide()
+    })
+  },
   setup () {
     const authStore = useAuthStore()
-    const employerStore = useEmployerStore()
     const { user } = storeToRefs(authStore)
 
     const globalStore = useGlobalStore()
@@ -132,7 +178,6 @@ export default {
 
     return {
       authStore,
-      employerStore,
       user
     }
   }

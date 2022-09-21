@@ -33,9 +33,7 @@ class DateTimeUtil {
   }
 
   getStartOfMonthDate (targetDate, { asString = true, monthOffset = 0 } = {}) {
-    if (dataUtil.isString(targetDate)) {
-      targetDate = new Date(targetDate)
-    }
+    targetDate = this.forceToDate(targetDate)
     const year = targetDate.getFullYear()
     const month = targetDate.getMonth()
     let firstDayOfMonth = new Date(year, month, 1)
@@ -74,6 +72,26 @@ class DateTimeUtil {
       return yearStr
     }
     return parseInt(yearStr)
+  }
+
+  getDateDifference (firstDate, secondDate, unit) {
+    firstDate = this.forceToDate(firstDate)
+    secondDate = this.forceToDate(secondDate)
+    const daysDiff = date.getDateDiff(secondDate, firstDate, 'days')
+    if (unit === 'months') {
+      return (daysDiff / 30).toFixed(1)
+    } else if (unit === 'years') {
+      return (daysDiff / 365).toFixed(1)
+    } else {
+      return daysDiff
+    }
+  }
+
+  forceToDate (dateVal) {
+    if (dataUtil.isString(dateVal)) {
+      return new Date(dateVal)
+    }
+    return dateVal
   }
 
   today () {

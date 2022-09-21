@@ -15,7 +15,8 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermi
 
 __all__ = (
     'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
-    'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate'
+    'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate',
+    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion'
 )
 
 from jvapp.utils.email import get_domain_from_email
@@ -131,6 +132,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
     
     # Employee data
+    is_profile_viewable = models.BooleanField(default=True)
     job_title = models.CharField(max_length=100, null=True, blank=True)
     home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
     employment_start_date = models.DateField(null=True, blank=True)
@@ -302,6 +304,13 @@ class UserUnknownEmployer(AuditFields):
     
     
 class UserEmployeeProfileResponse(models.Model):
-    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
-    question = models.TextField()
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='profile_response')
+    question = models.ForeignKey('UserEmployeeProfileQuestion', on_delete=models.CASCADE)
     answer = models.TextField()
+    
+    class Meta:
+        unique_together = ('user', 'question')
+    
+    
+class UserEmployeeProfileQuestion(models.Model):
+    text = models.TextField()

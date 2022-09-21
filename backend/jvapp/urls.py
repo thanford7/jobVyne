@@ -7,6 +7,7 @@ api_path = 'api/v1/'
 urlpatterns = [
     # General Data
     path('currency/', currency.CurrencyView.as_view()),
+    path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
     re_path('^employer/ats/(?P<ats_id>[0-9]+)?/?$', employer.EmployerAtsView.as_view()),
@@ -31,6 +32,7 @@ urlpatterns = [
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
+    re_path('^user/profile/(?P<user_id>[0-9]+)/?$', user.UserProfileView.as_view()),
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
     path('waitlist/', waitlist.WaitlistView.as_view()),

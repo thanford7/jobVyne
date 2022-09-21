@@ -11,7 +11,7 @@
         <q-tabs align="center" v-model="tab" :style="getTabStyle()">
           <q-tab name="jobs" label="Jobs"/>
           <q-tab v-if="employerPage && employerPage.is_viewable" name="company" :label="`About ${employer?.name}`"/>
-          <q-tab v-if="profile" name="me" :label="`About ${profile?.first_name}`"/>
+          <q-tab v-if="isShowEmployeeProfile" name="me" :label="`About ${profile?.first_name}`"/>
         </q-tabs>
       </ResponsiveWidth>
     </q-header>
@@ -141,9 +141,33 @@
               </div>
             </div>
           </q-tab-panel>
-          <q-tab-panel name="me">
-            <div class="row">
-              <div class="col-12">Me placeholder</div>
+          <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
+            <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
+              <div class="col-12 col-md-4 q-pr-md-md q-mb-md q-mb-md-none">
+                <div class="flex items-center">
+                  <img
+                    v-if="profile.profile_picture_url"
+                    :src="profile.profile_picture_url"
+                    alt="Profile picture"
+                    class="q-mr-md"
+                    style="height: 150px; object-fit: scale-down; border-radius: 10px; float: left;"
+                  >
+                  <div class="q-gutter-y-sm">
+                    <div class="text-h6 text-bold">{{ profile.first_name }} {{ profile.last_name }}</div>
+                    <div>{{ profile.job_title }}</div>
+                    <div v-if="profile.home_location">{{ locationUtil.getFullLocation(profile.home_location) }}</div>
+                    <div v-if="profile.employment_start_date">
+                      {{ dataUtil.pluralize('year', employmentYears) }} at {{ employer.name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6 q-pl-md-md">
+                <div v-for="response in profile.profile_responses">
+                  <div class="text-h6">{{ response.question }}</div>
+                  <div class="q-mt-sm q-mb-md">{{ response.response }}</div>
+                </div>
+              </div>
             </div>
           </q-tab-panel>
         </q-tab-panels>
@@ -161,6 +185,7 @@ import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { useEmployerStore } from 'stores/employer-store.js'
+import { useUserStore } from 'stores/user-store.js'
 import { ref } from 'vue'
 import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
@@ -178,7 +203,7 @@ import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 export default {
   data () {
     return {
-      tab: this.$route?.meta?.tab || 'jobs',
+      tab: this.$route?.params?.tab || 'jobs',
       jobs: null,
       employer: null,
       employerPage: null,
@@ -187,11 +212,24 @@ export default {
       jobApplication: null,
       jobPagesCount: null,
       pageNumber: 1,
+      dataUtil,
       dateTimeUtil,
-      formUtil
+      formUtil,
+      locationUtil
     }
   },
   components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
+  computed: {
+    employmentYears () {
+      if (!this.profile.employment_start_date) {
+        return null
+      }
+      return dateTimeUtil.getDateDifference(this.profile.employment_start_date, dateTimeUtil.today(), 'years')
+    },
+    isShowEmployeeProfile () {
+      return Boolean(this.profile && this.profile.is_profile_viewable && this.profile.profile_responses.length)
+    }
+  },
   watch: {
     pageNumber: {
       async handler () {
@@ -222,10 +260,12 @@ export default {
       const resp = await this.$api.get(`social-link-jobs/${this.$route.params.filterId}`, {
         params: { page_count: this.pageNumber }
       })
-      const { jobs, employer, profile, total_page_count: totalPageCount } = resp.data
+      const { jobs, employer, total_page_count: totalPageCount, owner_id: ownerId } = resp.data
       this.jobs = jobs
       this.employer = employer
-      this.profile = profile
+
+      await this.userStore.setUserProfile(ownerId)
+      this.profile = this.userStore.getUserProfile(ownerId)
       this.jobPagesCount = totalPageCount
       Loading.hide()
     },
@@ -278,7 +318,12 @@ export default {
       await this.employerStore.setEmployer(this.$route.params.employerId)
       this.jobs = []
       this.employer = this.employerStore.getEmployer(this.$route.params.employerId)
-      this.profile = null
+      if (this.$route.params.ownerId) {
+        await this.userStore.setUserProfile(this.$route.params.ownerId)
+        this.profile = this.userStore.getUserProfile(this.$route.params.ownerId)
+      } else {
+        this.profile = null
+      }
       Loading.hide()
     }
 
@@ -318,6 +363,7 @@ export default {
       applications,
       isRightDrawerOpen,
       employerStore: useEmployerStore(),
+      userStore: useUserStore(),
       q: useQuasar()
     }
   }

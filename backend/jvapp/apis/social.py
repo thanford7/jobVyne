@@ -167,17 +167,11 @@ class SocialLinkJobsView(JobVyneAPIView):
         jobs = self.get_jobs_from_filter(link_filter)
         paged_jobs = Paginator(jobs, per_page=5)
         employer = EmployerView.get_employers(employer_id=link_filter.employer_id)
-        profile = UserView.get_user(self.user, user_id=link_filter.owner_id, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data={
             'total_page_count': paged_jobs.num_pages,
             'jobs': [get_serialized_employer_job(j) for j in paged_jobs.get_page(page_count)],
             'employer': get_serialized_employer(employer),
-            'profile': {
-                'id': profile.id,
-                'profile_picture_url': profile.profile_picture.url if profile.profile_picture else None,
-                'first_name': profile.first_name,
-                'last_name': profile.last_name
-            }
+            'owner_id': link_filter.owner_id
         })
         
     @staticmethod

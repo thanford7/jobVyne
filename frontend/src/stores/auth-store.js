@@ -14,7 +14,8 @@ import { getAjaxFormData } from 'src/utils/requests'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: {},
-    applications: []
+    applications: [],
+    employeeQuestions: {} // employerId: [<question1>, <question2>, ...]
   }),
   getters: {
     propIsAuthenticated: (state) => state.user && !dataUtil.isEmpty(state.user),
@@ -61,12 +62,21 @@ export const useAuthStore = defineStore('auth', {
         this.applications = resp.data
       }
     },
+    async setUserEmployeeQuestions (employerId) {
+      const resp = await this.$api.get('employee-questions/', {
+        params: { employer_id: employerId }
+      })
+      this.employeeQuestions[employerId] = resp.data
+    },
     getHasPermission (permissionName, employerId = null) {
       employerId = employerId || this.user.employer_id
       if (!this.user || !this.user.permissions_by_employer[employerId]) {
         return false
       }
       return this.user.permissions_by_employer[employerId].includes(permissionName)
+    },
+    getUserEmployeeQuestions (employerId) {
+      return this.employeeQuestions[employerId]
     },
     executeIfCaptchaValid (action, successFn, failureFn, alwaysFn = null) {
       // eslint-disable-next-line no-undef
