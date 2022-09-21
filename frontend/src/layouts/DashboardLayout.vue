@@ -157,7 +157,7 @@ const generalMenuList = [
   {
     icon: 'badge',
     key: 'profile',
-    label: 'Profile',
+    label: 'Account',
     separator: false
   },
   {

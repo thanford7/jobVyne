@@ -74,7 +74,7 @@ class PagePermissionsUtil {
           {
             icon: 'web',
             key: 'employee-profile-page',
-            label: 'Profile Page',
+            label: 'Profile Settings',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
             isPermittedFn: (permissionGroups, permissions) => {
               return permissions && permissions.includes(this.PERMISSION_NAMES.ADD_EMPLOYEE_CONTENT)

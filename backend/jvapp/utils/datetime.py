@@ -11,7 +11,10 @@ def get_datetime_format_or_none(val):
 def get_datetime_or_none(dateStr, format='%m/%d/%Y %H:%M:%S%z', as_date=False):
     if not dateStr:
         return None
-    dt = datetime.strptime(dateStr, format)
+    try:
+        dt = datetime.strptime(dateStr, format)
+    except ValueError:
+        dt = datetime.strptime(dateStr, '%Y-%m-%dT%H:%M:%S.%fZ')  # This is the format of native JavaScript dates
     if as_date:
         return dt.date()
     return dt

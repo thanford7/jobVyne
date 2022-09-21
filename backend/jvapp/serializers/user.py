@@ -2,6 +2,7 @@ import functools
 
 from jvapp.models.user import JobVyneUser, UserFile
 from jvapp.serializers.job_seeker import base_application_serializer
+from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -18,6 +19,9 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
         'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
         'first_name': user.first_name,
         'last_name': user.last_name,
+        'job_title': user.job_title,
+        'employment_start_date': user.employment_start_date,
+        'home_location': get_serialized_location(user.home_location) if user.home_location else None
     }
     
     if isIncludeEmployerInfo:

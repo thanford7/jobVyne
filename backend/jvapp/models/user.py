@@ -129,6 +129,11 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     is_employer_deactivated = models.BooleanField(default=False, blank=True)
     created_dt = models.DateTimeField(_("date created"), default=timezone.now)
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
+    
+    # Employee data
+    job_title = models.CharField(max_length=100, null=True, blank=True)
+    home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
+    employment_start_date = models.DateField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -294,3 +299,9 @@ class UserEmployerPermissionGroup(models.Model):
 class UserUnknownEmployer(AuditFields):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
     employer_name = models.CharField(max_length=100)
+    
+    
+class UserEmployeeProfileResponse(models.Model):
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
+    question = models.TextField()
+    answer = models.TextField()

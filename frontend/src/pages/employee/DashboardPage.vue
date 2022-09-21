@@ -22,7 +22,9 @@
 import PageHeader from 'components/PageHeader.vue'
 import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
+import { useMeta } from 'quasar'
 import dateTimeUtil, { GROUPINGS } from 'src/utils/datetime.js'
+import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'DashboardPage',
@@ -35,10 +37,15 @@ export default {
         to: new Date()
       }
     }
+  },
+  setup () {
+    const globalStore = useGlobalStore()
+    const pageTitle = 'Dashboard'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle
+    }
+    useMeta(metaData)
   }
 }
 </script>
-
-<style scoped>
-
-</style>

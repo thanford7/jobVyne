@@ -9,11 +9,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.geocoding import get_location
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import JobVyneUser, UserFile, UserSocialCredential, UserUnknownEmployer
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file
 from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import send_email
 from jvapp.utils.oauth import OAUTH_CFGS
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
@@ -84,6 +86,8 @@ class UserView(JobVyneAPIView):
             'business_email': AttributeCfg(is_ignore_excluded=True),
             'user_type_bits': None,
             'employer_id': AttributeCfg(is_ignore_excluded=True),
+            'job_title': AttributeCfg(is_ignore_excluded=True),
+            'employment_start_date': AttributeCfg(is_ignore_excluded=True)
         })
         
         if 'profile_picture_url' in self.data and not self.data['profile_picture_url']:
@@ -91,6 +95,10 @@ class UserView(JobVyneAPIView):
         
         if profile_picture := self.files.get('profile_picture'):
             user.profile_picture = profile_picture[0]
+            
+        if home_location_text := self.data.get('home_location_text'):
+            location = get_location(home_location_text)
+            user.home_location = location
         
         user.save()
         

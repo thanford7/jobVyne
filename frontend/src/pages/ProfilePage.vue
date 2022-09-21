@@ -1,7 +1,7 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader title="Profile">
+      <PageHeader title="Account">
         <template v-slot:bottom>
           <q-banner v-if="(!user.is_employer_verified && isCompanyUser) || !user.is_email_verified" rounded
                     class="bg-warning">
@@ -66,26 +66,7 @@
               />
             </div>
             <div class="col-12">
-              <FileDisplayOrUpload
-                ref="profileUpload"
-                label="profile picture"
-                :file-url="userData.profile_picture_url"
-                :new-file="userData[newProfilePictureKey]"
-                :new-file-key="newProfilePictureKey"
-                file-url-key="profile_picture_url"
-              >
-                <template v-slot:fileInput>
-                  <q-file
-                    ref="newProfileUpload"
-                    filled bottom-slots clearable
-                    v-model="userData[newProfilePictureKey]"
-                    label="Profile picture"
-                    class="q-mb-none"
-                    :accept="fileUtil.getAllowedFileExtensionsStr([FILE_TYPES.IMAGE.key])"
-                    max-file-size="1000000"
-                  />
-                </template>
-              </FileDisplayOrUpload>
+              <SelectOrDisplayProfilePic ref="profileUpload" :user-data="userData"/>
             </div>
             <div class="col-12 col-md-6 q-pr-md-sm">
               <q-input
@@ -312,6 +293,7 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmailInput from 'components/inputs/EmailInput.vue'
 import PasswordInput from 'components/inputs/PasswordInput.vue'
+import SelectOrDisplayProfilePic from 'components/inputs/SelectOrDisplayProfilePic.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
@@ -323,7 +305,6 @@ import { COMPANY_USER_TYPE_BITS } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
-import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
 
 const userPermissionGroupColumns = [
@@ -334,7 +315,7 @@ const userPermissionGroupColumns = [
 
 export default {
   name: 'ProfilePage',
-  components: { SelectUserType, PasswordInput, CustomTooltip, EmailInput, FileDisplayOrUpload, PageHeader, SeparatorWithText },
+  components: { SelectOrDisplayProfilePic, SelectUserType, PasswordInput, CustomTooltip, EmailInput, PageHeader, SeparatorWithText },
   data () {
     return {
       tab: 'general',
@@ -345,7 +326,6 @@ export default {
         new_password: null,
         new_password_confirm: null
       },
-      newProfilePictureKey: 'profile_picture',
       userPermissionGroupColumns,
       fileUtil,
       FILE_TYPES
@@ -432,7 +412,7 @@ export default {
         this.userData,
         (this.$refs.profileUpload) ? this.$refs.profileUpload.getValues() : {}
       )
-      await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(data, [this.newProfilePictureKey]))
+      await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(data, [this.$refs.profileUpload.newProfilePictureKey]))
       await this.authStore.setUser(true)
       this.userData = dataUtil.deepCopy(this.authStore.propUser)
       this.currentUserData = dataUtil.deepCopy(this.authStore.propUser)
@@ -488,7 +468,7 @@ export default {
     return {
       authStore,
       employerStore,
-      globalStore: useGlobalStore(),
+      globalStore,
       user
     }
   }
