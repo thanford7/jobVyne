@@ -1,5 +1,4 @@
 import base64
-import logging
 import os
 import re
 from urllib.request import urlopen
@@ -22,18 +21,7 @@ sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
 logger = getLogger()
 
 
-# using SendGrid's Python Library
-# https://github.com/sendgrid/sendgrid-python
-def send_sg_email(message: Mail):
-    try:
-        response = sg.send(message)
-        return response
-    except Exception as e:
-        logger.log(logging.ERROR, f'{e.status_code} {e.reason}: {e.body}')
-        return False
-
-
-def get_encoded_file(fileUrl):
+def get_encoded_file_from_url(fileUrl):
     file_openner = lambda url: urlopen(url)
     if settings.DEBUG:
         file_openner = lambda url: open(url, 'rb')
@@ -42,11 +30,13 @@ def get_encoded_file(fileUrl):
     return encoded_file
 
 
-def get_attachment(file_name, file_url, file_type, content_id, is_display_inline=False):
-    encodedLogo = get_encoded_file(file_url)
-    
+def get_encoded_file(file):
+    return base64.b64encode(file.read()).decode()
+
+
+def get_attachment(file_name, file, file_type, content_id, is_display_inline=False):
     return Attachment(
-        file_content=FileContent(encodedLogo),
+        file_content=FileContent(file),
         file_name=FileName(file_name),
         file_type=FileType(file_type),
         disposition=Disposition('inline') if is_display_inline else None,
@@ -91,7 +81,7 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
     image_url = static('jobVyneLogo.png')
     message.attachment = get_attachment(
         'logo.png',
-        image_url,
+        get_encoded_file_from_url(image_url),
         'image/png',
         'logo',
         is_display_inline=True
@@ -100,8 +90,10 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
     if attachments:
         for attachment in attachments:
             message.attachment = attachment
-    
-    return send_sg_email(message)
+
+    # using SendGrid's Python Library
+    # https://github.com/sendgrid/sendgrid-python
+    return sg.send(message)
 
 
 def get_domain_from_email(email):

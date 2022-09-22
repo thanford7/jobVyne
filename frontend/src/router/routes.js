@@ -187,6 +187,11 @@ const routes = [
         path: ':key(profile)',
         name: 'profile',
         component: () => import('pages/ProfilePage.vue')
+      },
+      {
+        path: ':key(feedback)',
+        name: 'feedback',
+        component: () => import('pages/FeedbackPage.vue')
       }
     ]
   },

@@ -20,7 +20,7 @@ from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file, get_serialized_user_profile
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
-from jvapp.utils.email import send_email
+from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, get_attachment, get_encoded_file, send_email
 from jvapp.utils.oauth import OAUTH_CFGS
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
     get_user_key_from_token
@@ -363,6 +363,28 @@ class UserEmployeeProfileQuestionsView(JobVyneAPIView):
                 'response': user_responses.get(question.id)
             })
         return Response(status=status.HTTP_200_OK, data=formatted_questions)
+    
+    
+class FeedbackView(JobVyneAPIView):
+    
+    def post(self, request):
+        # Send email to JobVyne support team
+        send_email(
+            'JobVyne | User Feedback', EMAIL_ADDRESS_SUPPORT,
+            django_email_body_template='emails/support_email.html',
+            django_context={
+                'is_exlude_final_message': True,
+                'user': self.user,
+                'message': self.data['message']
+            },
+            attachments=[
+                get_attachment(file.name, get_encoded_file(file.file), file.content_type, file.name) for file in self.files.get('files')
+            ] if self.files.get('files') else None
+        )
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Thanks for your message. An email has been sent to our support team and we will follow up with you if necessary.'
+        })
 
 
 class JobVynePasswordResetForm(PasswordResetForm):
