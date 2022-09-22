@@ -18,3 +18,8 @@ class IsAuthenticatedOrPost(permissions.BasePermission):
         
         user = request.user
         return user and user.is_authenticated
+    
+
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_admin

@@ -333,4 +333,7 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = file_path
 GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'  # This is for location lookup of an IP address
 GOOGLE_MAPS_KEY = env('GOOGLE_MAPS_KEY')  # This is for reverse geolocation lookup
 
+# Stripe payments
+STRIPE_PRIVATE_KEY = env('STRIPE_PRIVATE_KEY')
+
 # CELERY_BROKER_URL = 'pyamqp://rabbitmq:5672'

@@ -39,6 +39,18 @@ class PagePermissionsUtil {
             key: 'admin-dashboard',
             label: 'Dashboard',
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
+          },
+          {
+            icon: 'business',
+            key: 'admin-employers',
+            label: 'Employers',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
+          },
+          {
+            icon: 'payment',
+            key: 'admin-payments',
+            label: 'Payments',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           }
         ]
       },

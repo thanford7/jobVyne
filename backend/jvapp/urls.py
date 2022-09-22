@@ -1,11 +1,12 @@
 from django.urls import path, re_path
 
-from jvapp.apis import ats, auth, content, currency, data, employer, job_seeker, social, tracking, user, waitlist
+from jvapp.apis import admin, ats, auth, content, currency, data, employer, job_seeker, social, tracking, user, waitlist
 
 api_path = 'api/v1/'
 
 urlpatterns = [
     # General Data
+    re_path('^admin/employer/(?P<employer_id>[0-9]+)?/?$', admin.EmployerView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
     path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),

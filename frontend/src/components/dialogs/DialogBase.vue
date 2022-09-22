@@ -109,6 +109,9 @@ export default {
     okFn: {
       type: [Function, null]
     },
+    isValidFormFn: {
+      type: [Function, null]
+    },
     width: {
       type: String,
       default: '500px'
@@ -132,6 +135,12 @@ export default {
       if (this.okFn) {
         await this.okFn().finally(() => this.onDialogOK())
       } else {
+        if (this.isValidFormFn) {
+          const isValidForm = await this.isValidFormFn()
+          if (!isValidForm) {
+            return
+          }
+        }
         this.onDialogOK()
       }
     }

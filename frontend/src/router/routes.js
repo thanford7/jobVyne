@@ -72,7 +72,20 @@ const routes = [
       {
         path: 'dashboard',
         name: 'admin-dashboard',
+        meta: { userTypeBits: USER_TYPES.Admin },
         component: () => import('pages/DashboardPage.vue')
+      },
+      {
+        path: 'payments',
+        name: 'admin-payments',
+        meta: { userTypeBits: USER_TYPES.Admin },
+        component: () => import('pages/admin/PaymentsPage.vue')
+      },
+      {
+        path: 'employers',
+        name: 'admin-employers',
+        meta: { userTypeBits: USER_TYPES.Admin },
+        component: () => import('pages/admin/EmployersPage.vue')
       }
     ]
   },
@@ -84,6 +97,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'candidate-dashboard',
+        meta: { userTypeBits: USER_TYPES.Candidate },
         component: () => import('pages/candidate/DashboardPage.vue')
       }
     ]
@@ -96,6 +110,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'employee-dashboard',
+        meta: { userTypeBits: USER_TYPES.Employee },
         component: () => import('pages/employee/DashboardPage.vue')
       },
       {
@@ -132,6 +147,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'influencer-dashboard',
+        meta: { userTypeBits: USER_TYPES.Influencer },
         component: () => import('pages/DashboardPage.vue')
       }
     ]
@@ -144,6 +160,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'employer-dashboard',
+        meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/dashboard-page/DashboardPage.vue')
       },
       {

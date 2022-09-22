@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    title-text="Login"
+    base-title-text="Login"
     :is-include-buttons="false"
   >
     <AuthAll :redirect-page-url="redirectPageUrl" :redirect-params="redirectParams"/>

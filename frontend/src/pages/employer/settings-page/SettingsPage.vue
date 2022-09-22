@@ -98,26 +98,7 @@
               />
             </div>
             <div class="col-12 q-gutter-x-sm">
-              <q-input
-                filled
-                :model-value="employerData.email_domains"
-                @update:model-value="employerData.email_domains = $event"
-                @blur="employerData.email_domains = getNormalizedEmailDomains(employerData.email_domains)"
-                label="Permitted email domains"
-                lazy-rules
-                :rules="[ val => val && val.length > 0 || 'At least one email domain is required']"
-              >
-                <template v-slot:append>
-                  <CustomTooltip>
-                    Add a comma separated list of permitted email domains. Any user that signs up for JobVyne
-                    and has an email address with one of the permitted domains will be allowed to automatically
-                    be added to your employee referral program without further action from an administrator. Email
-                    domains are the last part of the email address after the "@". For example, the email domain for
-                    "jane@acme.org" is "acme.org". Only business email domains are allowed. Public domains such as
-                    "gmail.com" or "yahoo.com" are not permitted.
-                  </CustomTooltip>
-                </template>
-              </q-input>
+              <InputPermittedEmailDomains :employer-data="employerData"/>
             </div>
           </div>
         </q-tab-panel>
@@ -134,6 +115,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import ColorPicker from 'components/inputs/ColorPicker.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import PageHeader from 'components/PageHeader.vue'
+import InputPermittedEmailDomains from 'pages/employer/settings-page/InputPermittedEmailDomains.vue'
 import IntegrationSection from 'pages/employer/settings-page/IntegrationSection.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
@@ -146,7 +128,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'SettingsPage',
-  components: { IntegrationSection, CustomTooltip, ColorPicker, FileDisplayOrUpload, PageHeader },
+  components: { InputPermittedEmailDomains, IntegrationSection, CustomTooltip, ColorPicker, FileDisplayOrUpload, PageHeader },
   data () {
     return {
       tab: 'style',
@@ -165,27 +147,6 @@ export default {
   methods: {
     getEmployerDataCopy () {
       return dataUtil.deepCopy(this.employerStore.getEmployer(this.user.employer_id))
-    },
-    getNormalizedEmailDomains (rawEmailDomains) {
-      if (!rawEmailDomains) {
-        return rawEmailDomains
-      }
-      let emailDomains = rawEmailDomains.trim().split(',')
-      const domainRegex = /([0-9a-z-]+?\.[0-9a-z-]+)/ig
-      emailDomains = emailDomains.reduce((domains, ed) => {
-        ed = ed.trim()
-        if (!ed || !ed.length) {
-          return domains
-        }
-        const matchedDomainStrings = ed.match(domainRegex)
-        if (!matchedDomainStrings) {
-          return domains
-        }
-        const lastMatch = matchedDomainStrings[matchedDomainStrings.length - 1]
-        domains.push(lastMatch)
-        return domains
-      }, [])
-      return emailDomains.join(',')
     },
     async saveEmployerChanges () {
       const data = Object.assign(

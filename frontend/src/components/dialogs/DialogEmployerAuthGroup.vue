@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    title-text="Create new group"
+    base-title-text="Create new group"
     primary-button-text="Create"
     @ok="saveGroup"
   >

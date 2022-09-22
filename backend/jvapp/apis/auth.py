@@ -287,6 +287,7 @@ class PasswordResetFromEmailView(APIView):
             )
         validate_password(password, user=user)
         user.set_password(password)
+        user.is_email_verified = True  # This saves the user an extra step of having to receive a verification email too
         user.save()
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Password successfully reset'

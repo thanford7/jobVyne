@@ -127,6 +127,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     is_business_email_verified = models.BooleanField(default=False)
     user_type_bits = models.SmallIntegerField(default=0)
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
+    is_employer_owner = models.BooleanField(default=False, blank=True)
     is_employer_deactivated = models.BooleanField(default=False, blank=True)
     created_dt = models.DateTimeField(_("date created"), default=timezone.now)
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
