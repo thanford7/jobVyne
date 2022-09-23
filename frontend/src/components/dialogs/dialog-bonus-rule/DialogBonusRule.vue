@@ -23,7 +23,7 @@
             filled
           >
             <template v-slot:after>
-              <CustomTooltip :is_include_space="false">
+              <CustomTooltip>
                 The number of days required for a new hire to work after which time
                 the referring employee will be eligible to receive the referral bonus.
               </CustomTooltip>
@@ -39,7 +39,7 @@
             <q-btn color="primary" @click="addBonusRuleModifier">
               <q-icon name="add"/>
               Add bonus modifier
-              <CustomTooltip icon_color_class="text-white" icon_size="24px">
+              <CustomTooltip icon_color_class="text-white" icon_size="24px" :is_include_space="true">
                 Bonus modifiers are used to increase the bonus amount based on a time period
                 after the job is posted. This can be used to increase employee referrals for
                 hard to fill jobs.
@@ -71,7 +71,7 @@
                     label="Increase amount"
                   >
                     <template v-slot:after>
-                      <CustomTooltip :is_include_space="false">
+                      <CustomTooltip>
                         The dollar amount increase from the base bonus amount. The currency denomination
                         is based on the denomination from the base bonus amount.
                       </CustomTooltip>
@@ -86,7 +86,7 @@
                     label="Increase %"
                   >
                     <template v-slot:after>
-                      <CustomTooltip :is_include_space="false">
+                      <CustomTooltip>
                         The percentage amount increase from the base bonus amount
                       </CustomTooltip>
                     </template>
@@ -98,7 +98,7 @@
                     filled
                   >
                     <template v-slot:after>
-                      <CustomTooltip :is_include_space="false">
+                      <CustomTooltip>
                         The number of days after the job is posted at which time the bonus
                         modifier takes effect.
                       </CustomTooltip>

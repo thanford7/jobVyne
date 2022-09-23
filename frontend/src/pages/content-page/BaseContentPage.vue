@@ -26,7 +26,7 @@
             <div class="col-12 q-gutter-x-sm q-gutter-y-md q-mb-sm">
               <q-btn-dropdown color="primary">
                 <template v-slot:label>
-                  <CustomTooltip v-if="isEmployer" :is_include_icon="false">
+                  <CustomTooltip v-if="isEmployer" :is_include_icon="false" :is_include_space="true">
                     <template v-slot:content>
                       <q-icon name="add"/>
                       Create post template

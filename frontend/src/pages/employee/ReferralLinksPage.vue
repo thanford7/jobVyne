@@ -123,7 +123,7 @@
                   <h6 style="display: inline-block;">
                     (Optional) Select the platform where you will display the link
                   </h6>
-                  <CustomTooltip>
+                  <CustomTooltip :is_include_space="true">
                     Selecting a platform allows you to analyze the performance of each of your links based on each
                     platform
                   </CustomTooltip>
@@ -142,7 +142,7 @@
                   <h6 style="display: inline-block;">
                     (Optional) Add filters for the jobs to display when the link is clicked
                   </h6>
-                  <CustomTooltip>
+                  <CustomTooltip :is_include_space="true">
                     Leave blank if you wish to display all jobs. Keep in mind that your link will perform better if the
                     filtered jobs are relevant to your connections/audience
                   </CustomTooltip>
@@ -185,7 +185,7 @@
                   <template v-slot:body-cell-locations="props">
                     <q-td>
                       <template v-if="props.row.locations.length > 1">
-                        <CustomTooltip :is_include_space="false">
+                        <CustomTooltip>
                           <template v-slot:icon>
                             <q-chip
                               color="grey-7" text-color="white" size="13px" dense

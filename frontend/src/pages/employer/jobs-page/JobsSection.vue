@@ -13,7 +13,7 @@
         :rows-per-page-options="[25, 50, 100]"
       >
         <template v-slot:top>
-          <CustomTooltip v-if="!selectedJobs.length" :is_include_icon="false">
+          <CustomTooltip v-if="!selectedJobs.length" :is_include_icon="false" :is_include_space="true">
             <template v-slot:content>
               <q-btn
                 unelevated
@@ -97,7 +97,7 @@
         <template v-slot:body-cell-locations="props">
           <q-td>
             <template v-if="props.row.locations.length > 1">
-              <CustomTooltip :is_include_space="false">
+              <CustomTooltip>
                 <template v-slot:icon>
                   <q-chip
                     color="grey-7" text-color="white" size="13px" dense

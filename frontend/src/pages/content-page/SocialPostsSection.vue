@@ -103,7 +103,7 @@
                     <template v-else>
                       <div class="text-bold">
                         Post history
-                        <CustomTooltip :is_include_space="false" icon_size="16px">
+                        <CustomTooltip icon_size="16px">
                           This shows which platforms you posted to and at what time
                         </CustomTooltip>
                       </div>

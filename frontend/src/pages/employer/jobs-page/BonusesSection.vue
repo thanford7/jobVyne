@@ -9,7 +9,7 @@
         @blur="saveBonusDefaults"
       >
         <template v-slot:after>
-          <CustomTooltip :is_include_space="false">
+          <CustomTooltip>
             This is the bonus amount that will be applied to any job that does not match
             any of the bonus rules listed below.
           </CustomTooltip>
@@ -122,7 +122,7 @@
                   <div class="col-6 q-px-sm">
                     <div class="text-bold">
                       Time modifiers
-                      <CustomTooltip icon_size="16px" :is_include_space="false">
+                      <CustomTooltip icon_size="16px">
                         Time modifiers increase the amount of the referral bonus if the job has not been filled within
                         the specified number of days after the job was posted. This only applies to new applications
                         after the specified number of days. If an application was submitted prior to the time

@@ -29,7 +29,7 @@ export default {
     },
     is_include_space: {
       type: Boolean,
-      default: true
+      default: false
     },
     is_include_icon: {
       type: Boolean,

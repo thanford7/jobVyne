@@ -44,7 +44,7 @@
             v-model="atsFormData.employment_type_field_key"
           >
             <template v-slot:after>
-              <CustomTooltip>
+              <CustomTooltip :is_include_space="true">
                 The employment type (e.g. full time) is a custom field so it is necessary to provide the name
                 of the field
               </CustomTooltip>
@@ -58,7 +58,7 @@
             v-model="atsFormData.salary_range_field_key"
           >
             <template v-slot:after>
-              <CustomTooltip>
+              <CustomTooltip :is_include_space="true">
                 The salary range (e.g. $50,000-$60,000) is a custom field so it is necessary to provide the name
                 of the field
               </CustomTooltip>

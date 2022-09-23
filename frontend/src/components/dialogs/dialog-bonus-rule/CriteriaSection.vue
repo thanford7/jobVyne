@@ -32,7 +32,7 @@
     <div v-if="isFieldShown(FORM_TITLES.jobTitle)" class="col-12">
       <q-input filled label="Job titles" v-model="formData.job_titles_regex">
         <template v-slot:after>
-          <CustomTooltip>
+          <CustomTooltip :is_include_space="true">
             Job titles uses a regular expression pattern, which will search for a substring match in each job title,
             case insensitive.
             Some common patterns that may be helpful:

@@ -22,7 +22,7 @@
       v-model="section.item_parts[0].is_allow_autoplay"
       label="Auto-scroll"
     >
-      <CustomTooltip>
+      <CustomTooltip :is_include_space="true">
         When on, pictures will automatically scroll from one to the next
       </CustomTooltip>
     </q-toggle>

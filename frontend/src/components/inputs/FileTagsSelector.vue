@@ -15,7 +15,7 @@
     label="Select tags or start typing..."
   >
     <template v-slot:append>
-      <CustomTooltip>
+      <CustomTooltip :is_include_space="true">
         Tags help you organize and search for your content. All tags are converted to lowercase
       </CustomTooltip>
     </template>

@@ -40,7 +40,7 @@
       <q-card-actions v-if="isIncludeButtons" align="right" class="text-primary">
         <slot name="buttons">
           <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel"/>
-          <CustomTooltip v-if="okBtnHelpText" class="q-ml-sm" :is_include_icon="false">
+          <CustomTooltip v-if="okBtnHelpText" class="q-ml-sm" :is_include_icon="false" :is_include_space="true">
             <template v-slot:content>
               <q-btn
                 class="bg-accent"

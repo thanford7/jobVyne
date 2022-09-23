@@ -11,7 +11,7 @@
     :rules="[ val => val && val.length > 0 || 'At least one email domain is required']"
   >
     <template v-slot:append>
-      <CustomTooltip>
+      <CustomTooltip :is_include_space="true">
         Add a comma separated list of permitted email domains. Any user that signs up for JobVyne
         and has an email address with one of the permitted domains will be allowed to automatically
         be added to your employee referral program without further action from an administrator. Email

@@ -8,7 +8,7 @@
     :loading="!isLoaded"
   >
     <template v-slot:after>
-      <CustomTooltip>
+      <CustomTooltip :is_include_space="true">
         This is the job stage that all referred candidates will be placed into
         when they submit their applications. If not set, candidates will be placed
         in the first stage of the application process.

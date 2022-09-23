@@ -3,7 +3,7 @@
     <div class="border-1-gray-100 border-rounded q-mt-md">
       <div class="text-bold bg-gray-300 q-pa-sm border-top-rounded">
         Live view
-        <CustomTooltip icon_size="16px" :is_include_space="false">
+        <CustomTooltip icon_size="16px">
           This is roughly how the post will look once posted. There will be slight differences based on the social
           platform
           you post to.

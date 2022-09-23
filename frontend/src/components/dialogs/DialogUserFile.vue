@@ -22,7 +22,7 @@
             filled
           >
             <template v-slot:append>
-              <CustomTooltip>
+              <CustomTooltip :is_include_space="true">
                 Supported file types: {{ allowedFileExtensionsStr }}
               </CustomTooltip>
             </template>
@@ -31,7 +31,7 @@
       </FileDisplayOrUpload>
       <q-input filled borderless v-model="formData.title" label="File title (optional)">
         <template v-slot:append>
-          <CustomTooltip>
+          <CustomTooltip :is_include_space="true">
             If empty, the uploaded file name will be used
           </CustomTooltip>
         </template>

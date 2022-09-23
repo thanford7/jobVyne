@@ -9,7 +9,6 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.apis.employer import EmployerJobView, EmployerView
-from jvapp.apis.user import UserView
 from jvapp.models import JobApplication, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *

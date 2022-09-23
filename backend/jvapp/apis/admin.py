@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.user import UserView
-from jvapp.models import Employer, JobVyneUser
+from jvapp.models import Employer, EmployerAuthGroup, JobVyneUser, UserEmployerPermissionGroup
 from jvapp.permissions.general import IsAdmin
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
@@ -41,8 +41,17 @@ class EmployerView(JobVyneAPIView):
             self.data['owner_email'],
             first_name=self.data['owner_first_name'],
             last_name=self.data['owner_last_name'],
+            user_type_bits=JobVyneUser.USER_TYPE_EMPLOYER,
             employer_id=employer.id,
             is_employer_owner=True
+        )
+        
+        admin_group = EmployerAuthGroup.objects.get(employer_id=None, name='Admin')
+        UserEmployerPermissionGroup(
+            user=user,
+            employer=employer,
+            permission_group=admin_group,
+            is_employer_approved=True
         )
         
         # Send password reset to owner

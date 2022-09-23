@@ -8,7 +8,7 @@
       <SelectPlatform v-if="!this.platform" v-model="formData.platform"/>
       <div>
         <span class="text-bold">Job filters</span>
-        <CustomTooltip icon_size="16px">
+        <CustomTooltip icon_size="16px" :is_include_space="true">
           Leave blank if you wish to display all jobs. Keep in mind that your link will perform better if the
           filtered jobs are relevant to your connections/audience
         </CustomTooltip>

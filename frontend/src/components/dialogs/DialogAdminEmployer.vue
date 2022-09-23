@@ -23,7 +23,7 @@
         lazy-rules
       >
         <template v-slot:append>
-          <CustomTooltip>
+          <CustomTooltip :is_include_space="true">
             <ul>
               <li>Supported file types: {{ allowedFileExtensionsStr }}</li>
               <li>Maximum allowable file size is 5MB for a single file</li>
@@ -34,7 +34,7 @@
       <InputPermittedEmailDomains :employer-data="formData"/>
       <div class="text-bold">
         Account owner
-        <CustomTooltip :is_include_space="false">
+        <CustomTooltip>
           This will be the person that will be in charge of setting up the system on the employer's end. They will receive
           employer admin priveleges.
         </CustomTooltip>

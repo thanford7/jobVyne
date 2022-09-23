@@ -182,7 +182,7 @@
                 <template v-slot:top>
                   <div class="text-h6">
                     Email verification
-                    <CustomTooltip :is_include_space="false">
+                    <CustomTooltip>
                       Email verification helps us make sure it's actually you!
                       <q-icon name="fa-solid fa-user-secret"/>
                     </CustomTooltip>
@@ -191,7 +191,7 @@
                 <template v-slot:header-cell-isEmployerEmail="props">
                   <q-th key="isEmployerEmail">
                     {{ props.col.label }}
-                    <CustomTooltip>
+                    <CustomTooltip :is_include_space="true">
                       <template v-slot:icon>
                         <q-icon class="text-gray-500" tag="span" name="help_outline" size="16px"/>
                       </template>
@@ -240,7 +240,7 @@
                 <template v-slot:top>
                   <div class="text-h6">
                     Employer Permission Groups
-                    <CustomTooltip :is_include_space="false">
+                    <CustomTooltip>
                       Permission groups determine what content you can view for each employer and
                       what you are allowed to do for each employer (e.g. manage other users). Some
                       permissions are automatically approved, but others require the approval of
@@ -251,7 +251,7 @@
                 <template v-slot:header-cell-unapprovedGroups="props">
                   <q-th key="unapprovedGroups">
                     {{ props.col.label }}
-                    <CustomTooltip>
+                    <CustomTooltip :is_include_space="true">
                       <template v-slot:icon>
                         <q-icon class="text-gray-500" tag="span" name="help_outline" size="16px"/>
                       </template>

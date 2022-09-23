@@ -24,7 +24,7 @@
             @update:model-value="saveUserChanges"
           >
             Is viewable
-            <CustomTooltip :is_include_space="false">
+            <CustomTooltip>
               When off, your profile will not be shown on any job pages. It is recommended to turn on page viewing
               so job seekers can learn more about you and your company.
             </CustomTooltip>
@@ -71,7 +71,7 @@
             hint="City, State, Country"
           >
             <template v-slot:after>
-              <CustomTooltip :is_include_space="false">
+              <CustomTooltip>
                 If you work remotely, use the city you currently live in
               </CustomTooltip>
             </template>
@@ -80,7 +80,7 @@
         <div class="col-12">
           <div class="text-h6">
             Profile questions
-            <CustomTooltip :is_include_space="false">
+            <CustomTooltip>
               Fill out one or more questions to have your profile displayed on all
               of the jobs pages from your links.
             </CustomTooltip>

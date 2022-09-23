@@ -164,7 +164,7 @@
                 <template v-slot:header-cell-permissionGroups>
                   <q-th class="text-left">
                     Permission groups
-                    <CustomTooltip icon_size="16px">
+                    <CustomTooltip icon_size="16px" :is_include_space="true">
                       Some permission groups require approval from an employer user
                       that has permission to manage other users.
                       <div class="q-mt-sm">
@@ -183,7 +183,7 @@
                 </template>
                 <template v-slot:body-cell-isApprovalRequired="props">
                   <q-td class="text-center">
-                    <CustomTooltip v-if="props.row.isApprovalRequired" :is_include_icon="false">
+                    <CustomTooltip v-if="props.row.isApprovalRequired" :is_include_icon="false" :is_include_space="true">
                       <template v-slot:icon>
                         <q-icon name="warning" color="warning" size="xs"/>
                       </template>
@@ -306,7 +306,7 @@
                     </div>
                     <div v-if="getIsGroupReadOnly(selectedGroup)" class="bg-warning q-pl-sm">
                       Read Only
-                      <CustomTooltip :is_include_space="false">
+                      <CustomTooltip>
                         <template v-slot:icon>
                           <q-icon class="self-center" name="info" size="18px" color="grey-8"/>
                         </template>

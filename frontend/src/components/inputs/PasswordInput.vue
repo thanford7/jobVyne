@@ -14,7 +14,7 @@
       />
     </template>
     <template v-if="isValidate" v-slot:after>
-      <CustomTooltip :is_include_space="false">
+      <CustomTooltip>
         Password must have:
         <ul>
           <li>

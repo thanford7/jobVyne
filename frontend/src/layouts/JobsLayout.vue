@@ -71,7 +71,7 @@
                                 {{ job.job_department }}
                               </q-chip>
                               <template v-if="job.locations.length > 1">
-                                <CustomTooltip :is_include_space="false">
+                                <CustomTooltip>
                                   <template v-slot:icon>
                                     <q-chip
                                       color="grey-7" text-color="white" size="md" icon="place"

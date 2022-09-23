@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 
-from jvapp.apis import admin, ats, auth, content, currency, data, employer, job_seeker, social, tracking, user, waitlist
+from jvapp.apis import admin, ats, auth, content, currency, data, employer, job_seeker, social, stripe, tracking, user, \
+    waitlist
 
 api_path = 'api/v1/'
 
@@ -46,6 +47,10 @@ urlpatterns = [
     path('ats/custom-fields/', ats.AtsCustomFieldsView.as_view()),
     path('ats/jobs/', ats.AtsJobsView.as_view()),
     path('ats/stages/', ats.AtsStagesView.as_view()),
+    
+    # Billing
+    path('billing/customer/', stripe.StripeProductView.as_view()),
+    path('billing/product/', stripe.StripeProductView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),

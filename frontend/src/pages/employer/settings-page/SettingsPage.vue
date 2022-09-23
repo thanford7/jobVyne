@@ -14,6 +14,7 @@
         <q-tab name="style" label="Brand style"/>
         <q-tab name="security" label="Security"/>
         <q-tab name="integration" label="Integration"/>
+        <q-tab v-if="hasPaymentPermission" name="payment" label="Payment"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="style">
@@ -58,7 +59,7 @@
               <div class="row">
                 <div class="col-12 q-mb-sm">
                   Brand colors
-                  <CustomTooltip>
+                  <CustomTooltip :is_include_space="true">
                     These will be the default colors used for the employer profile page. If none are provided,
                     the JobVyne default colors will be used.
                   </CustomTooltip>
@@ -105,6 +106,69 @@
         <q-tab-panel name="integration">
           <IntegrationSection :ats-data="employerData.ats_cfg" @update-employer="updateEmployerData()"/>
         </q-tab-panel>
+        <q-tab-panel v-if="hasPaymentPermission" name="payment">
+          <div class="row">
+            <div class="col-12 text-h6">
+              Billing information
+            </div>
+            <div class="col-12 text-bold q-my-sm">
+              Corporate address
+              <CustomTooltip>
+                A corporate address is required for tax purposes
+              </CustomTooltip>
+            </div>
+            <div class="col-12">
+              <div class="row q-gutter-y-md">
+                <div class="col-12 col-md-8 q-pr-md-sm">
+                  <q-input
+                    v-model="employerData.street_address"
+                    filled
+                    label="Street address"
+                  />
+                </div>
+                <div class="col-12 col-md-4 q-pl-md-sm">
+                  <q-input
+                    v-model="employerData.street_address_2"
+                    filled
+                    label="Apt, suite, unit, or building"
+                  />
+                </div>
+                <div class="col-6 col-md-4 q-pr-sm">
+                  <q-input
+                    v-model="employerData.zip_code"
+                    filled
+                    label="ZIP code"
+                  />
+                </div>
+                <div class="col-6 col-md-4 q-px-md-sm q-pl-sm">
+                  <q-input
+                    v-model="employerData.state"
+                    filled
+                    label="State"
+                  />
+                </div>
+                <div class="col-12 col-md-4 q-pl-md-sm">
+                  <q-input
+                    v-model="employerData.country"
+                    filled
+                    label="Country"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="col-12 text-bold q-my-sm">
+              Account email
+              <CustomTooltip>
+                This is the email that will receive all communications regarding billing. It can be a group or
+                individual
+                corporate email address
+              </CustomTooltip>
+            </div>
+            <div class="col-12">
+              <EmailInput v-model="employerData.email"/>
+            </div>
+          </div>
+        </q-tab-panel>
       </q-tab-panels>
     </div>
   </q-page>
@@ -113,6 +177,7 @@
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
 import ColorPicker from 'components/inputs/ColorPicker.vue'
+import EmailInput from 'components/inputs/EmailInput.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import PageHeader from 'components/PageHeader.vue'
 import InputPermittedEmailDomains from 'pages/employer/settings-page/InputPermittedEmailDomains.vue'
@@ -121,6 +186,7 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
@@ -128,7 +194,15 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'SettingsPage',
-  components: { InputPermittedEmailDomains, IntegrationSection, CustomTooltip, ColorPicker, FileDisplayOrUpload, PageHeader },
+  components: {
+    EmailInput,
+    InputPermittedEmailDomains,
+    IntegrationSection,
+    CustomTooltip,
+    ColorPicker,
+    FileDisplayOrUpload,
+    PageHeader
+  },
   data () {
     return {
       tab: 'style',
@@ -140,6 +214,9 @@ export default {
     }
   },
   computed: {
+    hasPaymentPermission () {
+      return pagePermissionsUtil.hasPermission(this.user, pagePermissionsUtil.PERMISSION_NAMES.MANAGE_BILLING_SETTINGS)
+    },
     hasEmployerDataChanged () {
       return !dataUtil.isDeepEqual(this.currentEmployerData, this.employerData)
     }

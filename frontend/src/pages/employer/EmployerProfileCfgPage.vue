@@ -20,7 +20,7 @@
             @update:model-value="savePage"
           >
             Is viewable
-            <CustomTooltip :is_include_space="false">
+            <CustomTooltip>
               When off, the employer page will not be shown on any job pages. It is recommended to turn on page viewing
               so job seekers can learn more about your company. Turn off if the page is still a work in progress.
             </CustomTooltip>
@@ -40,7 +40,7 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section avatar>
-                <CustomTooltip>
+                <CustomTooltip :is_include_space="true">
                   <div class="q-mb-sm text-bold">Ideal for:</div>
                   <ul>
                     <li v-for="item in section.usedFor">
@@ -102,7 +102,7 @@
                   <div class="col-12 col-md-6">
                     <q-input filled v-model="section.header" label="Section header" class="w-100">
                       <template v-slot:append>
-                        <CustomTooltip>
+                        <CustomTooltip :is_include_space="true">
                           Optional. When populated the header will be displayed at the top of the section and
                           also included as a link which will scroll to this section when clicked.
                         </CustomTooltip>

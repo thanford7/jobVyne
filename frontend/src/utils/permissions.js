@@ -256,6 +256,10 @@ class PagePermissionsUtil {
     }, [])
   }
 
+  hasPermission (user, permission) {
+    return this.getAllUserPermissions(user).includes(permission)
+  }
+
   /**
    * Look for a dashboard that the user can view. If no dashboards are viewable,
    * revert to the user's profile page

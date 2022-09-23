@@ -54,7 +54,7 @@
           :is-include-separator="false"
         >
           <template v-slot:header>
-            <CustomTooltip>
+            <CustomTooltip :is_include_space="true">
               This content will be filled in dynamically based on the link or
               job you choose to post
             </CustomTooltip>

@@ -29,7 +29,7 @@
             max-total-size="50000000"
           >
             <template v-slot:append>
-              <CustomTooltip>
+              <CustomTooltip :is_include_space="true">
                 Screenshots of issues or product ideas are very helpful!
                 <ul>
                   <li>Supported file types: {{ allowedFileExtensionsStr }}</li>
