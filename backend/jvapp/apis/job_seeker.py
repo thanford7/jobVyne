@@ -89,17 +89,21 @@ class ApplicationView(JobVyneAPIView):
         
         # Save application to Django model
         application = JobApplication()
-        resume = self.files['resume'][0] if self.files.get('resume') else None
+        application_template = ApplicationTemplateView.get_application_template(user.id) if user else None
+        if resume := self.files.get('resume'):
+            resume = resume[0]
+        elif application_template:
+            resume = application_template.resume
         self.create_application(user, application, self.data, resume)
         
         if user:
             # Save or update application template to Django model
-            application_template = ApplicationTemplateView.get_application_template(user.id) or JobApplicationTemplate()
+            application_template = application_template or JobApplicationTemplate()
             self.data['owner_id'] = user.id
             ApplicationTemplateView.create_or_update_application_template(
                 application_template,
                 self.data,
-                resume,
+                application,
                 user
             )
             
@@ -150,7 +154,7 @@ class ApplicationView(JobVyneAPIView):
             **APPLICATION_SAVE_CFG
         }
         set_object_attributes(application, data, cfg)
-        application.resume = resume or data.get('resume_url')
+        application.resume = resume
         
         ApplicationView.add_application_referral_bonus(application)
         application.save()
@@ -205,22 +209,15 @@ class ApplicationView(JobVyneAPIView):
 
 class ApplicationTemplateView(JobVyneAPIView):
     
-    def post(self, request):
-        pass
-    
-    def put(self, request, application_template_id):
-        pass
-    
     @staticmethod
     @atomic
-    def create_or_update_application_template(application_template, data, resume, user):
+    def create_or_update_application_template(application_template, data, application, user):
         cfg = {**APPLICATION_SAVE_CFG}
         if not application_template.id:
             cfg['owner_id'] = None
         
         set_object_attributes(application_template, data, cfg)
-        if resume or (resume_url := data.get('resume_url')):
-            application_template.resume = resume or resume_url
+        application_template.resume = application.resume
         permission_type = PermissionTypes.EDIT.value if application_template.id else PermissionTypes.CREATE.value
         application_template.jv_check_permission(permission_type, user)
         application_template.save()

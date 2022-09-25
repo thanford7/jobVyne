@@ -9,11 +9,13 @@ from rest_framework.views import APIView
 from user_agents import parse
 
 from jvapp.models import PageView
+from jvapp.utils.logger import getLogger
 
 __all__ = ('PageTrackView',)
 
 
 geo_locator = GeoIP2()
+logger = getLogger()
 
 
 # Check whether the same IP address viewed the page within this number of minutes
@@ -37,6 +39,7 @@ class PageTrackView(APIView):
         page_view.social_link_filter_id = request.data.get('filter_id')
         
         page_view.ip_address = parse_ip_address(meta.get('HTTP_X_FORWARDED_FOR')) or parse_ip_address(meta.get('REMOTE_ADDR'))
+        logger.info(f'IP Address: {page_view.ip_address}')
         page_view.access_dt = timezone.now()
         
         location_data = None
