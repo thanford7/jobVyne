@@ -221,7 +221,7 @@ const routes = [
   },
 
   {
-    path: '/jobs-link/example/:employerId/:ownerId?/:tab?',
+    path: '/jobs-link/example/:employerId(\\d+)/:ownerId(\\d+)?/:tab?',
     name: 'jobs-link-example',
     meta: { isNoAuth: true, isExample: true },
     component: () => import('layouts/JobsLayout.vue')
