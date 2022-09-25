@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 import stripe
 from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.models import Employer
 
 stripe.api_key = settings.STRIPE_PRIVATE_KEY
 
@@ -18,6 +19,37 @@ class StripeCustomerView(JobVyneAPIView):
     
     def get(self, request):
         pass
+    
+    @staticmethod
+    def get_customer(customer_key):
+        return stripe.Customer.retrieve(customer_key)
+    
+    @staticmethod
+    def create_or_update_customer(employer: Employer):
+        update_data = {
+            'name': employer.employer_name,
+            'email': employer.billing_email,
+            'address': {
+                'line1': employer.street_address,
+                'line2': employer.street_address_2,
+                'city': employer.city,
+                'state': employer.state,
+                'country': employer.country,
+                'postal_code': employer.postal_code
+            },
+            'metadata': {
+                'employer_id': employer.id
+            }
+        }
+        if employer.stripe_customer_key:
+            stripe.Customer.modify(
+                employer.stripe_customer_key,
+                **update_data
+            )
+        else:
+            customer = stripe.Customer.create(**update_data)
+            employer.stripe_customer_key = customer['id']
+            employer.save()
 
 
 class StripeProductView(JobVyneAPIView):

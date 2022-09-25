@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.geocoding import get_raw_location
+from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
@@ -16,7 +18,7 @@ from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
-    get_serialized_employer_bonus_rule, get_serialized_employer_file, \
+    get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
 from jvapp.utils.data import AttributeCfg, is_obfuscated_string, set_object_attributes
 
@@ -152,6 +154,43 @@ class EmployerAtsView(JobVyneAPIView):
         permission_type = PermissionTypes.EDIT.value if ats.id else PermissionTypes.CREATE.value
         ats.jv_check_permission(permission_type, user)
         ats.save()
+        
+        
+class EmployerBillingView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def get(self, request, employer_id):
+        employer = Employer.objects.get(id=employer_id)
+        return Response(status=status.HTTP_200_OK, data=get_serialized_employer_billing(employer))
+    
+    def put(self, request, employer_id):
+        employer = Employer.objects.get(id=employer_id)
+        
+        # Check permissions
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        billing_permission = PermissionName.MANAGE_BILLING_SETTINGS.value
+        has_billing_permission = self.user.has_employer_permission(billing_permission, employer.id)
+        if not has_billing_permission:
+            employer._raise_permission_error(billing_permission)
+        
+        # Street address isn't important to normalize. We are just using the address to determine taxes
+        location_text = f'{self.data["city"]}, {self.data["state"]}, {self.data["country"]} {self.data.get("postal_code")}'
+        raw_location = get_raw_location(location_text)
+        if not raw_location:
+            raise ValueError(f'Could not locate address for {location_text}')
+        employer.street_address = self.data.get('street_address')
+        employer.street_address_2 = self.data.get('street_address_2')
+        employer.city = raw_location['city']
+        employer.state = raw_location['state']
+        employer.country = raw_location['country_short']
+        employer.postal_code = raw_location.get('postal_code')
+        employer.billing_email = self.data['billing_email']
+        employer.save()
+
+        StripeCustomerView.create_or_update_customer(employer)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Billing information updated successfully'
+        })
 
 
 class EmployerJobView(JobVyneAPIView):

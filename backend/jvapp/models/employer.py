@@ -34,6 +34,16 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     default_bonus_amount = models.FloatField(null=True, blank=True)
     default_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     
+    # Billing
+    stripe_customer_key = models.CharField(max_length=25, null=True, blank=True)
+    street_address = models.CharField(max_length=150, null=True, blank=True)
+    street_address_2 = models.CharField(max_length=50, null=True, blank=True)
+    postal_code = models.CharField(max_length=10, null=True, blank=True)
+    city = models.CharField(max_length=50, null=True, blank=True)
+    state = models.CharField(max_length=50, null=True, blank=True)
+    country = models.CharField(max_length=50, null=True, blank=True)
+    billing_email = models.EmailField(null=True, blank=True)
+    
     def __str__(self):
         return self.employer_name
     

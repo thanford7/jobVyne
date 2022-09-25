@@ -31,6 +31,12 @@ def get_or_create_country(country_name):
     return _get_or_create_obj(Country, country_name)
 
 
+def get_raw_location(location_text):
+    resp = requests.get(BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
+    raw_data = json.loads(resp.content)
+    return parse_location_resp(raw_data)
+
+
 def get_location(location_text):
     try:
         location_lookup = LocationLookup.objects.select_related('location').get(text=location_text)
@@ -87,6 +93,7 @@ def parse_location_resp(raw_data):
     location_data = {}
     for component in address:
         val = component['long_name']
+        short_val = component['short_name']
         comp_types = component['types']
         if 'locality' in comp_types:
             location_data['city'] = val
@@ -94,6 +101,9 @@ def parse_location_resp(raw_data):
             location_data['state'] = val
         elif 'country' in comp_types:
             location_data['country'] = val
+            location_data['country_short'] = short_val
+        elif 'postal_code' in comp_types:
+            location_data['postal_code'] = val
     lat_long = best_address['geometry']['location']
     location_data['latitude'] = lat_long['lat']
     location_data['longitude'] = lat_long['lng']

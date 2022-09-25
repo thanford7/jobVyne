@@ -13,6 +13,7 @@ urlpatterns = [
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
     re_path('^employer/ats/(?P<ats_id>[0-9]+)?/?$', employer.EmployerAtsView.as_view()),
+    re_path('^employer/billing/(?P<employer_id>[0-9]+)?/?$', employer.EmployerBillingView.as_view()),
     path('employer/bonus/default/', employer.EmployerBonusDefaultView.as_view()),
     re_path('^employer/bonus/rule/(?P<rule_id>[0-9]+)?/?$', employer.EmployerBonusRuleView.as_view()),
     path('employer/bonus/rule/order/', employer.EmployerBonusRuleOrderView.as_view()),

@@ -74,6 +74,18 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
     return data
 
 
+def get_serialized_employer_billing(employer: Employer):
+    return {
+        'street_address': employer.street_address,
+        'street_address_2': employer.street_address_2,
+        'city': employer.city,
+        'state': employer.state,
+        'country': employer.country,
+        'postal_code': employer.postal_code,
+        'billing_email': employer.billing_email
+    }
+
+
 class BONUS_TYPES(Enum):
     DIRECT = 'DIRECT'  # Bonus set directly on job
     DEFAULT = 'DEFAULT'  # No bonus rule - bonus is the default

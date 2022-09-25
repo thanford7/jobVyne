@@ -5,6 +5,7 @@ export const useEmployerStore = defineStore('employer', {
   state: () => ({
     employers: {}, // employerId: {<employer>}
     employees: {}, // employerId: [<employee1>, <employee2>, ...]
+    employerBilling: {}, // employerId: <billingData>
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
     employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
@@ -32,6 +33,12 @@ export const useEmployerStore = defineStore('employer', {
           params: { employer_id: employerId }
         })
         this.employees[employerId] = resp.data
+      }
+    },
+    async setEmployerBilling (employerId, isForceRefresh = false) {
+      if (!this.employerBilling[employerId] || isForceRefresh) {
+        const resp = await this.$api.get(`employer/billing/${employerId}/`)
+        this.employerBilling[employerId] = resp.data
       }
     },
     async setEmployerJobs (employerId, isForceRefresh = false) {
@@ -131,6 +138,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployees (employerId) {
       return this.employees[employerId]
+    },
+    getEmployerBilling (employerId) {
+      return this.employerBilling[employerId]
     },
     getEmployerFiles (employerId, fileId = null) {
       const files = this.employerFiles[employerId]
