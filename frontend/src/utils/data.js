@@ -43,6 +43,10 @@ class DataUtil {
     }, 0)
   }
 
+  roundTo (number, roundNumber) {
+    return Math.ceil(number / roundNumber) * roundNumber
+  }
+
   copyText (e) {
     const utilStore = useUtilStore()
     const targetEl = e.currentTarget

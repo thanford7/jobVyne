@@ -53,6 +53,9 @@ class StripeCustomerView(JobVyneAPIView):
 
 
 class StripeProductView(JobVyneAPIView):
+    # This is the number of employee seats where pricing tiers should end
+    # Above this number, we will develop a custom price proposal for the customer
+    MAX_PRODUCT_COUNT = 1000
     
     def get(self, request):
         return Response(status=status.HTTP_200_OK, data=self.get_products())
@@ -77,10 +80,22 @@ class StripeProductView(JobVyneAPIView):
                 'currency': price['currency'],
                 'interval': price['recurring']['interval'],
                 'type': price['type'],
-                'tiers': [{
-                    'flat_amount': get_price(tier['flat_amount']),
-                    'unit_amount': get_price(tier['unit_amount'])
-                } for tier in price['tiers']]
+                'tiers': StripeProductView.get_price_tiers(price['tiers'])
             })
     
-        return products
+        return list(products.values())
+    
+    @staticmethod
+    def get_price_tiers(raw_tiers):
+        tiers = []
+        lower_count = 0
+        for tier in raw_tiers:
+            tiers.append({
+                'flat_amount': get_price(tier['flat_amount']),
+                'unit_amount': get_price(tier['unit_amount']),
+                'lower_count': lower_count + 1,
+                'upper_count': tier['up_to'] or StripeProductView.MAX_PRODUCT_COUNT
+            })
+            lower_count = tier['up_to']
+        
+        return tiers

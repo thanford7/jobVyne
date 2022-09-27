@@ -15,3 +15,10 @@ table, table.q-table {
     white-space: normal !important;
   }
 }
+
+table.table {
+  table-layout: auto;
+  td, th {
+    padding: 4px;
+  }
+}

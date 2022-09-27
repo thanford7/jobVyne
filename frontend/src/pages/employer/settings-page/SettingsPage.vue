@@ -14,7 +14,7 @@
         <q-tab name="style" label="Brand style"/>
         <q-tab name="security" label="Security"/>
         <q-tab name="integration" label="Integration"/>
-        <q-tab v-if="hasPaymentPermission" name="payment" label="Payment"/>
+        <q-tab v-if="hasPaymentPermission" name="billing" label="Billing"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="style">
@@ -106,7 +106,7 @@
         <q-tab-panel name="integration">
           <IntegrationSection :ats-data="employerData.ats_cfg" @update-employer="updateEmployerData()"/>
         </q-tab-panel>
-        <q-tab-panel v-if="hasPaymentPermission" name="payment">
+        <q-tab-panel v-if="hasPaymentPermission" name="billing">
           <div class="row q-mb-md">
             <div class="col-12 q-gutter-x-sm">
               <q-btn
@@ -201,6 +201,17 @@
               </div>
             </div>
           </q-form>
+          <q-form ref="planForm">
+            <div class="row">
+              <div class="col-12 text-h6">
+                Plan information
+              </div>
+              <div class="col-12">
+                <div>Current active {{ dataUtil.pluralize('employee', employeeCount) }}</div>
+                <PlanSection :employee-count="employeeCount"/>
+              </div>
+            </div>
+          </q-form>
         </q-tab-panel>
       </q-tab-panels>
     </div>
@@ -215,12 +226,14 @@ import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import PageHeader from 'components/PageHeader.vue'
 import InputPermittedEmailDomains from 'pages/employer/settings-page/InputPermittedEmailDomains.vue'
 import IntegrationSection from 'pages/employer/settings-page/IntegrationSection.vue'
+import PlanSection from 'pages/employer/settings-page/PlanSection.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
+import { USER_TYPES } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
@@ -228,6 +241,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 export default {
   name: 'SettingsPage',
   components: {
+    PlanSection,
     EmailInput,
     InputPermittedEmailDomains,
     IntegrationSection,
@@ -245,6 +259,7 @@ export default {
       currentBillingData: this.getEmployerBillingDataCopy(),
       billingData: this.getEmployerBillingDataCopy(),
       isSavingBillingData: false,
+      dataUtil,
       fileUtil,
       FILE_TYPES
     }
@@ -258,6 +273,11 @@ export default {
     },
     hasPaymentDataChanged () {
       return !dataUtil.isDeepEqual(this.currentBillingData, this.billingData)
+    },
+    employeeCount () {
+      return this.employerData.employees.filter((employee) => {
+        return (employee.user_type_bits & USER_TYPES.Employee) && !employee.is_employer_deactivated
+      }).length
     }
   },
   methods: {
