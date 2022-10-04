@@ -351,6 +351,10 @@ class DataUtil {
     }, {})
   }
 
+  isBetween (number, lowerBound, upperBound) {
+    return number >= lowerBound && number <= upperBound
+  }
+
   isArraysEqual (a, b, isCheckOrder = false) {
     if (a === b) return true
     if (a === null || b === null) return false

@@ -81,6 +81,18 @@ services:
     depends_on:
       - db
 
+  stripe-cli:
+    image: stripe/stripe-cli
+    container_name: stripe-cli
+    build: .
+    command: "listen --api-key ${STRIPE_API_KEY} --device-name ${STRIPE_DEVICE_NAME} --forward-to https://backend:8000/api/v1/billing/webhooks/ --skip-verify"
+    env_file:
+      - stripe_cli.env
+    networks:
+      - main
+    depends_on:
+      - backend
+
 #  cron:
 #    container_name: cron
 #    build:

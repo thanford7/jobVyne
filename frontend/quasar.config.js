@@ -71,9 +71,14 @@ module.exports = configure(function (ctx) {
 
       // publicPath: '/',
       // analyze: true,
-      env: {
-        API_URL: (ctx.dev) ? '/api/v1/' : '/backend/api/v1',
-        GOOGLE_CAPTCHA_KEY: (ctx.dev) ? '6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp' : '6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl'
+      env: (ctx.dev) ? {
+        API_URL: '/api/v1/',
+        GOOGLE_CAPTCHA_KEY: '6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp',
+        STRIPE_PUBLIC_KEY: 'pk_test_51LRzlsEJHiHytoQBmLNj0LU3xg6V0vPE7rw92vCIsoxlUChlnGMqB93uAdAenZZVtZLChv9khkBUOsUBny3mXXFb009nRm5IiQ'
+      } : {
+        API_URL: '/backend/api/v1',
+        GOOGLE_CAPTCHA_KEY: '6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl',
+        STRIPE_PUBLIC_KEY: null // TODO: Need to add this
       },
       // rawDefine: {}
       // ignorePublicFolder: true,

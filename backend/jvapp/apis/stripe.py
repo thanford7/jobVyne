@@ -1,24 +1,33 @@
+from datetime import datetime
+
 from django.conf import settings
+from django.db.models import F
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 import stripe
-from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import Employer
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.models import Employer, EmployerSubscription, JobVyneUser, PermissionName
+from jvapp.models.abstract import PermissionTypes
+from jvapp.permissions.employer import IsAdminOrEmployerPermission
+from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_email
 
 stripe.api_key = settings.STRIPE_PRIVATE_KEY
+ACCEPTED_PAYMENT_TYPES = ['card', 'us_bank_account']
+INACTIVE_STATUSES = ['incomplete_expired', 'canceled']
 
 
 def get_price(price_in_pennies):
     if not price_in_pennies:
         return price_in_pennies
-    return price_in_pennies / 100
+    return int(price_in_pennies) / 100
 
 
 class StripeCustomerView(JobVyneAPIView):
-    
-    def get(self, request):
-        pass
     
     @staticmethod
     def get_customer(customer_key):
@@ -50,6 +59,95 @@ class StripeCustomerView(JobVyneAPIView):
             customer = stripe.Customer.create(**update_data)
             employer.stripe_customer_key = customer['id']
             employer.save()
+            
+            
+class StripePaymentMethodView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    billing_permission = PermissionName.MANAGE_BILLING_SETTINGS.value
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+    
+        employer = Employer.objects.get(id=employer_id)
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        has_billing_permission = self.user.has_employer_permission(self.billing_permission, employer.id)
+        if not has_billing_permission:
+            return Response('You do not have permission to view billing settings', status=status.HTTP_401_UNAUTHORIZED)
+        customer = StripeCustomerView.get_customer(employer.stripe_customer_key)
+        payment_methods = []
+        for payment_type in ACCEPTED_PAYMENT_TYPES:
+            payments = stripe.Customer.list_payment_methods(
+                employer.stripe_customer_key,
+                type=payment_type,
+            )
+            if payments:
+                for payment in payments:
+                    payment_methods.append(self.normalize_payment_method(payment, customer.invoice_settings.default_payment_method))
+        
+        return Response(status=status.HTTP_200_OK, data=payment_methods)
+    
+    def put(self, request):
+        if not (payment_method_id := self.data.get('id')):
+            return Response('A payment method ID is required', status=status.HTTP_400_BAD_REQUEST)
+
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id, expand=['customer'])
+        employer = Employer.objects.get(stripe_customer_key=payment_method.customer.id)
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        has_billing_permission = self.user.has_employer_permission(self.billing_permission, employer.id)
+        if not has_billing_permission:
+            return Response('You do not have permission to update payment methods', status=status.HTTP_401_UNAUTHORIZED)
+        
+        if self.data.get('is_default'):
+            stripe.Customer.modify(
+                payment_method.customer.id,
+                invoice_settings={"default_payment_method": payment_method_id},
+            )
+            
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully updated default payment method'
+        })
+        
+    def delete(self, request, payment_method_id):
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id, expand=['customer'])
+        employer = Employer.objects.get(stripe_customer_key=payment_method.customer.id)
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        has_billing_permission = self.user.has_employer_permission(self.billing_permission, employer.id)
+        if not has_billing_permission:
+            return Response('You do not have permission to delete payment methods', status=status.HTTP_401_UNAUTHORIZED)
+        
+        if payment_method_id == payment_method.customer.invoice_settings.default_payment_method:
+            return Response('You cannot delete the default payment method', status=status.HTTP_400_BAD_REQUEST)
+
+        stripe.PaymentMethod.detach(payment_method_id)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully deleted payment method'
+        })
+    
+    @staticmethod
+    def normalize_payment_method(payment_method, default_payment_id):
+        payment_type = payment_method['type']
+        details = payment_method[payment_type]
+        if payment_type == 'card':
+            data = {
+                'institution': details.brand,
+                'exp_month': details.exp_month,
+                'exp_year': details.exp_year,
+                'last4': details.last4
+            }
+        elif payment_type == 'us_bank_account':
+            data = {
+                'institution': details.bank_name,
+                'account_type': details.account_type,
+                'last4': details.last4
+            }
+        else:
+            raise ValueError(f'Unknown payment type: {payment_type}')
+        
+        data['id'] = payment_method.id
+        data['type'] = payment_type
+        data['is_default'] = default_payment_id and default_payment_id == payment_method.id
+        return data
 
 
 class StripeProductView(JobVyneAPIView):
@@ -71,7 +169,7 @@ class StripeProductView(JobVyneAPIView):
             for product in stripe.Product.list(active=True)['data']
         }
         prices = stripe.Price.list(active=True, expand=['data.tiers'])['data']
-    
+        
         for price in prices:
             product = products[price['product']]
             product['prices'].append({
@@ -82,7 +180,7 @@ class StripeProductView(JobVyneAPIView):
                 'type': price['type'],
                 'tiers': StripeProductView.get_price_tiers(price['tiers'])
             })
-    
+        
         return list(products.values())
     
     @staticmethod
@@ -99,3 +197,226 @@ class StripeProductView(JobVyneAPIView):
             lower_count = tier['up_to']
         
         return tiers
+
+
+class StripeSubscriptionView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        employer = Employer.objects.prefetch_related('subscription').get(id=employer_id)
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        jv_subscription = next((s for s in employer.subscription.all() if s.status not in INACTIVE_STATUSES), None)
+        if not jv_subscription:
+            subscription_data = None
+        else:
+            subscription = stripe.Subscription.retrieve(
+                jv_subscription.stripe_key,
+                expand=['latest_invoice', 'latest_invoice.payment_intent']
+            )
+            subscription_item = subscription.to_dict()['items']['data'][0]
+            subscription_price = subscription_item['price']
+            unit_price = get_price(subscription.latest_invoice.lines.data[0]['unit_amount_excluding_tax'])
+            subscription_data = {
+                'id': subscription.id,
+                'active': subscription_price['active'],
+                'interval': subscription_price['recurring']['interval'],
+                'quantity': subscription_item['quantity'],
+                'latest_invoice': subscription.latest_invoice,
+                'total_price': unit_price * subscription_item['quantity'],
+                'start_date': datetime.fromtimestamp(subscription.start_date),
+                'status': subscription.status
+            }
+        return Response(status=status.HTTP_200_OK, data=subscription_data)
+    
+    def post(self, request):
+        employer = Employer.objects.prefetch_related('subscription').get(id=self.data['employer_id'])
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        jv_subscription = next((s for s in employer.subscription.all() if not s.status.lower() == 'canceled'), None)
+        
+        active_employees = employer.employee\
+            .annotate(employee_filter=F('user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE))\
+            .filter(is_employer_deactivated=False, employee_filter__gt=0)\
+            .count()
+        
+        if self.data['quantity'] < active_employees:
+            return Response(
+                f'The subscription seats of {self.data["quantity"]} is insufficient for the current {active_employees} active employees',
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if jv_subscription:  # Update subscription if there is an active one
+            subscription = stripe.Subscription.retrieve(jv_subscription.stripe_key)
+            subscription_item = subscription.to_dict()['items']['data'][0]
+            subscription_item = stripe.SubscriptionItem.modify(
+                subscription_item.id,
+                price=self.data['price_id'],
+                quantity=self.data['quantity'],
+                proration_behavior='always_invoice'
+            )
+            jv_subscription.employee_seats = self.data['quantity']
+            jv_subscription.save()
+        else:  # Create new subscription
+            subscription = stripe.Subscription.create(
+                items=[
+                    {'price': self.data['price_id'], 'quantity': self.data['quantity']},
+                ],
+                customer=employer.stripe_customer_key,
+                cancel_at_period_end=False,
+                currency='USD',
+                payment_behavior='default_incomplete',
+                collection_method='charge_automatically',
+            )
+            
+            EmployerSubscription(
+                employer=employer,
+                stripe_key=subscription.id,
+                status=subscription.status,
+                employee_seats=self.data['quantity']
+            ).save()
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'JobVyne plan successfully updated'
+        })
+    
+    def put(self, request, subscription_id):
+        employer = Employer.objects.get(id=self.data['employer_id'])
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        
+        if self.data.get('is_reinstate'):
+            subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=False)
+            jv_subscription = EmployerSubscription.objects.get(stripe_key=subscription.id)
+            jv_subscription.status = subscription.status
+            jv_subscription.save()
+    
+            return Response(status=status.HTTP_200_OK, data={
+                SUCCESS_MESSAGE_KEY: 'Successfully un-cancelled subscription'
+            })
+        
+        return Response(status=status.HTTP_200_OK)
+    
+    def delete(self, request, subscription_id):
+        employer = Employer.objects.get(id=self.data['employer_id'])
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        
+        send_email('JobVyne | Customer cancellation', EMAIL_ADDRESS_SUPPORT, html_content=f'''
+            <div>{employer.employer_name} (ID={employer.id}) cancelled their subscription</div>
+        ''')
+
+        subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
+        jv_subscription = EmployerSubscription.objects.get(stripe_key=subscription.id)
+        jv_subscription.status = subscription.status
+        jv_subscription.save()
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully cancelled subscription'
+        })
+    
+    
+class StripeSetupIntentView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        employer = Employer.objects.get(id=employer_id)
+        employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        
+        # Check for existing setup intent and provide that instead of creating a new one
+        setup_intents = stripe.SetupIntent.list(customer=employer.stripe_customer_key)
+        setup_intent = next((s for s in setup_intents if s.status == 'requires_payment_method'), None)
+        
+        if not setup_intent:
+            setup_intent = stripe.SetupIntent.create(
+                customer=employer.stripe_customer_key,
+                payment_method_types=ACCEPTED_PAYMENT_TYPES,
+                usage='off_session'
+            )
+            
+        return Response(status=status.HTTP_200_OK, data={'client_secret': setup_intent.client_secret})
+        
+
+class StripeWebhooksView(APIView):
+    permission_classes = [AllowAny]
+    
+    @method_decorator(csrf_exempt)
+    @method_decorator(ensure_csrf_cookie)
+    def post(self, request):
+        # If you are testing your webhook locally with the Stripe CLI you
+        # can find the endpoint's secret by running `stripe listen`
+        sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+        try:
+            event = stripe.Webhook.construct_event(
+                request.body, sig_header, settings.STRIPE_WEBHOOK_PRIVATE_KEY
+            )
+        except ValueError as e:
+            raise e
+        except stripe.error.SignatureVerificationError as e:
+            raise e
+            
+            # Handle the event
+        if event['type'] == 'customer.subscription.created':
+            subscription = event['data']['object']
+        elif event['type'] in ('customer.subscription.updated', 'customer.subscription.deleted'):
+            subscription = event['data']['object']
+            jv_subscription = EmployerSubscription.objects.get(stripe_key=subscription.id)
+            jv_subscription.status = subscription.status
+            jv_subscription.save()
+        elif event['type'] == 'invoice.created':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.deleted':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.finalization_failed':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.finalized':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.marked_uncollectible':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.paid':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.payment_action_required':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.payment_failed':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.payment_succeeded':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.sent':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.upcoming':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.updated':
+            invoice = event['data']['object']
+        elif event['type'] == 'invoice.voided':
+            invoice = event['data']['object']
+        elif event['type'] == 'payment_intent.succeeded':
+            # If no payment is attached to customer, attach it
+            payment_intent = event['data']['object']
+        elif event['type'] == 'payment_method.attached':
+            payment_method = event['data']['object']
+        elif event['type'] == 'payment_method.automatically_updated':
+            payment_method = event['data']['object']
+        elif event['type'] == 'payment_method.detached':
+            payment_method = event['data']['object']
+        elif event['type'] == 'payment_method.updated':
+            payment_method = event['data']['object']
+        elif event['type'] == 'setup_intent.succeeded':
+            # If no payment is attached to customer, attach it
+            setup_intent = event['data']['object']
+            customer = stripe.Customer.retrieve(setup_intent.customer)
+            if not customer.invoice_settings.default_payment_method:
+                stripe.Customer.modify(
+                    setup_intent.customer,
+                    invoice_settings={"default_payment_method": setup_intent.payment_method},
+                )
+            else:
+                stripe.PaymentMethod.attach(
+                    setup_intent.payment_method,
+                    customer=setup_intent.customer,
+                )
+        else:
+            print('Unhandled event type {}'.format(event['type']))
+        
+        return Response(status=status.HTTP_200_OK)

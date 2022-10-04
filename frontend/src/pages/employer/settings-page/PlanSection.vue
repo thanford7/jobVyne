@@ -10,10 +10,26 @@
       unelevated
       toggle-color="primary" color="grey-3" text-color="grey-7"
     />
-    <div class="row q-pa-md q-mt-md">
-      <div v-for="plan in getPriceTiersForInterval()" class="col-12 col-md-6 q-px-xs q-py-sm q-px-md-sm q-my-md-md">
-        <q-card class="h-100">
-          <div class="text-h6 q-px-md q-py-sm">{{ plan.name }}</div>
+    <q-btn
+      v-if="canClose"
+      dense flat icon="close"
+      class="jv-plans__close"
+      @click="$emit('close')"
+    />
+    <div class="row q-px-md q-pt-md q-mt-md">
+      <div v-if="subscription" class="col-12 text-center">
+        Update your plan. You will be charged a prorated amount based on the length
+        of time remaining in your existing subscription term. If you change from a monthly
+        plan to a yearly plan or vice versa, the billing period will be updated.
+      </div>
+      <div v-else class="col-12 text-center">
+        Select a plan
+      </div>
+      <div v-for="plan in getPricesForInterval().tiers" class="col-12 col-md-6 q-px-xs q-py-sm q-px-md-sm q-my-md-md">
+        <q-card class="h-100 jv-plans__price" :class="isNotEnoughSeats(plan) ? 'bg-grey-3' : ''">
+          <h6 class="q-px-md q-py-sm q-my-none" :class="(plan.is_selected) ? 'jv-plans__price--selected' : ''">
+            {{ plan.name }}
+          </h6>
           <q-separator/>
           <q-card-section class="q-mb-lg">
             <div>
@@ -21,7 +37,7 @@
                 <tbody>
                 <tr>
                   <td class="text-bold">Price per seat</td>
-                  <td>{{ getPlanPriceText(plan) }}</td>
+                  <td>{{ subscriptionUtil.getPlanPriceText(plan) }}</td>
                 </tr>
                 <tr>
                   <td class="text-bold">
@@ -31,7 +47,7 @@
                       Users with only the "Employer" type (e.g. Admin, HR) are not included.
                     </CustomTooltip>
                   </td>
-                  <td>{{ getSeatsRange(plan) }}</td>
+                  <td>{{ subscriptionUtil.getSeatsRange(plan) }}</td>
                 </tr>
                 <tr v-if="plan.seat_step">
                   <td>
@@ -55,9 +71,25 @@
               </table>
             </div>
           </q-card-section>
+          <CustomTooltip v-if="isNotEnoughSeats(plan)" :is_include_icon="false">
+            <template v-slot:content>
+              <q-btn
+                disabled
+                color="grey-6" unelevated square
+                class="w-100 border-bottom-rounded jv-plans__select-btn"
+                @click="createSubscription(plan)"
+              >
+                Select plan ({{ getTotalPlanPrice(plan) }})
+              </q-btn>
+            </template>
+            There are currently too many active employees for this plan. If you wish to choose this plan,
+            deactivate some employees from the Users page
+          </CustomTooltip>
           <q-btn
+            v-else
             color="grey-6" unelevated square
             class="w-100 border-bottom-rounded jv-plans__select-btn"
+            @click="createSubscription(plan)"
           >
             Select plan ({{ getTotalPlanPrice(plan) }})
           </q-btn>
@@ -71,6 +103,8 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import { Loading } from 'quasar'
 import dataUtil from 'src/utils/data.js'
+import { getAjaxFormData } from 'src/utils/requests.js'
+import subscriptionUtil from 'src/utils/subscription.js'
 import { useBillingStore } from 'stores/billing-store.js'
 
 const PLAN_PERIODS = {
@@ -85,7 +119,13 @@ export default {
   name: 'PlanSection',
   components: { CustomTooltip },
   props: {
-    employeeCount: [Number, null]
+    employeeCount: [Number, null],
+    employerId: [Number, null],
+    subscription: [Object, null],
+    canClose: {
+      type: Boolean,
+      default: false
+    }
   },
   data () {
     return {
@@ -95,43 +135,35 @@ export default {
       formData: {
         plan_period: PLAN_PERIODS.year
       },
-      dataUtil
+      dataUtil,
+      subscriptionUtil
     }
   },
   methods: {
-    getPriceTiersForInterval () {
+    getPricesForInterval () {
       const priceSchedule = this.planData.prices.find((price) => {
         return price.interval === this.formData.plan_period
       })
-      return priceSchedule.tiers
-    },
-    getPlanPriceText (plan) {
-      const price = plan.unit_amount
-      if (Number.isFinite(price)) {
-        return dataUtil.formatCurrency(price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      }
-      return price
-    },
-    getSeatsRange (plan) {
-      if (!plan.lower_count || !plan.upper_count) {
-        return plan.lower_count || plan.upper_count
-      }
-      return `${plan.lower_count}-${plan.upper_count}`
+      return priceSchedule
     },
     getTotalPlanPrice (plan) {
-      let price = plan.unit_amount
-      if (Number.isFinite(price)) {
-        price = price * plan.selected_seats
-        price = dataUtil.formatCurrency(
-          price,
-          { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-        )
-        return `${price} per ${this.formData.plan_period}`
-      }
-      return price
+      return this.subscriptionUtil.getTotalPlanPrice(plan, this.formData.plan_period)
+    },
+    isNotEnoughSeats (plan) {
+      return plan.upper_count && this.employeeCount && this.employeeCount > plan.upper_count
     },
     updateSelectedSeats (plan) {
       plan.selected_seats = dataUtil.roundTo(parseInt(plan.selected_seats), plan.seat_step)
+    },
+    async createSubscription (plan) {
+      const prices = this.getPricesForInterval()
+      const data = {
+        employer_id: this.employerId,
+        price_id: prices.id,
+        quantity: plan.selected_seats
+      }
+      await this.$api.post('billing/subscription/', getAjaxFormData(data))
+      this.$emit('updateSubscription')
     }
   },
   setup () {
@@ -152,8 +184,20 @@ export default {
       priceSchedule.tiers.forEach((tier, idx) => {
         tier.name = PLAN_TIER_NAMES[idx]
         tier.seat_step = PLAN_SEAT_STEP[idx]
-        if (idx === 0) {
+        tier.is_selected = false
+        if (
+          this.subscription &&
+          this.subscription.quantity >= tier.lower_count &&
+          this.subscription.quantity <= tier.upper_count
+        ) {
+          tier.is_selected = true
+        }
+        if (tier.is_selected) {
+          tier.selected_seats = this.subscription.quantity
+        } else if (idx === 0) {
           tier.selected_seats = tier.upper_count
+        } else if (tier.lower_count && tier.upper_count && dataUtil.isBetween(this.employeeCount, tier.lower_count, tier.upper_count)) {
+          tier.selected_seats = this.employeeCount
         } else {
           tier.selected_seats = tier.lower_count
         }
@@ -182,9 +226,37 @@ export default {
   &__select-btn {
     position: absolute;
     bottom: 0;
+
     &:hover {
       background-color: $accent !important;
     }
+  }
+
+  &__price {
+    position: relative;
+
+    &--selected {
+      background-color: $secondary;
+      color: $white;
+      border-top-right-radius: 4px;
+      border-top-left-radius: 4px;
+    }
+
+    &__selected {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateY(-75%) translateX(-50%);
+      background-color: $gray-100;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+  }
+
+  &__close {
+    position: absolute;
+    top: 0;
+    right: 0;
   }
 }
 </style>

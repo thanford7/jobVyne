@@ -51,7 +51,11 @@ urlpatterns = [
     
     # Billing
     path('billing/customer/', stripe.StripeProductView.as_view()),
+    re_path('^billing/payment-method/(?P<payment_method_id>\S+)?/?$', stripe.StripePaymentMethodView.as_view()),
     path('billing/product/', stripe.StripeProductView.as_view()),
+    path('billing/setup/', stripe.StripeSetupIntentView.as_view()),
+    re_path('^billing/subscription/((?P<subscription_id>\S+)/)?$', stripe.StripeSubscriptionView.as_view()),
+    path('billing/webhooks/', stripe.StripeWebhooksView.as_view()),
 
     # Auth
     path('auth/login/', auth.LoginView.as_view()),

@@ -10,7 +10,8 @@ from jvapp.models.user import PermissionName
 __all__ = (
     'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
-    'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier'
+    'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
+    'EmployerSubscription'
 )
 
 
@@ -61,6 +62,22 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_delete(self, user):
         return user.is_admin
+    
+    
+class EmployerSubscription(models.Model, JobVynePermissionsMixin):
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='subscription')
+    stripe_key = models.CharField(max_length=30, unique=True)
+    status = models.CharField(max_length=20)
+    employee_seats = models.PositiveIntegerField()
+    
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                user.employer_id == self.id
+                and user.has_employer_permission(PermissionName.MANAGE_BILLING_SETTINGS.value, user.employer_id)
+            )
+        )
     
     
 class EmployerAts(AuditFields, JobVynePermissionsMixin):

@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 
@@ -18,3 +19,7 @@ def get_datetime_or_none(dateStr, format='%m/%d/%Y %H:%M:%S%z', as_date=False):
     if as_date:
         return dt.date()
     return dt
+
+
+def get_unix_datetime(date_time: datetime):
+    return int(time.mktime(date_time.timetuple()))

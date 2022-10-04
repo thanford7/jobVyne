@@ -36,7 +36,7 @@ logger = setLogger(LOG_LEVEL)
 logger.info(f'Base directory is: {BASE_DIR}')
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_LOCAL = env('IS_LOCAL', cast=bool)
@@ -143,6 +143,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ),
     'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
         'jobVyne.multiPartJsonParser.MultiPartJsonParser',
     )
 }
@@ -335,5 +336,6 @@ GOOGLE_MAPS_KEY = env('GOOGLE_MAPS_KEY')  # This is for reverse geolocation look
 
 # Stripe payments
 STRIPE_PRIVATE_KEY = env('STRIPE_PRIVATE_KEY')
+STRIPE_WEBHOOK_PRIVATE_KEY = env('STRIPE_WEBHOOK_PRIVATE_KEY')
 
 # CELERY_BROKER_URL = 'pyamqp://rabbitmq:5672'
