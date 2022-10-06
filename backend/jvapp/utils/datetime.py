@@ -23,3 +23,7 @@ def get_datetime_or_none(dateStr, format='%m/%d/%Y %H:%M:%S%z', as_date=False):
 
 def get_unix_datetime(date_time: datetime):
     return int(time.mktime(date_time.timetuple()))
+
+
+def get_datetime_from_unix(unix_time):
+    return datetime.utcfromtimestamp(int(unix_time))

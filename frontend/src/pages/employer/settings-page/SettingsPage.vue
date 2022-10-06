@@ -16,7 +16,7 @@
         <q-tab name="integration" label="Integration"/>
         <q-tab v-if="hasPaymentPermission" name="billing" label="Billing"/>
       </q-tabs>
-      <q-tab-panels v-model="tab" animated @transition="setupStripePaymentDom()">
+      <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="style">
           <div class="row q-gutter-y-md">
             <div class="col-12 q-gutter-x-sm">
@@ -165,17 +165,35 @@
                       <td>{{ subscriptionData.quantity }}</td>
                     </tr>
                     <tr>
-                      <td class="text-bold">Plan interval</td>
+                      <td class="text-bold">Billing interval</td>
                       <td>{{ dataUtil.capitalize(subscriptionData.interval) }}</td>
                     </tr>
                     <tr>
                       <td class="text-bold">Price per {{ subscriptionData.interval }}</td>
-                      <td>{{subscriptionUtil.getFormattedSubscriptionPrice(subscriptionData)}}
+                      <td>{{ subscriptionUtil.getFormattedPrice(subscriptionData.total_price) }}
                       </td>
                     </tr>
                     <tr>
-                      <td class="text-bold">Start date</td>
-                      <td>{{ dateTimeUtil.getShortDate(subscriptionData.start_date) }}</td>
+                      <td class="text-bold">Subscription term</td>
+                      <td>
+                        {{ dateTimeUtil.getShortDate(subscriptionData.start_date) }} -
+                        {{ dateTimeUtil.getShortDate(subscriptionData.end_date) }}
+                        <CustomTooltip v-if="subscriptionData.is_cancel_at_end" :is_include_icon="false">
+                          <template v-slot:content>
+                            <q-chip dense label="No auto-renew" color="negative"/>
+                          </template>
+                          The subscription will remain active until the end date, but will not
+                          automatically renew afterwards. Click the "Un-cancel subscription" button
+                          to ensure your subscription remains active.
+                        </CustomTooltip>
+                        <CustomTooltip v-else :is_include_icon="false">
+                          <template v-slot:content>
+                            <q-chip dense label="Auto-renew" color="positive"/>
+                          </template>
+                          The subscription will auto-renew at the end of the subscription term and you will
+                          be pilled for the full subscription amount.
+                        </CustomTooltip>
+                      </td>
                     </tr>
                     </tbody>
                   </table>
@@ -184,14 +202,14 @@
                   No plan selected
                 </div>
                 <div
-                  v-if="subscriptionData.status !== SUBSCRIPTION_STATUS.CANCELED"
+                  v-if="!subscriptionData.is_cancel_at_end"
                   class="q-mt-md"
                 >
                   <q-btn
                     v-if="subscriptionUtil.getIsUnpaid(subscriptionData.status)"
                     class="q-mr-sm"
                     color="primary"
-                    :label="`Pay subscription (${subscriptionUtil.getFormattedSubscriptionPrice(subscriptionData)})`"
+                    :label="`Pay subscription (${subscriptionUtil.getFormattedPrice(subscriptionData.total_price)})`"
                     @click="openPaymentDialog"
                   />
                   <q-btn
@@ -248,100 +266,99 @@
               <BillingInformationFields :billing-data="billingData"/>
             </div>
           </q-form>
-          <q-form ref="paymentForm" @submit.prevent="submitPaymentMethod()">
-            <div class="row">
-              <div class="col-12 text-h6 q-mb-md">
-                Payment information
-              </div>
-              <div class="col-12 q-mb-md">
-                <q-table
-                  v-if="!isAddPaymentMethod"
-                  :rows="paymentMethods"
-                  :columns="paymentMethodColumns"
-                  row-key="id"
-                  hide-pagination
-                  no-data-label="No payment methods to display"
-                  selection="single"
-                  v-model:selected="selectedPaymentMethod"
-                >
-                  <template v-slot:top>
-                    <q-btn ripple color="primary" label="Add payment method" @click="isAddPaymentMethod = true"/>
-                    <template v-if="selectedPaymentMethod.length">
-                      <q-btn
-                        v-if="!selectedPaymentMethod[0].is_default"
-                        ripple color="primary" label="Make default"
-                        class="q-ml-sm"
-                        @click="makeDefaultPaymentMethod"
-                      />
-                      <CustomTooltip v-if="selectedPaymentMethod[0].is_default" :is_include_icon="false">
-                        <template v-slot:content>
-                          <q-btn
-                            ripple color="negative" label="Delete" icon="delete"
-                            class="q-ml-sm"
-                            disabled
-                            @click="deletePaymentMethod"
-                          />
-                        </template>
-                        Default payment method cannot be deleted
-                      </CustomTooltip>
-                      <q-btn
-                        v-else
-                        ripple color="negative" label="Delete" icon="delete"
-                        class="q-ml-sm"
-                        @click="deletePaymentMethod"
-                      />
-                    </template>
-                  </template>
-                  <template v-slot:body-cell-accountType="props">
-                    <q-td key="accountType" :props="props">
-                      <span v-if="props.row.type === 'card'">Card</span>
-                      <span v-else-if="props.row.type === 'us_bank_account'">Bank account</span>
-                      <q-chip v-if="props.row.is_default" label="Default" color="positive" dense/>
-                    </q-td>
-                  </template>
-                  <template v-slot:body-cell-details="props">
-                    <q-td key="details" :props="props">
-                      <template v-if="props.row.type === 'card'">
-                        <div>
-                          <span class="text-bold">Card number: </span>
-                          *********{{ props.row.last4 }}
-                        </div>
-                        <div>
-                          <span class="text-bold">Expiration: </span>
-                          {{ props.row.exp_month }}/{{ props.row.exp_year }}
-                        </div>
-                      </template>
-                      <template v-else-if="props.row.type === 'us_bank_account'">
-                        <div>
-                          <span class="text-bold">Account number: </span>
-                          *********{{ props.row.last4 }}
-                        </div>
-                        <div>
-                          <span class="text-bold">Account type: </span>
-                          {{ dataUtil.capitalize(props.row.account_type) }}
-                        </div>
-                      </template>
-                    </q-td>
-                  </template>
-                </q-table>
-              </div>
-              <div class="col-12"
-                   :style="`visibility: ${(isAddPaymentMethod) ? 'visible' : 'hidden'}`">
-                <div id="payment-element">
-                  <!-- Stripe Elements will create form elements here -->
-                </div>
-                <div class="q-mt-sm">
-                  <q-btn
-                    label="Cancel" color="grey-6" @click="isAddPaymentMethod = false"
-                    class="q-mr-sm"
-                  />
-                  <q-btn
-                    label="Save payment details" color="accent" type="submit"
-                  />
-                </div>
-              </div>
+          <div class="row">
+            <div class="col-12 text-h6 q-mb-md">
+              Payment information
             </div>
-          </q-form>
+            <div class="col-12 q-mb-md">
+              <q-table
+                v-if="!isAddPaymentMethod"
+                :rows="paymentMethods"
+                :columns="paymentMethodColumns"
+                row-key="id"
+                hide-pagination
+                no-data-label="No payment methods to display"
+                selection="single"
+                v-model:selected="selectedPaymentMethod"
+              >
+                <template v-slot:top>
+                  <q-btn ripple color="primary" label="Add payment method" @click="isAddPaymentMethod = true"/>
+                  <template v-if="selectedPaymentMethod.length">
+                    <q-btn
+                      v-if="!selectedPaymentMethod[0].is_default"
+                      ripple color="primary" label="Make default"
+                      class="q-ml-sm"
+                      @click="makeDefaultPaymentMethod"
+                    />
+                    <CustomTooltip v-if="selectedPaymentMethod[0].is_default" :is_include_icon="false">
+                      <template v-slot:content>
+                        <q-btn
+                          ripple color="negative" label="Delete" icon="delete"
+                          class="q-ml-sm"
+                          disabled
+                          @click="deletePaymentMethod"
+                        />
+                      </template>
+                      Default payment method cannot be deleted
+                    </CustomTooltip>
+                    <q-btn
+                      v-else
+                      ripple color="negative" label="Delete" icon="delete"
+                      class="q-ml-sm"
+                      @click="deletePaymentMethod"
+                    />
+                  </template>
+                </template>
+                <template v-slot:body-cell-accountType="props">
+                  <q-td key="accountType" :props="props">
+                    <StripeAccountType :payment-method="props.row"/>
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-details="props">
+                  <q-td key="details" :props="props">
+                    <StripePaymentMethodDetails :payment-method="props.row"/>
+                  </q-td>
+                </template>
+              </q-table>
+            </div>
+          </div>
+          <StripePaymentFields
+            v-if="isAddPaymentMethod"
+            :billing-data="billingData"
+            :employer-data="employerData"
+            @cancel="isAddPaymentMethod = false"
+            @submitted="isAddPaymentMethod = false"
+          />
+          <div class="row q-mt-md">
+            <div class="col-12 text-h6 q-mb-md">
+              Past payments
+            </div>
+            <div class="col-12 q-mb-md">
+              <q-table
+                :rows="payments"
+                :columns="pastPaymentColumns"
+                hide-pagination
+                no-data-label="No payments to display"
+              >
+                <template v-slot:body-cell-paymentDT="props">
+                  <q-td key="paymentDT" :props="props">
+                    {{ dateTimeUtil.getShortDate(props.row.charge_dt) }}
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-subscriptionDateRange="props">
+                  <q-td key="subscriptionDateRange" :props="props">
+                    {{ dateTimeUtil.getShortDate(props.row.period_start) }} -
+                    {{ dateTimeUtil.getShortDate(props.row.period_end) }}
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-paymentURL="props">
+                  <q-td key="paymentURL" :props="props">
+                    <a :href="props.row.receipt_url" target="_blank">View receipt</a>
+                  </q-td>
+                </template>
+              </q-table>
+            </div>
+          </div>
         </q-tab-panel>
       </q-tab-panels>
     </div>
@@ -350,7 +367,9 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
-import DialogSubscriptionPayment from 'components/dialogs/DialogSubscriptionPayment.vue'
+import DialogSubscriptionPayment, {
+  loadDialogSubscriptionPaymentFn
+} from 'components/dialogs/DialogSubscriptionPayment.vue'
 import ColorPicker from 'components/inputs/ColorPicker.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import PageHeader from 'components/PageHeader.vue'
@@ -358,13 +377,15 @@ import BillingInformationFields from 'pages/employer/settings-page/BillingInform
 import InputPermittedEmailDomains from 'pages/employer/settings-page/InputPermittedEmailDomains.vue'
 import IntegrationSection from 'pages/employer/settings-page/IntegrationSection.vue'
 import PlanSection from 'pages/employer/settings-page/PlanSection.vue'
+import StripeAccountType from 'pages/employer/settings-page/StripeAccountType.vue'
+import StripePaymentFields from 'pages/employer/settings-page/StripePaymentFields.vue'
+import StripePaymentMethodDetails from 'pages/employer/settings-page/StripePaymentMethodDetails.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
-import { loadScript, removeScript } from 'src/utils/load-script.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import subscriptionUtil, { SUBSCRIPTION_STATUS } from 'src/utils/subscription.js'
@@ -374,9 +395,7 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useBillingStore } from 'stores/billing-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
-import { onUnmounted } from 'vue'
 
-const STRIPE_SCRIPT = 'https://js.stripe.com/v3/'
 const paymentMethodColumns = [
   { name: 'accountType', field: 'type', align: 'left', label: 'Type' },
   {
@@ -387,13 +406,21 @@ const paymentMethodColumns = [
     label: 'Institution'
   },
   { name: 'details', field: 'last4', align: 'left', label: 'Details' }
-  // Include whether this is the company default
-  // Include status (e.g. confirmed, pending confirmation)
+]
+
+const pastPaymentColumns = [
+  { name: 'paymentDT', field: 'charge_dt', format: dateTimeUtil.getShortDate, align: 'left', label: 'Payment date' },
+  { name: 'subscriptionDateRange', field: 'period_start', align: 'left', label: 'Subscription period' },
+  { name: 'amountPaid', field: 'charge_amount', format: subscriptionUtil.getFormattedPrice, align: 'center', label: 'Amount paid' },
+  { name: 'paymentURL', field: 'receipt_url', align: 'center', label: 'Receipt' }
 ]
 
 export default {
   name: 'SettingsPage',
   components: {
+    StripePaymentMethodDetails,
+    StripeAccountType,
+    StripePaymentFields,
     BillingInformationFields,
     PlanSection,
     InputPermittedEmailDomains,
@@ -413,22 +440,20 @@ export default {
       billingData: this.getEmployerBillingDataCopy(),
       isSavingBillingData: false,
       subscriptionData: this.billingStore.getEmployerSubscription(this.user.employer_id),
-      paymentSetupKey: this.billingStore.getEmployerPaymentSetup(this.user.employer_id),
       paymentMethods: this.billingStore.getEmployerPaymentMethods(this.user.employer_id),
+      payments: this.billingStore.getEmployerCharges(this.user.employer_id),
       colorUtil,
       dataUtil,
       dateTimeUtil,
       fileUtil,
       subscriptionUtil,
       FILE_TYPES,
-      stripe: null,
-      stripeElements: null,
-      isStripeLoaded: false,
       isPlansShown: false,
       isAddPaymentMethod: !this.billingStore.getEmployerPaymentMethods(this.user.employer_id),
       paymentMethodColumns,
       selectedPaymentMethod: [],
-      SUBSCRIPTION_STATUS
+      SUBSCRIPTION_STATUS,
+      pastPaymentColumns
     }
   },
   computed: {
@@ -454,8 +479,8 @@ export default {
     }
   },
   watch: {
-    subscriptionData () {
-      this.setupStripePaymentDom()
+    tab () {
+      this.$router.replace({ name: this.$route.name, params: this.$route.params, query: { tab: this.tab } })
     }
   },
   methods: {
@@ -513,6 +538,7 @@ export default {
         employer_id: this.user.employer_id,
         is_reinstate: true
       }))
+      await this.updateSubscription()
     },
     async cancelSubscription () {
       openConfirmDialog(this.q, 'Are you sure you want to cancel your subscription? You will continue to have access to the product until the end of your subscription term.',
@@ -534,29 +560,19 @@ export default {
     undoBillingChanges () {
       this.billingData = dataUtil.deepCopy(this.currentBillingData)
     },
-    openPaymentDialog () {
+    async openPaymentDialog () {
+      await loadDialogSubscriptionPaymentFn()
       this.q.dialog({
         component: DialogSubscriptionPayment,
         componentProps: {
-          billingData: this.getEmployerBillingDataCopy(),
-          subscription: this.subscriptionData
+          employerData: this.employerData,
+          subscription: this.subscriptionData,
+          paymentMethod: dataUtil.getForceArray(this.paymentMethods).find((pm) => pm.is_default)
         }
+      }).onOk(async () => {
+        await this.updateEmployerData()
+        await this.updateSubscription()
       })
-    },
-    async submitPaymentMethod () {
-      const { error } = await this.stripe.confirmSetup({
-        elements: this.stripeElements,
-        confirmParams: {
-          return_url: window.location.href // TODO: Add tab to return url so user is redirected to same page
-        }
-      })
-
-      if (error) {
-        this.ajaxStore.addErrorMsg(error)
-      } else {
-        this.ajaxStore.addSuccessMsg('Payment successfully added')
-      }
-      this.isAddPaymentMethod = false
     },
     async updatePaymentMethodData () {
       await this.billingStore.setEmployerPaymentMethods(this.user.employer_id, true)
@@ -573,52 +589,13 @@ export default {
         is_default: true
       }))
       await this.updatePaymentMethodData()
-    },
-    setupStripePaymentDom () {
-      const paymentElement = document.getElementById('payment-element')
-      if (paymentElement && this.paymentSetupKey && !this.isStripeLoaded) {
-        // Set up Stripe.js and Elements to use in checkout form
-        this.stripeElements = this.stripe.elements({
-          clientSecret: this.paymentSetupKey,
-          appearance: {
-            theme: 'stripe',
-            variables: {
-              colorPrimary: colorUtil.getPaletteColor('primary'),
-              colorBackground: colorUtil.getPaletteColor('grey-2'),
-              colorDanger: colorUtil.getPaletteColor('negative'),
-              fontFamily: 'Open Sans, system-ui, sans-serif',
-              borderRadius: '4px'
-            }
-          }
-        })
-
-        // Create and mount the Payment Element
-        const paymentElement = this.stripeElements.create('payment', {
-          defaultValues: {
-            billingDetails: {
-              name: this.employerData.name,
-              email: this.billingData.billing_email,
-              address: {
-                line1: this.billingData.street_address,
-                line2: this.billingData.street_address_2,
-                city: this.billingData.city,
-                state: this.billingData.state,
-                country: this.billingData.country,
-                postal_code: this.billingData.postal_code
-              }
-            }
-          }
-        })
-        paymentElement.mount('#payment-element')
-        this.isStripeLoaded = true
-      }
     }
   },
-  async created () {
-    await loadScript(STRIPE_SCRIPT).then(() => {
-      this.stripe = window.Stripe(process.env.STRIPE_PUBLIC_KEY)
-      this.setupStripePaymentDom()
-    })
+  mounted () {
+    const { tab } = this.$route.query
+    if (tab) {
+      this.tab = tab
+    }
   },
   preFetch () {
     const billingStore = useBillingStore()
@@ -630,8 +607,8 @@ export default {
       return Promise.all([
         employerStore.setEmployer(authStore.propUser.employer_id),
         employerStore.setEmployerBilling(authStore.propUser.employer_id),
+        billingStore.setEmployerCharges(authStore.propUser.employer_id),
         billingStore.setEmployerSubscription(authStore.propUser.employer_id),
-        billingStore.setEmployerPaymentSetup(authStore.propUser.employer_id),
         billingStore.setEmployerPaymentMethods(authStore.propUser.employer_id)
       ])
     }).finally(() => {
@@ -651,8 +628,6 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-
-    onUnmounted(() => removeScript(STRIPE_SCRIPT))
 
     return {
       ajaxStore: useAjaxStore(),

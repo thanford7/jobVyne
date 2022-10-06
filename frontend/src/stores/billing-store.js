@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 export const useBillingStore = defineStore('billing', {
   state: () => ({
     products: [],
+    employerCharges: {},
+    employerInvoices: {},
     employerSubscription: {}, // employerId: <subscription>
     employerPaymentSetup: {}, // employerId: <setup secret key>
     employerPaymentMethods: {} // employerId: [<method1>, <method2>, ...]
@@ -12,6 +14,22 @@ export const useBillingStore = defineStore('billing', {
     async setProducts () {
       const resp = await this.$api.get('billing/product/')
       this.products = resp.data
+    },
+    async setEmployerCharges (employerId, isForceRefresh = false) {
+      if (!this.employerCharges[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('billing/charge/', {
+          params: { employer_id: employerId }
+        })
+        this.employerCharges[employerId] = resp.data
+      }
+    },
+    async setEmployerInvoices (employerId, isForceRefresh = false) {
+      if (!this.employerInvoices[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('billing/invoice/', {
+          params: { employer_id: employerId }
+        })
+        this.employerInvoices[employerId] = resp.data
+      }
     },
     async setEmployerSubscription (employerId, isForceRefresh = false) {
       if (!this.employerSubscription[employerId] || isForceRefresh) {
@@ -40,6 +58,12 @@ export const useBillingStore = defineStore('billing', {
     },
     getProducts () {
       return this.products
+    },
+    getEmployerCharges (employerId) {
+      return this.employerCharges[employerId]
+    },
+    getEmployerInvoices (employerId) {
+      return this.employerInvoices[employerId]
     },
     getEmployerSubscription (employerId) {
       return this.employerSubscription[employerId]

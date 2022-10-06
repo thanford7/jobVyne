@@ -42,8 +42,8 @@ class SubscriptionUtil {
     return [SUBSCRIPTION_STATUS.INCOMPLETE, SUBSCRIPTION_STATUS.UNPAID, SUBSCRIPTION_STATUS.PAST_DUE].includes(subscriptionStatus)
   }
 
-  getFormattedSubscriptionPrice (subscription) {
-    return dataUtil.formatCurrency(subscription.total_price, {
+  getFormattedPrice (price) {
+    return dataUtil.formatCurrency(price, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     })

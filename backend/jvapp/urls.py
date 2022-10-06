@@ -50,8 +50,11 @@ urlpatterns = [
     path('ats/stages/', ats.AtsStagesView.as_view()),
     
     # Billing
+    path('billing/charge/', stripe.StripeChargeView.as_view()),
     path('billing/customer/', stripe.StripeProductView.as_view()),
     re_path('^billing/payment-method/(?P<payment_method_id>\S+)?/?$', stripe.StripePaymentMethodView.as_view()),
+    path('billing/invoice/', stripe.StripeInvoiceView.as_view()),
+    path('billing/invoice-pay/', stripe.StripePayInvoiceView.as_view()),
     path('billing/product/', stripe.StripeProductView.as_view()),
     path('billing/setup/', stripe.StripeSetupIntentView.as_view()),
     re_path('^billing/subscription/((?P<subscription_id>\S+)/)?$', stripe.StripeSubscriptionView.as_view()),
