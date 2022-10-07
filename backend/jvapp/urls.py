@@ -23,6 +23,7 @@ urlpatterns = [
     path('employer/job/location/', employer.EmployerJobLocationView.as_view()),
     path('employer/page/', employer.EmployerPageView.as_view()),
     re_path('^employer/permission/(?P<auth_group_id>[0-9]+)?/?$', employer.EmployerAuthGroupView.as_view()),
+    re_path('^employer/subscription/(?P<employer_id>[0-9]+)?/?$', employer.EmployerSubscriptionView.as_view()),
     path('employer/user/approve/', employer.EmployerUserApproveView.as_view()),
     re_path('^employer/user/(?P<user_id>[0-9]+)?/?$', employer.EmployerUserView.as_view()),
     path('employer/user/activate/', employer.EmployerUserActivateView.as_view()),

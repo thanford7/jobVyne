@@ -9,6 +9,7 @@ export const useEmployerStore = defineStore('employer', {
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
     employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
+    employerSubscription: {}, // employerId: {subscription data}
     employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
@@ -74,6 +75,12 @@ export const useEmployerStore = defineStore('employer', {
           params: { employer_id: employerId }
         })
         this.employerSocialLinks[employerId] = resp.data
+      }
+    },
+    async setEmployerSubscription (employerId, isForceRefresh = false) {
+      if (!this.employerSubscription[employerId] || isForceRefresh) {
+        const resp = await this.$api.get(`employer/subscription/${employerId}/`)
+        this.employerSubscription[employerId] = resp.data
       }
     },
     async setEmployerPermissions (isForceRefresh = false) {
@@ -163,6 +170,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployerSocialLinks (employerId) {
       return this.employerSocialLinks[employerId] || []
+    },
+    getEmployerSubscription (employerId) {
+      return this.employerSubscription[employerId]
     },
     getEmployerPage (employerId) {
       return this.employerPage[employerId]

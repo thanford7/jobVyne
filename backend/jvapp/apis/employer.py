@@ -1,10 +1,11 @@
 from functools import reduce
 
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import Q
+from django.db.models import F, Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
@@ -22,7 +23,10 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
 from jvapp.utils.data import AttributeCfg, is_obfuscated_string, set_object_attributes
 
-__all__ = ('EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView')
+__all__ = (
+    'EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView',
+    'EmployerSubscriptionView'
+)
 
 from jvapp.utils.email import get_domain_from_email
 
@@ -191,6 +195,36 @@ class EmployerBillingView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Billing information updated successfully'
         })
+    
+    
+class EmployerSubscriptionView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
+    INACTIVE_STATUSES = ['incomplete_expired', 'canceled']
+    ACTIVE_STATUS = 'active'
+    
+    def get(self, request, employer_id):
+        employer = Employer.objects.prefetch_related('subscription').get(id=employer_id)
+        subscription = self.get_subscription(employer)
+        has_active_subscription = subscription and subscription.status == self.ACTIVE_STATUS
+        active_employees = EmployerSubscriptionView.get_active_employees(employer)
+        return Response(status=status.HTTP_200_OK, data={
+            'is_active': has_active_subscription,
+            'has_seats': has_active_subscription and (active_employees <= subscription.employee_seats)
+        })
+    
+    @staticmethod
+    def get_subscription(employer):
+        return next(
+            (s for s in employer.subscription.all() if s.status not in EmployerSubscriptionView.INACTIVE_STATUSES),
+            None
+        )
+    
+    @staticmethod
+    def get_active_employees(employer):
+        return employer.employee \
+            .annotate(employee_filter=F('user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE)) \
+            .filter(is_employer_deactivated=False, employee_filter__gt=0) \
+            .count()
 
 
 class EmployerJobView(JobVyneAPIView):

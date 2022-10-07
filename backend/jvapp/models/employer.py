@@ -25,6 +25,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
     email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
+    company_jobs_page_url = models.CharField(max_length=100, null=True, blank=True)  # Used to redirect users if employer's account is inactive
     
     # Brand colors - saved in hex form (e.g. #32a852)
     color_primary = models.CharField(max_length=9, null=True, blank=True)

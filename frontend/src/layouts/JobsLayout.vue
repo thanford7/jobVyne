@@ -49,7 +49,7 @@
             <div class="row justify-center">
               <ResponsiveWidth>
                 <q-page padding>
-                  <div class="row">
+                  <div v-if="isActiveEmployer" class="row">
                     <div class="col-12">
                       <div v-if="!jobs.length" class="q-mb-md">
                         <q-card class="q-pa-lg" :style="getSelectedCardStyle(job)">
@@ -124,6 +124,26 @@
                         :max="jobPagesCount"
                         direction-links
                       />
+                    </div>
+                  </div>
+                  <div v-else class="row justify-center items-center" style="height: 50vh">
+                    <div class="col-6">
+                      <q-card class="bg-primary text-white">
+                        <q-card-section class="flex justify-center">
+                          <q-icon name="power_off" size="80px"/>
+                        </q-card-section>
+                        <q-card-section>
+                          <div class="text-h6 text-center">
+                            {{ employer.name }} no longer has an active JobVyne account. If you wish to
+                            view and apply for jobs, please visit their
+                            <a v-if="employer.company_jobs_page_url" :href="employer.company_jobs_page_url"
+                               target="_blank">
+                              jobs page
+                            </a>
+                            <span v-else>jobs page</span>
+                          </div>
+                        </q-card-section>
+                      </q-card>
                     </div>
                   </div>
                 </q-page>
@@ -209,6 +229,7 @@ export default {
       employerPage: null,
       profile: null,
       isLoaded: false,
+      isActiveEmployer: null,
       jobApplication: null,
       jobPagesCount: null,
       pageNumber: 1,
@@ -261,7 +282,10 @@ export default {
         params: { page_count: this.pageNumber }
       })
       const { jobs, employer, total_page_count: totalPageCount, owner_id: ownerId } = resp.data
-      this.jobs = jobs
+      await this.employerStore.setEmployerSubscription(employer.id)
+      const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
+      this.isActiveEmployer = isActiveEmployer
+      this.jobs = (isActiveEmployer) ? jobs : []
       this.employer = employer
 
       await this.userStore.setUserProfile(ownerId)

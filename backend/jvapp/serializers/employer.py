@@ -31,6 +31,7 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         'logo_url': employer.logo.url if employer.logo else None,
         'size': employer.employer_size.size if employer.employer_size else None,
         'email_domains': employer.email_domains,
+        'company_jobs_page_url': employer.company_jobs_page_url,
         'color_primary': employer.color_primary,
         'color_secondary': employer.color_secondary,
         'color_accent': employer.color_accent,

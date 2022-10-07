@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.conf import settings
-from django.db.models import F, Q
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 import stripe
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
-from jvapp.models import Employer, EmployerSubscription, JobVyneUser, PermissionName
+from jvapp.models import Employer, EmployerSubscription, PermissionName
 from jvapp.models.abstract import PermissionTypes
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_from_unix
@@ -19,7 +19,6 @@ from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_email
 
 stripe.api_key = settings.STRIPE_PRIVATE_KEY
 ACCEPTED_PAYMENT_TYPES = ['card', 'us_bank_account']
-INACTIVE_STATUSES = ['incomplete_expired', 'canceled']
 
 
 def get_price(price_in_pennies):
@@ -269,11 +268,12 @@ class StripeProductView(JobVyneAPIView):
 class StripeSubscriptionView(StripeBaseView):
     
     def get(self, request):
+        from jvapp.apis.employer import EmployerSubscriptionView  # Avoid circular import
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
         employer = self.check_employer_permissions(employer_id=employer_id)
-        jv_subscription = next((s for s in employer.subscription.all() if s.status not in INACTIVE_STATUSES), None)
+        jv_subscription = EmployerSubscriptionView.get_subscription(employer)
         if not jv_subscription:
             subscription_data = None
         else:
@@ -299,13 +299,10 @@ class StripeSubscriptionView(StripeBaseView):
         return Response(status=status.HTTP_200_OK, data=subscription_data)
     
     def post(self, request):
+        from jvapp.apis.employer import EmployerSubscriptionView  # Avoid circular import
         employer = self.check_employer_permissions(employer_id=self.data['employer_id'])
-        jv_subscription = next((s for s in employer.subscription.all() if not s.status.lower() in INACTIVE_STATUSES), None)
-        
-        active_employees = employer.employee\
-            .annotate(employee_filter=F('user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE))\
-            .filter(is_employer_deactivated=False, employee_filter__gt=0)\
-            .count()
+        jv_subscription = EmployerSubscriptionView.get_subscription(employer)
+        active_employees = EmployerSubscriptionView.get_active_employees(employer)
         
         if self.data['quantity'] < active_employees:
             return Response(
@@ -420,9 +417,9 @@ class StripeWebhooksView(APIView):
             raise e
             
             # Handle the event
-        if event['type'] == 'customer.subscription.created':
-            subscription = event['data']['object']
-        elif event['type'] in ('customer.subscription.updated', 'customer.subscription.deleted'):
+        if event['type'] in ('customer.subscription.updated', 'customer.subscription.deleted'):
+            # No need to handle 'customer.subscription.created' event because we update
+            # The subscription status when we make the API call
             subscription = event['data']['object']
             jv_subscription = EmployerSubscription.objects.get(stripe_key=subscription.id)
             jv_subscription.status = subscription.status
