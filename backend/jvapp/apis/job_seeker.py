@@ -41,7 +41,9 @@ class ApplicationView(JobVyneAPIView):
             page_count = self.query_params.get('page_count')
             if user_id:
                 user = UserView.get_user(self.user, user_id=user_id)
-                application_filter = Q(email=user.email) | Q(user_id=user.id)
+                application_filter = Q(user_id=user.id)
+                if user.is_email_verified:
+                    application_filter |= Q(email=user.email)
             else:
                 application_filter = Q(employer_job__employer_id=employer_id)
             applications = self.get_applications(self.user, application_filter=application_filter)

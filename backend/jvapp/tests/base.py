@@ -27,9 +27,11 @@ class BaseTestCase(TestCase):
             JobVyneUser.USER_TYPE_EMPLOYER, first_name='Britney', last_name='Spears',
             employer_id=self.employer.id, auth_group_names=[StandardPermissionGroups.ADMIN.value]
         )
+        
+        # HR auth group is the default so we don't need to set it explicitly
         self.user_employer_hr = self.create_user(
             JobVyneUser.USER_TYPE_EMPLOYER, first_name='Scooby', last_name='Doo',
-            employer_id=self.employer.id, auth_group_names=[StandardPermissionGroups.HR.value]
+            employer_id=self.employer.id
         )
         self.user_employee = self.create_user(
             JobVyneUser.USER_TYPE_EMPLOYEE, first_name='Shark', last_name='Nado', employer_id=self.employer.id

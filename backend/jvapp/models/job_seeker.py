@@ -50,6 +50,8 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
             filter = Q(employer_job__employer_id=user.employer_id) | Q(user_id=user.id)
         else:
             filter = Q(user_id=user.id)
+            if user.is_email_verified:
+                filter |= Q(email=user.email)
 
         return query.filter(filter)
 
