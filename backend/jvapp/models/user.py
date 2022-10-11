@@ -73,6 +73,9 @@ class CustomUserManager(BaseUserManager):
         """
         Create and save a User with the given email and password.
         """
+        from jvapp.models import Employer  # Avoid circular import
+        from jvapp.apis.employer import EmployerSubscriptionView
+        
         if not email:
             raise ValueError(_('Email must be set'))
         email = self.normalize_email(email)
@@ -81,6 +84,15 @@ class CustomUserManager(BaseUserManager):
         if password:
             validate_password(password, user=user)
         user.set_password(password or generate_password())
+        
+        # If user is employee, make sure the employer has enough seats in their subscription
+        if user.employer_id:
+            employer = Employer.objects.prefetch_related('subscription').get(id=user.employer_id)
+            subscription = EmployerSubscriptionView.get_subscription(employer)
+            active_employees = EmployerSubscriptionView.get_active_employees(employer)
+            if subscription.employee_seats <= active_employees:
+                user.has_employee_seat = False
+                
         user.save()
         return user
 
@@ -129,6 +141,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
     is_employer_owner = models.BooleanField(default=False, blank=True)
     is_employer_deactivated = models.BooleanField(default=False, blank=True)
+    has_employee_seat = models.BooleanField(default=True, blank=True)  # If employer's subscription has run out of seats, this will be false
     created_dt = models.DateTimeField(_("date created"), default=timezone.now)
     modified_dt = models.DateTimeField(_("date modified"), default=timezone.now)
     
@@ -225,6 +238,10 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     @property
     def is_employer(self):
         return bool(self.user_type_bits & self.USER_TYPE_EMPLOYER)
+    
+    @property
+    def is_active_employee(self):
+        return self.has_employee_seat and (not self.is_employer_deactivated)
 
     @property
     def is_employer_verified(self):

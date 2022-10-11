@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.apis.employer import EmployerJobView, EmployerView
-from jvapp.models import JobApplication, PageView
+from jvapp.models import JobApplication, JobVyneUser, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
@@ -170,7 +170,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             'total_page_count': paged_jobs.num_pages,
             'jobs': [get_serialized_employer_job(j) for j in paged_jobs.get_page(page_count)],
             'employer': get_serialized_employer(employer),
-            'owner_id': link_filter.owner_id
+            'owner_id': link_filter.owner_id,
+            'is_active_employee': link_filter.owner.is_active_employee
         })
         
     @staticmethod

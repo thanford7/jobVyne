@@ -49,7 +49,7 @@
             <div class="row justify-center">
               <ResponsiveWidth>
                 <q-page padding>
-                  <div v-if="isActiveEmployer" class="row">
+                  <div v-if="isActiveEmployer && isActiveEmployee" class="row">
                     <div class="col-12">
                       <div v-if="!jobs.length" class="q-mb-md">
                         <q-card class="q-pa-lg" :style="getSelectedCardStyle(job)">
@@ -134,10 +134,16 @@
                         </q-card-section>
                         <q-card-section>
                           <div class="text-h6 text-center">
-                            {{ employer.name }} no longer has an active JobVyne account. If you wish to
-                            view and apply for jobs, please visit their
+                            <span v-if="!isActiveEmployer">
+                              {{ employer.name }} no longer has an active JobVyne account. If you wish to
+                              view and apply for jobs, please visit their
+                            </span>
+                            <span v-else>
+                              {{ profile.first_name }} {{ profile.last_name }} does not have an active account with {{ employer.name }}. If
+                              you wish to view and apply for jobs, please visit {{ employer.name }}'s
+                            </span>
                             <a v-if="employer.company_jobs_page_url" :href="employer.company_jobs_page_url"
-                               target="_blank">
+                               target="_blank" class="text-white">
                               jobs page
                             </a>
                             <span v-else>jobs page</span>
@@ -230,6 +236,7 @@ export default {
       profile: null,
       isLoaded: false,
       isActiveEmployer: null,
+      isActiveEmployee: null,
       jobApplication: null,
       jobPagesCount: null,
       pageNumber: 1,
@@ -281,11 +288,12 @@ export default {
       const resp = await this.$api.get(`social-link-jobs/${this.$route.params.filterId}`, {
         params: { page_count: this.pageNumber }
       })
-      const { jobs, employer, total_page_count: totalPageCount, owner_id: ownerId } = resp.data
+      const { jobs, employer, total_page_count: totalPageCount, owner_id: ownerId, is_active_employee: isActiveEmployee } = resp.data
       await this.employerStore.setEmployerSubscription(employer.id)
       const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
       this.isActiveEmployer = isActiveEmployer
-      this.jobs = (isActiveEmployer) ? jobs : []
+      this.isActiveEmployee = isActiveEmployee
+      this.jobs = (isActiveEmployer && isActiveEmployee) ? jobs : []
       this.employer = employer
 
       await this.userStore.setUserProfile(ownerId)

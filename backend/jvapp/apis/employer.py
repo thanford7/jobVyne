@@ -5,10 +5,9 @@ from django.db.models import F, Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
 from jvapp.apis.geocoding import get_raw_location
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
@@ -203,14 +202,19 @@ class EmployerSubscriptionView(JobVyneAPIView):
     ACTIVE_STATUS = 'active'
     
     def get(self, request, employer_id):
+        employer_id = int(employer_id)
         employer = Employer.objects.prefetch_related('subscription').get(id=employer_id)
         subscription = self.get_subscription(employer)
         has_active_subscription = subscription and subscription.status == self.ACTIVE_STATUS
         active_employees = EmployerSubscriptionView.get_active_employees(employer)
-        return Response(status=status.HTTP_200_OK, data={
+        data = {
             'is_active': has_active_subscription,
             'has_seats': has_active_subscription and (active_employees <= subscription.employee_seats)
-        })
+        }
+        if self.user.is_employer and (self.user.employer_id == employer_id):
+            data['subscription_seats'] = subscription.employee_seats
+            data['active_employees'] = active_employees
+        return Response(status=status.HTTP_200_OK, data=data)
     
     @staticmethod
     def get_subscription(employer):
@@ -222,8 +226,7 @@ class EmployerSubscriptionView(JobVyneAPIView):
     @staticmethod
     def get_active_employees(employer):
         return employer.employee \
-            .annotate(employee_filter=F('user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE)) \
-            .filter(is_employer_deactivated=False, employee_filter__gt=0) \
+            .filter(is_employer_deactivated=False, has_employee_seat=True) \
             .count()
 
 
@@ -672,18 +675,46 @@ class EmployerUserActivateView(JobVyneAPIView):
     
     @atomic
     def put(self, request):
-        is_deactivate = self.data['is_deactivate']
+        if not (employer_id := self.data.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        is_deactivate = self.data.get('is_deactivate')
+        # Assign employee a seat if explicitly set or employee is activated
+        is_assign_seat = self.data.get('is_assign') if is_deactivate is None else not is_deactivate
+        
+        employer = Employer.objects.prefetch_related('subscription').get(id=employer_id)
         users = UserView.get_user(self.user, user_filter=Q(id__in=self.data['user_ids']))
+        subscription = EmployerSubscriptionView.get_subscription(employer)
+        active_users_count = EmployerSubscriptionView.get_active_employees(employer)
+        unassigned_users = 0
         for user in users:
             user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
-            user.is_employer_deactivated = is_deactivate
+            if is_deactivate is not None:
+                user.is_employer_deactivated = is_deactivate
+            
+            is_add_seat = is_assign_seat and (active_users_count < subscription.employee_seats)
+            user.has_employee_seat = is_add_seat
+            if is_add_seat:
+                active_users_count += 1
+            elif is_assign_seat:
+                # If the employer has run out of employee seats we need to warn them
+                unassigned_users += 1
         
-        JobVyneUser.objects.bulk_update(users, ['is_employer_deactivated'])
+        update_values = ['has_employee_seat']
+        if is_deactivate is not None:
+            update_values.append('is_employer_deactivated')
+        JobVyneUser.objects.bulk_update(users, update_values)
         userCount = len(users)
+        msg = f'{userCount} {"user" if userCount == 1 else "users"}'
+        if is_deactivate is not None:
+            msg += f' {"deactivated" if is_deactivate else "activated"}'
+        else:
+            msg += f' {"assigned" if is_assign_seat else "un-assigned"} a seat'
+            
+        data = {SUCCESS_MESSAGE_KEY: msg}
+        if unassigned_users:
+            data[WARNING_MESSAGES_KEY] = [f'{unassigned_users} {"user" if unassigned_users == 1 else "users"} was unable to be assigned a seat because you have reached the number of seats allowed by your subscription']
         
-        return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} {"deactivated" if is_deactivate else "activated"}'
-        })
+        return Response(status=status.HTTP_200_OK, data=data)
 
 
 class EmployerFileView(JobVyneAPIView):

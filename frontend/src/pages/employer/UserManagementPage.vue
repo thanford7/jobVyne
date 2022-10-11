@@ -5,6 +5,11 @@
         Users can be added to multiple permission groups. Permissions are additive. For example, if a user is part of
         two groups and one has permission to add employees and the other does not, the user WILL have the ability to add
         employees.
+        <div>
+          <q-icon name="info" size="24px"/>
+          {{ dataUtil.pluralize('employee seat', subscription.active_employees) }}
+          assigned out of {{ subscription.subscription_seats }}
+        </div>
       </PageHeader>
       <q-tabs
         v-model="tab"
@@ -91,6 +96,34 @@
                             </q-item-section>
                           </q-item>
                           <q-item
+                            v-if="hasNoSeatUserCount"
+                            clickable v-close-popup @click="assignUserSeat(true)"
+                          >
+                            <q-item-section avatar>
+                              <q-icon name="person_add"/>
+                            </q-item-section>
+                            <q-item-section>
+                              <q-item-label>Assign employee seat {{
+                                  dataUtil.pluralize('user', hasNoSeatUserCount)
+                                }}
+                              </q-item-label>
+                            </q-item-section>
+                          </q-item>
+                          <q-item
+                            v-if="hasSeatUserCount"
+                            clickable v-close-popup @click="assignUserSeat(false)"
+                          >
+                            <q-item-section avatar>
+                              <q-icon name="person_remove"/>
+                            </q-item-section>
+                            <q-item-section>
+                              <q-item-label>Un-assign employee seat {{
+                                  dataUtil.pluralize('user', hasSeatUserCount)
+                                }}
+                              </q-item-label>
+                            </q-item-section>
+                          </q-item>
+                          <q-item
                             v-if="unapprovedUserCount"
                             clickable v-close-popup @click="approveUsers()"
                           >
@@ -147,6 +180,24 @@
                     </TableFilter>
                   </q-th>
                 </template>
+                <template v-slot:header-cell-hasEmployeeSeat="props">
+                  <q-th :props="props">
+                    {{ props.col.label }}
+                    <TableFilter filter-name="Has Seat"
+                                 :has-filter="userFilter.hasEmployeeSeat && userFilter.hasEmployeeSeat.length">
+                      <SelectYesNo label="Has Employee Seat" v-model="userFilter.hasEmployeeSeat"/>
+                    </TableFilter>
+                    <CustomTooltip icon_size="16px" :is_include_space="true">
+                      Your subscription supports {{ subscription.subscription_seats }} employee seats. If you have met your
+                      subscription limit,
+                      any additional employees that sign up will not have a seat. If an employee doesn't have a seat,
+                      all of their links will be redirected to the jobs page on your company website and their referrals
+                      will not be tracked.
+                      You can edit employees to reassign seats or update your subscription to support more employee
+                      seats.
+                    </CustomTooltip>
+                  </q-th>
+                </template>
                 <template v-slot:header-cell-userTypeBits="props">
                   <q-th :props="props">
                     {{ props.col.label }}
@@ -182,8 +233,9 @@
                   </q-th>
                 </template>
                 <template v-slot:body-cell-isApprovalRequired="props">
-                  <q-td class="text-center">
-                    <CustomTooltip v-if="props.row.isApprovalRequired" :is_include_icon="false" :is_include_space="true">
+                  <q-td class="text-center" :props="props">
+                    <CustomTooltip v-if="props.row.isApprovalRequired" :is_include_icon="false"
+                                   :is_include_space="true">
                       <template v-slot:icon>
                         <q-icon name="warning" color="warning" size="xs"/>
                       </template>
@@ -377,7 +429,8 @@ const userColumns = [
     align: 'center',
     label: 'Approval required',
     format: (val) => (val) ? 'Yes' : 'No',
-    sortable: true
+    sortable: true,
+    classes: (row) => (row.isApprovalRequired) ? 'text-negative text-bold' : ''
   },
   {
     name: 'isEmployerDeactivated',
@@ -385,7 +438,17 @@ const userColumns = [
     align: 'center',
     label: 'Active',
     format: (val) => (val) ? 'No' : 'Yes',
-    sortable: true
+    sortable: true,
+    classes: (row) => (row.is_employer_deactivated) ? 'text-negative text-bold' : ''
+  },
+  {
+    name: 'hasEmployeeSeat',
+    field: 'has_employee_seat',
+    align: 'center',
+    label: 'Has Seat',
+    format: (val) => (val) ? 'Yes' : 'No',
+    sortable: true,
+    classes: (row) => (row.has_employee_seat) ? '' : 'text-negative text-bold'
   },
   { name: 'firstName', field: 'first_name', align: 'left', label: 'First name', sortable: true },
   { name: 'lastName', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
@@ -433,6 +496,7 @@ export default {
       userColumns,
       userFilter: { ...userFilterTemplate },
       isUserFilterExpanded: true,
+      subscription: this.employerStore.getEmployerSubscription(this.authStore.propUser.employer_id),
       dataUtil,
       userTypeUtil,
       dateTimeUtil,
@@ -453,6 +517,18 @@ export default {
         return
       }
       return this.selectedUsers.filter((user) => user.is_employer_deactivated).length
+    },
+    hasSeatUserCount () {
+      if (!this.selectedUsers) {
+        return
+      }
+      return this.selectedUsers.filter((user) => user.has_employee_seat).length
+    },
+    hasNoSeatUserCount () {
+      if (!this.selectedUsers) {
+        return
+      }
+      return this.selectedUsers.filter((user) => !user.has_employee_seat).length
     },
     unapprovedUserCount () {
       if (!this.selectedUsers) {
@@ -492,7 +568,7 @@ export default {
       return false
     },
     employees () {
-      return this.employerStore.employers[this.authStore.user.employer_id].employees.map((employee) => {
+      return this.employerStore.employers[this.authStore.propUser.employer_id].employees.map((employee) => {
         employee.isApprovalRequired = employee.permission_groups.some((p) => !p.is_approved)
         return employee
       })
@@ -520,19 +596,33 @@ export default {
     unselectUsers () {
       this.selectedUsers = []
     },
-    async activateUsers (isDeactivate) {
-      await this.$api.put('employer/user/activate/', getAjaxFormData(
-        { is_deactivate: isDeactivate, user_ids: this.selectedUsers.map((u) => u.id) }
-      ))
-      this.employerStore.setEmployer(this.authStore.user.employer_id, true)
+    async updateUserData () {
+      await this.employerStore.setEmployer(this.authStore.user.employer_id, true)
+      await this.employerStore.setEmployerSubscription(this.authStore.user.employer_id, true)
+      this.subscription = this.employerStore.getEmployerSubscription(this.authStore.user.employer_id)
       this.unselectUsers()
+    },
+    async activateUsers (isDeactivate) {
+      await this.$api.put('employer/user/activate/', getAjaxFormData({
+        is_deactivate: isDeactivate,
+        user_ids: this.selectedUsers.map((u) => u.id),
+        employer_id: this.authStore.user.employer_id
+      }))
+      await this.updateUserData()
+    },
+    async assignUserSeat (isAssign) {
+      await this.$api.put('employer/user/activate/', getAjaxFormData({
+        is_assign: isAssign,
+        user_ids: this.selectedUsers.map((u) => u.id),
+        employer_id: this.authStore.user.employer_id
+      }))
+      await this.updateUserData()
     },
     async approveUsers () {
       await this.$api.put('employer/user/approve/', getAjaxFormData(
         { user_ids: this.selectedUsers.map((u) => u.id) }
       ))
-      this.employerStore.setEmployer(this.authStore.user.employer_id, true)
-      this.unselectUsers()
+      await this.updateUserData()
     },
     async setDefaultGroup () {
       await this.$api.put(
@@ -596,6 +686,11 @@ export default {
             return false
           }
         }
+        if (this.userFilter?.hasEmployeeSeat?.length) {
+          if (!this.userFilter.hasEmployeeSeat.includes(employee.has_employee_seat)) {
+            return false
+          }
+        }
         return true
       })
     },
@@ -612,7 +707,8 @@ export default {
       return Promise.all([
         employerStore.setEmployer(authStore.propUser.employer_id),
         employerStore.setEmployerJobs(authStore.propUser.employer_id),
-        employerStore.setEmployerPermissions()
+        employerStore.setEmployerPermissions(),
+        employerStore.setEmployerSubscription(authStore.propUser.employer_id)
       ])
     }).finally(() => {
       Loading.hide()

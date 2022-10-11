@@ -13,6 +13,7 @@ import { setupCache, serializeQuery } from 'axios-cache-adapter'
 // for each client)
 export const AJAX_EVENTS = {
   ERROR: 'ajax-error',
+  WARNING: 'ajax-warning',
   SUCCESS: 'ajax-success'
 }
 
@@ -66,8 +67,14 @@ export default boot(({ app, ssrContext, store, router }) => {
   api.interceptors.response.use(function (response) {
     const successMessage = response?.data?.successMessage
     const errorMessages = response?.data?.errorMessages
+    const warningMessages = response?.data?.warningMessages
     if (successMessage) {
       emitter.emit(AJAX_EVENTS.SUCCESS, successMessage)
+    }
+    if (warningMessages && warningMessages.length) {
+      warningMessages.forEach((warningMsg) => {
+        emitter.emit(AJAX_EVENTS.WARNING, { message: warningMsg })
+      })
     }
     if (errorMessages && errorMessages.length) {
       errorMessages.forEach((errorMsg) => {

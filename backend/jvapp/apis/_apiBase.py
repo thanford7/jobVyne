@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 
 
 SUCCESS_MESSAGE_KEY = 'successMessage'
+WARNING_MESSAGES_KEY = 'warningMessages'
 ERROR_MESSAGES_KEY = 'errorMessages'
 
 

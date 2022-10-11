@@ -63,6 +63,7 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
             'last_name': e.last_name,
             'user_type_bits': reduce_user_type_bits(get_permission_groups(e)),
             'is_employer_deactivated': e.is_employer_deactivated,
+            'has_employee_seat': e.has_employee_seat,
             'permission_groups': [{
                 'id': epg.permission_group.id,
                 'name': epg.permission_group.name,

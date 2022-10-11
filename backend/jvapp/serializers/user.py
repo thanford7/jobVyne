@@ -23,6 +23,7 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
         data['user_type_bits'] = user.user_type_bits
         data['employer_id'] = user.employer_id
         data['is_employer_deactivated'] = user.is_employer_deactivated
+        data['has_employee_seat'] = user.has_employee_seat
         data['created_dt'] = get_datetime_format_or_none(user.created_dt)
         data['modified_dt'] = get_datetime_format_or_none(user.modified_dt)
         
