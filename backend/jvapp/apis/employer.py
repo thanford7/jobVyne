@@ -212,7 +212,7 @@ class EmployerSubscriptionView(JobVyneAPIView):
             'has_seats': has_active_subscription and (active_employees <= subscription.employee_seats)
         }
         if self.user.is_employer and (self.user.employer_id == employer_id):
-            data['subscription_seats'] = subscription.employee_seats
+            data['subscription_seats'] = subscription.employee_seats if subscription else 0
             data['active_employees'] = active_employees
         return Response(status=status.HTTP_200_OK, data=data)
     

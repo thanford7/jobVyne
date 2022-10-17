@@ -7,7 +7,8 @@
   "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "echo \"No test specified\" && exit 0",
+    "cypress:open": "cypress open"
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
@@ -36,8 +37,10 @@
     "@intlify/vite-plugin-vue-i18n": "^3.3.1",
     "@quasar/app-vite": "^1.0.0",
     "autoprefixer": "^10.4.2",
+    "cypress": "^10.10.0",
     "eslint": "^8.10.0",
     "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-cypress": "^2.12.1",
     "eslint-plugin-import": "^2.19.1",
     "eslint-plugin-n": "^15.0.0",
     "eslint-plugin-promise": "^6.0.0",

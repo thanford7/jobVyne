@@ -1,0 +1,102 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: db
+    image: mariadb:10
+    networks:
+      - main
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./backend/e2e_tests:/docker-entrypoint-initdb.d
+    env_file:
+      - ./backend/.env
+      - ./backend/.env.cypress
+    restart: unless-stopped
+
+  nginx:
+    container_name: nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx/local.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - main
+    secrets:
+      - https_cert
+      - https_key
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    depends_on:
+      - backend
+      - db
+    volumes:
+      - ./frontend:/frontend
+      - /node_modules
+    networks:
+      - main
+    secrets:
+      - https_cert
+      - https_key
+    restart: "no"
+    # Rebuild is necessary: https://stackoverflow.com/questions/69607736/vite-react-app-esbuild-error-in-docker-container
+    command: bash -c "npm rebuild esbuild && quasar dev -p 9000"
+
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py runserver_plus 0.0.0.0:8000 --keep-meta-shutdown --cert-file /run/secrets/https_cert --key-file /run/secrets/https_key"
+    volumes:
+      - ./backend:/backend
+    ports:
+      - "8000:8000"
+    networks:
+      - main
+    secrets:
+      - https_cert
+      - https_key
+      - google_key
+    env_file:
+      - ./backend/.env
+      - ./backend/.env.cypress
+    depends_on:
+      - db
+
+  stripe-cli:
+    image: stripe/stripe-cli
+    container_name: stripe-cli
+    build: .
+    command: "listen --api-key ${STRIPE_API_KEY} --device-name ${STRIPE_DEVICE_NAME} --forward-to https://backend:8000/api/v1/billing/webhooks/ --skip-verify"
+    env_file:
+      - stripe_cli.env
+    networks:
+      - main
+    depends_on:
+      - backend
+
+networks:
+  main:
+    driver: bridge
+
+secrets:
+  https_cert:
+    file: frontend/localhost.pem
+  https_key:
+    file: frontend/localhost-key.pem
+  google_key:
+    file: backend/secret/google-captcha-local.json

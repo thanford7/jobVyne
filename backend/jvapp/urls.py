@@ -52,7 +52,6 @@ urlpatterns = [
     
     # Billing
     path('billing/charge/', stripe.StripeChargeView.as_view()),
-    path('billing/customer/', stripe.StripeProductView.as_view()),
     re_path('^billing/payment-method/(?P<payment_method_id>\S+)?/?$', stripe.StripePaymentMethodView.as_view()),
     path('billing/invoice/', stripe.StripeInvoiceView.as_view()),
     path('billing/invoice-pay/', stripe.StripePayInvoiceView.as_view()),

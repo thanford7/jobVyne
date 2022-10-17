@@ -90,7 +90,7 @@ class CustomUserManager(BaseUserManager):
             employer = Employer.objects.prefetch_related('subscription').get(id=user.employer_id)
             subscription = EmployerSubscriptionView.get_subscription(employer)
             active_employees = EmployerSubscriptionView.get_active_employees(employer)
-            if subscription.employee_seats <= active_employees:
+            if not subscription or subscription.employee_seats <= active_employees:
                 user.has_employee_seat = False
                 
         user.save()

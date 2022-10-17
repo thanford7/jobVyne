@@ -413,7 +413,13 @@ export default {
         (this.$refs.profileUpload) ? this.$refs.profileUpload.getValues() : {}
       )
       await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(data, [this.$refs.profileUpload.newProfilePictureKey]))
-      await this.authStore.setUser(true)
+      await this.authStore.setUser(true).then(() => {
+        // Need to update employer in case user's employer changed
+        return Promise.all([
+          this.employerStore.setEmployer(this.authStore.propUser.employer_id, true),
+          this.employerStore.setEmployersFromDomain(this.authStore.propUser.business_email, true)
+        ])
+      })
       this.userData = dataUtil.deepCopy(this.authStore.propUser)
       this.currentUserData = dataUtil.deepCopy(this.authStore.propUser)
     },
