@@ -1763,7 +1763,7 @@ CREATE TABLE `jvapp_jobvyneuser` (
   KEY `jvapp_jobvyneuser_home_location_id_7066b6c2_fk_jvapp_location_id` (`home_location_id`),
   CONSTRAINT `jvapp_jobvyneuser_employer_id_6d3b7791_fk_jvapp_employer_id` FOREIGN KEY (`employer_id`) REFERENCES `jvapp_employer` (`id`),
   CONSTRAINT `jvapp_jobvyneuser_home_location_id_7066b6c2_fk_jvapp_location_id` FOREIGN KEY (`home_location_id`) REFERENCES `jvapp_location` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+) ENGINE=InnoDB AUTO_INCREMENT=86 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `jvapp_jobvyneuser` WRITE;
@@ -1849,7 +1849,11 @@ INSERT INTO `jvapp_jobvyneuser` VALUES
 (78,'pbkdf2_sha256$320000$XqzS6GPKEVseW9bnyvAbej$zO0rRyPbMWJHAaYGMYGd+/BCnej6+L4J13p2AV0aKlQ=',NULL,0,'Sonya','Ward',0,1,'Sonya_Ward@gmail.com',4,'2022-10-12 20:59:36.029124','2022-10-12 20:59:36.086777',3,0,NULL,0,0,'',NULL,NULL,NULL,1,0,0),
 (79,'pbkdf2_sha256$320000$eQcCxb5Gy97Zmmqh9U2Qur$MXbTPzpV8SyAT+F1vmaK1dnZjiiVJ1VRWdjelz7uIm4=',NULL,0,'Brooke','Guess',0,1,'Brooke_Guess@gmail.com',4,'2022-10-12 20:59:36.090041','2022-10-12 20:59:36.147936',3,0,NULL,0,0,'',NULL,NULL,NULL,1,0,0),
 (80,'pbkdf2_sha256$320000$XBMwoeEXgRmC3jaNPlTx2s$A3Iexc7zyLHYIJhfsUjpREhA6ZeNbSk7/x1V7rFacsY=',NULL,0,'Robert','Lovecchio',0,1,'Robert_Lovecchio@gmail.com',4,'2022-10-12 20:59:36.157906','2022-10-12 20:59:36.215682',3,0,NULL,0,0,'',NULL,NULL,NULL,1,0,0),
-(81,'pbkdf2_sha256$320000$P3mSKl2tMvEqeLnfvtRUvq$Q9Ityu3HyQB640JAGahogh90UdBqvKIlMBjtM7eNwGw=',NULL,0,'Helen','Smith',0,1,'Helen_Smith@gmail.com',4,'2022-10-12 20:59:36.217982','2022-10-12 20:59:36.276166',3,0,NULL,0,0,'',NULL,NULL,NULL,1,0,0);
+(81,'pbkdf2_sha256$320000$P3mSKl2tMvEqeLnfvtRUvq$Q9Ityu3HyQB640JAGahogh90UdBqvKIlMBjtM7eNwGw=',NULL,0,'Helen','Smith',0,1,'Helen_Smith@gmail.com',4,'2022-10-12 20:59:36.217982','2022-10-12 20:59:36.276166',3,0,NULL,0,0,'',NULL,NULL,NULL,1,0,0),
+(82,'pbkdf2_sha256$320000$dtlQ2tpeYiGfNlUGSdvXeR$k+BJdEcRriTcmYRBwju3iAP8tVWhlhSPYyenrvkR1/4=','2022-10-18 21:16:30.226133',0,'','',0,1,'cy-new-user@jobvyne.com',0,'2022-10-18 21:16:29.302729','2022-10-18 21:16:29.359357',NULL,0,NULL,0,0,'',NULL,NULL,NULL,1,0,1),
+(83,'pbkdf2_sha256$320000$aG6Arqc7c2hHhpniGQ1AKG$XPzmFljTtTifaHZMJDb5T/XtVRRUHSVVU63OKijKrRA=','2022-10-18 21:21:11.601650',0,'Cypress','Employee',0,1,'cy-employee-user@jobvyne.com',4,'2022-10-18 21:21:10.562206','2022-10-18 21:37:53.438169',3,0,'cy-employee-user@gmail.com',1,1,'',NULL,NULL,NULL,1,0,1),
+(84,'pbkdf2_sha256$320000$m4TIYzuJFV3zXfTawGQNal$ibSIvXL83iRRVNu1rkCNTOURAB94mfI0dPM6MAgX/Vc=','2022-10-18 21:48:19.157748',0,'Cypress','Employer',0,1,'cy-employer-user@jobvyne.com',16,'2022-10-18 21:48:18.184520','2022-10-18 21:49:09.029642',3,0,'cy-employer-user@gmail.com',1,1,'',NULL,NULL,NULL,1,0,1),
+(85,'pbkdf2_sha256$320000$dxnDSRfnKLXrVeeNX5UUqa$fmIM+fycK2D5i89MjtrBlnz65TeFMtRwck69I4j+YBc=','2022-10-18 21:53:10.100652',0,'Cypress','Candidate',0,1,'cy-candidate-user@jobvyne.com',2,'2022-10-18 21:53:09.290023','2022-10-18 21:53:21.672313',NULL,0,NULL,0,1,'',NULL,NULL,NULL,1,0,1);
 /*!40000 ALTER TABLE `jvapp_jobvyneuser` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `jvapp_jobvyneuser_groups`;
@@ -12297,7 +12301,7 @@ CREATE TABLE `jvapp_useremployerpermissiongroup` (
   CONSTRAINT `jvapp_useremployerpe_employer_id_76c8e8c2_fk_jvapp_emp` FOREIGN KEY (`employer_id`) REFERENCES `jvapp_employer` (`id`),
   CONSTRAINT `jvapp_useremployerpe_permission_group_id_384590c3_fk_jvapp_emp` FOREIGN KEY (`permission_group_id`) REFERENCES `jvapp_employerauthgroup` (`id`),
   CONSTRAINT `jvapp_useremployerpe_user_id_ed76b082_fk_jvapp_job` FOREIGN KEY (`user_id`) REFERENCES `jvapp_jobvyneuser` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=84 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+) ENGINE=InnoDB AUTO_INCREMENT=86 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `jvapp_useremployerpermissiongroup` WRITE;
@@ -12385,7 +12389,9 @@ INSERT INTO `jvapp_useremployerpermissiongroup` VALUES
 (80,3,3,81,1),
 (81,3,3,1,1),
 (82,3,2,1,1),
-(83,3,1,1,1);
+(83,3,1,1,1),
+(84,3,3,83,1),
+(85,3,2,84,1);
 /*!40000 ALTER TABLE `jvapp_useremployerpermissiongroup` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `jvapp_userfile`;

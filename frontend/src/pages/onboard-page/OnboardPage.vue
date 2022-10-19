@@ -135,6 +135,7 @@ export default {
   },
   computed: {
     potentialEmployers () {
+      this.employerStore.setEmployersFromDomain(this.formData.business_email)
       return dataUtil.uniqArray([
         ...dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.user.email)),
         ...dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.formData.business_email))

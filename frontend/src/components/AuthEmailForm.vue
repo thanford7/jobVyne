@@ -3,14 +3,14 @@
     @submit="login"
   >
     <EmailInput v-model="email"/>
-    <PasswordInput v-model="password"/>
+    <PasswordInput v-model="password" :is-validate="isCreate"/>
 
     <div class="q-mt-sm">
       <q-btn
         :label="(isCreate) ? createText : loginText"
         type="submit" ripple
         :style="styleOverride"
-        class="w-100"
+        class="w-100 jv-login-btn"
       />
     </div>
   </q-form>

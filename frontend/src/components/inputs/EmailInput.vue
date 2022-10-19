@@ -2,9 +2,8 @@
   <q-input
     :model-value="modelValue"
     @update:model-value="$emit('update:model-value', $event)"
-    filled
-    :label="label"
-    lazy-rules
+    filled :label="label" lazy-rules
+    class="jv-email"
     :rules="rules"
   />
 </template>

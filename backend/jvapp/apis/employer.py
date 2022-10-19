@@ -898,9 +898,9 @@ class EmployerFromDomainView(JobVyneAPIView):
         if not (email_domain := get_domain_from_email(email)):
             return Response(f'Could not parse email domain for {email}', status=status.HTTP_400_BAD_REQUEST)
         
-        employers = {e.email_domains: e for e in Employer.objects.all()}
+        employers = [(e.email_domains, e) for e in Employer.objects.all()]
         matched_employers = []
-        for domains, employer in employers.items():
+        for domains, employer in employers:
             if not domains:
                 continue
             if email_domain in domains:

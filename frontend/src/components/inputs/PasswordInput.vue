@@ -5,6 +5,7 @@
     filled
     :type="isPwdShown ? 'text' : 'password'"
     :label="label" :rules="rules"
+    class="jv-password"
   >
     <template v-slot:append>
       <q-icon

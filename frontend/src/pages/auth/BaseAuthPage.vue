@@ -3,7 +3,7 @@
     <q-page padding>
       <BannerMessage/>
       <div class="row justify-center items-center" style="height: 75vh; margin-top: 10vh;">
-        <q-card class="col-10 col-md-4 col-lg-3">
+        <q-card class="col-10 col-md-5 col-lg-4">
           <q-card-section>
             <div class="flex justify-center">
               <img src="../../assets/jobVyneLogoOnly.png" alt="Logo" style="height: 70px; object-fit: scale-down">
