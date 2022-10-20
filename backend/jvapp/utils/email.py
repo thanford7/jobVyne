@@ -39,7 +39,7 @@ def get_attachment(file_name, file, file_type, content_id, is_display_inline=Fal
         file_content=FileContent(file),
         file_name=FileName(file_name),
         file_type=FileType(file_type),
-        disposition=Disposition('inline') if is_display_inline else None,
+        disposition=Disposition('inline') if is_display_inline else 'attachment',
         content_id=ContentId(content_id)
     )
 

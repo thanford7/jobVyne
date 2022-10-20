@@ -18,9 +18,9 @@ from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.email import EMAIL_ADDRESS_SEND, get_attachment, get_encoded_file, send_email
+from jvapp.utils.file import get_file_name, get_mime_from_in_memory_file
 
 __all__ = ('ApplicationView', 'ApplicationTemplateView')
-
 
 APPLICATION_SAVE_CFG = {
     'first_name': None,
@@ -108,7 +108,12 @@ class ApplicationView(JobVyneAPIView):
                 'application': application
             },
             attachments=[
-                get_attachment(resume.name, get_encoded_file(resume.file), resume.content_type, resume.name)
+                get_attachment(
+                    get_file_name(application.resume.name),
+                    get_encoded_file(application.resume.file.file),
+                    get_mime_from_in_memory_file(application.resume.file.file),
+                    get_file_name(application.resume.name)
+                )
             ] if resume else None
         )
         
