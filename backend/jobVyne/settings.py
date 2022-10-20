@@ -272,7 +272,7 @@ else:
     AWS_QUERYSTRING_AUTH = False
     AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = 'jobvyne'
+    AWS_STORAGE_BUCKET_NAME = 'jobvyne' if env('IS_PROD', default=False, cast=bool) else 'jobvyne-dev'
     AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',
