@@ -64,7 +64,8 @@ class EmployerView(JobVyneAPIView):
             employer,
             self.data,
             {
-                'email_domains': None,
+                'email_domains': AttributeCfg(is_ignore_excluded=True),
+                'notification_email': AttributeCfg(is_ignore_excluded=True),
                 'color_primary': AttributeCfg(is_protect_existing=True),
                 'color_secondary': AttributeCfg(is_protect_existing=True),
                 'color_accent': AttributeCfg(is_protect_existing=True),

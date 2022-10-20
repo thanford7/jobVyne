@@ -11,13 +11,13 @@
         align="left"
         narrow-indicator
       >
-        <q-tab name="style" label="Brand style"/>
+        <q-tab name="general" label="General"/>
         <q-tab name="security" label="Security"/>
         <q-tab name="integration" label="Integration"/>
         <q-tab v-if="hasPaymentPermission" name="billing" label="Billing"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
-        <q-tab-panel name="style">
+        <q-tab-panel name="general">
           <div class="row q-gutter-y-md">
             <div class="col-12 q-gutter-x-sm">
               <q-btn
@@ -81,6 +81,21 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <EmailInput
+                v-model="employerData.notification_email"
+                label="Notification email"
+                :is-required="false"
+              >
+                <template v-slot:after>
+                  <CustomTooltip>
+                    If provided, a notification email will be sent to this address every time an application
+                    is submitted for any job. This is likely only necessary if your company doesn't use an
+                    applicant tracking system.
+                  </CustomTooltip>
+                </template>
+              </EmailInput>
             </div>
           </div>
         </q-tab-panel>
@@ -371,6 +386,7 @@ import DialogSubscriptionPayment, {
   loadDialogSubscriptionPaymentFn
 } from 'components/dialogs/DialogSubscriptionPayment.vue'
 import ColorPicker from 'components/inputs/ColorPicker.vue'
+import EmailInput from 'components/inputs/EmailInput.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import PageHeader from 'components/PageHeader.vue'
 import BillingInformationFields from 'pages/employer/settings-page/BillingInformationFields.vue'
@@ -418,6 +434,7 @@ const pastPaymentColumns = [
 export default {
   name: 'SettingsPage',
   components: {
+    EmailInput,
     StripePaymentMethodDetails,
     StripeAccountType,
     StripePaymentFields,
@@ -432,7 +449,7 @@ export default {
   },
   data () {
     return {
-      tab: 'style',
+      tab: 'general',
       newLogoKey: 'logo',
       currentEmployerData: this.getEmployerDataCopy(),
       employerData: this.getEmployerDataCopy(),

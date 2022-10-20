@@ -1,0 +1,37 @@
+{% extends 'emails/base_email.html' %}
+
+{% block body %}
+    <p>A new application was submitted to JobVyne. The resume is attached.</p>
+    <table class="bordered" width="100%" cellpadding="0" cellspacing="0" style="min-width:100%; border-collapse: collapse;">
+        <tbody>
+        <tr>
+            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Applicant name</td>
+            <td style="border: 1px solid black; padding: 5px;">{{ application.first_name }} {{ application.last_name }}</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Applicant email</td>
+            <td style="border: 1px solid black; padding: 5px;">{{ application.email }}</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Phone number</td>
+            <td style="border: 1px solid black; padding: 5px;">
+                {% if application.phone_number %}
+                    {{ application.phone_number }}
+                {% else %}
+                    None
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">LinkedIn</td>
+            <td style="border: 1px solid black; padding: 5px;">
+                {% if application.linkedin_url %}
+                    <a href="{{ application.linkedin_url }}">View profile</a>
+                {% else %}
+                    None
+                {% endif %}
+            </td>
+        </tr>
+        </tbody>
+    </table>
+{% endblock body %}

@@ -5,7 +5,11 @@
     filled :label="label" lazy-rules
     class="jv-email"
     :rules="rules"
-  />
+  >
+    <template v-slot:after>
+      <slot name="after"/>
+    </template>
+  </q-input>
 </template>
 
 <script>

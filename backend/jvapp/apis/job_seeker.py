@@ -17,8 +17,10 @@ from jvapp.permissions.general import IsAuthenticatedOrPost
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.email import EMAIL_ADDRESS_SEND, get_attachment, get_encoded_file, send_email
 
 __all__ = ('ApplicationView', 'ApplicationTemplateView')
+
 
 APPLICATION_SAVE_CFG = {
     'first_name': None,
@@ -97,6 +99,18 @@ class ApplicationView(JobVyneAPIView):
         elif application_template:
             resume = application_template.resume
         self.create_application(user, application, self.data, resume)
+        send_email(
+            'JobVyne | New application submission',
+            to_emails=[email],
+            from_email=EMAIL_ADDRESS_SEND,
+            django_email_body_template='emails/application_submission_email.html',
+            django_context={
+                'application': application
+            },
+            attachments=[
+                get_attachment(resume.name, get_encoded_file(resume.file), resume.content_type, resume.name)
+            ] if resume else None
+        )
         
         if user:
             # Save or update application template to Django model
