@@ -5,6 +5,7 @@
   >
     <div v-for="userType in userTypesCfg" class="col-6 col-md-4 q-pa-sm">
       <q-card
+        :id="userType.id"
         class="h-100"
         style="cursor: pointer"
         :style="(formData.user_type_bits & userType.userTypeBit) ? {backgroundColor: colorUtil.changeAlpha(colorUtil.getPaletteColor('primary'), 0.2)} : null"

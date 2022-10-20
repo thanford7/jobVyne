@@ -26,6 +26,7 @@
           <template v-slot:backButton>
             <q-btn
               v-if="stepIdx > 0"
+              id="jv-back"
               label="Back"
               size="md"
               flat color="grey-6"
@@ -35,6 +36,7 @@
           </template>
           <template v-slot:continueButton>
             <q-btn
+              id="jv-forward"
               :label="stepIdx === steps.length - 1 ? 'Finish' : 'Continue'"
               size="md"
               color="primary"
@@ -95,6 +97,7 @@ export default {
       {
         userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE],
         expanded: false,
+        id: 'jv-job-seeker',
         icon: 'fa-solid fa-binoculars',
         title: 'Job Seeker',
         descriptionItems: [
@@ -105,6 +108,7 @@ export default {
       {
         userTypeBit: USER_TYPES[USER_TYPE_EMPLOYEE],
         expanded: false,
+        id: 'jv-employee',
         icon: 'work',
         title: 'Employee',
         descriptionItems: [
@@ -115,6 +119,7 @@ export default {
       {
         userTypeBit: USER_TYPES[USER_TYPE_EMPLOYER],
         expanded: false,
+        id: 'jv-employer',
         icon: 'business',
         title: 'Employer',
         descriptionItems: [
@@ -130,17 +135,12 @@ export default {
       stepIdx: 0,
       formData,
       colorUtil,
-      userTypesCfg
+      userTypesCfg,
+      potentialPersonalEmployers: dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.user.email)),
+      potentialBusinessEmployers: dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.user.business_email))
     }
   },
   computed: {
-    potentialEmployers () {
-      this.employerStore.setEmployersFromDomain(this.formData.business_email)
-      return dataUtil.uniqArray([
-        ...dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.user.email)),
-        ...dataUtil.getForceArray(this.employerStore.getEmployersFromDomain(this.formData.business_email))
-      ])
-    },
     steps () {
       const all = [
         { component: 'StepUserType', props: { formData: this.formData, userTypesCfg: this.userTypesCfg } }
@@ -160,29 +160,33 @@ export default {
         (this.formData.user_type_bits & (USER_TYPES[USER_TYPE_EMPLOYEE] | USER_TYPES[USER_TYPE_EMPLOYER])) &&
         !this.user.employer_id &&
         !this.user.business_email &&
-        !this.potentialEmployers.length
+        !this.potentialPersonalEmployers.length
       )
       if (isNeedsBusinessEmail) {
         all.push({
           component: 'StepBusinessEmail',
-          props: { formData: this.formData, potentialEmployers: this.potentialEmployers, personalEmail: this.user.email }
+          props: { formData: this.formData, personalEmail: this.user.email }
         })
       }
 
       // If we still can't identify the user's employer after they provide a business email, we'll
       // need to manually intervene
-      if (isNeedsBusinessEmail && !this.potentialEmployers.length) {
+      if (isNeedsBusinessEmail && !this.potentialBusinessEmployers.length) {
         all.push({
           component: 'StepUnknownEmployer',
           props: { formData: this.formData }
         })
       }
 
-      if (!this.user.employer_id && this.potentialEmployers.length) { // TODO: Update to length > 1
+      const potentialEmployers = [...this.potentialPersonalEmployers, ...this.potentialBusinessEmployers]
+      if (!this.user.employer_id && potentialEmployers.length > 1) {
         all.push({
           component: 'StepSelectEmployer',
-          props: { formData: this.formData, potentialEmployers: this.potentialEmployers }
+          props: { formData: this.formData, potentialEmployers }
         })
+      } else if (!this.user.employer_id && potentialEmployers.length === 1) {
+        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+        this.formData.employer_id = potentialEmployers[0].id
       }
       return all
     }
@@ -194,6 +198,10 @@ export default {
         await this.authStore.setUser(true)
         this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))
       } else {
+        if (this.formData.business_email) {
+          await this.employerStore.setEmployersFromDomain(this.formData.business_email)
+          this.potentialBusinessEmployers = this.employerStore.getEmployersFromDomain(this.formData.business_email)
+        }
         this.stepIdx++
       }
     }

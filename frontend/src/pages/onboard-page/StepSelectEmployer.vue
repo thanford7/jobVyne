@@ -5,6 +5,7 @@
   >
     <div class="col-12 col-md-6">
       <q-select
+        id="jv-employer-sel"
         filled emit-value map-options
         v-model="formData.employer_id"
         :options="potentialEmployers"

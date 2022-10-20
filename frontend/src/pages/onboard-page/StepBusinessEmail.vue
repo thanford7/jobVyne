@@ -30,8 +30,7 @@ export default {
   components: { BaseStep, EmailInput },
   props: {
     personalEmail: String,
-    formData: Object,
-    potentialEmployers: [Array, null]
+    formData: Object
   },
   data () {
     return {

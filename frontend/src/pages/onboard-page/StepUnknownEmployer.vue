@@ -6,6 +6,7 @@
   >
     <div class="col-12 col-md-6">
       <q-input
+        class="jv-employer-unknown"
         filled
         v-model="formData.unknown_employer_name"
         label="Employer name"

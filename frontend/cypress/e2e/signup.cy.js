@@ -28,5 +28,50 @@ describe('Sign up process', () => {
     cy.wait('@signup').its('response.statusCode').should('eq', 200)
     cy.wait('@login').its('response.statusCode').should('eq', 200)
     cy.location('pathname').should('equal', '/onboard')
+
+    // Logout user so other tests aren't impacted
+    cy.visit('/')
+    cy.location('pathname').should('equal', '/')
+    cy.get('#jv-logout-btn').click({ force: true })
+  })
+
+  it('New user should be directed to onboarding page', () => {
+    cy.login(Cypress.env('newUserEmail'), Cypress.env('newUserPassword'))
+    cy.location('pathname').should('equal', '/onboard')
+  })
+
+  it('Job seeker should advance to name and then have option to finalize', () => {
+    cy.get('#jv-job-seeker').click({ force: true })
+    cy.get('#jv-forward').click()
+    cy.get('.jv-fname input').type('Cypress')
+    cy.get('.jv-lname input').type('New')
+    cy.get('#jv-forward .q-btn__content > span').should('have.text', 'Finish')
+  })
+
+  it('Employee should advance to name, business email, select an employer, and then have option to finalize', () => {
+    cy.login(Cypress.env('newUserEmail'), Cypress.env('newUserPassword'))
+    cy.location('pathname').should('equal', '/onboard')
+
+    // First step (user type)
+    cy.get('#jv-employee').click({ force: true })
+    cy.get('#jv-forward').click()
+
+    // Second step (name)
+    cy.get('.jv-fname input').type('Cypress')
+    cy.get('.jv-lname input').type('New')
+    cy.get('#jv-forward').click()
+
+    // Third step (business email) - gmail domain is allowable by two employers
+    cy.get('.jv-email input').type('cypress-new@gmail.com').blur()
+    cy.get('#jv-forward').click()
+
+    // Fourth step (select employer)
+    cy.get('#jv-employer-sel').should('be.visible')
+
+    // Enter an email address not connected to an employer
+    cy.get('#jv-back').click()
+    cy.get('.jv-email input').type('cypress-new@bogus.com').blur()
+    cy.get('#jv-forward').click()
+    cy.get('.jv-employer-unknown').should('be.visible')
   })
 })

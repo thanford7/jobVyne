@@ -5,6 +5,7 @@
   >
     <div class="col-12 col-md-6 q-pa-sm">
       <q-input
+        class="jv-fname"
         filled
         v-model="formData.first_name"
         label="First name"
@@ -16,6 +17,7 @@
     </div>
     <div class="col-12 col-md-6 q-pa-sm">
       <q-input
+        class="jv-lname"
         filled
         v-model="formData.last_name"
         label="Last name"

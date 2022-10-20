@@ -57,6 +57,8 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
     :param attachments {list}: Each attachment must be an Attachment object
     :return: SendGrid email response
     """
+    if not settings.IS_SEND_EMAILS:
+        return
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
     if not IS_PRODUCTION:
         subject = '(Test) ' + subject
