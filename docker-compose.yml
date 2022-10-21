@@ -58,7 +58,7 @@ services:
       - https_key
     restart: "no"
     # Rebuild is necessary: https://stackoverflow.com/questions/69607736/vite-react-app-esbuild-error-in-docker-container
-    command: bash -c "npm rebuild esbuild && quasar dev -p 9000"
+    command: bash -c "NODE_OPTIONS=--max_old_space_size=4096 npm rebuild esbuild && quasar dev -p 9000"
 
   backend:
     container_name: backend
