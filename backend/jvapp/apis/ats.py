@@ -10,14 +10,13 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.apis.geocoding import get_location
+from jvapp.apis.geocoding import LocationParser
 from jvapp.models import EmployerAts, EmployerJob, JobDepartment
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.location import LocationLookup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.response import is_good_response
-from jvapp.utils.sanitize import get_replace_tag_html, make_links_secure, sanitizer
+from jvapp.utils.sanitize import REDUCE_H_TAG_MAP, sanitize_html
 
 
 class AtsError(Exception):
@@ -61,7 +60,7 @@ class BaseAts:
     
     def __init__(self, ats_cfg):
         self.ats_cfg = ats_cfg
-        self.location_lookups = self.get_location_lookups()
+        self.location_parser = LocationParser()
         self.ats_user_id = self.get_ats_user_id()
     
     def get_request_headers(self):
@@ -83,15 +82,6 @@ class BaseAts:
     
     def get_locations(self):
         pass
-    
-    def get_location_lookups(self):
-        return {l.text: l.location for l in LocationLookup.objects.select_related('location').all()}
-    
-    def get_or_create_location(self, location_text):
-        location = self.location_lookups.get(location_text)
-        if not location:
-            return get_location(location_text)
-        return location
     
     def get_referrer_name_from_application(self, application):
         referrer = application.social_link_filter.owner
@@ -139,11 +129,7 @@ class BaseAts:
                 current_job.ats_job_key = job_data.ats_job_key
                 current_job.job_title = job_data.job_title
                 if job_data.job_description:
-                    current_job.job_description = get_replace_tag_html(
-                        sanitizer.clean(job_data.job_description),
-                        {'h1': 'h6', 'h2': 'h6', 'h3': 'h6', 'h4': 'h6', 'h5': 'h6'}
-                    )
-                    current_job.job_description = make_links_secure(current_job.job_description)
+                    current_job.job_description = sanitize_html(job_data.job_description, replace_tag_map=REDUCE_H_TAG_MAP)
                 else:
                     current_job.job_description = None
                 current_job.open_date = job_data.open_date
@@ -264,7 +250,7 @@ class GreenhouseAts(BaseAts):
         employment_type_key = self.ats_cfg.employment_type_field_key or 'employment_type'
         salary_range_key = self.ats_cfg.salary_range_field_key or 'salary_range'
         salary_range = custom_fields.get(salary_range_key)
-        locations = [self.get_or_create_location(office['location']['name']) for office in job['offices']]
+        locations = [self.location_parser.get_location(office['location']['name']) for office in job['offices']]
         data = JobData(
             ats_job_key=str(job['id']),
             job_title=job['name'],

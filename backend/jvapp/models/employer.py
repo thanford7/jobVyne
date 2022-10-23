@@ -124,6 +124,8 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     employment_type = models.CharField(max_length=30, null=True, blank=True)
     locations = models.ManyToManyField('Location')
+    application_url = models.CharField(max_length=300, null=True, blank=True)  # Used as a fallback when we don't have an ATS integration with an employer
+    is_scraped = models.BooleanField(default=False, blank=True)
     
     ats_job_key = models.CharField(max_length=50, null=True, blank=True)
     

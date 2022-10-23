@@ -1,7 +1,7 @@
 from functools import reduce
 
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import F, Q
+from django.db.models import Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -21,15 +21,14 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
 from jvapp.utils.data import AttributeCfg, is_obfuscated_string, set_object_attributes
+from jvapp.utils.email import get_domain_from_email
+from jvapp.utils.sanitize import sanitize_html
+
 
 __all__ = (
     'EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView',
     'EmployerSubscriptionView'
 )
-
-from jvapp.utils.email import get_domain_from_email
-
-from jvapp.utils.sanitize import sanitizer
 
 BATCH_UPDATE_SIZE = 100
 
@@ -868,7 +867,7 @@ class EmployerPageView(JobVyneAPIView):
             item_parts = sectionData['item_parts']
             for part in item_parts:
                 if html_content := part.get('html_content'):
-                    part['html_content'] = sanitizer.clean(html_content)
+                    part['html_content'] = sanitize_html(html_content)
             section.item_parts = item_parts
             section.save()
             employer_page.content_item.add(section)

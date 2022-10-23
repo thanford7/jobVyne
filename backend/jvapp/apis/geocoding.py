@@ -5,8 +5,6 @@ from django.conf import settings
 
 from jvapp.models.location import City, Country, Location, LocationLookup, State
 
-BASE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
-
 
 def _get_or_create_obj(objClass, name):
     if not name:
@@ -31,20 +29,24 @@ def get_or_create_country(country_name):
     return _get_or_create_obj(Country, country_name)
 
 
-def get_raw_location(location_text):
-    resp = requests.get(BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
-    raw_data = json.loads(resp.content)
-    return parse_location_resp(raw_data)
+class LocationParser:
+    BASE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
+    
+    def __init__(self):
+        self.location_lookups = {l.text: l.location for l in LocationLookup.objects.select_related('location').all()}
 
-
-def get_location(location_text):
-    try:
-        location_lookup = LocationLookup.objects.select_related('location').get(text=location_text)
-        return location_lookup.location
-    except LocationLookup.DoesNotExist:
-        resp = requests.get(BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
+    def get_raw_location(self, location_text):
+        resp = requests.get(self.BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
         raw_data = json.loads(resp.content)
-        data = parse_location_resp(raw_data)
+        return self.parse_location_resp(raw_data)
+
+    def get_location(self, location_text):
+        if location := self.location_lookups.get(location_text):
+            return location
+
+        resp = requests.get(self.BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
+        raw_data = json.loads(resp.content)
+        data = self.parse_location_resp(raw_data)
         is_remote = 'remote' in location_text.lower()
         if not data:
             try:
@@ -80,32 +82,32 @@ def get_location(location_text):
             location=location,
             raw_result=raw_data
         ).save()
+        self.location_lookups[location_text] = location
         return location
     
-
-def parse_location_resp(raw_data):
-    if not raw_data.get('results'):
-        return None
-    best_address = raw_data['results'][0] if raw_data['results'] else None
-    if not best_address:
-        return None
-    address = best_address['address_components']
-    location_data = {}
-    for component in address:
-        val = component['long_name']
-        short_val = component['short_name']
-        comp_types = component['types']
-        if 'locality' in comp_types:
-            location_data['city'] = val
-        elif 'administrative_area_level_1' in comp_types:
-            location_data['state'] = val
-        elif 'country' in comp_types:
-            location_data['country'] = val
-            location_data['country_short'] = short_val
-        elif 'postal_code' in comp_types:
-            location_data['postal_code'] = val
-    lat_long = best_address['geometry']['location']
-    location_data['latitude'] = lat_long['lat']
-    location_data['longitude'] = lat_long['lng']
-    return location_data
+    def parse_location_resp(self, raw_data):
+        if not raw_data.get('results'):
+            return None
+        best_address = raw_data['results'][0] if raw_data['results'] else None
+        if not best_address:
+            return None
+        address = best_address['address_components']
+        location_data = {}
+        for component in address:
+            val = component['long_name']
+            short_val = component['short_name']
+            comp_types = component['types']
+            if 'locality' in comp_types:
+                location_data['city'] = val
+            elif 'administrative_area_level_1' in comp_types:
+                location_data['state'] = val
+            elif 'country' in comp_types:
+                location_data['country'] = val
+                location_data['country_short'] = short_val
+            elif 'postal_code' in comp_types:
+                location_data['postal_code'] = val
+        lat_long = best_address['geometry']['location']
+        location_data['latitude'] = lat_long['lat']
+        location_data['longitude'] = lat_long['lng']
+        return location_data
     

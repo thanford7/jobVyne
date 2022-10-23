@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
-from jvapp.apis.geocoding import get_location
+from jvapp.apis.geocoding import LocationParser
 from jvapp.models import Employer
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import JobVyneUser, UserEmployeeProfileQuestion, UserEmployeeProfileResponse, UserFile, \
@@ -19,7 +19,6 @@ from jvapp.models.user import JobVyneUser, UserEmployeeProfileQuestion, UserEmpl
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file, get_serialized_user_profile
 from jvapp.utils.data import AttributeCfg, set_object_attributes
-from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, get_attachment, get_encoded_file, send_email
 from jvapp.utils.oauth import OAUTH_CFGS
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
@@ -102,7 +101,8 @@ class UserView(JobVyneAPIView):
             user.profile_picture = profile_picture[0]
             
         if home_location_text := self.data.get('home_location_text'):
-            location = get_location(home_location_text)
+            location_parser = LocationParser()
+            location = location_parser.get_location(home_location_text)
             user.home_location = location
 
         user.save()

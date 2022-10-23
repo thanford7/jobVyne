@@ -1,9 +1,21 @@
 import re
 
 from bleach.css_sanitizer import CSSSanitizer
+from bleach.html5lib_shim import Filter
 from bleach.sanitizer import Cleaner
 
-__all__ = ('sanitizer', )
+__all__ = ('sanitize_html', 'REDUCE_H_TAG_MAP')
+
+
+REDUCE_H_TAG_MAP = {'h1': 'h6', 'h2': 'h6', 'h3': 'h6', 'h4': 'h6', 'h5': 'h6'}
+
+
+class SizeFilter(Filter):
+    def __iter__(self):
+        for token in Filter.__iter__(self):
+            if token['type'] in ['StartTag', 'EmptyTag'] and token['style']:
+                print(token)  # TODO: Update this to look at font-size in style
+            yield token
 
 # https://bleach.readthedocs.io/en/latest/clean.html#allowed-tags-tags
 # Needs to align with frontend sanitization cfg (WysiwygEditor.vue)
@@ -21,6 +33,14 @@ sanitization_cfg = {
 }
 
 sanitizer = Cleaner(**sanitization_cfg)
+
+
+def sanitize_html(html_text, replace_tag_map=None):
+    text = sanitizer.clean(html_text)
+    if replace_tag_map:
+        text = get_replace_tag_html(text, replace_tag_map)
+    
+    return make_links_secure(text)
 
 
 def get_replace_tag_html(html_text: str, tag_map: dict):
