@@ -39,18 +39,19 @@ class ScraperPipeline:
         if driver := getattr(spider, 'driver', None):
             driver.close()
 
-    @sync_to_async
+    # @sync_to_async
     def process_item(self, item, spider):
         employer_name = item['employer_name']
         employer_data = self.employers.get(employer_name)
         if not employer_data:
             employer = Employer(employer_name=employer_name)
             employer.save()
-            self.employers[employer_name] = {
+            employer_data = {
                 'employer': employer,
                 'jobs': {},
                 'found_jobs': set()
             }
+            self.employers[employer_name] = employer_data
         else:
             employer = employer_data['employer']
         self.scraped_employers.add(employer_name)

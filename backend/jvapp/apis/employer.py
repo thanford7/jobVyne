@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
-from jvapp.apis.geocoding import get_raw_location
+from jvapp.apis.geocoding import LocationParser
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
@@ -178,7 +178,8 @@ class EmployerBillingView(JobVyneAPIView):
         
         # Street address isn't important to normalize. We are just using the address to determine taxes
         location_text = f'{self.data["city"]}, {self.data["state"]}, {self.data["country"]} {self.data.get("postal_code")}'
-        raw_location = get_raw_location(location_text)
+        location_parser = LocationParser()
+        raw_location = location_parser.get_raw_location(location_text)
         if not raw_location:
             raise ValueError(f'Could not locate address for {location_text}')
         employer.street_address = self.data.get('street_address')

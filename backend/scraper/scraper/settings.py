@@ -19,8 +19,8 @@ django.setup()
 
 BOT_NAME = 'scraper'
 
-SPIDER_MODULES = ['scraper.spiders']
-NEWSPIDER_MODULE = 'scraper.spiders'
+SPIDER_MODULES = ['scraper.scraper.spiders']
+NEWSPIDER_MODULE = 'scraper.scraper.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -82,7 +82,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'scraper.pipelines.ScraperPipeline': 300,
+   'scraper.scraper.pipelines.ScraperPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -111,5 +111,5 @@ FEED_EXPORT_ENCODING = 'utf-8'
 # DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 
 # Set settings whose default value is deprecated to a future-proof value
-REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'
-TWISTED_REACTOR = 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+# REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'
+# TWISTED_REACTOR = 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'

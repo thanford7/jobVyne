@@ -5,8 +5,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
 from jvapp.utils.sanitize import REDUCE_H_TAG_MAP, sanitize_html
-from scraper.items import JobItem
-from scraper.utils.seleniumSetup import getDomElOrNone, getSelenium, getWebElementHtml, getWebElementWait,\
+from scraper.scraper.items import JobItem
+from scraper.scraper.utils.seleniumSetup import getDomElOrNone, getSelenium, getWebElementHtml, getWebElementWait,\
     retryClick, WEBDRIVER_WAIT_SECONDS
 
 
@@ -448,3 +448,30 @@ class ExabeamSpider(LeverSpider):
     employer_name = 'Exabeam'
     name = 'exabeam'
     start_urls = ['https://jobs.lever.co/exabeam']
+    
+    
+class HospitalIQSpider(scrapy.Spider):
+    name = 'hospiq'
+    employer_name = 'Hospital IQ'
+    start_urls = ['https://www.hospiq.com/careers/']
+    
+    def parse(self, response):
+        yield from response.follow_all(response.xpath('//div[@id="grayback"]//a'), callback=self.parseJob)
+    
+    def parseJob(self, response):
+        jobData = response.xpath('//div[@id="leftcol"]')
+        job_description = ''
+        for content in jobData.xpath('.//*[not(self::p) and not(self::a)]'):
+            if not content.xpath('.//text()').get():
+                continue
+            job_description += content.get()
+        
+        yield JobItem(
+            employer_name=self.employer_name,
+            application_url=response.url,
+            job_title=jobData.xpath('.//p[1]/text()').get().strip(),
+            location='Remote',
+            job_department='General',
+            job_description=scraper_sanitize_html(job_description),
+            employment_type='Full time',
+        )
