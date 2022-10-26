@@ -1,5 +1,6 @@
 from scrapy.crawler import CrawlerProcess
 from scrapy.settings import Settings
+from scrapy.utils.reactor import install_reactor
 
 from scraper.scraper.spiders.employers import *
 from scraper.scraper import settings

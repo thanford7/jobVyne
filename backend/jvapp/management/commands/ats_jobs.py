@@ -28,7 +28,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--schedule_minutes',
             type=int,
-            help='Include ancillary data',
+            help='Minutes between when task is run',
         )
     
     def handle(self, *args, **options):
