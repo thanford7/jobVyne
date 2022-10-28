@@ -130,7 +130,7 @@
               <div class="col-12">
                 <div class="q-mt-sm q-pa-sm border-rounded" :class="(availableSeats < 0) ? 'bg-warning' : ''">
                   <q-icon name="help_outline"/>
-                  Current active {{ dataUtil.pluralize('employee', employeeCount) }}
+                  Current active {{ dataUtil.pluralize('employee', this.employerData.employee_count_active) }}
                   <span v-if="availableSeats >= 0">
                     ({{ dataUtil.pluralize('seat', availableSeats) }} available)
                   </span>
@@ -250,7 +250,7 @@
                 />
                 <PlanSection
                   v-if="isPlansShown"
-                  :employee-count="employeeCount"
+                  :employee-count="this.employerData.employee_count_active"
                   :employer-id="employerData.id"
                   :subscription="subscriptionData"
                   :can-close="true"
@@ -405,7 +405,6 @@ import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import subscriptionUtil, { SUBSCRIPTION_STATUS } from 'src/utils/subscription.js'
-import { USER_TYPES } from 'src/utils/user-types.js'
 import { useAjaxStore } from 'stores/ajax-store.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useBillingStore } from 'stores/billing-store.js'
@@ -483,16 +482,11 @@ export default {
     hasPaymentDataChanged () {
       return !dataUtil.isDeepEqual(this.currentBillingData, this.billingData)
     },
-    employeeCount () {
-      return this.employerData.employees.filter((employee) => {
-        return Boolean(employee.user_type_bits & USER_TYPES.Employee) && (!employee.is_employer_deactivated)
-      }).length
-    },
     availableSeats () {
       if (!this.subscriptionData) {
         return 0
       }
-      return this.subscriptionData.quantity - this.employeeCount
+      return this.subscriptionData.quantity - this.employerData.employee_count_active
     }
   },
   watch: {

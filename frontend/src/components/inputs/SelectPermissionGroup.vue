@@ -87,9 +87,8 @@ export default {
       return this.employerStore.permissionGroups.find((pg) => pg.id === parseInt(groupId)).name
     }
   },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    return employerStore.setEmployerPermissions()
+  async mounted () {
+    await this.employerStore.setEmployerPermissions()
   },
   setup () {
     return { employerStore: useEmployerStore() }

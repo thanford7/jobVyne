@@ -38,3 +38,19 @@ def obfuscate_string(text, allowed_chars=5):
 def is_obfuscated_string(text, allowed_chars=5):
     obs_text = obfuscate_string(text, allowed_chars=allowed_chars)
     return obs_text == text
+
+
+def coerce_bool(val):
+    if isinstance(val, bool):
+        return val
+    if val is None:
+        return False
+    try:
+        val = int(val)
+        return val != 0
+    except ValueError:
+        pass
+    if isinstance(val, str):
+        return val.lower() == 'true'
+    
+    raise ValueError(f'Unknown boolean val: {val}')

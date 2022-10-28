@@ -85,7 +85,7 @@ class CheckAuthView(APIView):
         
         return Response(
             status=status.HTTP_200_OK,
-            data=get_serialized_user(user, isIncludeEmployerInfo=True, isIncludePersonalInfo=True)
+            data=get_serialized_user(user, is_include_employer_info=True, is_include_personal_info=True)
         )
 
 

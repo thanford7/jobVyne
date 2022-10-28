@@ -14,19 +14,21 @@ def reduce_user_type_bits(permission_groups):
     )
 
 
-def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isIncludePersonalInfo=False):
+def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_include_personal_info=False):
     data = get_serialized_user_profile(user, is_get_profile=True)
     
-    if isIncludeEmployerInfo:
+    if is_include_employer_info:
         data['email'] = user.email
         data['business_email'] = user.business_email
         data['user_type_bits'] = user.user_type_bits
         data['employer_id'] = user.employer_id
+        data['employer_name'] = user.employer.employer_name if user.employer else None
         data['is_employer_deactivated'] = user.is_employer_deactivated
         data['has_employee_seat'] = user.has_employee_seat
         data['created_dt'] = get_datetime_format_or_none(user.created_dt)
         data['modified_dt'] = get_datetime_format_or_none(user.modified_dt)
         
+        data['is_approval_required'] = user.is_approval_required
         approved_permission_groups = [p for p in user.employer_permission_group.all() if p.is_employer_approved]
         data['permissions_by_employer'] = {
             employer_id: [p.name for p in permissions]
@@ -38,7 +40,8 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
                 'id': epg.permission_group.id,
                 'name': epg.permission_group.name,
                 'user_type_bit': epg.permission_group.user_type_bit,
-                'is_approved': epg.is_employer_approved
+                'is_approved': epg.is_employer_approved,
+                'employer_name': epg.employer.employer_name
             } for epg in employer_permission_groups]
             for employer_id, employer_permission_groups in user.get_employer_permission_groups_by_employer(
                 permission_groups=user.employer_permission_group.all()).items()
@@ -49,7 +52,7 @@ def get_serialized_user(user: JobVyneUser, isIncludeEmployerInfo=False, isInclud
             user.get_employer_permission_groups_by_employer(permission_groups=approved_permission_groups).items()
         }
     
-    if isIncludePersonalInfo:
+    if is_include_personal_info:
         application_template = next((at for at in user.application_template.all()), None)
         data['application_template'] = base_application_serializer(
             application_template) if application_template else None

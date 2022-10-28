@@ -76,10 +76,10 @@ const routes = [
         component: () => import('pages/DashboardPage.vue')
       },
       {
-        path: 'payments',
-        name: 'admin-payments',
+        path: 'users',
+        name: 'admin-users',
         meta: { userTypeBits: USER_TYPES.Admin },
-        component: () => import('pages/admin/PaymentsPage.vue')
+        component: () => import('pages/admin/UsersPage.vue')
       },
       {
         path: 'employers',
@@ -173,7 +173,7 @@ const routes = [
         path: ':key(employer-user-management)',
         name: 'employer-user-management',
         meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/UserManagementPage.vue')
+        component: () => import('pages/employer/user-management-page/UserManagementPage.vue')
       },
       {
         path: ':key(employer-profile-page)',

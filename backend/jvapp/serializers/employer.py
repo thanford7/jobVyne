@@ -3,7 +3,7 @@ from enum import Enum
 
 from django.utils import timezone
 
-from jvapp.models import Currency
+from jvapp.models import Currency, JobVyneUser
 from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
 from jvapp.serializers.content import get_serialized_content_item
@@ -57,22 +57,9 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
             'employment_type_field_key': ats_cfg.employment_type_field_key,
             'salary_range_field_key': ats_cfg.salary_range_field_key
         } if ats_cfg else None
-        data['employees'] = sorted([{
-            'id': e.id,
-            'email': e.email,
-            'first_name': e.first_name,
-            'last_name': e.last_name,
-            'user_type_bits': reduce_user_type_bits(get_permission_groups(e)),
-            'is_employer_deactivated': e.is_employer_deactivated,
-            'has_employee_seat': e.has_employee_seat,
-            'permission_groups': [{
-                'id': epg.permission_group.id,
-                'name': epg.permission_group.name,
-                'user_type_bit': epg.permission_group.user_type_bit,
-                'is_approved': epg.is_employer_approved
-            } for epg in e.get_employer_permission_groups_by_employer(permission_groups=e.employer_permission_group.all())[employer.id]],
-            'created_dt': get_datetime_format_or_none(e.created_dt),
-        } for e in employer.employee.all()], key=lambda x: x['id'], reverse=True)
+        employees = employer.employee.all()
+        data['employee_count_total'] = len(employees)
+        data['employee_count_active'] = len([e for e in employees if (not e.is_employer_deactivated) and reduce_user_type_bits(get_permission_groups(e)) & JobVyneUser.USER_TYPE_EMPLOYEE])
     
     return data
 

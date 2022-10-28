@@ -3,7 +3,7 @@ from string import Template
 
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -139,11 +139,18 @@ class UserView(JobVyneAPIView):
             .prefetch_related(
                 'application_template',
                 'employer_permission_group',
+                'employer_permission_group__employer',
                 'employer_permission_group__permission_group',
                 'employer_permission_group__permission_group__permissions',
                 'profile_response',
                 'profile_response__question'
             ) \
+            .annotate(is_approval_required=Count(
+                'employer_permission_group',
+                # Note this does not differentiate between different employers
+                # It's possible that a user needs permission from one employer, but not another
+                filter=Q(employer_permission_group__is_employer_approved=False)
+            )) \
             .filter(user_filter)
         
         if is_check_permission:

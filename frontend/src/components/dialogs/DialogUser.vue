@@ -116,7 +116,6 @@ export default {
       }
       Object.assign(data, (this.isSingle) ? this.formDataSingle : this.formDataMulti)
       await ajaxFn('employer/user/', getAjaxFormData(data))
-      this.employerStore.setEmployer(this.user.employer_id, true)
       this.$emit('ok')
     }
   },

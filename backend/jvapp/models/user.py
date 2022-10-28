@@ -137,6 +137,10 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     is_email_verified = models.BooleanField(default=False)
     business_email = models.EmailField(_('business email address'), unique=True, null=True, blank=True)
     is_business_email_verified = models.BooleanField(default=False)
+    
+    # To filter on user_type_bits:
+    #   any: user_type_bits__lt=F('user_type_bits') + (1 * F('user_type_bits').bitand(user_type_bits))
+    #   all: user_type_bits=1 * F('user_type_bits').bitand(user_type_bits)
     user_type_bits = models.SmallIntegerField(default=0)
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='employee')
     is_employer_owner = models.BooleanField(default=False, blank=True)

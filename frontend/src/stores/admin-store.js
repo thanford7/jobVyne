@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 
 export const useAdminStore = defineStore('admin', {
   state: () => ({
-    employers: []
+    employers: [],
+    paginatedUsers: {} // {total_page_count: <int>, total_user_count: <int>, users: [<user1>, ...]}
   }),
 
   actions: {
@@ -11,6 +12,12 @@ export const useAdminStore = defineStore('admin', {
         const resp = await this.$api.get('admin/employer/')
         this.employers = resp.data
       }
+    },
+    async setUsers (pageCount, sortOrder, isDescending = false, filters = {}) {
+      const resp = await this.$api.get('admin/user/', {
+        params: { page_count: pageCount, filters, sort_order: sortOrder, is_descending: isDescending }
+      })
+      this.paginatedUsers = resp.data
     }
   }
 })

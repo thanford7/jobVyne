@@ -47,9 +47,9 @@ class PagePermissionsUtil {
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           },
           {
-            icon: 'payment',
-            key: 'admin-payments',
-            label: 'Payments',
+            icon: 'people',
+            key: 'admin-users',
+            label: 'Users',
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           }
         ]
