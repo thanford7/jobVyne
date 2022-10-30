@@ -49,7 +49,7 @@ class EmployerView(JobVyneAPIView):
             )
         else:
             employers = self.get_employers(employer_filter=Q())
-            data = [get_serialized_employer(e) for e in employers]
+            data = sorted([get_serialized_employer(e) for e in employers], key=lambda e: e['name'])
         
         return Response(status=status.HTTP_200_OK, data=data)
     
@@ -550,6 +550,7 @@ class EmployerAuthGroupView(JobVyneAPIView):
 
 
 class EmployerUserView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
     
     @atomic
     def post(self, request):
@@ -562,7 +563,8 @@ class EmployerUserView(JobVyneAPIView):
             return Response('This user already exists and is associated with a different employer')
         
         new_user_groups = []
-        for group_id in self.data['permission_group_ids']:
+        permission_group_ids = self.data['permission_group_ids']
+        for group_id in permission_group_ids:
             new_user_groups.append(
                 UserEmployerPermissionGroup(
                     user=user,
@@ -572,6 +574,14 @@ class EmployerUserView(JobVyneAPIView):
                 )
             )
         UserEmployerPermissionGroup.objects.bulk_create(new_user_groups)
+
+        user_type_bits = reduce(
+            lambda a, b: a | b,
+            EmployerAuthGroup.objects.filter(id__in=permission_group_ids).values_list('user_type_bit', flat=True),
+            0
+        )
+        user.user_type_bits = user_type_bits
+        user.save()
         
         user_full_name = f'{user.first_name} {user.last_name}'
         success_message = f'Account created for {user_full_name}' if is_new else f'Account already exists for {user_full_name}. Permissions were updated.'
@@ -645,9 +655,21 @@ class EmployerUserView(JobVyneAPIView):
             UserEmployerPermissionGroup.objects.bulk_update(user_employer_permissions_to_update,
                                                             ['is_employer_approved'])
             batchCount += BATCH_UPDATE_SIZE
-        userCount = len(users)
+        user_count = len(users)
         return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: f'{userCount} {"user" if userCount == 1 else "users"} updated'
+            SUCCESS_MESSAGE_KEY: f'{user_count} {"user" if user_count == 1 else "users"} updated'
+        })
+    
+    @atomic
+    def delete(self, request):
+        if not self.user.is_admin:
+            return Response('You do not have permission to delete this user', status=status.HTTP_401_UNAUTHORIZED)
+        
+        users = JobVyneUser.objects.filter(id__in=self.data.get('user_ids'))
+        user_count = len(users)
+        users.delete()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{user_count} {"user" if user_count == 1 else "users"} deleted'
         })
 
 

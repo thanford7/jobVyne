@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import reduce
 from string import Template
 
 from django.contrib.auth.forms import PasswordResetForm
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import Employer
+from jvapp.models import Employer, EmployerAuthGroup
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import JobVyneUser, UserEmployeeProfileQuestion, UserEmployeeProfileResponse, UserFile, \
     UserSocialCredential, \

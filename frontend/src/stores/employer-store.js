@@ -4,6 +4,7 @@ import dataUtil from 'src/utils/data'
 export const useEmployerStore = defineStore('employer', {
   state: () => ({
     employers: {}, // employerId: {<employer>}
+    allEmployers: [],
     employees: {}, // employerId: [<employee1>, <employee2>, ...]
     employerBilling: {}, // employerId: <billingData>
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
@@ -26,6 +27,12 @@ export const useEmployerStore = defineStore('employer', {
       if (!this.employers[employerId] || isForceRefresh) {
         const resp = await this.$api.get(`employer/${employerId}/`)
         this.employers[employerId] = resp.data
+      }
+    },
+    async setAllEmployers (isForceRefresh = false) {
+      if (!this.allEmployers.length || isForceRefresh) {
+        const resp = await this.$api.get('employer/')
+        this.allEmployers = resp.data
       }
     },
     async setEmployees (employerId, isForceRefresh = false) {

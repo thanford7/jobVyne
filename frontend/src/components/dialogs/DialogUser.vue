@@ -4,7 +4,12 @@
     :primary-button-text="(!this.user_ids) ? 'Create' : 'Update'"
     @ok="saveUser"
   >
-    <div v-if="isSingle">
+    <q-form ref="form" v-if="isSingle">
+      <SelectEmployer
+        v-if="isAdmin"
+        v-model="formDataSingle.employer_id" :is-multi="false"
+        :rules="[ val => val || 'Employer is required']"
+      />
       <q-input
         filled
         v-model="formDataSingle.first_name"
@@ -31,8 +36,8 @@
         label="Permission groups"
         v-model="formDataSingle.permission_group_ids"
       />
-    </div>
-    <div v-else>
+    </q-form>
+    <q-form ref="form" v-else>
       <SelectPermissionGroup
         v-model="formDataMulti.add_permission_group_ids"
         label="Add permission groups"
@@ -43,12 +48,13 @@
         label="Remove permission groups"
         :rules-override="[val => !hasAddRemoveOverlap || 'Remove permissions can\'t overlap with those in the add permissions selection',]"
       />
-    </div>
+    </q-form>
   </DialogBase>
 </template>
 
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
@@ -61,7 +67,8 @@ const FORM_DATE_SINGLE_TEMPLATE = {
   first_name: null,
   last_name: null,
   email: null,
-  permission_group_ids: null
+  permission_group_ids: null,
+  employer_id: null
 }
 
 const FORM_DATE_MULTI_TEMPLATE = {
@@ -73,7 +80,7 @@ export default {
   name: 'DialogUser',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { SelectPermissionGroup, DialogBase },
+  components: { SelectPermissionGroup, DialogBase, SelectEmployer },
   data () {
     return {
       user_ids: null,
@@ -87,6 +94,10 @@ export default {
   props: {
     users: {
       type: [Array, Object] // Users can be plural (Array) or singular (Object)
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -109,8 +120,12 @@ export default {
   },
   methods: {
     async saveUser () {
+      const isValid = await this.$refs.form.validate()
+      if (!isValid) {
+        return
+      }
       const ajaxFn = (this.user_ids) ? this.$api.put : this.$api.post
-      const data = { employer_id: this.user.employer_id }
+      const data = (this.isAdmin) ? {} : { employer_id: this.user.employer_id }
       if (this.user_ids) {
         data.user_ids = this.user_ids
       }

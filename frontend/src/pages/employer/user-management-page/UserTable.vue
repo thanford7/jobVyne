@@ -14,8 +14,9 @@
     <template v-slot:top>
       <div class="q-gutter-y-sm flex items-center">
         <q-btn-dropdown
-          v-if="authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)"
-          color="primary" label="User actions">
+          v-if="isAdminMode || authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)"
+          color="primary" label="User actions"
+        >
           <q-list>
             <q-item clickable v-close-popup @click="openUserModal()">
               <q-item-section avatar>
@@ -115,6 +116,20 @@
                   </q-tooltip>
                 </q-item-section>
               </q-item>
+              <q-item
+                v-if="isAdminMode"
+                clickable v-close-popup @click="deleteUsers()"
+              >
+                <q-item-section avatar>
+                  <q-icon name="delete"/>
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Delete {{
+                      dataUtil.pluralize('user', selectedUsers.length)
+                    }}
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
             </template>
           </q-list>
         </q-btn-dropdown>
@@ -141,6 +156,15 @@
         <TableFilter filter-name="Approval required"
                      :has-filter="userFilter.isApprovalRequired && userFilter.isApprovalRequired.length">
           <SelectYesNo label="Approval Required" v-model="userFilter.isApprovalRequired"/>
+        </TableFilter>
+      </q-th>
+    </template>
+    <template v-slot:header-cell-employer_name="props">
+      <q-th :props="props">
+        {{ props.col.label }}
+        <TableFilter filter-name="Employer"
+                     :has-filter="userFilter.employerIds && userFilter.employerIds.length">
+          <SelectEmployer v-model="userFilter.employerIds" :is-multi="true"/>
         </TableFilter>
       </q-th>
     </template>
@@ -175,10 +199,10 @@
       <q-th :props="props">
         {{ props.col.label }}
         <TableFilter filter-name="User type"
-                     :has-filter="userFilter.userTypeBitsList && userFilter.userTypeBitsList.length">
+                     :has-filter="userFilter.userTypeBits && userFilter.userTypeBits.length">
           <SelectUserType
-            v-model="userFilter.userTypeBitsList"
-            :allowed-user-types="[USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE]"
+            v-model="userFilter.userTypeBits"
+            :allowed-user-types="allowedUserTypes"
             :is-multi="true"
             :is-required="false"
           />
@@ -222,7 +246,9 @@
     <template v-slot:body-cell-user_type_bits="props">
       <q-td key="user_type_bits">
         <q-chip
-          v-for="userTypeName in userTypeUtil.getUserTypeList(props.row.user_type_bits)"
+          v-for="userTypeName in userTypeUtil.getUserTypeList(
+            props.row.user_type_bits, false, { excludeBits: (isAdminMode) ? 0 : USER_TYPES.Admin | USER_TYPES.Candidate }
+          )"
           color="grey-7"
           text-color="white"
         >{{ userTypeName }}
@@ -260,6 +286,7 @@
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogUser from 'components/dialogs/DialogUser.vue'
+import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
 import SelectYesNo from 'components/inputs/SelectYesNo.vue'
@@ -268,8 +295,13 @@ import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
-import { getAjaxFormData } from 'src/utils/requests.js'
-import userTypeUtil from 'src/utils/user-types.js'
+import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
+import userTypeUtil, {
+  USER_TYPE_ADMIN, USER_TYPE_CANDIDATE,
+  USER_TYPE_EMPLOYEE,
+  USER_TYPE_EMPLOYER,
+  USER_TYPE_INFLUENCER, USER_TYPES
+} from 'src/utils/user-types.js'
 import { useAdminStore } from 'stores/admin-store.js'
 import { useAuthStore } from 'stores/auth-store.js'
 
@@ -281,10 +313,11 @@ const getAllUserPermissionGroups = (user) => {
 
 const userFilterTemplate = {
   searchText: null,
-  userTypeBitsList: null,
+  userTypeBits: null,
   permissionGroupIds: null,
   isApprovalRequired: null,
-  isActive: null
+  isActive: null,
+  employerIds: null
 }
 
 const pagination = {
@@ -297,7 +330,7 @@ const pagination = {
 
 export default {
   name: 'UserTable',
-  components: { CustomTooltip, TableFilter, SelectPermissionGroup, SelectUserType, SelectYesNo },
+  components: { SelectEmployer, CustomTooltip, TableFilter, SelectPermissionGroup, SelectUserType, SelectYesNo },
   props: {
     isAdminMode: {
       type: Boolean,
@@ -313,6 +346,7 @@ export default {
       PERMISSION_NAMES: pagePermissionsUtil.PERMISSION_NAMES,
       dataUtil,
       userTypeUtil,
+      USER_TYPES,
       pagination
     }
   },
@@ -348,7 +382,7 @@ export default {
       return this.selectedUsers.filter((user) => user.is_approval_required).length
     },
     userColumns () {
-      return [
+      const cols = [
         {
           name: 'is_approval_required',
           field: 'is_approval_required',
@@ -389,6 +423,23 @@ export default {
           format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
         }
       ]
+
+      if (this.isAdminMode) {
+        cols.splice(1, 0, {
+          name: 'employer_name', field: 'employer_name', align: 'left', label: 'Employer', sortable: true
+        })
+      }
+
+      return cols
+    },
+    allowedUserTypes () {
+      let userTypes = [USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE]
+      if (this.isAdminMode) {
+        // Employers shouldn't know if employees are also candidates (seeking jobs). Admins are irrelevant to employers
+        // Influencer will be updated to be visible to employers once the functionality is added
+        userTypes = [...userTypes, USER_TYPE_ADMIN, USER_TYPE_INFLUENCER, USER_TYPE_CANDIDATE]
+      }
+      return userTypes
     }
   },
   methods: {
@@ -422,6 +473,20 @@ export default {
       ))
       await this.updateUserData()
     },
+    async deleteUsers () {
+      openConfirmDialog(
+        this.q,
+        `Are you sure you want to delete ${dataUtil.pluralize('user', this.selectedUsers.length)}?`,
+        {
+          okFn: async () => {
+            await this.$api.delete('employer/user/', {
+              data: getAjaxFormData({ user_ids: this.selectedUsers.map((u) => u.id) })
+            })
+            await this.updateUserData()
+          }
+        }
+      )
+    },
     async fetchUsers ({ pagination = this.pagination, filter = this.userFilter } = {}) {
       this.isLoading = true
       await this.adminStore.setUsers(
@@ -444,7 +509,7 @@ export default {
     openUserModal (users) {
       const cfg = {
         component: DialogUser,
-        componentProps: { users }
+        componentProps: { users, isAdmin: this.isAdminMode }
       }
       return this.q.dialog(cfg).onOk(async () => {
         this.unselectUsers()
@@ -454,7 +519,9 @@ export default {
   },
   async mounted () {
     await this.authStore.setUser()
-    await this.fetchUsers()
+    await Promise.all([
+      this.fetchUsers()
+    ])
   },
   setup () {
     return {

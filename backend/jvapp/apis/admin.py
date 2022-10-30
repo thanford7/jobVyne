@@ -106,7 +106,10 @@ class AdminUserView(JobVyneAPIView):
         page_count = self.query_params['page_count']
         users = UserView.get_user(
             self.user, user_filter=Q(), is_check_permission=False,
-        ).order_by(f'{"-" if coerce_bool(self.query_params["is_descending"]) else ""}{self.query_params.get("sort_order", "id")}')
+        ).order_by(
+            f'{"-" if coerce_bool(self.query_params["is_descending"]) else ""}{self.query_params.get("sort_order", "id")}',
+            'id'  # used to ensure deterministic results
+        )
         
         if employer_id := filters.get('employer_id'):
             users = users.filter(employer_id=employer_id)
@@ -116,6 +119,11 @@ class AdminUserView(JobVyneAPIView):
                 return Response('You must provide an employer ID', status=status.HTTP_400_BAD_REQUEST)
             if employer_id != self.user.employer_id:
                 return Response('You do not have access to this employer', status=status.HTTP_401_UNAUTHORIZED)
+       
+        # This differs from the employer_id filter because this is used to narrow results for admins
+        # The employer_id filter is used for employers that should only be able to view their respective employees
+        if employer_ids := filters.get('employerIds'):
+            users = users.filter(employer_id__in=employer_ids)
         
         if search_text := filters.get('searchText'):
             search_filter = Q(first_name__iregex=f'^.*{search_text}.*$')
@@ -124,8 +132,7 @@ class AdminUserView(JobVyneAPIView):
             search_filter |= Q(business_email__iregex=f'^.*{search_text}.*$')
             users = users.filter(search_filter)
         
-        if user_type_bits_list := filters.get('userTypeBitsList'):
-            user_type_bits = sum(user_type_bits_list)
+        if user_type_bits := filters.get('userTypeBits'):
             users = users.filter(user_type_bits__lt=F('user_type_bits') + (1 * F('user_type_bits').bitand(user_type_bits)))
             
         if permission_group_ids := filters.get('permissionGroupIds'):
