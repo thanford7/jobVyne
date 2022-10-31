@@ -125,7 +125,10 @@
         </template>
         <template v-slot:body-cell-bonus="props">
           <q-td key="bonus" class="text-center">
-            {{ dataUtil.formatCurrency(props.row.bonus.amount, { currency: props.row.bonus.currency.name }) }}
+            <span v-if="props.row.bonus">
+              {{ dataUtil.formatCurrency(props.row.bonus.amount, { currency: props.row.bonus.currency.name }) }}
+            </span>
+            <span v-else>None</span>
           </q-td>
         </template>
         <template v-slot:body-cell-bonus_rule="props">

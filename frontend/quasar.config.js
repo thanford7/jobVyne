@@ -70,21 +70,21 @@ module.exports = configure(function (ctx) {
       rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
       // publicPath: '/',
-      // analyze: true,
+      analyze: true,
       env: (ctx.dev) ? {
-        NODE_OPTIONS: '--max_old_space_size=4096',
+        NODE_OPTIONS: '--max_old_space_size=8192',
         API_URL: '/api/v1/',
         GOOGLE_CAPTCHA_KEY: '6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp',
         STRIPE_PUBLIC_KEY: 'pk_test_51LRzlsEJHiHytoQBmLNj0LU3xg6V0vPE7rw92vCIsoxlUChlnGMqB93uAdAenZZVtZLChv9khkBUOsUBny3mXXFb009nRm5IiQ'
       } : {
-        NODE_OPTIONS: '--max_old_space_size=4096',
+        NODE_OPTIONS: '--max_old_space_size=8192',
         API_URL: '/backend/api/v1',
         GOOGLE_CAPTCHA_KEY: '6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl',
         STRIPE_PUBLIC_KEY: null // TODO: Need to add this
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
-      // minify: false,
+      minify: true,
       // polyfillModulePreload: true,
       // distDir
 

@@ -1,5 +1,4 @@
 from collections import defaultdict
-from functools import reduce
 from string import Template
 
 from django.contrib.auth.forms import PasswordResetForm

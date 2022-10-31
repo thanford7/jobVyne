@@ -22,7 +22,7 @@ export default {
   props: {
     filterName: String,
     hasFilter: {
-      type: Boolean,
+      type: [Boolean, Number],
       default: false
     }
   },

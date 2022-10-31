@@ -6,7 +6,7 @@ from jvapp.tests.base import BaseTestCase
 class ReferralBonusRulesTestCase(BaseTestCase):
     
     def get_serialized_jobs(self, jobs, rules):
-        return [get_serialized_employer_job(job, rules=rules) for job in jobs]
+        return [get_serialized_employer_job(job, rules=rules, is_include_bonus=True) for job in jobs]
     
     def test_add_bonus_rule(self):
         # Create a new rule for software jobs
@@ -48,11 +48,11 @@ class ReferralBonusRulesTestCase(BaseTestCase):
         )
         
         # The first job should now have the bonus modifier applied
-        job = get_serialized_employer_job(self.jobs[0], rules=[new_rule])
+        job = get_serialized_employer_job(self.jobs[0], rules=[new_rule], is_include_bonus=True)
         self.assertEqual(new_rule.base_bonus_amount + modifier.amount, job['bonus']['amount'])
         
         # The second job should still have the base amount applied
-        job = get_serialized_employer_job(self.jobs[1], rules=[new_rule])
+        job = get_serialized_employer_job(self.jobs[1], rules=[new_rule], is_include_bonus=True)
         self.assertEqual(new_rule.base_bonus_amount, job['bonus']['amount'])
         
         # Add another modifier as a percentage. This is applicable to both the first and second job
@@ -66,10 +66,10 @@ class ReferralBonusRulesTestCase(BaseTestCase):
         )
 
         # The first job should have the original bonus modifier applied
-        job = get_serialized_employer_job(self.jobs[0], rules=[new_rule])
+        job = get_serialized_employer_job(self.jobs[0], rules=[new_rule], is_include_bonus=True)
         self.assertEqual(new_rule.base_bonus_amount + modifier.amount, job['bonus']['amount'])
 
         # The second job should have the new bonus modifier applied
-        job = get_serialized_employer_job(self.jobs[1], rules=[new_rule])
+        job = get_serialized_employer_job(self.jobs[1], rules=[new_rule], is_include_bonus=True)
         self.assertEqual(new_rule.base_bonus_amount * (1 + (earlier_modifier.amount / 100)), job['bonus']['amount'])
         

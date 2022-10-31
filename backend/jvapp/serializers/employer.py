@@ -129,7 +129,7 @@ def calculate_bonus_amount(employer_job, bonus_rule=None):
     }
 
 
-def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
+def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=False, rules=None):
     data = {
         'id': employer_job.id,
         'ats_job_key': employer_job.ats_job_key,
@@ -149,7 +149,7 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
         'locations': [get_serialized_location(l) for l in employer_job.locations.all()]
     }
     
-    if rules:
+    if is_include_bonus and rules:
         # Serialize the rules so inclusion/exclusion criteria are grouped
         rules = [get_serialized_employer_bonus_rule(r, is_ids_only=True) for r in rules]
         rules.sort(key=lambda x: x['order_idx'])
@@ -159,7 +159,7 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
             'countries': [l.country_id for l in employer_job.locations.all()]
         }
         
-        # Loop through each role in order (order_idx) and find the first rule
+        # Loop through each rule in order (order_idx) and find the first rule
         # that applies to this job
         data['bonus_rule'] = None
         for rule in rules:
@@ -203,7 +203,7 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
                 data['bonus'] = calculate_bonus_amount(employer_job, bonus_rule=rule)
                 break
     
-    if rules and not data.get('bonus'):
+    if is_include_bonus and not data.get('bonus'):
         data['bonus'] = calculate_bonus_amount(employer_job)
     
     return data

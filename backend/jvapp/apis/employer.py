@@ -243,13 +243,13 @@ class EmployerJobView(JobVyneAPIView):
         if employer_job_id:
             job = self.get_employer_jobs(employer_job_id=employer_job_id)
             rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=job.employer_id)
-            data = get_serialized_employer_job(job, rules=rules)
+            data = get_serialized_employer_job(job, rules=rules, is_include_bonus=True)
         elif employer_id := self.query_params.get('employer_id'):
-            employer_id = employer_id[0]
+            employer_id = employer_id[0] if isinstance(employer_id, list) else employer_id
             job_filter = Q(employer_id=employer_id)
             jobs = self.get_employer_jobs(employer_job_filter=job_filter)
             rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=employer_id)
-            data = [get_serialized_employer_job(j, rules) for j in jobs]
+            data = [get_serialized_employer_job(j, rules=rules, is_include_bonus=True) for j in jobs]
         else:
             return Response('A job ID or employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
@@ -587,6 +587,7 @@ class EmployerUserView(JobVyneAPIView):
         )
         user.user_type_bits = user_type_bits
         user.save()
+        UserView.send_email_verification_email(request, user, 'email')
         
         user_full_name = f'{user.first_name} {user.last_name}'
         success_message = f'Account created for {user_full_name}' if is_new else f'Account already exists for {user_full_name}. Permissions were updated.'
@@ -607,7 +608,8 @@ class EmployerUserView(JobVyneAPIView):
             user_employer_permissions_to_delete_filters = []
             user_employer_permissions_to_add = []
             user_employer_permissions_to_update = []
-            for user in users[batchCount:batchCount + BATCH_UPDATE_SIZE]:
+            batched_users = users[batchCount:batchCount + BATCH_UPDATE_SIZE]
+            for user in batched_users:
                 set_object_attributes(user, self.data, {
                     'first_name': None,
                     'last_name': None
@@ -659,6 +661,21 @@ class EmployerUserView(JobVyneAPIView):
             UserEmployerPermissionGroup.objects.bulk_create(user_employer_permissions_to_add)
             UserEmployerPermissionGroup.objects.bulk_update(user_employer_permissions_to_update,
                                                             ['is_employer_approved'])
+            
+            # Update user types based on new permission groups
+            users_to_update = []
+            for user in UserView.get_user(self.user, user_filter=Q(id__in=[u.id for u in batched_users])):
+                user_type_bits = reduce(
+                    lambda a, b: a | b,
+                    [pg.permission_group.user_type_bit for pg in user.employer_permission_group.all()],
+                    0
+                )
+                # Don't remove any user type groups that are already set
+                # Users can set their own user types prior to having the appropriate permission groups
+                user.user_type_bits = user.user_type_bits | user_type_bits
+                users_to_update.append(user)
+            JobVyneUser.objects.bulk_update(users_to_update, ['user_type_bits'])
+            
             batchCount += BATCH_UPDATE_SIZE
         user_count = len(users)
         return Response(status=status.HTTP_200_OK, data={

@@ -185,12 +185,12 @@ class ApplicationView(JobVyneAPIView):
         job = EmployerJobView.get_employer_jobs(employer_job_id=application.employer_job_id)
         rules = EmployerBonusRuleView.get_employer_bonus_rules(None, employer_id=job.employer_id,
                                                                is_use_permissions=False)
-        job = get_serialized_employer_job(job, rules=rules)
+        job = get_serialized_employer_job(job, rules=rules, is_include_bonus=True)
         application.referral_bonus = job['bonus']['amount'] or 0
         application.referral_bonus_currency_id = job['bonus']['currency']['name']
         application.referral_bonus_details = {
             'type': job['bonus']['type'],
-            'bonus_rule': job['bonus_rule'],
+            'bonus_rule': job.get('bonus_rule', 'Default'),
             'job_bonus': {
                 'amount': job['referral_bonus'],
                 'currency': job['referral_bonus_currency']

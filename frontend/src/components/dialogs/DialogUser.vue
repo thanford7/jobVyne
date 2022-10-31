@@ -125,11 +125,14 @@ export default {
         return
       }
       const ajaxFn = (this.user_ids) ? this.$api.put : this.$api.post
-      const data = (this.isAdmin) ? {} : { employer_id: this.user.employer_id }
+      const data = {}
       if (this.user_ids) {
         data.user_ids = this.user_ids
       }
       Object.assign(data, (this.isSingle) ? this.formDataSingle : this.formDataMulti)
+      if (!this.isAdmin) {
+        data.employer_id = this.user.employer_id
+      }
       await ajaxFn('employer/user/', getAjaxFormData(data))
       this.$emit('ok')
     }
@@ -157,7 +160,7 @@ export default {
       const user = Array.isArray(this.users) ? this.users[0] : this.users
       this.user_ids = [user.id]
       Object.assign(this.formDataSingle, dataUtil.pick(user, ['first_name', 'last_name', 'email']))
-      this.formDataSingle.permission_group_ids = user.permission_groups.map((pg) => pg.id)
+      this.formDataSingle.permission_group_ids = user.permission_groups_by_employer[user.employer_id].map((pg) => pg.id)
       this.isSingle = true
     } else if (this.users && this.users.length) { // Multiple users
       this.user_ids = this.users.map((user) => user.id)
