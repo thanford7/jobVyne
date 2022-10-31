@@ -1,7 +1,7 @@
 from functools import reduce
 
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import Q
+from django.db.models import F, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -227,7 +227,12 @@ class EmployerSubscriptionView(JobVyneAPIView):
     @staticmethod
     def get_active_employees(employer):
         return employer.employee \
-            .filter(is_employer_deactivated=False, has_employee_seat=True) \
+            .annotate(employer_user_type_bits=Sum('employer_permission_group__permission_group__user_type_bit', distinct=True)) \
+            .filter(
+                is_employer_deactivated=False,
+                has_employee_seat=True,
+                employer_user_type_bits__lt=F('employer_user_type_bits') + (1 * F('employer_user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE))
+            ) \
             .count()
 
 

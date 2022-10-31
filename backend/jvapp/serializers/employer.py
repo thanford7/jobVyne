@@ -16,7 +16,7 @@ from jvapp.utils.datetime import get_datetime_format_or_none
 def get_serialized_currency(currency: Currency, is_allow_none=True):
     if is_allow_none and not currency:
         return {}
-
+    
     return {
         'id': currency.id,
         'name': currency.name,
@@ -43,7 +43,8 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
     def get_permission_groups(employee):
         return [
             p.permission_group
-            for p in employee.get_employer_permission_groups_by_employer(permission_groups=employee.employer_permission_group.all())[employer.id]
+            for p in employee.get_employer_permission_groups_by_employer(
+                permission_groups=employee.employer_permission_group.all())[employer.id]
         ]
     
     if is_employer:
@@ -59,7 +60,12 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         } if ats_cfg else None
         employees = employer.employee.all()
         data['employee_count_total'] = len(employees)
-        data['employee_count_active'] = len([e for e in employees if (not e.is_employer_deactivated) and reduce_user_type_bits(get_permission_groups(e)) & JobVyneUser.USER_TYPE_EMPLOYEE])
+        data['employee_count_active'] = len([
+            e for e in employees if
+            (not e.is_employer_deactivated)
+            and (reduce_user_type_bits(get_permission_groups(e)) & JobVyneUser.USER_TYPE_EMPLOYEE)
+            and e.has_employee_seat
+        ])
     
     return data
 
@@ -89,22 +95,23 @@ def calculate_bonus_amount(employer_job, bonus_rule=None):
             'currency': get_serialized_currency(employer_job.referral_bonus_currency),
             'type': BONUS_TYPES.DIRECT.value
         }
-        
+    
     if not bonus_rule:
         return {
             'amount': employer_job.employer.default_bonus_amount,
             'currency': get_serialized_currency(employer_job.employer.default_bonus_currency),
             'type': BONUS_TYPES.DEFAULT.value
         }
-
+    
     # Find the latest bonus modifier if it exists
     active_modifier = None
     if employer_job.open_date:
         days_since_post = (timezone.now().date() - employer_job.open_date).days
         for modifier in bonus_rule['modifiers']:
             if (
-                modifier['start_days_after_post'] <= days_since_post and
-                ((not active_modifier) or active_modifier['start_days_after_post'] < modifier['start_days_after_post'])
+                    modifier['start_days_after_post'] <= days_since_post and
+                    ((not active_modifier) or active_modifier['start_days_after_post'] < modifier[
+                        'start_days_after_post'])
             ):
                 active_modifier = modifier
     
@@ -195,10 +202,10 @@ def get_serialized_employer_job(employer_job: EmployerJob, rules=None):
                 }
                 data['bonus'] = calculate_bonus_amount(employer_job, bonus_rule=rule)
                 break
-
+    
     if rules and not data.get('bonus'):
         data['bonus'] = calculate_bonus_amount(employer_job)
-        
+    
     return data
 
 
