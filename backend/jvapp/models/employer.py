@@ -38,7 +38,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     default_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     
     # Billing
-    stripe_customer_key = models.CharField(max_length=25, null=True, blank=True)
+    stripe_customer_key = models.CharField(max_length=25, null=True, blank=True, unique=True)
     street_address = models.CharField(max_length=150, null=True, blank=True)
     street_address_2 = models.CharField(max_length=50, null=True, blank=True)
     postal_code = models.CharField(max_length=10, null=True, blank=True)
@@ -68,7 +68,8 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
 class EmployerSubscription(models.Model, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='subscription')
-    stripe_key = models.CharField(max_length=30, unique=True)
+    # Stripe Key will be null if a JobVyne admin manually added a subscription for the employer
+    stripe_key = models.CharField(max_length=30, null=True, blank=True, unique=True)
     status = models.CharField(max_length=20)
     employee_seats = models.PositiveIntegerField()
     

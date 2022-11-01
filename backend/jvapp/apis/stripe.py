@@ -85,6 +85,8 @@ class StripePaymentMethodView(StripeBaseView):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
         employer = self.check_employer_permissions(employer_id=employer_id)
+        if not employer.stripe_customer_key:
+            return Response(status=status.HTTP_200_OK)
         customer = StripeCustomerView.get_customer(employer.stripe_customer_key)
         payment_methods = []
         for payment_type in ACCEPTED_PAYMENT_TYPES:
@@ -160,7 +162,9 @@ class StripeChargeView(StripeBaseView):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
     
         employer = self.check_employer_permissions(employer_id=employer_id)
-        charges = stripe.Charge.list(customer=employer.stripe_customer_key, expand=['data.invoice', 'data.invoice.subscription'])['data']
+        charges = []
+        if employer.stripe_customer_key:
+            charges = stripe.Charge.list(customer=employer.stripe_customer_key, expand=['data.invoice', 'data.invoice.subscription'])['data']
         return Response(status=status.HTTP_200_OK, data=[self.normalize_charge(c) for c in charges])
 
     @staticmethod
@@ -276,6 +280,14 @@ class StripeSubscriptionView(StripeBaseView):
         jv_subscription = EmployerSubscriptionView.get_subscription(employer)
         if not jv_subscription:
             subscription_data = None
+        elif not jv_subscription.stripe_key:
+            subscription_data = {
+                'active': jv_subscription.status == 'active',
+                'interval': 'year',
+                'quantity': jv_subscription.employee_seats,
+                'total_price': 0,
+                'status': jv_subscription.status
+            }
         else:
             subscription = stripe.Subscription.retrieve(
                 jv_subscription.stripe_key,

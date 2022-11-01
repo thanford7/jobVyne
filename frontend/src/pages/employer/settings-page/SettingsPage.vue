@@ -191,23 +191,28 @@
                     <tr>
                       <td class="text-bold">Subscription term</td>
                       <td>
-                        {{ dateTimeUtil.getShortDate(subscriptionData.start_date) }} -
-                        {{ dateTimeUtil.getShortDate(subscriptionData.end_date) }}
-                        <CustomTooltip v-if="subscriptionData.is_cancel_at_end" :is_include_icon="false">
-                          <template v-slot:content>
-                            <q-chip dense label="No auto-renew" color="negative"/>
-                          </template>
-                          The subscription will remain active until the end date, but will not
-                          automatically renew afterwards. Click the "Un-cancel subscription" button
-                          to ensure your subscription remains active.
-                        </CustomTooltip>
-                        <CustomTooltip v-else :is_include_icon="false">
-                          <template v-slot:content>
-                            <q-chip dense label="Auto-renew" color="positive"/>
-                          </template>
-                          The subscription will auto-renew at the end of the subscription term and you will
-                          be pilled for the full subscription amount.
-                        </CustomTooltip>
+                        <template v-if="subscriptionData.start_date">
+                          {{ dateTimeUtil.getShortDate(subscriptionData.start_date) }} -
+                          {{ dateTimeUtil.getShortDate(subscriptionData.end_date) }}
+                          <CustomTooltip v-if="subscriptionData.is_cancel_at_end" :is_include_icon="false">
+                            <template v-slot:content>
+                              <q-chip dense label="No auto-renew" color="negative"/>
+                            </template>
+                            The subscription will remain active until the end date, but will not
+                            automatically renew afterwards. Click the "Un-cancel subscription" button
+                            to ensure your subscription remains active.
+                          </CustomTooltip>
+                          <CustomTooltip v-else :is_include_icon="false">
+                            <template v-slot:content>
+                              <q-chip dense label="Auto-renew" color="positive"/>
+                            </template>
+                            The subscription will auto-renew at the end of the subscription term and you will
+                            be pilled for the full subscription amount.
+                          </CustomTooltip>
+                        </template>
+                        <template v-else>
+                          N/A
+                        </template>
                       </td>
                     </tr>
                     </tbody>
@@ -217,7 +222,7 @@
                   No plan selected
                 </div>
                 <div
-                  v-if="!subscriptionData.is_cancel_at_end"
+                  v-if="!subscriptionData.is_cancel_at_end && subscriptionData.start_date"
                   class="q-mt-md"
                 >
                   <q-btn
@@ -242,7 +247,7 @@
                   />
                 </div>
                 <q-btn
-                  v-else
+                  v-else-if="subscriptionData.start_date"
                   class="q-mt-md"
                   label="Un-cancel subscription"
                   color="accent"
@@ -426,7 +431,13 @@ const paymentMethodColumns = [
 const pastPaymentColumns = [
   { name: 'paymentDT', field: 'charge_dt', format: dateTimeUtil.getShortDate, align: 'left', label: 'Payment date' },
   { name: 'subscriptionDateRange', field: 'period_start', align: 'left', label: 'Subscription period' },
-  { name: 'amountPaid', field: 'charge_amount', format: subscriptionUtil.getFormattedPrice, align: 'center', label: 'Amount paid' },
+  {
+    name: 'amountPaid',
+    field: 'charge_amount',
+    format: subscriptionUtil.getFormattedPrice,
+    align: 'center',
+    label: 'Amount paid'
+  },
   { name: 'paymentURL', field: 'receipt_url', align: 'center', label: 'Receipt' }
 ]
 
