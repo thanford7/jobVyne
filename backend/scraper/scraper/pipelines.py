@@ -84,6 +84,7 @@ class ScraperPipeline:
         if any([
             job.application_url != job_data['application_url'],
             job.job_description != job_data['job_description'],
+            job.employment_type != job_data['employment_type'],
             job.job_department != job_department,
             not job.open_date,
             job.close_date
@@ -98,6 +99,7 @@ class ScraperPipeline:
         
         job.application_url = job_data['application_url']
         job.job_description = job_data['job_description']
+        job.employment_type = job_data['employment_type']
         job.job_department = self.get_or_create_job_department(job_data)
 
         job.open_date = job.open_date or timezone.now().date()

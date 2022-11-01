@@ -4,37 +4,10 @@ from scrapy.selector import Selector
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
-from jvapp.utils.sanitize import REDUCE_H_TAG_MAP, sanitize_html
+from jvapp.utils.sanitize import sanitize_html
 from scraper.scraper.items import JobItem
 from scraper.scraper.utils.seleniumSetup import getDomElOrNone, getSelenium, getWebElementHtml, getWebElementWait,\
     retryClick, WEBDRIVER_WAIT_SECONDS
-
-
-def scraper_sanitize_html(html):
-    return sanitize_html(html, replace_tag_map={
-        'div': 'p', 'span': 'p', 'form': 'p', 'i': 'em', 'b': 'strong', **REDUCE_H_TAG_MAP
-    })
-
-
-# def fontSizeToHeaderSanitizer(element):
-#     style = element.get('style')
-#     if not style or ('font-size' not in style):
-#         return element
-#
-#     fontSizeStyle = next((s for s in style.split(';') if 'font-size' in s), None)
-#     fontSizePx = fontSizeStyle.split(':')[1].strip()
-#     if 'px' not in fontSizePx:
-#         return element
-#
-#     fontSize = float(fontSizePx.replace('px', '').strip())
-#     if fontSize >= 16:
-#         element.tag = 'h5'
-#     else:
-#         element.tag = 'h6'
-#
-#     element.style = None
-#
-#     return element
 
 
 class BreezySpider(scrapy.Spider):
@@ -54,7 +27,7 @@ class BreezySpider(scrapy.Spider):
             job_title=summaryHtml.xpath('.//h1/text()').get(),
             location=summaryHtml.xpath('.//li[@class="location"]/span/text()').get(),
             job_department=summaryHtml.xpath('.//li[@class="department"]/span/text()').get(),
-            job_description=scraper_sanitize_html(response.xpath('//div[@class="description"]').get()),
+            job_description=sanitize_html(response.xpath('//div[@class="description"]').get()),
             employment_type=summaryHtml.xpath('.//li[@class="type"]/span/text()').get(),
         )
 
@@ -85,7 +58,7 @@ class GreenhouseSpider(scrapy.Spider):
             job_title=response.xpath('//div[@id="header"]//h1/text()').get(),
             location=location,
             job_department=job_department,
-            job_description=scraper_sanitize_html(response.xpath('//div[@id="content"]').get()),
+            job_description=sanitize_html(response.xpath('//div[@id="content"]').get()),
             employment_type=None,
         )
 
@@ -108,7 +81,7 @@ class JazzHRSpider(scrapy.Spider):
             job_title=jobSummary.xpath('.//h1/text()').get().strip(),
             location=jobSummary.xpath('(.//li[@title="Location"]//text())[2]').get().strip(),
             job_department=jobSummary.xpath('(.//li[@title="Department"]//text())[2]').get().strip(),
-            job_description=scraper_sanitize_html(
+            job_description=sanitize_html(
                 response.xpath('//div[@id="job-description"]//div[@class="description"]').get()
             ),
             employment_type=jobSummary.xpath('(.//li[@title="Type"]//text())[2]').get().strip(),
@@ -144,7 +117,7 @@ class LeverSpider(scrapy.Spider):
             job_title=jobSummary.xpath('.//h2/text()').get().strip(),
             location=location,
             job_department=job_department,
-            job_description=scraper_sanitize_html(job_description),
+            job_description=sanitize_html(job_description),
             employment_type=positionType,
         )
 
@@ -214,7 +187,7 @@ class ZoomoSpider(scrapy.Spider):
                 job_title=job.xpath('.//h2[@data-ui="job-title"]/span/text()').get(),
                 location=job.xpath('.//span[@data-ui="job-location"]/text()').get(),
                 job_department=job.xpath('.//span[@data-ui="job-department"]/text()').get(),
-                job_description=scraper_sanitize_html(
+                job_description=sanitize_html(
                     (job_description or '') + (jobRequirements or '') + (jobBenefits or '')
                 ),
                 employment_type=job.xpath('.//span[@data-ui="job-type"]/text()').get(),
@@ -252,7 +225,7 @@ class ProdegeSpider(scrapy.Spider):
         job_department = response.request.meta['job_department']
         job_title = response.xpath('//h2[@class="jv-header"]/text()').get().strip()
         locations = response.xpath('//p[@class="jv-job-detail-meta"]/text()')[1:]  # The first text item is the job department
-        job_description = scraper_sanitize_html(response.xpath('//div[@class="jv-job-detail-description"]').get())
+        job_description = sanitize_html(response.xpath('//div[@class="jv-job-detail-description"]').get())
         for location in locations:
             location = ', '.join([l.strip() for l in location.get().strip().split(',')])
             yield JobItem(
@@ -460,10 +433,8 @@ class HospitalIQSpider(scrapy.Spider):
     
     def parseJob(self, response):
         jobData = response.xpath('//div[@id="leftcol"]')
-        job_description = ''
-        for content in jobData.xpath('.//*[not(self::p) and not(self::a)]'):
-            if not content.xpath('.//text()').get():
-                continue
+        job_description = '<p>' + jobData.xpath('./text()').get() + '</p>'
+        for content in jobData.xpath('./*[not(self::p) and not(self::a) and not(self::br)]'):
             job_description += content.get()
         
         yield JobItem(
@@ -472,6 +443,6 @@ class HospitalIQSpider(scrapy.Spider):
             job_title=jobData.xpath('.//p[1]/text()').get().strip(),
             location='Remote',
             job_department='General',
-            job_description=scraper_sanitize_html(job_description),
+            job_description=sanitize_html(job_description),
             employment_type='Full time',
         )

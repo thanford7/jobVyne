@@ -1,80 +1,94 @@
 import re
 
-from bleach.css_sanitizer import CSSSanitizer
-from bleach.html5lib_shim import Filter
-from bleach.sanitizer import Cleaner
+from html_sanitizer import Sanitizer
+from html_sanitizer.sanitizer import bold_span_to_strong, italic_span_to_em, tag_replacer, target_blank_noopener
 
-__all__ = ('sanitize_html', 'REDUCE_H_TAG_MAP')
-
-
-REDUCE_H_TAG_MAP = {'h1': 'h6', 'h2': 'h6', 'h3': 'h6', 'h4': 'h6', 'h5': 'h6'}
+__all__ = ('sanitize_html',)
 
 
-class SizeFilter(Filter):
-    def __iter__(self):
-        for token in Filter.__iter__(self):
-            if token['type'] in ['StartTag', 'EmptyTag'] and token['style']:
-                print(token)  # TODO: Update this to look at font-size in style
-            yield token
+def font_size_to_header_sanitizer(element):
+    style = element.get('style')
+    if not style or ('font-size' not in style):
+        return element
 
-# https://bleach.readthedocs.io/en/latest/clean.html#allowed-tags-tags
-# Needs to align with frontend sanitization cfg (WysiwygEditor.vue)
-sanitization_cfg = {
-    'tags': [
-        'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'b', 'i', 'u', 'p', 'ul', 'ol',
-        'li', 'br', 'sub', 'sup', 'hr', 'div', 'span', 'blockquote'
-    ],
-    'attributes': {
-        '*': ['class', 'style'],
-        'a': ['href', 'name', 'target', 'title', 'id', 'rel'],
-    },
-    'css_sanitizer': CSSSanitizer(),
-    'strip': True
+    font_size_style = next((s for s in style.split(';') if 'font-size' in s), None)
+    font_size_px = font_size_style.split(':')[1].strip()
+    if 'px' not in font_size_px:
+        return element
+
+    font_size = float(font_size_px.replace('px', '').strip())
+    if font_size >= 16:
+        element.tag = 'h6'
+    else:
+        element.tag = 'p'
+
+    return element
+
+
+def font_weight_sanitizer(element):
+    style = element.get('style')
+    if not style or ('font-weight' not in style):
+        return element
+
+    font_weight_style = next((s for s in style.split(';') if 'font-weight' in s), None)
+    font_weight = int(font_weight_style.split(':')[1].strip())
+    if font_weight >= 400:
+        element.tag = 'strong'
+    
+    return element
+
+
+def header_size_reducer_sanitizer(element):
+    if element.tag in ('h1', 'h2', 'h3', 'h4', 'h5'):
+        element.tag = 'h6'
+
+    return element
+
+
+def secure_link_sanitizer(element):
+    if element.tag == 'a' and (href := element.attrib.get('href')):
+        link_match = re.match('^((?P<protocol>.*?)://)?(?P<link>.*?)$', href)
+        if link_match:
+            protocol = link_match.group('protocol')
+            link = link_match.group('link')
+    
+            # If there is no protocol or the protocol is insecure, make it secure
+            # Only update for no protocol or http. Other protocols like mail should be left alone
+            if not protocol or protocol == 'http':
+                element.attrib['href'] = f'https://{link}'
+    
+    return element
+
+allowed_tags = {
+    'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'b', 'i', 'u', 'p', 'ul', 'ol',
+    'li', 'br', 'sub', 'sup', 'hr', 'div', 'span', 'blockquote', 'font', 'strong'
 }
-
-sanitizer = Cleaner(**sanitization_cfg)
-
-
-def sanitize_html(html_text, replace_tag_map=None):
-    text = sanitizer.clean(html_text)
-    if replace_tag_map:
-        text = get_replace_tag_html(text, replace_tag_map)
-    
-    return make_links_secure(text)
+allowed_attributes = {
+        'a': ('href', 'name', 'target', 'title', 'id', 'rel'),  # Default setting
+}
+for el in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'div', 'span', 'font'):
+    allowed_attributes[el] = ('class',)
 
 
-def get_replace_tag_html(html_text: str, tag_map: dict):
-    """
-    :param tag_map: Should be in the form {<tag to be replaced>: <tag to replace with>}
-        example: {h1: b}
-    """
-    
-    for tag, tag_to_replace in tag_map.items():
-        opening_tag = f'<{tag}>'
-        opening_replace_tag = f'<{tag_to_replace}>'
-        closing_tag = f'</{tag}>'
-        closing_replace_tag = f'</{tag_to_replace}>'
-        
-        html_text = html_text.replace(opening_tag, opening_replace_tag)
-        html_text = html_text.replace(closing_tag, closing_replace_tag)
-        
-    return html_text
+sanitizer = Sanitizer({
+    'tags': allowed_tags,
+    'attributes': allowed_attributes,
+    'add_nofollow': True,
+    'element_preprocessors': [
+        bold_span_to_strong,
+        italic_span_to_em,
+        tag_replacer('b', 'strong'),
+        tag_replacer('i', 'em'),
+        tag_replacer('form', 'p'),
+        tag_replacer('font', 'span'),
+        target_blank_noopener,
+        font_size_to_header_sanitizer,
+        font_weight_sanitizer,
+        header_size_reducer_sanitizer,
+        secure_link_sanitizer
+    ],
+})
 
 
-def make_links_secure(html_text: str):
-    return re.sub('href="(?P<link>.*?)"', make_secure_link, html_text)
-
-
-def make_secure_link(re_match):
-    link = re_match.group('link')
-    if not link:
-        return 'href=""'
-    
-    link_protocol = re.match('^(?P<protocol>.*?)://', link)
-    
-    # If there is no protocol or the protocol is insecure, make it secure
-    if not link_protocol or link_protocol == 'http':
-        return f'href="https://{link}"'
-    
-    # This could be something like a mail protocol so keep as is
-    return f'href="{link}"'
+def sanitize_html(html_text):
+    return sanitizer.sanitize(html_text)

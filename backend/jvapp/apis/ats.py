@@ -16,7 +16,7 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.response import is_good_response
-from jvapp.utils.sanitize import REDUCE_H_TAG_MAP, sanitize_html
+from jvapp.utils.sanitize import sanitize_html
 
 
 class AtsError(Exception):
@@ -129,7 +129,7 @@ class BaseAts:
                 current_job.ats_job_key = job_data.ats_job_key
                 current_job.job_title = job_data.job_title
                 if job_data.job_description:
-                    current_job.job_description = sanitize_html(job_data.job_description, replace_tag_map=REDUCE_H_TAG_MAP)
+                    current_job.job_description = sanitize_html(job_data.job_description)
                 else:
                     current_job.job_description = None
                 current_job.open_date = job_data.open_date

@@ -1,9 +1,12 @@
 from crontab import CronTab
 from django.core.management import BaseCommand
 
+"""
+Wasn't able to get cron to work. Leaving to revisit at later time
+"""
 
 class Command(BaseCommand):
-    help = 'Adds demo data to the database'
+    help = 'Add cron jobs'
 
     def add_arguments(self, parser):
         parser.add_argument(
