@@ -44,7 +44,8 @@ urlpatterns = [
     path('waitlist/', waitlist.WaitlistView.as_view()),
     
     # Chart Data
-    path('data/link-performance/', data.DataLinkPerformanceView.as_view()),
+    path('data/applications/', data.ApplicationsView.as_view()),
+    path('data/page-views/', data.PageViewsView.as_view()),
     
     # ATS operations
     path('ats/custom-fields/', ats.AtsCustomFieldsView.as_view()),

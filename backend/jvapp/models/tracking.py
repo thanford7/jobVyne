@@ -1,10 +1,13 @@
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
+
+from jvapp.models.abstract import JobVynePermissionsMixin
 
 __all__ = ('PageView',)
 
 
-class PageView(models.Model):
+class PageView(models.Model, JobVynePermissionsMixin):
     # page
     relative_url = models.CharField(max_length=100)
     social_link_filter = models.ForeignKey(
@@ -33,4 +36,15 @@ class PageView(models.Model):
     is_tablet = models.BooleanField(null=True, blank=True)
     is_pc = models.BooleanField(null=True, blank=True)
     is_bot = models.BooleanField(null=True, blank=True)
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+    
+        filter = Q(social_link_filter__owner_id=user.id)
+        if user.is_employer:
+            filter |= Q(social_link_filter__employer_id=user.employer_id)
+    
+        return query.filter(filter)
     

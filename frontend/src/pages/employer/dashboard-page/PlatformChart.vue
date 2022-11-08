@@ -5,6 +5,17 @@
       chart-type="bar"
       chart-title="Applications By Social Platform"
       :series-cfgs="seriesCfgs"
+      :chart-options="{
+        options: {
+          parsing: {
+            xAxisKey: 'platform_name',
+            yAxisKey: 'count'
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      }"
       :is-loading="isLoading"
     />
   </div>
@@ -35,16 +46,14 @@ export default {
   },
   computed: {
     seriesCfgs () {
-      const platformGroups = dataUtil.groupBy(this.chartRawData.applications, 'platform_name')
-      const cfgs = Object.entries(platformGroups).map(([platformName, platformData]) => {
-        return {
-          seriesName: 'Applications',
-          name: (platformName === 'null') ? 'Unknown' : platformName,
-          rawData: platformData,
-          processedData: platformData.length
-        }
-      })
-      return dataUtil.sortBy(cfgs, { key: 'processedData', direction: -1 }, true)
+      return [{
+        data: this.chartRawData.map((platformData) => {
+          if (platformData.platform_name === 'null' || !platformData.platform_name) {
+            platformData.platform_name = 'Unknown'
+          }
+          return platformData
+        })
+      }]
     }
   },
   watch: {
@@ -58,11 +67,15 @@ export default {
         return {}
       }
       this.isLoading = true
-      this.chartRawData = await this.dataStore.getSocialLinkPerformance(
+      this.chartRawData = await this.dataStore.getApplications(
         this.dateRange.from,
         this.dateRange.to,
-        { employerId: this.authStore.propUser.employer_id }
+        {
+          employerId: this.authStore.propUser.employer_id,
+          group_by: JSON.stringify(['platform_name'])
+        }
       )
+      dataUtil.sortBy(this.chartRawData, { key: 'count', direction: -1 }, true)
       this.isLoading = false
     }
   },

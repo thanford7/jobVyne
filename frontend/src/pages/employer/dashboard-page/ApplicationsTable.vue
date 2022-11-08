@@ -264,17 +264,17 @@ export default {
         return {}
       }
       this.isLoading = true
-      this.chartRawData = await this.dataStore.getSocialLinkPerformance(
+      this.chartRawData = await this.dataStore.getApplications(
         this.dateRange.from,
         this.dateRange.to,
         { employerId: this.authStore.propUser.employer_id }
       )
-      this.chartRawData = this.chartRawData.applications || []
+      this.chartRawData = this.chartRawData || []
       this.isLoading = false
       this.chartRawData.forEach((application) => {
         application.owner_full_name = `${application.owner_first_name} ${application.owner_last_name}`
         application.applicant_full_name = `${application.first_name} ${application.last_name}`
-        application.date = dateTimeUtil.getShortDate(application.apply_dt)
+        application.date = dateTimeUtil.getShortDate(application.date)
       })
     }
   },

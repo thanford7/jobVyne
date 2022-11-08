@@ -20,10 +20,10 @@
 </template>
 
 <script>
+import { chartColors } from 'components/charts/chartProps.js'
 import ChartSkeleton from 'components/charts/ChartSkeleton.vue'
 import TimeSeriesChart from 'components/charts/TimeSeriesChart.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
-import dataUtil from 'src/utils/data.js'
 import dateTimeUtil, { GROUPINGS } from 'src/utils/datetime.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useDataStore } from 'stores/data-store.js'
@@ -48,48 +48,33 @@ export default {
         to: new Date()
       },
       dateGroup: this.defaultDateGroup || GROUPINGS.DAY.key,
-      chartRawData: null,
-      chartOptions: {}
+      applicationsByDate: null,
+      pageViewsByDate: null,
+      chartOptions: {
+        options: {
+          parsing: {
+            yAxisKey: 'count',
+            xAxisKey: 'date'
+          }
+        }
+      }
     }
   },
   computed: {
     seriesCfgs () {
       return [
         {
-          name: 'Applications',
-          rawData: this.groupedApplicationData,
-          processedData: this.applicationData
+          label: 'Applications',
+          data: this.applicationsByDate,
+          backgroundColor: chartColors.colors[0]
         },
         {
-          name: 'Views',
-          rawData: this.groupedViewData,
-          processedData: this.viewData,
-          isHidden: true
+          label: 'Views',
+          data: this.pageViewsByDate,
+          backgroundColor: chartColors.colors[1],
+          hidden: true
         }
       ]
-    },
-    groupedApplicationData () {
-      const dateGroupFn = GROUPINGS[this.dateGroup].formatter
-      return dataUtil.groupBy(this.chartRawData.applications, (app) => dateGroupFn(app.apply_dt))
-    },
-    applicationData () {
-      return Object.entries(this.groupedApplicationData).reduce((processedData, [groupKey, group]) => {
-        processedData[groupKey] = group.length
-        return processedData
-      }, {})
-    },
-    groupedViewData () {
-      const dateGroupFn = GROUPINGS[this.dateGroup].formatter
-      return dataUtil.groupBy(this.chartRawData.views, (view) => dateGroupFn(view.access_dt))
-    },
-    viewData () {
-      return Object.entries(this.groupedViewData).reduce((processedData, [groupKey, group]) => {
-        processedData[groupKey] = group.reduce((totalViews, g) => {
-          totalViews += g.view_count
-          return totalViews
-        }, 0)
-        return processedData
-      }, {})
     }
   },
   watch: {
@@ -103,12 +88,21 @@ export default {
         return {}
       }
       this.isLoading = true
-      const args = (this.isEmployer) ? { employerId: this.authStore.propUser.employer_id } : { userId: this.authStore.propUser.id }
-      this.chartRawData = await this.dataStore.getSocialLinkPerformance(
-        this.dateRange.from,
-        this.dateRange.to,
-        args
-      )
+      const params = (this.isEmployer) ? { employerId: this.authStore.propUser.employer_id } : { userId: this.authStore.propUser.id }
+      const [applicationsByDate, pageViewsByDate] = await Promise.all([
+        this.dataStore.getApplications(
+          this.dateRange.from,
+          this.dateRange.to,
+          params
+        ),
+        await this.dataStore.getPageViews(
+          this.dateRange.from,
+          this.dateRange.to,
+          params
+        )
+      ])
+      this.applicationsByDate = applicationsByDate
+      this.pageViewsByDate = pageViewsByDate
       this.isLoading = false
     }
   },

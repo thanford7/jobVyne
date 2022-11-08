@@ -25,7 +25,7 @@ export default {
     return {
       isInitLoaded: false,
       isLoading: false,
-      chartRawData: null,
+      pageViews: null,
       dateRange: {
         from: dateTimeUtil.addDays(new Date(), -6, true),
         to: new Date()
@@ -54,10 +54,10 @@ export default {
       ]
     },
     mobileViews () {
-      return this.chartRawData.views.filter((d) => d.is_mobile)
+      return this.pageViews.filter((d) => d.is_mobile)
     },
     desktopViews () {
-      return this.chartRawData.views.filter((d) => !d.is_mobile)
+      return this.pageViews.filter((d) => !d.is_mobile)
     }
   },
   watch: {
@@ -71,7 +71,7 @@ export default {
         return {}
       }
       this.isLoading = true
-      this.chartRawData = await this.dataStore.getSocialLinkPerformance(
+      this.pageViews = await this.dataStore.getPageViews(
         this.dateRange.from,
         this.dateRange.to,
         { employerId: this.authStore.propUser.employer_id }

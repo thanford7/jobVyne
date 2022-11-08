@@ -46,12 +46,15 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
         if user.is_admin:
             return query
         
-        if user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_JOBS.value, user.employer_id):
-            filter = Q(employer_job__employer_id=user.employer_id) | Q(user_id=user.id)
-        else:
-            filter = Q(user_id=user.id)
-            if user.is_email_verified:
-                filter |= Q(email=user.email)
+        applier_filter = Q(user_id=user.id)
+        if user.is_email_verified:
+            applier_filter |= Q(email=user.email)
+            
+        employer_filter = Q(employer_job__employer_id=user.employer_id)
+        referrer_filter = Q(social_link_filter__owner_id=user.id)
+        filter = applier_filter | referrer_filter
+        if user.is_employer:
+            filter |= employer_filter
 
         return query.filter(filter)
 

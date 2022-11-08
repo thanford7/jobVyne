@@ -20,39 +20,38 @@
       {{ dateTitle }}
     </div>
     <q-list separator dense>
-      <q-item v-for="(appData, idx) in appsByEmployee">
+      <q-item v-for="(employeeData, idx) in employeesAppCount">
         <q-item-section avatar>
-          <q-avatar v-if="getUserProfilePicUrl(appData.apps[0])">
-            <img :src="getUserProfilePicUrl(appData.apps[0])">
+          <q-avatar v-if="employeeData.owner_picture_url">
+            <img :src="employeeData.owner_picture_url">
           </q-avatar>
           <q-avatar v-else :style="getAvatarColorStyle()">
-            {{ getUserInitials(appData.apps[0]) }}
+            {{ getUserInitials(employeeData) }}
           </q-avatar>
         </q-item-section>
         <q-item-section>
           <div class="flex items-center">
             <div class="text-h6">
-              {{ getUserName(appData.apps[0]) }}
+              {{ employeeData.owner_name }}
             </div>
             <q-icon v-if="idx < 3" class="q-ml-sm" size="20px" name="emoji_events" :style="getAwardIconStyle(idx)"/>
             <q-space/>
             <div
-              v-if="isEmployer"
+              v-if="isEmployer && false"
               class="text-h6"
-              @dblclick="openDataDialog(appData.apps)"
               style="cursor: pointer"
               title="Double click to view applications"
             >
-              {{ appData.appCount }}
+              {{ employeeData.count }}
             </div>
             <div v-else class="text-h6">
-              {{ appData.appCount }}
+              {{ employeeData.count }}
             </div>
           </div>
         </q-item-section>
       </q-item>
       <q-item
-        v-if="!appsByEmployee || !appsByEmployee.length"
+        v-if="!employeesAppCount || !employeesAppCount.length"
         class="q-mt-sm"
       >
         <q-item-section avatar>
@@ -109,16 +108,9 @@ export default {
     }
   },
   computed: {
-    appsByEmployee () {
-      const groupedByEmployee = dataUtil.groupBy(this.chartRawData.applications, 'owner_id')
-      const appsByEmployeeList = Object.values(groupedByEmployee).map((apps) => {
-        return {
-          appCount: apps.length,
-          apps
-        }
-      })
-      dataUtil.sortBy(appsByEmployeeList, { key: 'appCount', direction: -1 }, true)
-      return appsByEmployeeList.slice(0, TOP_EMPLOYEE_COUNT)
+    employeesAppCount () {
+      dataUtil.sortBy(this.chartRawData, { key: 'count', direction: -1 }, true)
+      return this.chartRawData.slice(0, TOP_EMPLOYEE_COUNT)
     },
     dateTitle () {
       if (this.dateGroup === GROUPINGS.WEEK.key) {
@@ -187,19 +179,10 @@ export default {
         padding: '4px'
       }
     },
-    getUserInitials (app) {
-      const firstInitial = (app?.owner_first_name?.length) ? dataUtil.capitalize(app.owner_first_name[0]) : ''
-      const lastInital = (app?.owner_last_name?.length) ? dataUtil.capitalize(app.owner_last_name[0]) : ''
+    getUserInitials (employeeData) {
+      const firstInitial = (employeeData.owner_first_name) ? dataUtil.capitalize(employeeData.owner_first_name[0]) : ''
+      const lastInital = (employeeData.owner_last_name) ? dataUtil.capitalize(employeeData.owner_last_name[0]) : ''
       return firstInitial + lastInital
-    },
-    getUserName (app) {
-      const firstName = app.owner_first_name || ''
-      const lastName = app.owner_last_name || ''
-      return `${firstName} ${lastName}`
-    },
-    getUserProfilePicUrl (app) {
-      const user = this.employees[app.owner_id] || {}
-      return user.profile_picture_url
     },
     openDataDialog (apps) {
       return this.q.dialog({
@@ -209,10 +192,13 @@ export default {
     },
     async setChartRawData () {
       this.isLoading = true
-      this.chartRawData = await this.dataStore.getSocialLinkPerformance(
+      this.chartRawData = await this.dataStore.getApplications(
         this.dateRange.from,
         this.dateRange.to,
-        { employerId: this.authStore.propUser.employer_id }
+        {
+          employerId: this.authStore.propUser.employer_id,
+          group_by: JSON.stringify(['owner_name'])
+        }
       )
       this.isLoading = false
     }

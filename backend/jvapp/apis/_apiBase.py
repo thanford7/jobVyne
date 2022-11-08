@@ -1,3 +1,5 @@
+import json
+
 from django.core.files import File
 from django.http import QueryDict
 from rest_framework.views import APIView
@@ -29,3 +31,11 @@ class JobVyneAPIView(APIView):
         self.files = get_files(request)
         self.user = request.user
         super().initial(request, *args, **kwargs)
+        
+    def get_query_param_list(self, key, default=None):
+        val = self.query_params.get(key, default)
+        if isinstance(val, str):
+            val = json.loads(val)
+        if not isinstance(val, list):
+            val = [val]
+        return val

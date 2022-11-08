@@ -54,29 +54,35 @@ export default {
   },
   computed: {
     passThroughProps () {
-      return Object.keys(chartProps).reduce((props, key) => {
-        let val = this[key]
-        if (key === 'chartOptions') {
-          val = this.updatedChartOptions
-        }
-        props[key] = val
+      const props = Object.keys(chartProps).reduce((props, key) => {
+        props[key] = this[key]
         return props
       }, {})
-    },
-    updatedChartOptions () {
-      const { to, from } = this.dateRange || {}
-      let categories
-      if (!to || !from) {
-        categories = []
-      } else {
-        const datesInRange = dateTimeUtil.getDatesInRange(new Date(from), new Date(to))
-        categories = dataUtil.uniqArray(datesInRange.map((date) => this.GROUPINGS[this.dateGroup].formatter(date)))
+      props.labels = this.chartLabels
+      const { yAxisKey, xAxisKey } = this.chartOptions.options.parsing
+      // Fill in dates that don't have data
+      if (props.seriesCfgs && props.seriesCfgs.length) {
+        props.seriesCfgs.forEach((series) => {
+          // Make sure dates are formatted correctly
+          series.data.forEach((point) => {
+            point[xAxisKey] = dateTimeUtil.forceToDate(point[xAxisKey])
+          })
+          this.chartLabels.forEach((date) => {
+            if (!series.data.find((point) => point[xAxisKey] === date)) {
+              series.data.push({ [xAxisKey]: date, [yAxisKey]: 0 })
+            }
+          })
+        })
       }
-      return dataUtil.mergeDeep({}, this.chartOptions, {
-        xaxis: {
-          categories
-        }
-      })
+      return props
+    },
+    chartLabels () {
+      const { to, from } = this.dateRange || {}
+      if (!to || !from) {
+        return []
+      }
+      const datesInRange = dateTimeUtil.getDatesInRange(new Date(from), new Date(to))
+      return dataUtil.uniqArray(datesInRange.map((date) => this.GROUPINGS[this.dateGroup].formatter(date)))
     }
   }
 }

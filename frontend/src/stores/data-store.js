@@ -1,32 +1,47 @@
 import { defineStore } from 'pinia'
+import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 
 export const useDataStore = defineStore('data', {
   state: () => ({
+    applications: [],
+    pageViews: [],
     socialLinkPerformanceData: {}
   }),
 
   actions: {
-    async getSocialLinkPerformance (startDate, endDate, { employerId, userId }) {
+    async getData (url, dataAttr, startDate, endDate, extraParams = {}) {
       startDate = dateTimeUtil.serializeDate(startDate, true)
       endDate = dateTimeUtil.serializeDate(endDate, true, true)
-      const apiKey = this.makeApiKey(startDate, endDate, employerId, userId)
-      const data = this.socialLinkPerformanceData[apiKey]
+      const apiKey = this.makeApiKey(startDate, endDate, extraParams)
+      const data = this[dataAttr][apiKey]
       if (data) {
         return data
       }
-      const resp = await this.$api.get('data/link-performance/', {
-        params: {
-          employer_id: employerId,
-          owner_id: userId,
+      const resp = await this.$api.get(url, {
+        params: Object.assign({
           start_dt: startDate,
           end_dt: endDate
-        }
+        }, extraParams)
       })
-      this.socialLinkPerformanceData[apiKey] = resp.data
-      return resp.data
+      this[dataAttr][apiKey] = resp.data
+      return dataUtil.deepCopy(resp.data) // Copy to avoid mutation
     },
-    makeApiKey (startDate, endDate, employerId, userId) {
+    async getApplications (startDate, endDate, params) {
+      return await this.getData(
+        'data/applications/',
+        'applications',
+        startDate, endDate, params
+      )
+    },
+    async getPageViews (startDate, endDate, params) {
+      return await this.getData(
+        'data/page-views/',
+        'pageViews',
+        startDate, endDate, params
+      )
+    },
+    makeApiKey (startDate, endDate, extraParams) {
       return JSON.stringify(arguments)
     }
   }
