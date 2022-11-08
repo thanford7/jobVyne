@@ -140,11 +140,10 @@ class PageViewsView(BaseDataView):
         )
 
         if not self.is_raw_data:
-            if 'date' in self.group_by:
-                link_views = link_views \
-                    .annotate(date=TruncDate('access_dt')) \
-                    .values('date') \
-                    .annotate(count=Count('id')) \
+            link_views = link_views \
+                .annotate(date=TruncDate('access_dt')) \
+                .values(*self.group_by) \
+                .annotate(count=Count('id'))
     
             return Response(status=status.HTTP_200_OK, data=link_views)
         

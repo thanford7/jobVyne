@@ -33,6 +33,7 @@ import { chartProps } from 'components/charts/chartProps.js'
 import DialogShowDataTable from 'components/dialogs/DialogShowDataTable.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
 import { useQuasar } from 'quasar'
+import dataUtil from 'src/utils/data.js'
 
 let chartCount = 0
 
@@ -42,7 +43,17 @@ export default {
   props: chartProps,
   data () {
     return {
-      chart: null
+      chart: null,
+      chartOptionDefaults: {
+        options: {
+          borderRadius: {
+            topLeft: 6,
+            topRight: 6,
+            bottomLeft: 0,
+            bottomRight: 0
+          }
+        }
+      }
     }
   },
   watch: {
@@ -74,7 +85,7 @@ export default {
     this.chart = this.$createChart(ctx, Object.assign({
       type: this.chartType,
       data
-    }, this.chartOptions))
+    }, dataUtil.mergeDeep(this.chartOptionDefaults, this.chartOptions)))
   }
 }
 </script>

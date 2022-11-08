@@ -24,6 +24,7 @@
 
 <script>
 import BaseChart from 'components/charts/BaseChart.vue'
+import { chartColors } from 'components/charts/chartProps.js'
 import ChartSkeleton from 'components/charts/ChartSkeleton.vue'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
@@ -47,6 +48,7 @@ export default {
   computed: {
     seriesCfgs () {
       return [{
+        backgroundColor: [chartColors.colors[0]],
         data: this.chartRawData.map((platformData) => {
           if (platformData.platform_name === 'null' || !platformData.platform_name) {
             platformData.platform_name = 'Unknown'

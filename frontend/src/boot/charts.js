@@ -1,5 +1,6 @@
 import { boot } from 'quasar/wrappers'
 import {
+  ArcElement,
   Chart,
   LineElement,
   BarElement,
@@ -21,6 +22,7 @@ import {
 import colorUtil from 'src/utils/color.js'
 
 Chart.register(
+  ArcElement,
   LineElement,
   BarElement,
   PointElement,
