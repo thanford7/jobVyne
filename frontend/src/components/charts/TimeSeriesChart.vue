@@ -12,7 +12,7 @@
           color="grey-5"
           toggle-color="grey-8"
           :options="[
-            { label: 'Day', value: GROUPINGS.DAY.key },
+            { label: 'Day', value: GROUPINGS.DATE.key },
             { label: 'Week', value: GROUPINGS.WEEK.key },
             { label: 'Month', value: GROUPINGS.MONTH.key },
             { label: 'Year', value: GROUPINGS.YEAR.key },
@@ -62,6 +62,7 @@ export default {
       const { yAxisKey, xAxisKey } = this.chartOptions.options.parsing
       // Fill in dates that don't have data
       if (props.seriesCfgs && props.seriesCfgs.length) {
+        props.seriesCfgs = dataUtil.deepCopy(props.seriesCfgs) // Avoid mutation
         props.seriesCfgs.forEach((series) => {
           // Make sure dates are formatted correctly
           series.data.forEach((point) => {
@@ -82,7 +83,7 @@ export default {
         return []
       }
       const datesInRange = dateTimeUtil.getDatesInRange(new Date(from), new Date(to))
-      return dataUtil.uniqArray(datesInRange.map((date) => this.GROUPINGS[this.dateGroup].formatter(date)))
+      return dataUtil.uniqArray(datesInRange.map((date) => this.GROUPINGS[this.dateGroup.toUpperCase()].formatter(date)))
     }
   }
 }

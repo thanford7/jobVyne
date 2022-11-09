@@ -1,8 +1,9 @@
+import json
 from collections import defaultdict
 
 from django.core.paginator import Paginator
 from django.db.models import Count, F, Q, Value
-from django.db.models.functions import Concat, TruncDate
+from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek, TruncYear
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -23,6 +24,10 @@ class BaseDataView(JobVyneAPIView):
         self.employer_id = self.query_params.get('employer_id')
         self.is_raw_data = self.query_params.get('is_raw_data')
         self.group_by = self.get_query_param_list('group_by', ['date'])
+        self.filter_by = self.query_params.get('filter_by')
+        if self.filter_by and isinstance(self.filter_by, str):
+            self.filter_by = json.loads(self.filter_by)
+        print(self.filter_by)
         self.page_count = self.query_params.get('page_count')
         self.q_filter = Q()
         if self.owner_id:
@@ -57,8 +62,21 @@ class ApplicationsView(BaseDataView):
             if 'owner_name' in self.group_by:
                 self.group_by += ['owner_id', 'owner_first_name', 'owner_last_name']
             
+            appFilter = Q()
+            if self.filter_by:
+                if employee_ids := self.filter_by.get('employees'):
+                    appFilter &= Q(social_link_filter__owner_id__in=employee_ids)
+                if platforms := self.filter_by.get('platforms'):
+                    appFilter &= Q(social_link_filter__platform__name__in=platforms)
+                if job_title_search := self.filter_by.get('jobTitle'):
+                    appFilter &= Q(employer_job__job_title__iregex=f'^.*{job_title_search}.*$')
+            
             applications = applications\
+                .filter(appFilter)\
                 .annotate(date=TruncDate('created_dt'))\
+                .annotate(week=TruncWeek('created_dt'))\
+                .annotate(month=TruncMonth('created_dt'))\
+                .annotate(year=TruncYear('created_dt'))\
                 .annotate(platform_name=F('social_link_filter__platform__name')) \
                 .annotate(owner_id=F('social_link_filter__owner_id')) \
                 .annotate(owner_first_name=F('social_link_filter__owner__first_name')) \
@@ -66,7 +84,7 @@ class ApplicationsView(BaseDataView):
                 .annotate(owner_name=Concat(
                     'social_link_filter__owner__first_name', Value(' '), 'social_link_filter__owner__last_name'
                 ))\
-                .annotate(applicant_name=F('first_name') + ' ' + F('last_name'))\
+                .annotate(applicant_name=Concat('first_name', Value(' '), 'last_name'))\
                 .annotate(job_title=F('employer_job__job_title'))\
                 .values(*self.group_by)\
                 .annotate(count=Count('id'))
@@ -142,6 +160,9 @@ class PageViewsView(BaseDataView):
         if not self.is_raw_data:
             link_views = link_views \
                 .annotate(date=TruncDate('access_dt')) \
+                .annotate(week=TruncWeek('access_dt')) \
+                .annotate(month=TruncMonth('access_dt')) \
+                .annotate(year=TruncYear('access_dt')) \
                 .values(*self.group_by) \
                 .annotate(count=Count('id'))
     

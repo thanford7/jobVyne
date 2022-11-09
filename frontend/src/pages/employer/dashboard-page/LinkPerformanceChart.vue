@@ -35,8 +35,7 @@ export default {
       type: Boolean,
       default: false
     },
-    defaultDateRange: [Object, null],
-    defaultDateGroup: [String, null]
+    defaultDateRange: [Object, null]
   },
   components: { ChartSkeleton, CustomTooltip, TimeSeriesChart },
   data () {
@@ -47,20 +46,22 @@ export default {
         from: dateTimeUtil.addDays(new Date(), -6, true),
         to: new Date()
       },
-      dateGroup: this.defaultDateGroup || GROUPINGS.DAY.key,
+      dateGroup: GROUPINGS.DATE.key,
       applicationsByDate: null,
-      pageViewsByDate: null,
-      chartOptions: {
-        options: {
-          parsing: {
-            yAxisKey: 'count',
-            xAxisKey: 'date'
-          }
-        }
-      }
+      pageViewsByDate: null
     }
   },
   computed: {
+    chartOptions () {
+      return {
+        options: {
+          parsing: {
+            yAxisKey: 'count',
+            xAxisKey: this.dateGroup
+          }
+        }
+      }
+    },
     seriesCfgs () {
       return [
         {
@@ -80,6 +81,9 @@ export default {
   watch: {
     dateRange () {
       this.setChartRawData()
+    },
+    dateGroup () {
+      this.setChartRawData()
     }
   },
   methods: {
@@ -89,6 +93,7 @@ export default {
       }
       this.isLoading = true
       const params = (this.isEmployer) ? { employerId: this.authStore.propUser.employer_id } : { userId: this.authStore.propUser.id }
+      params.group_by = JSON.stringify([this.dateGroup])
       const [applicationsByDate, pageViewsByDate] = await Promise.all([
         this.dataStore.getApplications(
           this.dateRange.from,

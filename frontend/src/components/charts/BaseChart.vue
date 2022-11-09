@@ -28,7 +28,6 @@
 </template>
 
 <script>
-/* eslint-disable vue/no-side-effects-in-computed-properties */
 import { chartProps } from 'components/charts/chartProps.js'
 import DialogShowDataTable from 'components/dialogs/DialogShowDataTable.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
@@ -56,12 +55,23 @@ export default {
       }
     }
   },
-  watch: {
-    seriesCfgs () {
-      this.chart.data.datasets = this.seriesCfgs
-    }
-  },
   methods: {
+    createChart () {
+      const ctx = document.getElementById(this.chartId)
+      const data = {
+        datasets: this.seriesCfgs
+      }
+      if (this.labels) {
+        data.labels = this.labels
+      }
+      if (this.chart) {
+        this.chart.destroy()
+      }
+      this.chart = this.$createChart(ctx, Object.assign({
+        type: this.chartType,
+        data
+      }, dataUtil.mergeDeep(this.chartOptionDefaults, this.chartOptions)))
+    },
     openDataDialog () {
       return this.q.dialog({
         component: DialogShowDataTable,
@@ -75,17 +85,10 @@ export default {
     return vals
   },
   mounted () {
-    const ctx = document.getElementById(this.chartId)
-    const data = {
-      datasets: this.seriesCfgs
-    }
-    if (this.labels) {
-      data.labels = this.labels
-    }
-    this.chart = this.$createChart(ctx, Object.assign({
-      type: this.chartType,
-      data
-    }, dataUtil.mergeDeep(this.chartOptionDefaults, this.chartOptions)))
+    this.createChart()
+  },
+  updated () {
+    this.createChart()
   }
 }
 </script>

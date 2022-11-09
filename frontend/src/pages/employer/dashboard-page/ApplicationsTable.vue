@@ -36,7 +36,7 @@
       ref="table"
       @mounted="$refs.table.sort('applicationDT')"
       flat
-      :rows="applications"
+      :rows="chartRawData"
       :columns="columns"
       :rows-per-page-options="[25, 50, 100]"
     >
@@ -98,10 +98,10 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useDataStore } from 'stores/data-store.js'
 
 const GROUP_OPTIONS = [
-  { key: 'EMPLOYEE', label: 'Employee', field: 'owner_full_name' },
-  { key: 'PLATFORM', label: 'Platform', field: 'platform_name' },
-  { key: 'JOB_TITLE', label: 'Job Title', field: 'job_title' },
-  { key: 'DATE', label: 'Date', field: 'date' }
+  { label: 'Employee', key: 'owner_name' },
+  { label: 'Platform', key: 'platform_name' },
+  { label: 'Job Title', key: 'job_title' },
+  { label: 'Date', key: 'date' }
 ]
 
 export default {
@@ -113,10 +113,10 @@ export default {
       isLoading: false,
       chartRawData: null,
       GROUP_OPTIONS,
-      GROUP_KEY_EMPLOYEE: 'EMPLOYEE',
-      GROUP_KEY_PLATFORM: 'PLATFORM',
-      GROUP_KEY_JOB_TITLE: 'JOB_TITLE',
-      GROUP_KEY_DATE: 'DATE',
+      GROUP_KEY_EMPLOYEE: 'owner_name',
+      GROUP_KEY_PLATFORM: 'platform_name',
+      GROUP_KEY_JOB_TITLE: 'job_title',
+      GROUP_KEY_DATE: 'date',
       chartGroups: [],
       chartFilters: {
         employees: [],
@@ -131,32 +131,16 @@ export default {
     }
   },
   computed: {
-    applications () {
-      if (!this.chartRawData) {
-        return []
-      }
-      let chartData = this.filterApplications(this.chartRawData)
-      if (this.chartGroups.length) {
-        chartData = dataUtil.groupBy(chartData, this.makeApplicationKey)
-        chartData = Object.entries(chartData).reduce((chartData, [applicationKey, groupedApps]) => {
-          chartData.push({
-            ...this.hydrateApplicationKey(applicationKey),
-            applicationCount: groupedApps.length
-          })
-          return chartData
-        }, [])
-      }
-      return chartData
-    },
     columns () {
       let columns = [
-        { name: 'ownerName', field: 'owner_full_name', label: 'Employee', align: 'left', sortable: true },
-        { name: 'platformName', field: 'platform_name', label: 'Platform', align: 'left', sortable: true },
+        { name: 'ownerName', field: 'owner_name', label: 'Employee', align: 'left', sortable: true },
+        { name: 'platformName', field: 'platform_name', format: (val) => val || 'Unknown', label: 'Platform', align: 'left', sortable: true },
         { name: 'jobTitle', field: 'job_title', label: 'Job Title', align: 'left', sortable: true },
-        { name: 'applicantName', field: 'applicant_full_name', label: 'Applicant', align: 'left', sortable: true },
+        { name: 'applicantName', field: 'applicant_name', label: 'Applicant', align: 'left', sortable: true },
         {
           name: 'applicationDT',
           field: 'date',
+          format: dateTimeUtil.getShortDate.bind(dateTimeUtil),
           label: 'Application Date',
           align: 'left',
           sortable: true
@@ -166,11 +150,10 @@ export default {
       if (!this.chartGroups.length) {
         return columns
       }
-      const groupFields = this.chartGroups.map((groupKey) => GROUP_OPTIONS.find((o) => o.key === groupKey).field)
-      columns = columns.filter((column) => groupFields.includes(column.field))
+      columns = columns.filter((column) => this.chartGroups.includes(column.field))
       columns.push({
         name: 'applicationCount',
-        field: 'applicationCount',
+        field: 'count',
         label: 'Application Count',
         align: 'center',
         sortable: true
@@ -178,7 +161,7 @@ export default {
       return columns
     },
     employees () {
-      let employees = this.chartRawData.map((app) => ({ id: app.owner_id, name: app.owner_full_name }))
+      let employees = this.chartRawData.map((app) => ({ id: app.owner_id, name: app.owner_name }))
       employees = dataUtil.sortBy(dataUtil.uniqBy(employees, 'id'), 'name')
       if (!this.employeeFilterText || this.employeeFilterText === '') {
         return employees
@@ -194,6 +177,18 @@ export default {
   watch: {
     dateRange () {
       this.setChartRawData()
+    },
+    chartGroups: {
+      handler () {
+        this.setChartRawData()
+      },
+      deep: true
+    },
+    chartFilters: {
+      handler () {
+        this.setChartRawData()
+      },
+      deep: true
     }
   },
   methods: {
@@ -204,46 +199,6 @@ export default {
       update(() => {
         this.employeeFilterText = filterTxt
       })
-    },
-    filterApplications (applications) {
-      return applications.filter((app) => {
-        if (
-          this.chartFilters.employees &&
-          this.chartFilters.employees.length &&
-          !this.chartFilters.employees.includes(app.owner_id)
-        ) {
-          return false
-        }
-        if (
-          this.chartFilters.platforms &&
-          this.chartFilters.platforms.length &&
-          !this.chartFilters.platforms.includes(app.platform_name)
-        ) {
-          return false
-        }
-        if (this.chartFilters.jobTitle && this.chartFilters.jobTitle.length) {
-          const jobTitleRegex = new RegExp(`.*?${this.chartFilters.jobTitle}.*?`, 'i')
-          if (!app.job_title.match(jobTitleRegex)) {
-            return false
-          }
-        }
-        return true
-      })
-    },
-    makeApplicationKey (application) {
-      return JSON.stringify(this.chartGroups.reduce((applicationKey, groupKey) => {
-        const groupOption = this.GROUP_OPTIONS.find((o) => o.key === groupKey)
-        applicationKey.push(application[groupOption.field])
-        return applicationKey
-      }, []))
-    },
-    hydrateApplicationKey (applicationKey) {
-      const applicationValues = JSON.parse(applicationKey)
-      return applicationValues.reduce((applicationData, appValue, idx) => {
-        const groupOption = this.GROUP_OPTIONS.find((o) => o.key === this.chartGroups[idx])
-        applicationData[groupOption.field] = appValue
-        return applicationData
-      }, {})
     },
     toggleFilter (filterKey) {
       if (this.chartFilters.includes(filterKey)) {
@@ -267,15 +222,14 @@ export default {
       this.chartRawData = await this.dataStore.getApplications(
         this.dateRange.from,
         this.dateRange.to,
-        { employerId: this.authStore.propUser.employer_id }
+        {
+          employerId: this.authStore.propUser.employer_id,
+          group_by: JSON.stringify(this.chartGroups),
+          filter_by: JSON.stringify(this.chartFilters)
+        }
       )
       this.chartRawData = this.chartRawData || []
       this.isLoading = false
-      this.chartRawData.forEach((application) => {
-        application.owner_full_name = `${application.owner_first_name} ${application.owner_last_name}`
-        application.applicant_full_name = `${application.first_name} ${application.last_name}`
-        application.date = dateTimeUtil.getShortDate(application.date)
-      })
     }
   },
   async mounted () {

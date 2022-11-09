@@ -182,10 +182,10 @@ class DateTimeUtil {
 const dateTimeUtil = new DateTimeUtil()
 
 export const GROUPINGS = {
-  DAY: { key: 'DAY', formatter: dateTimeUtil.getShortDate.bind(dateTimeUtil) },
-  WEEK: { key: 'WEEK', formatter: dateTimeUtil.getStartOfWeekDate.bind(dateTimeUtil) },
-  MONTH: { key: 'MONTH', formatter: dateTimeUtil.getMonthYearFromDate.bind(dateTimeUtil) },
-  YEAR: { key: 'YEAR', formatter: dateTimeUtil.getYearFromDate.bind(dateTimeUtil) }
+  DATE: { key: 'date', formatter: dateTimeUtil.getShortDate.bind(dateTimeUtil) },
+  WEEK: { key: 'week', formatter: dateTimeUtil.getStartOfWeekDate.bind(dateTimeUtil) },
+  MONTH: { key: 'month', formatter: dateTimeUtil.getMonthYearFromDate.bind(dateTimeUtil) },
+  YEAR: { key: 'year', formatter: dateTimeUtil.getYearFromDate.bind(dateTimeUtil) }
 }
 
 export default dateTimeUtil
