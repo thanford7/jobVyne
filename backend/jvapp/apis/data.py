@@ -5,11 +5,9 @@ from django.core.paginator import Paginator
 from django.db.models import Count, F, Q, Value
 from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek, TruncYear
 from rest_framework import status
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.apis.social import SocialLinkFilterView
 from jvapp.models import JobApplication, JobVyneUser, PageView
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 
@@ -20,6 +18,7 @@ class BaseDataView(JobVyneAPIView):
         super().initial(request, *args, **kwargs)
         self.start_dt = get_datetime_or_none(self.query_params.get('start_dt'))
         self.end_dt = get_datetime_or_none(self.query_params.get('end_dt'))
+        self.timezone = self.end_dt.tzinfo
         self.owner_id = self.query_params.get('owner_id')
         self.employer_id = self.query_params.get('employer_id')
         self.is_raw_data = self.query_params.get('is_raw_data')
@@ -73,10 +72,10 @@ class ApplicationsView(BaseDataView):
             
             applications = applications\
                 .filter(appFilter)\
-                .annotate(date=TruncDate('created_dt'))\
-                .annotate(week=TruncWeek('created_dt'))\
-                .annotate(month=TruncMonth('created_dt'))\
-                .annotate(year=TruncYear('created_dt'))\
+                .annotate(date=TruncDate('created_dt', tzinfo=self.timezone))\
+                .annotate(week=TruncWeek('created_dt', tzinfo=self.timezone))\
+                .annotate(month=TruncMonth('created_dt', tzinfo=self.timezone))\
+                .annotate(year=TruncYear('created_dt', tzinfo=self.timezone))\
                 .annotate(platform_name=F('social_link_filter__platform__name')) \
                 .annotate(owner_id=F('social_link_filter__owner_id')) \
                 .annotate(owner_first_name=F('social_link_filter__owner__first_name')) \
@@ -159,10 +158,10 @@ class PageViewsView(BaseDataView):
 
         if not self.is_raw_data:
             link_views = link_views \
-                .annotate(date=TruncDate('access_dt')) \
-                .annotate(week=TruncWeek('access_dt')) \
-                .annotate(month=TruncMonth('access_dt')) \
-                .annotate(year=TruncYear('access_dt')) \
+                .annotate(date=TruncDate('access_dt', tzinfo=self.timezone)) \
+                .annotate(week=TruncWeek('access_dt', tzinfo=self.timezone)) \
+                .annotate(month=TruncMonth('access_dt', tzinfo=self.timezone)) \
+                .annotate(year=TruncYear('access_dt', tzinfo=self.timezone)) \
                 .values(*self.group_by) \
                 .annotate(count=Count('id'))
     

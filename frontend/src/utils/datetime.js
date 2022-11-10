@@ -21,11 +21,13 @@ class DateTimeUtil {
   }
 
   getShortDate (dateStr) {
+    // Dates without a time component are converted to local time which can throw off the date by a day
+    // UTC time will always cause the date to be the same
+    if (dateStr && dataUtil.isString(dateStr) && dateStr.length <= 10) {
+      dateStr = this.forceToDate(dateStr).toUTCString()
+      dateStr = dateStr.slice(0, dateStr.length - 4) // Remove the timezone to assume it is local time
+    }
     return date.formatDate(dateStr, this.shortDateFormat)
-  }
-
-  getLongDate (dateStr) {
-    return date.formatDate(dateStr, this.longDateFormat)
   }
 
   getDateTime (dateTimeStr) {
@@ -103,7 +105,11 @@ class DateTimeUtil {
   }
 
   copyDate (date) {
-    return new Date(date.getTime())
+    try {
+      return new Date(date.getTime())
+    } catch (error) {
+      return new Date(date)
+    }
   }
 
   addDays (date, days, isInPlace = false) {

@@ -100,7 +100,7 @@ export default {
           this.dateRange.to,
           params
         ),
-        await this.dataStore.getPageViews(
+        this.dataStore.getPageViews(
           this.dateRange.from,
           this.dateRange.to,
           params

@@ -15,9 +15,9 @@
       />
       <slot name="filters"/>
     </div>
-    <div class="chart-container__chart w-100" style="height: 20vh; position: relative">
-      <canvas v-if="seriesCfgs && seriesCfgs.length" :id="chartId"></canvas>
-      <div v-else class="text-center text-h6 q-mt-md">No data available</div>
+    <div :id="containerId" class="chart-container__chart w-100" style="height: 20vh; position: relative">
+      <canvas :id="chartId"></canvas>
+      <div v-if="!(seriesCfgs && seriesCfgs.length)" class="text-center text-h6 q-mt-md">No data available</div>
     </div>
     <q-spinner-ios
       class="chart-container__loading"
@@ -55,17 +55,29 @@ export default {
       }
     }
   },
+  watch: {
+    seriesCfgs: {
+      handler () {
+        this.createChart()
+      },
+      deep: true
+    }
+  },
   methods: {
     createChart () {
-      const ctx = document.getElementById(this.chartId)
       const data = {
         datasets: this.seriesCfgs
       }
       if (this.labels) {
         data.labels = this.labels
       }
+
+      let ctx = document.getElementById(this.chartId)
       if (this.chart) {
-        this.chart.destroy()
+        ctx.remove()
+        ctx = document.createElement('canvas')
+        ctx.id = this.chartId
+        document.getElementById(this.containerId).appendChild(ctx)
       }
       this.chart = this.$createChart(ctx, Object.assign({
         type: this.chartType,
@@ -80,14 +92,11 @@ export default {
     }
   },
   setup () {
-    const vals = { q: useQuasar(), chartId: `chart-${chartCount}` }
+    const vals = { q: useQuasar(), chartId: `chart-${chartCount}`, containerId: `container-${chartCount}` }
     chartCount++
     return vals
   },
   mounted () {
-    this.createChart()
-  },
-  updated () {
     this.createChart()
   }
 }

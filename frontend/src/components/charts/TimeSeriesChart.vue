@@ -66,13 +66,26 @@ export default {
         props.seriesCfgs.forEach((series) => {
           // Make sure dates are formatted correctly
           series.data.forEach((point) => {
-            point[xAxisKey] = dateTimeUtil.forceToDate(point[xAxisKey])
+            point[xAxisKey] = this.GROUPINGS[this.dateGroup.toUpperCase()].formatter(point[xAxisKey])
           })
+
+          // Add dates that don't have any data
           this.chartLabels.forEach((date) => {
             if (!series.data.find((point) => point[xAxisKey] === date)) {
               series.data.push({ [xAxisKey]: date, [yAxisKey]: 0 })
             }
           })
+
+          // Remove data points that aren't in the date range
+          series.data = series.data.reduce((validDates, dataPoint) => {
+            if (this.chartLabels.includes(dataPoint[xAxisKey])) {
+              validDates.push(dataPoint)
+            }
+            return validDates
+          }, [])
+
+          // Make sure series data is in order chart.js relies on this
+          dataUtil.sortBy(series.data, xAxisKey, true)
         })
       }
       return props
