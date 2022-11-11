@@ -48,7 +48,7 @@ class ApplicationView(JobVyneAPIView):
                     application_filter |= Q(email=user.email)
             else:
                 application_filter = Q(employer_job__employer_id=employer_id)
-            applications = self.get_applications(self.user, application_filter=application_filter)
+            applications = self.get_applications(self.user, application_filter=application_filter).order_by('-created_dt')
             if page_count:
                 paged_applications = Paginator(applications, per_page=25)
                 data = {

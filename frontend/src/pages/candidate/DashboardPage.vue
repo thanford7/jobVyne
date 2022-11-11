@@ -10,6 +10,14 @@
             :columns="applicationColumns"
             :rows-per-page-options="[25,50,100]"
           >
+            <template v-slot:header-cell-jobStatus="props">
+              <q-th :props="props">
+                {{ props.col.label }}
+                <CustomTooltip icon_size="16px">
+                  Whether the job is still open or has been filled/closed
+                </CustomTooltip>
+              </q-th>
+            </template>
             <template v-slot:body-cell-locations="props">
               <q-td key="locations" :props="props">
                 <q-chip
@@ -43,6 +51,7 @@
 </template>
 
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
@@ -52,7 +61,13 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 const applicationColumns = [
-  { name: 'employerName', field: (app) => app.employer_job.employer_name, align: 'left', label: 'Company', sortable: true },
+  {
+    name: 'employerName',
+    field: (app) => app.employer_job.employer_name,
+    align: 'left',
+    label: 'Company',
+    sortable: true
+  },
   { name: 'jobTitle', field: (app) => app.employer_job.title, align: 'left', label: 'Job title', sortable: true },
   { name: 'locations', field: (app) => app.employer_job.locations, align: 'left', label: 'Locations' },
   { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
@@ -69,7 +84,7 @@ const applicationColumns = [
 
 export default {
   name: 'DashboardPage',
-  components: { PageHeader },
+  components: { CustomTooltip, PageHeader },
   data () {
     return {
       applicationColumns,
@@ -85,7 +100,11 @@ export default {
     const authStore = useAuthStore()
     Loading.show()
 
-    return authStore.setUser().finally(() => Loading.hide())
+    return authStore.setUser().then(() => {
+      return Promise.all([
+        authStore.setApplications(authStore.propUser)
+      ])
+    }).finally(() => Loading.hide())
   },
   setup () {
     const authStore = useAuthStore()

@@ -16,7 +16,7 @@
             <PlatformChart/>
           </div>
           <div class="col-12">
-            <ApplicationsTable/>
+            <ApplicationsDataTable/>
           </div>
         </div>
       </div>
@@ -25,7 +25,7 @@
 
 <script>
 import PageHeader from 'components/PageHeader.vue'
-import ApplicationsTable from 'pages/employer/dashboard-page/ApplicationsTable.vue'
+import ApplicationsDataTable from 'pages/employer/dashboard-page/ApplicationsDataTable.vue'
 import DeviceTypeChart from 'pages/employer/dashboard-page/DeviceTypeChart.vue'
 import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
@@ -35,7 +35,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'DashboardPage',
-  components: { ApplicationsTable, DeviceTypeChart, EmployeeLeaderBoard, LinkPerformanceChart, PlatformChart, PageHeader },
+  components: { ApplicationsDataTable, DeviceTypeChart, EmployeeLeaderBoard, LinkPerformanceChart, PlatformChart, PageHeader },
   setup () {
     const globalStore = useGlobalStore()
 

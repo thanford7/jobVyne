@@ -46,9 +46,6 @@ export const useAuthStore = defineStore('auth', {
       if (isForce || !this.user || dataUtil.isEmpty(this.user)) {
         const resp = await this.$api.get('auth/check-auth/')
         this.user = resp.data || {}
-        if (!dataUtil.isEmpty(this.user)) {
-          await this.setApplications(this.user, isForce)
-        }
       }
     },
     async setApplications (user, isForce = false) {
