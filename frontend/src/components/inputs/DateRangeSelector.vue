@@ -6,6 +6,7 @@
     @click="$refs.dateRange.show()"
     @clear="clearRange"
     :label="placeholder"
+    style="min-width: 300px;"
   >
     <template v-slot:append>
       <q-icon name="event" class="cursor-pointer">

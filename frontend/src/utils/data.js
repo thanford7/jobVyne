@@ -43,6 +43,10 @@ class DataUtil {
     }, 0)
   }
 
+  getBoolean (val) {
+    return Boolean(val)
+  }
+
   roundTo (number, roundNumber) {
     return Math.ceil(number / roundNumber) * roundNumber
   }

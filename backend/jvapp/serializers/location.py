@@ -3,6 +3,7 @@ from jvapp.models import Location
 
 def get_serialized_location(location: Location):
     return {
+        'id': location.id,
         'is_remote': location.is_remote,
         'text': location.text,
         'city': location.city.name if location.city else None,

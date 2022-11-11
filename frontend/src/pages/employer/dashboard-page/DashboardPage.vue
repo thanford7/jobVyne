@@ -30,13 +30,21 @@ import DeviceTypeChart from 'pages/employer/dashboard-page/DeviceTypeChart.vue'
 import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
 import PlatformChart from 'pages/employer/dashboard-page/PlatformChart.vue'
+import { useMeta } from 'quasar'
+import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'DashboardPage',
-  components: { ApplicationsTable, DeviceTypeChart, EmployeeLeaderBoard, LinkPerformanceChart, PlatformChart, PageHeader }
+  components: { ApplicationsTable, DeviceTypeChart, EmployeeLeaderBoard, LinkPerformanceChart, PlatformChart, PageHeader },
+  setup () {
+    const globalStore = useGlobalStore()
+
+    const pageTitle = 'Employer Dashboard'
+    const metaData = {
+      title: pageTitle,
+      titleTemplate: globalStore.getPageTitle
+    }
+    useMeta(metaData)
+  }
 }
 </script>
-
-<style scoped>
-
-</style>

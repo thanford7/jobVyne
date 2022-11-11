@@ -160,12 +160,13 @@ const generalMenuList = [
     label: 'Account',
     separator: false
   },
-  {
-    icon: 'message',
-    key: 'messages',
-    label: 'Messages',
-    separator: false
-  },
+  // TODO: Hide until messaging is supported
+  // {
+  //   icon: 'message',
+  //   key: 'messages',
+  //   label: 'Messages',
+  //   separator: false
+  // },
   {
     icon: 'feedback',
     key: 'feedback',

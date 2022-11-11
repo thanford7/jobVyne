@@ -73,7 +73,7 @@ export default {
         this.dateRange.from,
         this.dateRange.to,
         {
-          employerId: this.authStore.propUser.employer_id,
+          employer_id: this.authStore.propUser.employer_id,
           group_by: JSON.stringify(['platform_name'])
         }
       )

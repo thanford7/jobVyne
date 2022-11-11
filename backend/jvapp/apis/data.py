@@ -8,7 +8,9 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import JobApplication, JobVyneUser, PageView
+from jvapp.models import EmployerJob, JobApplication, JobVyneUser, PageView
+from jvapp.serializers.location import get_serialized_location
+from jvapp.utils.data import coerce_bool
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 
 
@@ -20,23 +22,21 @@ class BaseDataView(JobVyneAPIView):
         self.end_dt = get_datetime_or_none(self.query_params.get('end_dt'))
         self.timezone = self.end_dt.tzinfo
         self.owner_id = self.query_params.get('owner_id')
+        if self.owner_id:
+            self.owner_id = int(self.owner_id)
         self.employer_id = self.query_params.get('employer_id')
+        if self.employer_id:
+            self.employer_id = int(self.employer_id)
         self.is_raw_data = self.query_params.get('is_raw_data')
         self.group_by = self.get_query_param_list('group_by', ['date'])
         self.filter_by = self.query_params.get('filter_by')
+        self.sort_order = self.query_params.get('sort_order')
+        self.is_sort_descending = coerce_bool(self.query_params.get('is_descending'))
         if self.filter_by and isinstance(self.filter_by, str):
             self.filter_by = json.loads(self.filter_by)
-        print(self.filter_by)
         self.page_count = self.query_params.get('page_count')
-        self.q_filter = Q()
-        if self.owner_id:
-            owner_id = int(self.owner_id)
-            self.q_filter &= Q(owner_id=owner_id)
-        if self.employer_id:
-            employer_id = int(self.employer_id)
-            self.q_filter &= Q(employer_id=employer_id)
         if not any([self.owner_id, self.employer_id]):
-            return Response('You must provide an owner ID, or employer ID', status=status.HTTP_400_BAD_REQUEST)
+            raise ValueError('You must provide an owner ID, or employer ID')
     
     @staticmethod
     def get_link_data(social_link):
@@ -50,28 +50,50 @@ class BaseDataView(JobVyneAPIView):
 
 
 class ApplicationsView(BaseDataView):
+    SORT_MAP = {
+        'applicant': 'first_name',
+        'job_title': 'employer_job__job_title',
+        'email': 'email',
+        'created_dt': 'created_dt',
+        'referrer': 'social_link_filter__owner__first_name'
+    }
     
     def get(self, request):
         applications = self.get_job_applications(
             self.user, self.start_dt, self.end_dt,
             employer_id=self.employer_id, owner_id=self.owner_id
         )
+
+        app_filter = Q()
+        if self.filter_by:
+            if employee_ids_filter := self.filter_by.get('employees'):
+                app_filter &= Q(social_link_filter__owner_id__in=employee_ids_filter)
+            if platforms_filter := self.filter_by.get('platforms'):
+                app_filter &= Q(social_link_filter__platform__name__in=platforms_filter)
+            if job_title_search_filter := self.filter_by.get('jobTitle'):
+                app_filter &= Q(employer_job__job_title__iregex=f'^.*{job_title_search_filter}.*$')
+            if name_filter := self.filter_by.get('applicantName'):
+                app_filter &= (
+                    Q(first_name__iregex=f'^.*{name_filter}.*$') |
+                    Q(last_name__iregex=f'^.*{name_filter}.*$')
+                )
+            if email_filter := self.filter_by.get('applicantEmail'):
+                app_filter &= Q(email__iregex=f'^.*{email_filter}.*$')
+            if referrer_filter := self.filter_by.get('referrerName'):
+                app_filter &= (
+                    Q(social_link_filter__owner__first_name__iregex=f'^.*{referrer_filter}.*$') |
+                    Q(social_link_filter__owner__last_name__iregex=f'^.*{referrer_filter}.*$')
+                )
+            if locations_filter := self.filter_by.get('locations'):
+                app_filter &= Q(employer_job__locations__in=locations_filter)
+        
+        applications =applications.filter(app_filter)
         
         if not self.is_raw_data:
             if 'owner_name' in self.group_by:
                 self.group_by += ['owner_id', 'owner_first_name', 'owner_last_name']
             
-            appFilter = Q()
-            if self.filter_by:
-                if employee_ids := self.filter_by.get('employees'):
-                    appFilter &= Q(social_link_filter__owner_id__in=employee_ids)
-                if platforms := self.filter_by.get('platforms'):
-                    appFilter &= Q(social_link_filter__platform__name__in=platforms)
-                if job_title_search := self.filter_by.get('jobTitle'):
-                    appFilter &= Q(employer_job__job_title__iregex=f'^.*{job_title_search}.*$')
-            
             applications = applications\
-                .filter(appFilter)\
                 .annotate(date=TruncDate('created_dt', tzinfo=self.timezone))\
                 .annotate(week=TruncWeek('created_dt', tzinfo=self.timezone))\
                 .annotate(month=TruncMonth('created_dt', tzinfo=self.timezone))\
@@ -99,7 +121,13 @@ class ApplicationsView(BaseDataView):
             return Response(status=status.HTTP_200_OK, data=applications)
         
         is_employer = self.user.is_employer and self.employer_id and self.user.employer_id == self.employer_id
-        paged_applications = Paginator(applications, 25)
+        sort_order = f'{"-" if self.is_sort_descending else ""}{self.SORT_MAP[self.sort_order]}' if self.sort_order else '-created_dt'
+        paged_applications = Paginator(applications.order_by(sort_order), 25)
+        locations = set()
+        for app in applications:
+            for location in app.employer_job.locations.all():
+                locations.add(location)
+        
         return Response(
             status=status.HTTP_200_OK,
             data={
@@ -108,7 +136,8 @@ class ApplicationsView(BaseDataView):
                 'applications': [
                     self.serialize_application(app, is_employer)
                     for app in paged_applications.get_page(self.page_count)
-                ]
+                ],
+                'locations': [get_serialized_location(l) for l in locations]
             }
         )
     
@@ -117,7 +146,12 @@ class ApplicationsView(BaseDataView):
         application_data = {
             'id': application.id,
             'job_title': application.employer_job.job_title,
-            'apply_dt': get_datetime_format_or_none(application.created_dt),
+            'email': application.email,
+            'phone_number': application.phone_number,
+            'linkedin_url': application.linkedin_url,
+            'resume_url': application.resume.url if application.resume else None,
+            'created_dt': get_datetime_format_or_none(application.created_dt),
+            'locations': [get_serialized_location(l) for l in application.employer_job.locations.all()]
         }
         if is_employer or is_owner:
             application_data['first_name'] = application.first_name
@@ -138,6 +172,12 @@ class ApplicationsView(BaseDataView):
                 'social_link_filter',
                 'social_link_filter__owner',
                 'social_link_filter__platform'
+            ) \
+            .prefetch_related(
+                'employer_job__locations',
+                'employer_job__locations__city',
+                'employer_job__locations__state',
+                'employer_job__locations__country'
             ) \
             .filter(app_filter)
         

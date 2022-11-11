@@ -151,6 +151,13 @@ class PagePermissionsUtil {
             }
           },
           {
+            icon: 'contact_page',
+            key: 'employer-applications',
+            label: 'Job Applications',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+            isPermittedFn: isUserEmployerFn
+          },
+          {
             icon: 'groups',
             key: 'employer-user-management',
             label: 'Users',
@@ -161,16 +168,17 @@ class PagePermissionsUtil {
               return isUserEmployerFn(permissionGroups, permissions) && dataUtil.getArrayIntersection(allowedPermissions, permissions).length
             }
           },
-          {
-            icon: 'message',
-            key: 'employer-messages',
-            label: 'Employer Messages',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedViewFn: isUserEmployerFn,
-            isPermittedFn: (permissionGroups, permissions) => {
-              return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
-            }
-          },
+          // TODO: Hide until messaging is supported
+          // {
+          //   icon: 'message',
+          //   key: 'employer-messages',
+          //   label: 'Employer Messages',
+          //   emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+          //   isPermittedViewFn: isUserEmployerFn,
+          //   isPermittedFn: (permissionGroups, permissions) => {
+          //     return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
+          //   }
+          // },
           {
             icon: 'dynamic_feed',
             key: 'employer-content',
