@@ -40,9 +40,6 @@
     </q-drawer>
 
     <q-page-container>
-      <ResponsiveWidth>
-        <BannerMessage/>
-      </ResponsiveWidth>
       <q-page v-if="isLoaded" class="scroll">
         <q-tab-panels v-model="tab" animated>
           <q-tab-panel name="jobs">
@@ -213,7 +210,6 @@ import scrollUtil from 'src/utils/scroll.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useUserStore } from 'stores/user-store.js'
 import { ref } from 'vue'
-import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import locationUtil from 'src/utils/location'
 import dataUtil from 'src/utils/data'
@@ -246,7 +242,7 @@ export default {
       locationUtil
     }
   },
-  components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter, BannerMessage },
+  components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter },
   computed: {
     employmentYears () {
       if (!this.profile.employment_start_date) {

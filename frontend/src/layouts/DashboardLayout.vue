@@ -93,7 +93,6 @@
     </q-drawer>
 
     <q-page-container>
-      <BannerMessage/>
       <router-view/>
     </q-page-container>
 
@@ -145,7 +144,6 @@
 </template>
 
 <script>
-import BannerMessage from 'components/BannerMessage.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useUtilStore } from 'stores/utility-store'
 import { useAuthStore } from 'stores/auth-store'
@@ -176,7 +174,6 @@ const generalMenuList = [
 ]
 
 export default {
-  components: { BannerMessage },
   data () {
     return {
       isLeftDrawerOpen: true,

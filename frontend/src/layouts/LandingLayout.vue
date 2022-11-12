@@ -83,7 +83,6 @@
     </q-header>
 
     <q-page-container>
-      <BannerMessage/>
       <router-view/>
     </q-page-container>
 
@@ -95,13 +94,12 @@
 <script>
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store'
-import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import { Loading } from 'quasar'
 
 export default {
   name: 'LandingLayout',
-  components: { CustomFooter, BannerMessage },
+  components: { CustomFooter },
   data () {
     return {
       pagePermissionsUtil

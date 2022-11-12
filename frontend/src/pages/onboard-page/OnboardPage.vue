@@ -7,7 +7,6 @@
     }"
   >
     <ResponsiveWidth>
-      <BannerMessage/>
       <div class="row q-pa-md q-mt-lg justify-center items-center">
         <div class="col-12 text-center">
           <img
@@ -50,7 +49,6 @@
 </template>
 
 <script>
-import BannerMessage from 'components/BannerMessage.vue'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 import StepBusinessEmail from 'pages/onboard-page/StepBusinessEmail.vue'
 import StepName from 'pages/onboard-page/StepName.vue'
@@ -77,7 +75,6 @@ export default {
   name: 'OnboardPage',
   components: {
     ResponsiveWidth,
-    BannerMessage,
     StepUserType,
     StepBusinessEmail,
     StepUnknownEmployer,

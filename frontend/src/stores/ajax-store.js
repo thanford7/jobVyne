@@ -1,18 +1,36 @@
 import { defineStore } from 'pinia'
+import { Notify } from 'quasar'
 
-export const msgClassCfgs = {
-  SUCCESS: 'bg-positive',
-  WARNING: 'bg-warning',
-  ERROR: 'bg-negative text-white',
-  INFO: 'bg-info text-white'
+export const msgTypes = {
+  SUCCESS: {
+    color: 'positive',
+    textColor: 'black',
+    timeout: 10000
+  },
+  WARNING: {
+    color: 'warning',
+    textColor: 'black',
+    icon: 'warning',
+    timeout: 1000 * 60 // One minute
+  },
+  ERROR: {
+    color: 'negative',
+    textColor: 'white',
+    icon: 'dangerous',
+    timeout: 1000 * 60 * 60 * 24 // One day
+  },
+  INFO: {
+    color: 'info',
+    textColor: 'white',
+    timeout: 10000
+  }
 }
 
 const isString = (val) => val && typeof val.valueOf() === 'string'
 
 export const useAjaxStore = defineStore('ajax', {
   state: () => ({
-    messages: [],
-    msgIdx: 0
+    messages: []
   }),
 
   actions: {
@@ -31,25 +49,22 @@ export const useAjaxStore = defineStore('ajax', {
       } else {
         msg = error.message
       }
-      this.addMsg(msg, msgClassCfgs.ERROR)
+      this.addMsg(msg, msgTypes.ERROR)
     },
     addSuccessMsg (msg) {
-      const msgIdx = this.addMsg(msg, msgClassCfgs.SUCCESS)
-      setTimeout(() => {
-        this.removeMsg(msgIdx)
-      }, 10000)
+      this.addMsg(msg, msgTypes.SUCCESS)
     },
-    addMsg (msg, severity) {
-      this.msgIdx++
-      this.messages.push({
-        msg,
-        classStr: severity,
-        idx: this.msgIdx
+    addMsg (msg, { color, textColor, icon, timeout }) {
+      Notify.create({
+        color,
+        textColor,
+        message: msg,
+        timeout,
+        icon,
+        actions: [
+          { label: 'Dismiss', handler: () => { /* ... */ } }
+        ]
       })
-      return this.msgIdx
-    },
-    removeMsg (msgIdx) {
-      this.messages = this.messages.filter((msg) => msg.idx !== msgIdx)
     },
     parseHtmlMessage (htmlText) {
       const parser = new DOMParser()

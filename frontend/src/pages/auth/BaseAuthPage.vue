@@ -1,7 +1,6 @@
 <template>
   <div class="login-container">
     <q-page padding>
-      <BannerMessage/>
       <div class="row justify-center items-center" style="height: 75vh; margin-top: 10vh;">
         <q-card class="col-10 col-md-5 col-lg-4">
           <q-card-section>
@@ -22,11 +21,9 @@
 </template>
 
 <script>
-import BannerMessage from 'components/BannerMessage.vue'
 
 export default {
-  name: 'BaseAuthPage',
-  components: { BannerMessage }
+  name: 'BaseAuthPage'
 }
 </script>
 

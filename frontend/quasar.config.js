@@ -133,6 +133,7 @@ module.exports = configure(function (ctx) {
         'Dialog',
         'Loading',
         'LocalStorage',
+        'Notify',
         'Meta',
         'SessionStorage'
       ]
