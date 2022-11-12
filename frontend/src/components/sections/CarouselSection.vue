@@ -24,7 +24,6 @@
 <script>
 import dataUtil from 'src/utils/data.js'
 import { ref } from 'vue'
-import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
 
 export default {
@@ -58,7 +57,6 @@ export default {
       slide: ref(1),
       autoplay: ref(true),
       isLoaded: ref(false),
-      authStore: useAuthStore(),
       employerStore: useEmployerStore()
     }
   }

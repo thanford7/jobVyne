@@ -107,30 +107,32 @@ export default {
   },
   methods: {
     async confirmAndSaveFile () {
-      const newFile = this.$refs.fileUpload.getValues()[this.newFileKey]
+      const fileUploadData = this.$refs.fileUpload.getValues()
+      const newFile = fileUploadData[this.newFileKey]
       if (newFile && this.currentFileNames.includes(newFile.name)) {
         openConfirmDialog(
           this.q,
           `A file named ${newFile.name} already exists. Do you want to proceed and overwrite the existing file?`,
           {
             okFn: async () => {
-              await this.saveFile()
+              await this.saveFile(fileUploadData)
             }
           }
         )
       } else {
-        await this.saveFile()
+        await this.saveFile(fileUploadData)
       }
     },
-    async saveFile () {
+    async saveFile (fileUploadData) {
       const userId = this.authStore.propUser.id
       const data = Object.assign(
         {},
         this.formData,
-        this.$refs.fileUpload.getValues(),
+        fileUploadData,
         { user_id: userId }
       )
       const ajaxData = getAjaxFormData(data, [this.newFileKey])
+      this.$global.$emit('saving-file')
       if (!this.file) {
         await this.$api.post('user/file/', ajaxData)
       } else {

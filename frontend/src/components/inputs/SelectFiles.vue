@@ -66,12 +66,22 @@
       </q-chip>
     </template>
     <template v-slot:after>
-      <slot name="after"/>
+      <q-btn
+        unelevated ripple color="primary"
+        class="h-100 border-rounded"
+        :loading="isLoadingFile"
+        @click="openFileModal"
+      >
+        Add new {{ fileUtil.getFileLabel(fileTypeKeys) }}
+      </q-btn>
     </template>
   </q-select>
 </template>
 
 <script>
+import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
+import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
+import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { useContentStore } from 'stores/content-store.js'
 import { useEmployerStore } from 'stores/employer-store'
@@ -99,18 +109,23 @@ export default {
       type: Boolean,
       default: false
     },
-    isEmployer: Boolean
+    isEmployer: Boolean,
+    labelOverride: [String, null]
   },
   data () {
     return {
       isLoaded: false,
+      isLoadingFile: false,
       filterTxt: null,
       fileUtil
     }
   },
   computed: {
     label () {
-      return `Select ${fileUtil.getFileLabel(this.fileTypeKeys)}s`
+      if (this.labelOverride) {
+        return this.labelOverride
+      }
+      return `Select ${fileUtil.getFileLabel(this.fileTypeKeys)}${(this.isMultiSelect) ? 's' : ''}`
     },
     selectedFiles () {
       const normalizedEmployerFileIds = this.normalizeFileIds(this.employerFileIds)
@@ -188,6 +203,23 @@ export default {
     }
   },
   methods: {
+    async openFileModal () {
+      const cfg = {
+        componentProps: { fileTypeKeys: this.fileTypeKeys }
+      }
+      if (this.isEmployer) {
+        await loadDialogEmployerFileDataFn()
+        cfg.component = DialogEmployerFile
+      } else {
+        await loadDialogUserFileDataFn()
+        cfg.component = DialogUserFile
+      }
+      return this.q.dialog(cfg).onOk(async () => {
+        this.isLoadingFile = true
+        await this.updateFiles()
+        this.isLoadingFile = false
+      })
+    },
     async updateFiles () {
       await Promise.all([
         this.employerStore.setEmployerFiles(this.authStore.propUser.employer_id),
@@ -248,13 +280,17 @@ export default {
         this.contentStore.setUserFiles(this.authStore.propUser.id)
       ])
     })
+    this.$global.$on('saving-file', () => {
+      this.isLoadingFile = true
+    })
     this.isLoaded = true
   },
   setup () {
     return {
       authStore: useAuthStore(),
       contentStore: useContentStore(),
-      employerStore: useEmployerStore()
+      employerStore: useEmployerStore(),
+      q: useQuasar()
     }
   }
 }

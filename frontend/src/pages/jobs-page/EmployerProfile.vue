@@ -29,6 +29,7 @@
         <TextSection
           v-if="section.type === SECTION_TYPES.TEXT.key"
           :section="section"
+          :employer-id="employerId"
         />
         <AccordionSection
           v-if="section.type === SECTION_TYPES.ACCORDION.key"

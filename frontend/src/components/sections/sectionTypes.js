@@ -4,7 +4,7 @@ export const SECTION_TYPES = {
   TEXT: {
     key: 'TEXT',
     label: 'Text section',
-    sectionPartConfig: { html_content: '' },
+    sectionPartConfig: { html_content: '', file_id: null, file_placement: 'left' },
     usedFor: ['About us', 'Why work for us', 'Diversity & Inclusion']
   },
   ICON: {

@@ -81,22 +81,12 @@
             :is-include-separator="false"
           >
             <SelectFiles
-              ref="selectFiles"
               v-model:employer-file-ids="formData.employer_file"
               v-model:user-file-ids="formData.user_file"
               :file-type-keys="platformCfg.allowedMedia"
               :is-multi-select="platformCfg.isMultiMedia"
               :is-employer="isEmployer"
-            >
-              <template v-slot:after>
-                <q-btn
-                  unelevated ripple color="primary" stretch
-                  class="h-100"
-                  @click="openFileModal"
-                >Add new
-                </q-btn>
-              </template>
-            </SelectFiles>
+            />
           </BaseExpansionItem>
           <BaseExpansionItem
             v-if="!isEmployer"
@@ -150,9 +140,7 @@
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
-import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
 import DialogSocialLink from 'components/dialogs/DialogSocialLink.vue'
-import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
 import SelectFiles from 'components/inputs/SelectFiles.vue'
 import SelectJobLink from 'components/inputs/SelectJobLink.vue'
 import PostLiveView from 'pages/content-page/PostLiveView.vue'
@@ -375,21 +363,6 @@ export default {
       }))
       await this.contentStore.setSocialContent(this.user.employer_id, this.user.id, true)
       this.$emit('ok')
-    },
-    async openFileModal () {
-      const cfg = {
-        componentProps: { fileTypeKeys: [FILE_TYPES.IMAGE.key] }
-      }
-      if (this.isEmployer) {
-        await loadDialogEmployerFileDataFn()
-        cfg.component = DialogEmployerFile
-      } else {
-        await loadDialogUserFileDataFn()
-        cfg.component = DialogUserFile
-      }
-      return this.q.dialog(cfg).onOk(() => {
-        this.$refs.selectFiles.updateFiles()
-      })
     },
     async openSociaLinkModal () {
       return this.q.dialog({

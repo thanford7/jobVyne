@@ -90,3 +90,8 @@ ul, ol {
     display: inline; // Make sure bullets display on same line as text
   }
 }
+
+video {
+  max-width: 100%;
+  object-fit: contain;
+}
