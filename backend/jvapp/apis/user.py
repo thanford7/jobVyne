@@ -404,5 +404,5 @@ class JobVynePasswordResetForm(PasswordResetForm):
             subject,
             to_email,
             django_context=context,
-            django_email_body_template='emails/new_user_set_password_email.html'
+            django_email_body_template='emails/base_reset_password_email.html'
         )

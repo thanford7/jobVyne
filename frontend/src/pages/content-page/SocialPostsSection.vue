@@ -11,7 +11,7 @@
               <DateRangeSelector v-model="postFilter.dateRange" placeholder="Post date"/>
             </div>
             <div v-if="isEmployees" class="col-12 col-md-6 q-pr-md-sm">
-              <SelectEmployee v-model="postFilter.employee_ids"/>
+              <SelectEmployee v-model="postFilter.employee_ids" :employer-id="user.employer_id"/>
             </div>
           </div>
         </div>

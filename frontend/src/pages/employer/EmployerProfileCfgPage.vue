@@ -86,11 +86,13 @@
                 <q-btn
                   v-if="sectionIdx !== 0"
                   flat dense icon="arrow_upward"
+                  title="Move up"
                   @click="moveSectionItem(sectionIdx, true)"
                 />
                 <q-btn
                   v-if="sectionIdx !== sections.length - 1"
                   flat dense icon="arrow_downward"
+                  title="Move down"
                   @click="moveSectionItem(sectionIdx, false)"
                 />
                 <q-btn flat dense icon="delete" text-color="negative" @click="removeSectionItem(sectionIdx)"/>

@@ -47,6 +47,18 @@ class DataUtil {
     return Boolean(val)
   }
 
+  getFullName (firstName, lastName) {
+    if (!firstName && !lastName) {
+      return null
+    } else if (firstName && !lastName) {
+      return firstName
+    } else if (!firstName && lastName) {
+      return lastName
+    } else {
+      return `${firstName} ${lastName}`
+    }
+  }
+
   roundTo (number, roundNumber) {
     return Math.ceil(number / roundNumber) * roundNumber
   }

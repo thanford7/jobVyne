@@ -1,7 +1,9 @@
 <template>
   <q-select
     v-if="isLoaded"
-    filled multiple clearable use-chips use-input emit-value map-options
+    filled use-chips use-input emit-value map-options
+    :clearable="isMulti"
+    :multiple="isMulti"
     :options="filteredEmployees"
     @filter="filter"
     option-value="id"
@@ -11,22 +13,28 @@
 </template>
 
 <script>
-import { useAuthStore } from 'stores/auth-store.js'
+import dataUtil from 'src/utils/data.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
 export default {
   name: 'SelectEmployee',
+  props: {
+    employerId: [Number],
+    isMulti: {
+      type: Boolean,
+      default: true
+    }
+  },
   data () {
     return {
       isLoaded: false,
       filterTxt: null,
-      authStore: null,
       employerStore: null
     }
   },
   computed: {
     employees () {
-      return this.employerStore.getEmployees(this.authStore.propUser.employer_id)
+      return dataUtil.sortBy(this.employerStore.getEmployees(this.employerId), 'first_name')
     },
     filteredEmployees () {
       if (!this.filterTxt || !this.filterTxt.length) {
@@ -54,10 +62,8 @@ export default {
     }
   },
   async mounted () {
-    this.authStore = useAuthStore()
     this.employerStore = useEmployerStore()
-    await this.authStore.setUser()
-    await this.employerStore.setEmployees(this.authStore.propUser.employer_id)
+    await this.employerStore.setEmployees(this.employerId)
     this.isLoaded = true
   }
 }

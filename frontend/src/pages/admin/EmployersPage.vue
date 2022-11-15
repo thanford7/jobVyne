@@ -11,7 +11,7 @@
             :rows-per-page-options="[15, 25, 50]"
           >
             <template v-slot:top>
-              <q-btn ripple color="primary" label="Create new employer" @click="openDialogAdminEmployer"/>
+              <q-btn ripple color="primary" label="Create new employer" @click="openDialogAdminEmployer()"/>
             </template>
             <template v-slot:header="props">
               <q-tr :props="props">
@@ -28,22 +28,22 @@
             <template v-slot:body="props">
               <q-tr :props="props">
                 <q-td auto-width>
-                  <q-btn size="sm" color="primary" round dense @click="props.expand = !props.expand"
-                         :icon="props.expand ? 'remove' : 'add'"/>
+                  <q-btn size="sm" color="primary" round dense @click="openDialogAdminEmployer(props.row)"
+                         icon="edit"/>
                 </q-td>
                 <q-td
                   v-for="col in props.cols"
                   :key="col.name"
                   :props="props"
                 >
-                  {{ col.value }}
-                </q-td>
-              </q-tr>
-              <q-tr v-show="props.expand" :props="props">
-                <q-td colspan="100%">
-                  <div class="text-left"><span class="text-bold">Initial payment link:</span>
-                    {{ getPaymentLinkUrl(props.row.id) }}
-                  </div>
+                  <template v-if="col.name === 'subscriptionStatus'">
+                    <q-chip
+                      dense
+                      :label="(props.row.subscription_status) ? dataUtil.capitalize(props.row.subscription_status) : 'No subscription'"
+                      :color="(props.row.subscription_status === SUBSCRIPTION_STATUS.ACTIVE) ? 'positive' : 'negative'"
+                    />
+                  </template>
+                  <span v-else>{{ col.value }}</span>
                 </q-td>
               </q-tr>
             </template>
@@ -59,7 +59,9 @@ import DialogAdminEmployer from 'components/dialogs/DialogAdminEmployer.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta, useQuasar } from 'quasar'
+import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
+import { SUBSCRIPTION_STATUS } from 'src/utils/subscription.js'
 import { useAdminStore } from 'stores/admin-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
@@ -74,12 +76,19 @@ const employerColumns = [
     sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil),
     format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
   },
+  { name: 'employeeSeats', field: 'employee_seats', align: 'center', label: 'Employee Seats', sortable: true },
   { name: 'employeeCount', field: 'employee_count', align: 'center', label: 'Employee Count', sortable: true },
-  { name: 'accountStatus', field: 'account_status', align: 'left', label: 'Account Status', sortable: true },
-  { name: 'accountOwnerName', field: 'account_owner_name', align: 'left', label: 'Account Owner Name', sortable: true },
+  { name: 'subscriptionStatus', field: 'subscription_status', align: 'left', label: 'Account Status', sortable: true },
+  {
+    name: 'accountOwnerName',
+    field: (employer) => dataUtil.getFullName(employer.owner_first_name, employer.owner_last_name),
+    align: 'left',
+    label: 'Account Owner Name',
+    sortable: true
+  },
   {
     name: 'accountOwnerEmail',
-    field: 'account_owner_email',
+    field: 'owner_email',
     align: 'left',
     label: 'Account Owner Email',
     sortable: true
@@ -91,16 +100,16 @@ export default {
   components: { PageHeader },
   data () {
     return {
-      employerColumns
+      employerColumns,
+      dataUtil,
+      SUBSCRIPTION_STATUS
     }
   },
   methods: {
-    getPaymentLinkUrl (employerId) {
-      return `${window.location.origin}/payment-setup/${employerId}/`
-    },
-    openDialogAdminEmployer () {
+    openDialogAdminEmployer (employer) {
       return this.q.dialog({
-        component: DialogAdminEmployer
+        component: DialogAdminEmployer,
+        componentProps: { employer }
       }).onOk(async () => {
         Loading.show()
         await this.adminStore.setEmployers(true)

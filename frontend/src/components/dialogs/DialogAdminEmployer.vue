@@ -1,7 +1,7 @@
 <template>
   <DialogBase
-    base-title-text="Create new employer"
-    primary-button-text="Create"
+    :base-title-text="(employer) ? 'Edit employer' : 'Create new employer'"
+    :primary-button-text="(employer) ? 'Update' : 'Create'"
     :is-valid-form-fn="isValidForm"
     @ok="saveEmployer($event)"
   >
@@ -13,56 +13,102 @@
         lazy-rules
         :rules="[ val => val && val.length > 0 || 'Employer name is required']"
       />
-      <q-file
-        v-model="formData.logo"
-        label="Logo"
-        class="q-mb-lg"
-        :accept="allowedFileExtensionsStr"
-        filled
-        max-file-size="5000000"
-        lazy-rules
+      <FileDisplayOrUpload
+        ref="logoUpload"
+        label="logo"
+        :file-url="formData.logo_url"
+        :new-file="formData[newLogoKey]"
+        :new-file-key="newLogoKey"
+        file-url-key="logo_url"
       >
-        <template v-slot:append>
-          <CustomTooltip :is_include_space="true">
-            <ul>
-              <li>Supported file types: {{ allowedFileExtensionsStr }}</li>
-              <li>Maximum allowable file size is 5MB for a single file</li>
-            </ul>
-          </CustomTooltip>
+        <template v-slot:fileInput>
+          <q-file
+            ref="newLogoUpload"
+            filled bottom-slots clearable
+            v-model="formData[newLogoKey]"
+            label="Logo"
+            class="q-mb-none"
+            :accept="allowedFileExtensionsStr"
+            lazy-rules
+            max-file-size="5000000"
+          >
+            <template v-slot:append>
+              <CustomTooltip :is_include_space="true">
+                <ul>
+                  <li>Supported file types: {{ allowedFileExtensionsStr }}</li>
+                  <li>Maximum allowable file size is 5MB for a single file</li>
+                </ul>
+              </CustomTooltip>
+            </template>
+          </q-file>
         </template>
-      </q-file>
+      </FileDisplayOrUpload>
       <InputPermittedEmailDomains :employer-data="formData"/>
       <div class="text-bold">
         Account owner
         <CustomTooltip>
-          This will be the person that will be in charge of setting up the system on the employer's end. They will receive
+          This will be the person that will be in charge of setting up the system on the employer's end. They will
+          receive
           employer admin priveleges.
         </CustomTooltip>
       </div>
-      <q-input
-        filled
-        v-model="formData.owner_first_name"
-        label="First name"
-        lazy-rules
-        :rules="[ val => val && val.length > 0 || 'First name is required']"
-      />
-      <q-input
-        filled
-        v-model="formData.owner_last_name"
-        label="Last name"
-        lazy-rules
-        :rules="[ val => val && val.length > 0 || 'Last name is required']"
-      />
-      <q-input
-        filled
-        v-model="formData.owner_email"
-        label="Email"
-        lazy-rules
-        :rules="[
+      <template v-if="employer">
+        <SelectEmployee v-model="formData.owner_id" :employer-id="employer.id" :is-multi="false"/>
+      </template>
+      <template v-else>
+        <q-input
+          filled
+          v-model="formData.owner_first_name"
+          label="First name"
+          lazy-rules
+          :rules="[ val => val && val.length > 0 || 'First name is required']"
+        />
+        <q-input
+          filled
+          v-model="formData.owner_last_name"
+          label="Last name"
+          lazy-rules
+          :rules="[ val => val && val.length > 0 || 'Last name is required']"
+        />
+        <q-input
+          filled
+          v-model="formData.owner_email"
+          label="Email"
+          lazy-rules
+          :rules="[
           val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'Please enter a valid email',
           val => hasPermittedEmail(val) || 'Email address does not have a permitted domain'
         ]"
-      />
+        />
+      </template>
+      <template v-if="canUpdateSubscription">
+        <div class="text-bold">
+          Subscription
+          <CustomTooltip>
+            Set the number of free employee seats the employer will receive. Once an employer signs up for a paid
+            subscription,
+            the free employee seats will be overriden.
+          </CustomTooltip>
+        </div>
+        <q-input
+          v-model.number="formData.employee_seats"
+          label="Employee seats"
+          type="number" filled
+          :rules="[
+          val => !val || (val > 0 && val <= 100) || 'Value must be between 0 and 100'
+        ]"
+          hint="Enter a value between 0 and 100"
+        />
+        <q-btn-toggle
+          v-if="employer"
+          v-model="formData.subscription_status"
+          toggle-color="primary"
+          :options="[
+          {label: 'Active', value: SUBSCRIPTION_STATUS.ACTIVE},
+          {label: 'Canceled', value: SUBSCRIPTION_STATUS.CANCELED}
+        ]"
+        />
+      </template>
     </q-form>
   </DialogBase>
 </template>
@@ -70,33 +116,59 @@
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
+import SelectEmployee from 'components/inputs/SelectEmployee.vue'
 import InputPermittedEmailDomains from 'pages/employer/settings-page/InputPermittedEmailDomains.vue'
+import dataUtil from 'src/utils/data.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import formUtil from 'src/utils/form.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
+import { SUBSCRIPTION_STATUS } from 'src/utils/subscription.js'
 
 export default {
   name: 'DialogAdminEmployer',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { CustomTooltip, InputPermittedEmailDomains, DialogBase },
+  components: { SelectEmployee, CustomTooltip, InputPermittedEmailDomains, DialogBase, FileDisplayOrUpload },
+  props: {
+    employer: [Object, null]
+  },
   data () {
     return {
       formData: {},
-      formUtil
+      newLogoKey: 'logo',
+      formUtil,
+      SUBSCRIPTION_STATUS
+    }
+  },
+  watch: {
+    employer () {
+      this.setFormData()
     }
   },
   computed: {
+    canUpdateSubscription () {
+      return !this.employer || this.employer.is_manual_subscription
+    },
     allowedFileExtensionsStr () {
       return fileUtil.getAllowedFileExtensionsStr([FILE_TYPES.IMAGE.key])
     }
   },
   methods: {
+    setFormData () {
+      this.formData = (this.employer) ? dataUtil.deepCopy(this.employer) : {}
+    },
     async isValidForm () {
       return await this.$refs.form.validate()
     },
     async saveEmployer () {
-      await this.$api.post('admin/employer/', getAjaxFormData(this.formData, ['logo']))
+      const data = Object.assign(
+        { employer_id: this?.employer?.id },
+        (this.canUpdateSubscription) ? this.formData : dataUtil.omit(this.formData, ['employee_seats', 'subscription_status']),
+        (this.$refs.logoUpload) ? this.$refs.logoUpload.getValues() : {}
+      )
+      const apiMethod = (this.employer) ? this.$api.put : this.$api.post
+      await apiMethod('admin/employer/', getAjaxFormData(data, [this.newLogoKey]))
       this.$emit('ok')
     },
     hasPermittedEmail () {
@@ -112,6 +184,9 @@ export default {
       }
       return false
     }
+  },
+  mounted () {
+    this.setFormData()
   }
 }
 </script>

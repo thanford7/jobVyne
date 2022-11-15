@@ -1,7 +1,7 @@
 from functools import reduce
 
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import F, Q, Sum
+from django.db.models import Count, F, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -85,13 +85,15 @@ class EmployerView(JobVyneAPIView):
         employers = Employer.objects \
             .select_related('employer_size', 'default_bonus_currency') \
             .prefetch_related(
+                'subscription',
                 'employee',
                 'employee__employer_permission_group',
                 'employee__employer_permission_group__permission_group',
                 'employee__employer_permission_group__permission_group__permissions',
                 'ats_cfg'
             ) \
-            .filter(employer_filter)
+            .filter(employer_filter) \
+            .annotate(employee_count=Count('employee'))
         
         if employer_id:
             if not employers:
@@ -99,6 +101,10 @@ class EmployerView(JobVyneAPIView):
             return employers[0]
         
         return employers
+    
+    @staticmethod
+    def get_employer_account_owner(employer):
+        return next((employee for employee in employer.employee.all() if employee.is_employer_owner), None)
     
     
 class EmployerAtsView(JobVyneAPIView):
@@ -199,8 +205,11 @@ class EmployerBillingView(JobVyneAPIView):
     
 class EmployerSubscriptionView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
-    INACTIVE_STATUSES = ['incomplete_expired', 'canceled']
-    ACTIVE_STATUS = 'active'
+    INACTIVE_STATUSES = [
+        EmployerSubscription.SubscriptionStatus.EXPIRED.value,
+        EmployerSubscription.SubscriptionStatus.CANCELED.value
+    ]
+    ACTIVE_STATUS = EmployerSubscription.SubscriptionStatus.ACTIVE.value
     
     def get(self, request, employer_id):
         employer_id = int(employer_id)

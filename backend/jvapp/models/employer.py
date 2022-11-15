@@ -67,6 +67,16 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     
 class EmployerSubscription(models.Model, JobVynePermissionsMixin):
+    
+    class SubscriptionStatus(Enum):
+        ACTIVE = 'active'
+        TRIALING = 'trialing'
+        INCOMPLETE = 'incomplete'
+        EXPIRED = 'incomplete_expired'
+        CANCELED = 'canceled'
+        PAST_DUE = 'past_due'
+        UNPAID = 'unpaid'
+        
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='subscription')
     # Stripe Key will be null if a JobVyne admin manually added a subscription for the employer
     stripe_key = models.CharField(max_length=30, null=True, blank=True, unique=True)

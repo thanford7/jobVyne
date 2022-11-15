@@ -62,7 +62,7 @@ export const useAjaxStore = defineStore('ajax', {
         timeout,
         icon,
         actions: [
-          { label: 'Dismiss', handler: () => { /* ... */ } }
+          { label: 'Dismiss', color: textColor, handler: () => { /* ... */ } }
         ]
       })
     },
