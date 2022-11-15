@@ -92,7 +92,7 @@ export default {
         return {}
       }
       this.isLoading = true
-      const params = (this.isEmployer) ? { employer_id: this.authStore.propUser.employer_id } : { user_id: this.authStore.propUser.id }
+      const params = (this.isEmployer) ? { employer_id: this.authStore.propUser.employer_id } : { owner_id: this.authStore.propUser.id }
       params.group_by = JSON.stringify([this.dateGroup])
       const [applicationsByDate, pageViewsByDate] = await Promise.all([
         this.dataStore.getApplications(
