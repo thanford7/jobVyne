@@ -291,18 +291,19 @@ class StripeSubscriptionView(StripeBaseView):
         else:
             subscription = stripe.Subscription.retrieve(
                 jv_subscription.stripe_key,
-                expand=['latest_invoice', 'latest_invoice.payment_intent']
+                expand=['latest_invoice', 'latest_invoice.payment_intent', 'plan.product']
             )
             subscription_item = subscription.to_dict()['items']['data'][0]
-            subscription_price = subscription_item['price']
-            unit_price = get_price(subscription.latest_invoice.lines.data[0]['unit_amount_excluding_tax'])
+            subscription_price = stripe.Price.retrieve(
+                subscription_item['price']['id'], expand=['tiers']
+            )
             subscription_data = {
                 'id': subscription.id,
                 'active': subscription_price['active'],
                 'interval': subscription_price['recurring']['interval'],
                 'quantity': subscription_item['quantity'],
                 'latest_invoice': subscription.latest_invoice,
-                'total_price': unit_price * subscription_item['quantity'],
+                'total_price': self.calculate_plan_price(subscription_price, subscription_item['quantity']),
                 'start_date': datetime.fromtimestamp(subscription.current_period_start),
                 'end_date': datetime.fromtimestamp(subscription.current_period_end),
                 'is_cancel_at_end': subscription.cancel_at_period_end,
@@ -321,6 +322,16 @@ class StripeSubscriptionView(StripeBaseView):
                 f'The subscription seats of {self.data["quantity"]} is insufficient for the current {active_employees} active employees',
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Deactivate any existing manual subscriptions
+        manual_subs = EmployerSubscription.objects.filter(
+            employer=employer, stripe_key__isnull=True,
+            status=EmployerSubscription.SubscriptionStatus.ACTIVE.value
+        )
+        for sub in manual_subs:
+            sub.status = EmployerSubscription.SubscriptionStatus.CANCELED.value
+        if manual_subs:
+            EmployerSubscription.objects.bulk_update(manual_subs, ['status'])
         
         if jv_subscription:  # Update subscription if there is an active one
             subscription = stripe.Subscription.retrieve(jv_subscription.stripe_key)
@@ -387,6 +398,18 @@ class StripeSubscriptionView(StripeBaseView):
             SUCCESS_MESSAGE_KEY: 'Successfully cancelled subscription'
         })
     
+    @staticmethod
+    def calculate_plan_price(price_obj, unit_volume):
+        price_tiers = [{'max_unit_volume': t['up_to'] or unit_volume, 'unit_amount': get_price(t['unit_amount'])} for t in price_obj['tiers']]
+        price_tiers.sort(key=lambda x: x['max_unit_volume'])
+        current_price_tier = price_tiers[0]
+        for price_tier in price_tiers[1:]:
+            if unit_volume > price_tier['max_unit_volume']:
+                break
+            else:
+                current_price_tier = price_tier
+        return unit_volume * current_price_tier['unit_amount']
+        
     
 class StripeSetupIntentView(StripeBaseView):
     
