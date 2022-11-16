@@ -14,7 +14,7 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <q-card-section v-if="isIncludeHeader && !isFullScreen">
+      <q-card-section v-if="isIncludeHeader && !isFullScreen" class="border-bottom-1-gray-300 q-pb-none q-mb-md">
         <div v-if="baseTitleText" class="text-h6">
           {{ baseTitleText }}
         </div>

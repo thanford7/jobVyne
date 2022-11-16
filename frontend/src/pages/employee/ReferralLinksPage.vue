@@ -84,7 +84,7 @@
                     <div class="q-mx-sm q-my-xs" style="display: inline-block;">
                       <div>
                       <span v-if="socialLinkFilter.performance.applications.length">
-                        <a href="#" @click.prevent="selectedLinkId = socialLinkFilter.id">
+                        <a href="#" @click.prevent="openDataDialog(socialLinkFilter)">
                           {{ socialLinkFilter.performance.applications.length }}
                         </a>
                       </span>
@@ -97,29 +97,6 @@
                   </div>
                 </div>
               </q-card>
-            </div>
-            <div v-if="selectedLinkFilter" class="col-12 q-mt-md">
-              <q-table
-                :rows="jobLinkApplications"
-                :columns="applicationsColumns"
-                row-key="id"
-                :rows-per-page-options="[5, 10, 15]"
-                style="position: relative"
-              >
-                <template v-slot:top>
-                  <div class="q-table__title">Job applications</div>
-                  <q-space/>
-                  <q-btn
-                    flat unelevated ripple
-                    icon="close"
-                    text-color="grey-7"
-                    size="md"
-                    class="q-pr-sm"
-                    style="position: absolute; top: 0; right: 0;"
-                    @click="selectedLinkId = null"
-                  />
-                </template>
-              </q-table>
             </div>
           </div>
         </q-tab-panel>
@@ -260,6 +237,7 @@
 </template>
 
 <script>
+import DialogShowDataTable from 'components/dialogs/DialogShowDataTable.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
@@ -276,7 +254,7 @@ import dataUtil from 'src/utils/data'
 import dateTimeUtil from 'src/utils/datetime'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import { useGlobalStore } from 'stores/global-store'
-import { Loading, useMeta } from 'quasar'
+import { Loading, useMeta, useQuasar } from 'quasar'
 import PageHeader from 'components/PageHeader.vue'
 
 const jobColumns = [
@@ -301,20 +279,6 @@ const jobColumns = [
   }
 ]
 
-const applicationsColumns = [
-  { name: 'first_name', field: 'first_name', align: 'left', label: 'First name', sortable: true },
-  { name: 'last_name', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
-  { name: 'job_title', field: 'job_title', align: 'left', label: 'Job title', sortable: true },
-  {
-    name: 'apply_dt',
-    field: 'apply_dt',
-    align: 'left',
-    label: 'Application date',
-    sortable: true,
-    format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
-  }
-]
-
 const formDataTemplate = {
   departments: null,
   cities: null,
@@ -330,26 +294,19 @@ export default {
       linkId: null,
       selectedLinkId: null, // Used to drill into application details
       tab: 'current',
-      applicationsColumns,
       jobColumns,
       dataUtil
-    }
-  },
-  computed: {
-    selectedLinkFilter () {
-      return dataUtil.getForceArray(this.socialStore.socialLinkFilters).find((linkFilter) => linkFilter.id === this.selectedLinkId)
-    },
-    jobLinkApplications () {
-      if (!this.selectedLinkFilter) {
-        return null
-      }
-      const applications = this.selectedLinkFilter.performance.applications
-      return (applications.length) ? applications : null
     }
   },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getLocations: locationUtil.getFormattedLocations.bind(locationUtil),
+    openDataDialog (socialLinkFilter) {
+      return this.q.dialog({
+        component: DialogShowDataTable,
+        componentProps: { data: socialLinkFilter.performance.applications, ignoreColumns: ['id'] }
+      })
+    },
     getJobLinkUrl (jobLink) {
       const id = (jobLink) ? jobLink.id : this.linkId
       return `${window.location.origin}/jobs-link/${id}`
@@ -453,7 +410,7 @@ export default {
     }
     useMeta(metaData)
 
-    return { socialStore, employerStore, authStore, globalStore, utilStore, platforms, user }
+    return { socialStore, employerStore, authStore, globalStore, utilStore, platforms, user, q: useQuasar() }
   }
 }
 </script>

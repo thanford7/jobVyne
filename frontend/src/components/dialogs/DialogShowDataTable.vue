@@ -4,22 +4,21 @@
     :is-include-buttons="false"
     width="800px"
   >
+    <div>
+      <q-btn
+        color="primary"
+        icon-right="archive"
+        label="Export to CSV"
+        no-caps
+        @click="exportTable"
+      />
+    </div>
     <q-table
       flat
       :rows="data"
       :columns="columns"
       :rows-per-page-options="[25,50,100]"
-    >
-      <template v-slot:top-right>
-        <q-btn
-          color="primary"
-          icon-right="archive"
-          label="Export to CSV"
-          no-caps
-          @click="exportTable"
-        />
-      </template>
-    </q-table>
+    />
   </DialogBase>
 </template>
 
@@ -46,14 +45,19 @@ export default {
   name: 'DialogShowDataTable',
   components: { DialogBase },
   props: {
-    data: Array
+    data: Array,
+    ignoreColumns: {
+      type: Array,
+      default: () => ([])
+    }
   },
   computed: {
     columns () {
       if (!this.data.length) {
         return []
       }
-      return Object.keys(this.data[0]).map((dataKey) => {
+      const columns = Object.keys(dataUtil.omit(this.data[0], this.ignoreColumns))
+      return columns.map((dataKey) => {
         const isDateTime = dataKey.includes('_dt')
         return {
           name: dataKey,
