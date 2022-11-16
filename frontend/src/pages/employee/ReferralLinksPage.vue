@@ -22,70 +22,81 @@
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="current">
           <div class="row">
-            <div class="col-12">
-              <q-table
-                :rows="socialStore.getSocialLinkFilters(authStore.propUser.id)"
-                :columns="linkColumns"
-                row-key="id"
-                :rows-per-page-options="[15, 25, 50]"
-              >
-                <template v-slot:top>
-                  <q-btn ripple color="primary" label="Create new link" @click="tab = 'create'"/>
-                </template>
-                <template v-slot:body="props">
-                  <q-tr :props="props">
-                    <q-td key="platformName" :props="props">
-                      {{ props.row.platform_name || globalStore.nullValueStr }}
-                    </q-td>
-                    <q-td key="departments" :props="props">
-                      <q-chip
-                        v-for="dept in props.row.departments"
-                        dense color="blue-grey-7" text-color="white" size="13px"
-                      >
-                        {{ dept.name }}
-                      </q-chip>
-                      <span v-if="!props.row.departments.length">
-                        {{ globalStore.nullValueAnyStr }}
+            <div
+              v-for="socialLinkFilter in socialStore.getSocialLinkFilters(authStore.propUser.id)"
+              class="col-12 col-md-4 q-pa-sm"
+            >
+              <q-card class="h-100">
+                <div class="row q-pt-sm q-px-xs border-bottom-1-gray-500">
+                  <q-chip
+                    v-for="dept in socialLinkFilter.departments"
+                    dense color="blue-grey-7" text-color="white" size="13px"
+                  >
+                    {{ dept.name }}
+                  </q-chip>
+                  <q-chip v-if="!socialLinkFilter.departments.length" dense size="13px">
+                    Any department
+                  </q-chip>
+                  <q-chip
+                    v-for="loc in getLocations(socialLinkFilter)"
+                    dense :color="loc.color" text-color="white" size="13px"
+                  >
+                    {{ loc.name }}
+                  </q-chip>
+                  <q-chip v-if="!getLocations(socialLinkFilter).length" dense size="13px">
+                    Any location
+                  </q-chip>
+                  <q-space/>
+                  <a
+                    :href="getJobLinkUrl(socialLinkFilter)"
+                    target="_blank"
+                    class="no-decoration"
+                  >
+                      <span class="text-gray-3" title="View jobs page">
+                        <q-icon name="launch" size="24px"/>&nbsp;
                       </span>
-                    </q-td>
-                    <q-td key="locations" :props="props">
-                      <q-chip
-                        v-for="loc in getLocations(props.row)"
-                        dense :color="loc.color" text-color="white" size="13px"
-                      >
-                        {{ loc.name }}
+                  </a>
+                </div>
+                <div class="q-px-md q-pb-sm">
+                  <div>
+                    <div class="q-mb-sm">
+                      <span class="text-bold">Social Links</span> <span class="text-small">(Click to copy)</span>
+                    </div>
+                    <div v-for="socialLink in getSocialLinks(socialLinkFilter)" style="display: inline-block">
+                      <q-chip clickable @click="dataUtil.copyText">
+                        <div class="flex items-center">
+                          <img :src="socialLink.logo" :alt="socialLink.name" style="height: 16px;">
+                          <span class="copy-target" style="display: none;">{{ socialLink.socialLink }}</span>
+                        </div>
                       </q-chip>
-                      <span v-if="!getLocations(props.row).length">
-                        {{ globalStore.nullValueAnyStr }}
-                      </span>
-                    </q-td>
-                    <q-td key="views" :props="props">
-                      {{ props.row.performance.views.total }}
-                    </q-td>
-                    <q-td key="uniqueViews" :props="props">
-                      {{ props.row.performance.views.unique }}
-                    </q-td>
-                    <q-td key="applications" :props="props">
-                      <span v-if="props.row.performance.applications.length">
-                        <a href="#" @click="selectedLinkId = props.row.id">
-                          {{ props.row.performance.applications.length }}
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-bold">Performance</div>
+                    <div class="q-mx-sm q-my-xs" style="display: inline-block;">
+                      <div>{{ socialLinkFilter.performance.views.total }}</div>
+                      <div class="text-small">Total views</div>
+                    </div>
+                    <div class="q-mx-sm q-my-xs" style="display: inline-block;">
+                      <div>{{ socialLinkFilter.performance.views.unique }}</div>
+                      <div class="text-small">Unique views</div>
+                    </div>
+                    <div class="q-mx-sm q-my-xs" style="display: inline-block;">
+                      <div>
+                      <span v-if="socialLinkFilter.performance.applications.length">
+                        <a href="#" @click.prevent="selectedLinkId = socialLinkFilter.id">
+                          {{ socialLinkFilter.performance.applications.length }}
                         </a>
                       </span>
-                      <span v-else>
-                        {{ props.row.performance.applications.length }}
+                        <span v-else>
+                        {{ socialLinkFilter.performance.applications.length }}
                       </span>
-                    </q-td>
-                    <q-td key="link" :props="props">
-                      <a :href="getJobLinkUrl(props.row)" target="_blank" class="no-decoration">
-                        <span class="text-gray-3">
-                          <q-icon name="launch"/>&nbsp;
-                        </span>
-                        {{ getJobLinkUrl(props.row) }}
-                      </a>
-                    </q-td>
-                  </q-tr>
-                </template>
-              </q-table>
+                      </div>
+                      <div class="text-small">Applications</div>
+                    </div>
+                  </div>
+                </div>
+              </q-card>
             </div>
             <div v-if="selectedLinkFilter" class="col-12 q-mt-md">
               <q-table
@@ -121,25 +132,6 @@
                     1
                   </div>
                   <h6 style="display: inline-block;">
-                    (Optional) Select the platform where you will display the link
-                  </h6>
-                  <CustomTooltip :is_include_space="true">
-                    Selecting a platform allows you to analyze the performance of each of your links based on each
-                    platform
-                  </CustomTooltip>
-                </div>
-              </div>
-              <div class="col-12 col-md-6">
-                <SelectPlatform v-model="formData.platform"/>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-12">
-                <div class="flex items-center">
-                  <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
-                    2
-                  </div>
-                  <h6 style="display: inline-block;">
                     (Optional) Add filters for the jobs to display when the link is clicked
                   </h6>
                   <CustomTooltip :is_include_space="true">
@@ -168,7 +160,7 @@
             <div class="row">
               <div class="col-12">
                 <div class="circle bg-gray-300 q-mr-sm" style="display: inline-block;">
-                  3
+                  2
                 </div>
                 <h6 style="display: inline-block;">These are the currently open jobs based on the filter</h6>
               </div>
@@ -232,7 +224,7 @@
                   <h6 class="font-secondary" style="display: inline-block;">
                     Link: <span class="copy-target">{{ getJobLinkUrl() }}</span>&nbsp;
                   </h6>
-                  <span @click="copyText" style="cursor: pointer;">
+                  <span @click="dataUtil.copyText" style="cursor: pointer;">
                     <q-icon name="content_copy"></q-icon>
                     Click to copy
                   </span>
@@ -241,7 +233,7 @@
                   <h6 class="font-secondary" style="display: inline-block;">
                     Suggested short link text: <span class="copy-target">{{ getJobLinkText(true) }}</span>&nbsp;
                   </h6>
-                  <span @click="copyText" style="cursor: pointer;">
+                  <span @click="dataUtil.copyText" style="cursor: pointer;">
                     <q-icon name="content_copy"></q-icon>
                     Click to copy
                   </span>
@@ -250,7 +242,7 @@
                   <h6 class="font-secondary" style="display: inline-block;">
                     Suggested link text: <span class="copy-target">{{ getJobLinkText(false) }}</span>&nbsp;
                   </h6>
-                  <span @click="copyText" style="cursor: pointer;">
+                  <span @click="dataUtil.copyText" style="cursor: pointer;">
                     <q-icon name="content_copy"></q-icon>
                     Click to copy
                   </span>
@@ -272,7 +264,6 @@ import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
-import SelectPlatform from 'components/inputs/SelectPlatform.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import jobsUtil from 'src/utils/jobs.js'
 import locationUtil from 'src/utils/location.js'
@@ -325,7 +316,6 @@ const applicationsColumns = [
 ]
 
 const formDataTemplate = {
-  platform: null,
   departments: null,
   cities: null,
   states: null,
@@ -333,7 +323,7 @@ const formDataTemplate = {
 }
 
 export default {
-  components: { SelectPlatform, SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, PageHeader, CustomTooltip },
+  components: { SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, PageHeader, CustomTooltip },
   data () {
     return {
       formData: { ...formDataTemplate },
@@ -346,17 +336,6 @@ export default {
     }
   },
   computed: {
-    linkColumns () {
-      return [
-        { name: 'platformName', field: 'platform_name', align: 'left', label: 'Platform', sortable: true },
-        { name: 'departments', field: 'departments', align: 'left', label: 'Departments' },
-        { name: 'locations', field: this.getLocations, align: 'left', label: 'Locations' },
-        { name: 'views', field: 'performance.views.total', align: 'center', label: 'Views' },
-        { name: 'uniqueViews', field: 'performance.views.unique', align: 'center', label: 'Unique views' },
-        { name: 'applications', field: 'performance.applications', align: 'center', label: 'Applications' },
-        { name: 'link', field: this.getJobLinkUrl, align: 'left', label: 'Link' }
-      ]
-    },
     selectedLinkFilter () {
       return dataUtil.getForceArray(this.socialStore.socialLinkFilters).find((linkFilter) => linkFilter.id === this.selectedLinkId)
     },
@@ -369,7 +348,6 @@ export default {
     }
   },
   methods: {
-    copyText: dataUtil.copyText.bind(dataUtil),
     getFullLocation: locationUtil.getFullLocation,
     getLocations: locationUtil.getFormattedLocations.bind(locationUtil),
     getJobLinkUrl (jobLink) {
@@ -409,6 +387,20 @@ export default {
       text += '!'
       return text
     },
+    getSocialLinks (jobLink) {
+      return this.platforms.reduce((socialLinks, platform) => {
+        const socialLink = dataUtil.getUrlWithParams({
+          isExcludeExistingParams: true,
+          path: this.getJobLinkUrl(jobLink),
+          addParams: [{ key: 'platform', val: platform.name }]
+        })
+        socialLinks.push(Object.assign(
+          dataUtil.pick(platform, ['name', 'logo']),
+          { socialLink }
+        ))
+        return socialLinks
+      }, [])
+    },
     jobDataFilter (rows) {
       return jobsUtil.filterJobs(this.formData, rows)
     },
@@ -416,7 +408,6 @@ export default {
       const data = {
         owner_id: this.user.id,
         employer_id: this.user.employer_id,
-        platform_id: this.formData?.platform?.id,
         department_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.departments?.map((dept) => dept.id)),
         city_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.cities?.map((city) => city.id)),
         state_ids: dataUtil.getArrayWithValuesOrNone(this.formData?.states?.map((state) => state.id)),
@@ -439,6 +430,7 @@ export default {
 
     return authStore.setUser().then(() => {
       return Promise.all([
+        socialStore.setPlatforms(),
         socialStore.setSocialLinkFilters(authStore.propUser.id),
         employerStore.setEmployer(authStore.propUser.employer_id),
         employerStore.setEmployerJobs(authStore.propUser.employer_id)
@@ -452,6 +444,7 @@ export default {
     const authStore = useAuthStore()
     const utilStore = useUtilStore()
     const { user } = storeToRefs(authStore)
+    const { platforms } = storeToRefs(socialStore)
 
     const pageTitle = 'Referral Links'
     const metaData = {
@@ -460,7 +453,7 @@ export default {
     }
     useMeta(metaData)
 
-    return { socialStore, employerStore, authStore, globalStore, utilStore, user }
+    return { socialStore, employerStore, authStore, globalStore, utilStore, platforms, user }
   }
 }
 </script>

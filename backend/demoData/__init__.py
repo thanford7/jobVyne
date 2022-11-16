@@ -116,11 +116,10 @@ def generate_employer_job(
         job.locations.add(location)
 
 
-def generate_social_link(owner, employer, platform=None, departments=None, cities=None, states=None, countries=None):
+def generate_social_link(owner, employer, departments=None, cities=None, states=None, countries=None):
     link = SocialLinkFilter(
         owner=owner,
-        employer=employer,
-        platform=platform
+        employer=employer
     )
     link.save()
     for department in departments or []:
@@ -191,7 +190,7 @@ def generate_bonus_rule_modifier(
         return modifier
     
     
-def generate_job_application(social_link_filter, job):
+def generate_job_application(social_link_filter, job, platform):
     first_name = names.get_first_name()
     last_name = names.get_last_name()
     email = fake.ascii_free_email()
@@ -204,6 +203,7 @@ def generate_job_application(social_link_filter, job):
             email=email,
             linkedin_url=f'https://www.linkedin.com/in/{first_name}-{last_name}/',
             social_link_filter=social_link_filter,
+            platform=platform,
             employer_job=job,
             created_dt=application_dt,
             modified_dt=application_dt
@@ -215,7 +215,7 @@ def generate_job_application(social_link_filter, job):
     return application
 
 
-def generate_page_view(social_link, access_dt=None):
+def generate_page_view(social_link, platform, access_dt=None):
     ip_address = fake.ipv4_public()
     current_dt = timezone.now()
     lat, long, city, country, state = fake.local_latlng()
@@ -223,6 +223,7 @@ def generate_page_view(social_link, access_dt=None):
     page_view = PageView(
         relative_url=f'social-link-filter/{social_link.id}/',
         social_link_filter=social_link,
+        platform=platform,
         ip_address=ip_address,
         access_dt=access_dt or fake.date_time_between(current_dt - timedelta(days=7), current_dt).replace(tzinfo=pytz.UTC),
         city=city,
@@ -305,7 +306,7 @@ def create_ancillary_data():
                 social_states = list({state for state in choices(states)}) if include_states else None
                 social_country = [choice(countries)] if include_country else None
                 generate_social_link(
-                    user, employer, platform=choice(platforms),
+                    user, employer,
                     departments=social_department, cities=social_cities,
                     states=social_states, countries=social_country
                 )
@@ -332,6 +333,7 @@ def create_ancillary_data():
     
 def create_recurring_data():
     employers = Employer.objects.filter(employer_name__in=('Google', 'Vandelay Industries'))
+    platforms = list(SocialPlatform.objects.all())
     for employer in employers:
         users = JobVyneUser.objects.filter(employer=employer)
         social_link_filters = SocialLinkFilter.objects.filter(owner_id__in=[u.id for u in users])
@@ -341,9 +343,10 @@ def create_recurring_data():
                 continue
             application_count = int(poisson(lam=3.0))
             view_count = int(application_count * randint(10, 100) * random())
+            platform = choice(platforms)
             for _ in range(application_count):
-                generate_job_application(social_link, choice(jobs))
+                generate_job_application(social_link, choice(jobs), platform)
             for _ in range(view_count):
-                generate_page_view(social_link)
+                generate_page_view(social_link, platform)
             
     print('Data creation complete')

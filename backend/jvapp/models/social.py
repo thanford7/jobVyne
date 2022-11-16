@@ -23,7 +23,6 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
-    platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     departments = models.ManyToManyField('JobDepartment')
     cities = models.ManyToManyField('City')
     states = models.ManyToManyField('State')

@@ -29,6 +29,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     social_link_filter = models.ForeignKey(
         'SocialLinkFilter', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
     )
+    platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     employer_job = models.ForeignKey(
         'EmployerJob', on_delete=models.CASCADE, related_name='job_application'
     )

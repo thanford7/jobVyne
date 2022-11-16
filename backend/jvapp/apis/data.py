@@ -44,8 +44,7 @@ class BaseDataView(JobVyneAPIView):
             'link_id': social_link.id,
             'owner_id': social_link.owner_id,
             'owner_first_name': social_link.owner.first_name,
-            'owner_last_name': social_link.owner.last_name,
-            'platform_name': social_link.platform.name if social_link.platform else 'Unknown'
+            'owner_last_name': social_link.owner.last_name
         }
 
 
@@ -69,7 +68,7 @@ class ApplicationsView(BaseDataView):
             if employee_ids_filter := self.filter_by.get('employees'):
                 app_filter &= Q(social_link_filter__owner_id__in=employee_ids_filter)
             if platforms_filter := self.filter_by.get('platforms'):
-                app_filter &= Q(social_link_filter__platform__name__in=platforms_filter)
+                app_filter &= Q(platform__name__in=platforms_filter)
             if job_title_search_filter := self.filter_by.get('jobTitle'):
                 app_filter &= Q(employer_job__job_title__iregex=f'^.*{job_title_search_filter}.*$')
             if name_filter := self.filter_by.get('applicantName'):
@@ -98,7 +97,7 @@ class ApplicationsView(BaseDataView):
                 .annotate(week=TruncWeek('created_dt', tzinfo=self.timezone))\
                 .annotate(month=TruncMonth('created_dt', tzinfo=self.timezone))\
                 .annotate(year=TruncYear('created_dt', tzinfo=self.timezone))\
-                .annotate(platform_name=F('social_link_filter__platform__name')) \
+                .annotate(platform_name=F('platform__name')) \
                 .annotate(owner_id=F('social_link_filter__owner_id')) \
                 .annotate(owner_first_name=F('social_link_filter__owner__first_name')) \
                 .annotate(owner_last_name=F('social_link_filter__owner__last_name')) \
@@ -168,10 +167,10 @@ class ApplicationsView(BaseDataView):
             app_filter &= Q(social_link_filter__owner_id=owner_id)
         job_applications = JobApplication.objects \
             .select_related(
+                'platform',
                 'employer_job',
                 'social_link_filter',
                 'social_link_filter__owner',
-                'social_link_filter__platform'
             ) \
             .prefetch_related(
                 'employer_job__locations',
@@ -187,10 +186,6 @@ class ApplicationsView(BaseDataView):
 class PageViewsView(BaseDataView):
     
     def get(self, request):
-        
-        # social_links = SocialLinkFilterView.get_link_filters(
-        #     self.user, link_filter_filter=q_filter, start_dt=start_dt, end_dt=end_dt, is_use_permissions=False
-        # )
         link_views = self.get_link_views(
             self.user, self.start_dt, self.end_dt,
             employer_id=self.employer_id, owner_id=self.owner_id
@@ -239,8 +234,7 @@ class PageViewsView(BaseDataView):
         views = PageView.objects \
             .select_related(
                 'social_link_filter',
-                'social_link_filter__owner',
-                'social_link_filter__platform'
-            ). \
-            filter(view_filter)
+                'social_link_filter__owner'
+            )\
+            .filter(view_filter)
         return PageView.jv_filter_perm(user, views)

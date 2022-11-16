@@ -19,8 +19,6 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         'owner_id': link_filter.owner_id,
         'employer_name': link_filter.employer.employer_name,
         'employer_id': link_filter.employer_id,
-        'platform_name': link_filter.platform.name if link_filter.platform else None,
-        'platform_id': link_filter.platform_id,
         'departments': [{'name': d.name, 'id': d.id} for d in link_filter.departments.all()],
         'cities': [{'name': c.name, 'id': c.id} for c in link_filter.cities.all()],
         'states': [{'name': s.name, 'id': s.id} for s in link_filter.states.all()],

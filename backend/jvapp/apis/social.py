@@ -87,7 +87,6 @@ class SocialLinkFilterView(JobVyneAPIView):
         if not link_filter.created_dt:
             cfg['owner_id'] = None
             cfg['employer_id'] = None
-            cfg['platform_id'] = None
         set_object_attributes(link_filter, data, cfg)
         permission_type = PermissionTypes.EDIT.value if link_filter.id else PermissionTypes.CREATE.value
         link_filter.jv_check_permission(permission_type, user)
@@ -135,7 +134,7 @@ class SocialLinkFilterView(JobVyneAPIView):
         )
             
         links = SocialLinkFilter.objects\
-            .select_related('employer', 'platform', 'owner')\
+            .select_related('employer', 'owner')\
             .prefetch_related(
                 'departments', 'cities', 'states', 'countries', 'jobs',
                 app_prefetch, page_view_prefetch

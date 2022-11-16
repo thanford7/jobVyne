@@ -13,6 +13,7 @@ class PageView(models.Model, JobVynePermissionsMixin):
     social_link_filter = models.ForeignKey(
         'SocialLinkFilter', on_delete=models.CASCADE, null=True, blank=True, related_name='page_view'
     )
+    platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     
     # Unique characteristics
     ip_address = models.CharField(max_length=20, null=True, blank=True)
