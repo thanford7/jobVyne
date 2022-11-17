@@ -51,3 +51,13 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
             user.id == self.owner_id,
             (user.is_employer and self.employer_id == user.employer_id)
         ))
+
+    def get_unique_key(self):
+        # Make sure to prefetch related fields!
+        departmentIds = tuple(self.departments.all().values_list('id', flat=True).order_by('id'))
+        cityIds = tuple(self.cities.all().values_list('id', flat=True).order_by('id'))
+        stateIds = tuple(self.states.all().values_list('id', flat=True).order_by('id'))
+        countryIds = tuple(self.countries.all().values_list('id', flat=True).order_by('id'))
+        jobIds = tuple(self.jobs.all().values_list('id', flat=True).order_by('id'))
+        return self.owner_id, departmentIds, cityIds, stateIds, countryIds, jobIds
+    

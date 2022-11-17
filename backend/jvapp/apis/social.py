@@ -39,10 +39,14 @@ class SocialLinkFilterView(JobVyneAPIView):
             else:
                 return Response('You must provide an ID, owner ID, or employer ID', status=status.HTTP_400_BAD_REQUEST)
             
-            data = [
-                get_serialized_social_link_filter(lf, is_include_performance=True) for lf
-                in self.get_link_filters(self.user, link_filter_filter=q_filter)
-            ]
+            data = []
+            for link_filter in self.get_link_filters(self.user, link_filter_filter=q_filter):
+                serialized_link_filter = get_serialized_social_link_filter(link_filter, is_include_performance=True)
+                # Only fetch job count for specific user because a database call
+                # is required per link_filter and is not performant
+                if owner_id:
+                    serialized_link_filter['jobs_count'] = len(SocialLinkJobsView.get_jobs_from_filter(link_filter))
+                data.append(serialized_link_filter)
         
         return Response(status=status.HTTP_200_OK, data=data)
     
@@ -83,11 +87,13 @@ class SocialLinkFilterView(JobVyneAPIView):
     @staticmethod
     @atomic
     def create_or_update_link_filter(link_filter, data, user):
+        # Add owner and employer for new link
         cfg = {}
         if not link_filter.created_dt:
             cfg['owner_id'] = None
             cfg['employer_id'] = None
         set_object_attributes(link_filter, data, cfg)
+
         permission_type = PermissionTypes.EDIT.value if link_filter.id else PermissionTypes.CREATE.value
         link_filter.jv_check_permission(permission_type, user)
         link_filter.save()
@@ -106,6 +112,13 @@ class SocialLinkFilterView(JobVyneAPIView):
             
         if job_ids := data.get('job_ids'):
             link_filter.jobs.set(job_ids)
+            
+        existing_filters = {
+            f.get_unique_key() for f in
+            SocialLinkFilterView.get_link_filters(user, link_filter_filter=Q(owner_id=link_filter.owner_id))
+        }
+        if link_filter.get_unique_key() in existing_filters:
+            raise ValueError('A referral link with these filters already exists')
             
     @staticmethod
     def get_link_filters(

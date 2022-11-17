@@ -21,9 +21,15 @@
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="current">
+          <div
+            v-if="!socialLinkFilters.length"
+            class="row"
+          >
+            No referral links. Create your first link.
+          </div>
           <div class="row">
             <div
-              v-for="socialLinkFilter in socialStore.getSocialLinkFilters(authStore.propUser.id)"
+              v-for="socialLinkFilter in socialLinkFilters"
               class="col-12 col-md-4 q-pa-sm"
             >
               <q-card class="h-100">
@@ -47,15 +53,15 @@
                     Any location
                   </q-chip>
                   <q-space/>
-                  <a
-                    :href="getJobLinkUrl(socialLinkFilter)"
-                    target="_blank"
-                    class="no-decoration"
+                  <q-chip
+                    dense clickable
+                    @click="utilStore.redirectUrl(getJobLinkUrl(socialLinkFilter), true)"
+                    icon-right="launch"
+                    size="13px"
                   >
-                      <span class="text-gray-3" title="View jobs page">
-                        <q-icon name="launch" size="24px"/>&nbsp;
-                      </span>
-                  </a>
+                    <q-avatar color="primary" text-color="white" size="20px">{{ socialLinkFilter.jobs_count }}</q-avatar>
+                    &nbsp;Open jobs
+                  </q-chip>
                 </div>
                 <div class="q-px-md q-pb-sm">
                   <div>
@@ -296,6 +302,11 @@ export default {
       tab: 'current',
       jobColumns,
       dataUtil
+    }
+  },
+  computed: {
+    socialLinkFilters () {
+      return this.socialStore.getSocialLinkFilters(this.authStore.propUser.id)
     }
   },
   methods: {

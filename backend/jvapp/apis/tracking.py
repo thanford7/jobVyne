@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from user_agents import parse
 
-from jvapp.models import PageView
+from jvapp.models import PageView, SocialPlatform
 from jvapp.utils.logger import getLogger
 
 __all__ = ('PageTrackView',)
@@ -37,6 +37,9 @@ class PageTrackView(APIView):
         page_view = PageView()
         page_view.relative_url = request.data['relative_url']
         page_view.social_link_filter_id = request.data.get('filter_id')
+        params = request.data.get('query') or {}
+        if platform_name := params.get('platform'):
+            page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)
         
         page_view.ip_address = parse_ip_address(meta.get('HTTP_X_FORWARDED_FOR')) or parse_ip_address(meta.get('REMOTE_ADDR'))
         logger.info(f'IP Address: {page_view.ip_address}')

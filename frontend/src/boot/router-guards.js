@@ -34,7 +34,8 @@ export default boot(({ app, router }) => {
     if (to.meta.trackRoute) {
       $api.post('/page-view/', getAjaxFormData({
         relative_url: to.path,
-        filter_id: to.params.filterId
+        filter_id: to.params.filterId,
+        query: to.query
       }))
     }
 

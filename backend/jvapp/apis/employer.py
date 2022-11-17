@@ -278,10 +278,10 @@ class EmployerJobView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_employer_jobs(employer_job_id=None, employer_job_filter=None, order_by='-open_date', isIncludeClosed=False):
+    def get_employer_jobs(employer_job_id=None, employer_job_filter=None, order_by='-open_date', is_include_closed=False):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
-        elif not isIncludeClosed:
+        elif not is_include_closed:
             employer_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
         
         jobs = EmployerJob.objects\
