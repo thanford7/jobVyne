@@ -93,7 +93,7 @@
             title="Jobs link" class="content-expansion"
             :is-include-separator="false"
           >
-            <SelectJobLink v-model="formData.jobLink" :is-required="true" :platform-filter="[platform.name]">
+            <SelectJobLink v-model="formData.jobLink" :is-required="true" :platform-name="platform.name">
               <template v-slot:after>
                 <q-btn
                   unelevated ripple color="primary" stretch
@@ -218,7 +218,7 @@ export default {
         this.formData.content && this.formData.content.length &&
         this.formData.content.includes(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK) &&
         (this.isTemplate || this.isEmployer || this.formData.jobLink) &&
-        (!this.platformCfg || this.formData.formatted_content.length <= this.platformCfg.characterLimit)
+        (!this.platformCfg || (this.formData?.formatted_content?.length || 0) <= this.platformCfg.characterLimit)
       )
     },
     validationHelpText () {

@@ -91,8 +91,16 @@ export default {
       let formattedContent = this.content
         .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, this.employer.name)
       if (this.jobLink) {
+        let jobLinkUrl = `${window.location.origin}/jobs-link/${this.jobLink.id}`
+        if (this.jobLink.platformName) {
+          jobLinkUrl = dataUtil.getUrlWithParams({
+            isExcludeExistingParams: true,
+            path: jobLinkUrl,
+            addParams: [{ key: 'platform', val: this.jobLink.platformName }]
+          })
+        }
         formattedContent = formattedContent
-          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, `${window.location.origin}/jobs-link/${this.jobLink.id}`)
+          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, jobLinkUrl)
           .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST, this.jobTitles.map((j) => `- ${j}`).join('\n'))
       }
       return formattedContent

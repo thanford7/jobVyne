@@ -13,7 +13,7 @@
           v-if="post.employer_id"
           v-model="formData.jobLink"
           :is-required="true"
-          :platform-filter="[post.platform.name]"
+          :platform-name="post.platform.name"
         />
       </div>
       <div class="col-12">

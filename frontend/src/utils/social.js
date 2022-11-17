@@ -18,11 +18,11 @@ class SocialUtil {
   }
 
   getLinkTextDescription (jobsLink) {
-    let text = jobsLink.platform_name || '[No platform]'
+    let text = ''
     if (jobsLink.departments.length) {
-      text += `|${jobsLink.departments.map((d) => d.name).join(', ')}`
+      text += `${jobsLink.departments.map((d) => d.name).join(', ')}`
     } else {
-      text += '|[Any department]'
+      text += '[Any department]'
     }
     const locations = locationUtil.getFormattedLocations(jobsLink)
     if (locations.length) {

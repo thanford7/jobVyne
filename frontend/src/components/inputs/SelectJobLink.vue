@@ -2,54 +2,46 @@
   <q-select
     v-if="isLoaded"
     ref="select"
-    filled use-input
-    v-model="selectedLink"
-    @update:model-value="emitModelValue"
+    filled
     :options="socialLinks"
-    autocomplete="platformName"
-    @filter="filterLinks"
     option-value="id"
-    option-label="platformName"
     label="Job link"
     :rules="rules"
   >
     <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
-      <BaseExpansionItem :title="opt.platformName">
         <q-item
-          v-for="link in opt.platformLinks"
-          v-bind="getOptionProps(itemProps)"
+          v-bind="itemProps"
           :active="selected"
           class="bg-hover"
-          @click="toggleOption(link)"
+          @click="toggleOption(opt)"
         >
           <div>
             <q-chip
-              v-for="dept in link.departments"
+              v-for="dept in opt.departments"
               dense color="blue-grey-7" text-color="white" size="13px"
             >
               {{ dept.name }}
             </q-chip>
             <q-chip
-              v-if="!link.departments.length"
+              v-if="!opt.departments.length"
               dense color="blue-grey-7" text-color="white" size="13px"
             >
               Departments: {{ globalStore.nullValueAnyStr }}
             </q-chip>
             <q-chip
-              v-for="loc in locationUtil.getFormattedLocations(link)"
+              v-for="loc in locationUtil.getFormattedLocations(opt)"
               dense :color="loc.color" text-color="white" size="13px"
             >
               {{ loc.name }}
             </q-chip>
             <q-chip
-              v-if="!locationUtil.getFormattedLocations(link).length"
+              v-if="!locationUtil.getFormattedLocations(opt).length"
               dense color="blue-grey-7" text-color="white" size="13px"
             >
               Locations: {{ globalStore.nullValueAnyStr }}
             </q-chip>
           </div>
         </q-item>
-      </BaseExpansionItem>
     </template>
     <template v-slot:selected-item="{ opt, removeAtIndex, tabindex, index }">
       <q-chip
@@ -68,8 +60,6 @@
 </template>
 
 <script>
-import BaseExpansionItem from 'components/BaseExpansionItem.vue'
-import dataUtil from 'src/utils/data.js'
 import locationUtil from 'src/utils/location.js'
 import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -78,25 +68,19 @@ import { useSocialStore } from 'stores/social-store.js'
 
 export default {
   name: 'SelectJobLink',
-  components: { BaseExpansionItem },
   props: {
-    isEmitIdOnly: {
-      type: Boolean,
-      default: false
-    },
     isRequired: {
       type: Boolean,
       default: false
     },
-    platformFilter: { // If provided, only links for these platforms will be shown
-      type: [Array, null]
+    platformName: {
+      type: String
     }
   },
   data () {
     return {
       isLoaded: false,
       filterTxt: null,
-      selectedLink: null,
       socialStore: null,
       authStore: null,
       globalStore: null,
@@ -114,36 +98,10 @@ export default {
       ]
     },
     socialLinks () {
-      let links = this.socialStore.getSocialLinkFilters(this.authStore.propUser.id)
-      links = links.filter((link) => !this.platformFilter || this.platformFilter.includes(link.platform_name))
-      links = Object.entries(dataUtil.groupBy(links, 'platform_name')).map(([platformName, platformLinks]) => {
-        return {
-          platformName: (platformName === 'null') ? this.globalStore.nullValueStr : platformName,
-          platformLinks
-        }
+      return this.socialStore.getSocialLinkFilters(this.authStore.propUser.id).map((link) => {
+        link.platformName = this.platformName
+        return link
       })
-      dataUtil.sortBy(links, 'platformName', true)
-      if (!this.filterTxt || this.filterTxt === '') {
-        return links
-      }
-      const filterRegex = new RegExp(`.*?${this.filterTxt}.*?`, 'i')
-      return links.filter((l) => l.platformName && l.platformName.match(filterRegex))
-    }
-  },
-  methods: {
-    filterLinks (filterTxt, update) {
-      update(() => {
-        this.filterTxt = filterTxt
-      })
-    },
-    emitModelValue (value) {
-      if (this.isEmitIdOnly) {
-        value = (value && value.length) ? value.map(v => v.id) : value
-      }
-      this.$emit('update:model-value', value)
-    },
-    getOptionProps (itemProps) {
-      return dataUtil.omit(itemProps, ['id', 'onClick', 'onMousemove'])
     }
   },
   async mounted () {
