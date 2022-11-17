@@ -3,7 +3,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from jvapp.models import EmployerAuthGroup, JobVyneUser, UserEmployerPermissionGroup
+from jvapp.apis.social import SocialLinkFilterView
+from jvapp.models import EmployerAuthGroup, JobVyneUser, SocialLinkFilter, UserEmployerPermissionGroup
 from jvapp.models.employer import is_default_auth_group
 
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
@@ -70,3 +71,22 @@ def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
                 )
 
     UserEmployerPermissionGroup.objects.bulk_create(groups_to_add, ignore_conflicts=True)
+    
+
+@receiver(post_save, sender=JobVyneUser)
+def generate_primary_social_link(sender, instance, *args, **kwargs):
+    # User must be associated with an employer to have a social link
+    if not instance.employer_id:
+        return
+    
+    try:
+        # Check if primary link already exists
+        SocialLinkFilter.objects.get(owner_id=instance.id, is_primary=True)
+    except SocialLinkFilter.DoesNotExist:
+        SocialLinkFilterView.create_or_update_link_filter(
+            SocialLinkFilter(is_primary=True), {
+                'owner_id': instance.id,
+                'employer_id': instance.employer_id,
+                'is_default': True
+            }
+        )

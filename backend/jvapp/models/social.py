@@ -21,6 +21,10 @@ class SocialPlatform(models.Model):
 class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     # Make ID random so people can't randomly guess a unique filter link
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # The primary social link filter is auto generated when a user is created
+    is_primary = models.BooleanField(default=False, blank=True)
+    # The default social link filter is used to auto-populate forms
+    is_default = models.BooleanField(default=False, blank=True)
     owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
     departments = models.ManyToManyField('JobDepartment')
@@ -30,7 +34,7 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     jobs = models.ManyToManyField('EmployerJob')
     
     class Meta:
-        ordering = ('-modified_dt',)
+        ordering = ('-is_default', '-modified_dt')
     
     @classmethod
     def _jv_filter_perm_query(cls, user, query):

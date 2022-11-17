@@ -7,14 +7,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 
-from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
 from jvapp.apis.employer import EmployerJobView, EmployerView
 from jvapp.models import JobApplication, JobVyneUser, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
 from jvapp.serializers.social import *
-from jvapp.utils.data import set_object_attributes
+from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 __all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView')
 
@@ -52,11 +52,20 @@ class SocialLinkFilterView(JobVyneAPIView):
     
     def post(self, request):
         newLink = SocialLinkFilter()
-        self.create_or_update_link_filter(newLink, self.data, self.user)
-        
-        # Need to refetch to get associated objects
-        newLink = self.get_link_filters(self.user, link_filter_id=newLink.id)
-        return Response(status=status.HTTP_200_OK, data=get_serialized_social_link_filter(newLink))
+        is_duplicate = self.create_or_update_link_filter(newLink, self.data, self.user)
+        if is_duplicate and not self.data.get('is_default'):
+            data = {
+                WARNING_MESSAGES_KEY: ['A referral link with these filters already exists']
+            }
+        elif is_duplicate:
+            data = {
+                SUCCESS_MESSAGE_KEY: 'A referral link with these filters already exists. The default property was updated'
+            }
+        else:
+            data = {
+                SUCCESS_MESSAGE_KEY: 'Created a new referral link'
+            }
+        return Response(status=status.HTTP_200_OK, data=data)
     
     def put(self, request):
         if not (link_filter_id := self.data.get('link_filter_id')):
@@ -65,8 +74,9 @@ class SocialLinkFilterView(JobVyneAPIView):
         self.create_or_update_link_filter(link, self.data, self.user)
 
         # Need to refetch to get associated objects
-        link = self.get_link_filters(self.user, link_filter_id=link_filter_id)
-        return Response(status=status.HTTP_200_OK, data=get_serialized_social_link_filter(link))
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'The referral link was successfully updated'
+        })
     
     @atomic
     def delete(self, request):
@@ -86,16 +96,27 @@ class SocialLinkFilterView(JobVyneAPIView):
         
     @staticmethod
     @atomic
-    def create_or_update_link_filter(link_filter, data, user):
+    def create_or_update_link_filter(link_filter, data, user=None):
+        """ Create or update a link filter.
+        :return {bool}: If True, the link filter is a duplicate
+        """
         # Add owner and employer for new link
-        cfg = {}
-        if not link_filter.created_dt:
-            cfg['owner_id'] = None
-            cfg['employer_id'] = None
+        cfg = {
+            'is_default': AttributeCfg(is_ignore_excluded=True)
+        }
+        is_new = not link_filter.created_dt
+        if is_new:
+            cfg = {
+                'owner_id': None,
+                'employer_id': None,
+                **cfg
+            }
+            
         set_object_attributes(link_filter, data, cfg)
-
-        permission_type = PermissionTypes.EDIT.value if link_filter.id else PermissionTypes.CREATE.value
-        link_filter.jv_check_permission(permission_type, user)
+        
+        if user:
+            permission_type = PermissionTypes.EDIT.value if link_filter.id else PermissionTypes.CREATE.value
+            link_filter.jv_check_permission(permission_type, user)
         link_filter.save()
         
         if department_ids := data.get('department_ids'):
@@ -112,13 +133,28 @@ class SocialLinkFilterView(JobVyneAPIView):
             
         if job_ids := data.get('job_ids'):
             link_filter.jobs.set(job_ids)
-            
+        
+        # Make sure this isn't a duplicate filter
         existing_filters = {
-            f.get_unique_key() for f in
-            SocialLinkFilterView.get_link_filters(user, link_filter_filter=Q(owner_id=link_filter.owner_id))
+            f.get_unique_key(): f for f in
+            SocialLinkFilterView.get_link_filters(
+                user, link_filter_filter=Q(owner_id=link_filter.owner_id), is_use_permissions=False
+            ) if f.id != link_filter.id
         }
-        if link_filter.get_unique_key() in existing_filters:
-            raise ValueError('A referral link with these filters already exists')
+        existing_filter = existing_filters[link_filter.get_unique_key()]
+        if existing_filter:
+            # If this is a new filter, we don't have to worry about FK associations (e.g. job applications) and
+            # can just delete the new filter to prevent a duplicate
+            if is_new:
+                existing_filter.is_default = link_filter.is_default
+                existing_filter.is_primary = link_filter.is_primary
+                existing_filter.save()
+                link_filter.delete()
+            else:
+                raise ValueError('A referral link with these filters already exists')
+            return True
+        
+        return False
             
     @staticmethod
     def get_link_filters(
