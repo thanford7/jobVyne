@@ -49,7 +49,7 @@
                   </template>
                   The default referral link will be used to auto-populate links for posts you create.
                 </CustomTooltip>
-                <div class="row q-pt-sm q-px-xs border-bottom-1-gray-500">
+                <div class="row q-pt-sm q-px-xs border-bottom-1-gray-100">
                   <q-chip
                     v-for="dept in socialLinkFilter.departments"
                     dense color="blue-grey-7" text-color="white" size="13px"
@@ -118,6 +118,13 @@
                     </div>
                   </div>
                 </div>
+                <q-card-actions class="border-top-1-gray-100">
+                  <q-btn
+                    v-if="!socialLinkFilter.is_default"
+                    icon="star" label="Set default" dense ripple color="grey-6"
+                    @click="setDefaultLink(socialLinkFilter)"
+                  />
+                </q-card-actions>
               </q-card>
             </div>
           </div>
@@ -371,6 +378,13 @@ export default {
     },
     jobDataFilter (rows) {
       return jobsUtil.filterJobs(this.formData, rows)
+    },
+    async setDefaultLink (jobLink) {
+      await this.$api.put('social-link-filter/', getAjaxFormData({
+        link_filter_id: jobLink.id,
+        is_default: true
+      }))
+      await this.socialStore.setSocialLinkFilters(this.user.id, true)
     },
     async saveLink () {
       const data = {

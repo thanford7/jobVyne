@@ -65,6 +65,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             data = {
                 SUCCESS_MESSAGE_KEY: 'Created a new referral link'
             }
+        data['id'] = newLink.id
         return Response(status=status.HTTP_200_OK, data=data)
     
     def put(self, request):
@@ -133,15 +134,23 @@ class SocialLinkFilterView(JobVyneAPIView):
             
         if job_ids := data.get('job_ids'):
             link_filter.jobs.set(job_ids)
-        
-        # Make sure this isn't a duplicate filter
+            
         existing_filters = {
             f.get_unique_key(): f for f in
             SocialLinkFilterView.get_link_filters(
                 user, link_filter_filter=Q(owner_id=link_filter.owner_id), is_use_permissions=False
             ) if f.id != link_filter.id
         }
-        existing_filter = existing_filters[link_filter.get_unique_key()]
+        
+        # Remove default flag from previous filters
+        if link_filter.is_default:
+            for filter in existing_filters.values():
+                if filter.is_default:
+                    filter.is_default = False
+                    filter.save()
+
+        # Make sure this isn't a duplicate filter
+        existing_filter = existing_filters.get(link_filter.get_unique_key())
         if existing_filter:
             # If this is a new filter, we don't have to worry about FK associations (e.g. job applications) and
             # can just delete the new filter to prevent a duplicate
