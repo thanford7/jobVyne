@@ -26,6 +26,7 @@
     "rollup": "^2.0.0",
     "sanitize-html": "^2.7.1",
     "tiny-emitter": "^2.1.0",
+    "truncate-html": "^1.0.4",
     "v-money": "^0.8.1",
     "vite": "^2.0.0",
     "vue": "^3.0.0",

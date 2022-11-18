@@ -58,7 +58,7 @@
                           <div v-if="getJobApplication(job.id)" class="application-date" :style="getHeaderStyle()">
                             Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
                           </div>
-                          <q-card-section>
+                          <q-card-section class="q-pb-none">
                             <h6 class="q-mb-none">{{ job.job_title }}</h6>
                             <div class="text-grey-7 q-mb-sm">
                               Posted on: {{ dateTimeUtil.getShortDate(job.open_date) }}
@@ -101,7 +101,26 @@
                               </q-chip>
                             </div>
                             <q-separator class="q-mt-sm"/>
-                            <div class="q-pa-sm" v-html="formUtil.sanitizeHtml(job.job_description)"></div>
+                            <div
+                              class="q-px-sm q-pt-sm"
+                              v-html="(job.isShowFullDescription) ? formUtil.sanitizeHtml(job.job_description) : truncate(formUtil.sanitizeHtml(job.job_description), jobDescriptionCharacterLimit)"
+                            ></div>
+                            <template v-if="truncate(formUtil.sanitizeHtml(job.job_description), jobDescriptionCharacterLimit) !== truncate(formUtil.sanitizeHtml(job.job_description), 999999999)">
+                              <div>
+                                <a
+                                  v-if="!job.isShowFullDescription"
+                                  href="#" @click.prevent="job.isShowFullDescription = true"
+                                >
+                                  Show full job description
+                                </a>
+                                <a
+                                  v-else
+                                  href="#" @click.prevent="job.isShowFullDescription = false"
+                                >
+                                  Reduce job description
+                                </a>
+                              </div>
+                            </template>
                           </q-card-section>
                           <q-separator dark/>
                           <q-card-actions v-if="!getJobApplication(job.id)">
@@ -221,11 +240,15 @@ import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import dateTimeUtil from 'src/utils/datetime'
 import { storeToRefs } from 'pinia/dist/pinia'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
+import truncate from 'truncate-html'
+
+truncate.setup({ reserveLastWord: true })
 
 export default {
   data () {
     return {
       tab: this.$route?.params?.tab || 'jobs',
+      jobDescriptionCharacterLimit: 1000,
       jobs: null,
       employer: null,
       employerPage: null,
@@ -239,7 +262,8 @@ export default {
       dataUtil,
       dateTimeUtil,
       formUtil,
-      locationUtil
+      locationUtil,
+      truncate
     }
   },
   components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter },
