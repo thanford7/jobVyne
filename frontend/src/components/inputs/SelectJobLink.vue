@@ -2,6 +2,8 @@
   <q-select
     v-if="isLoaded"
     ref="select"
+    :model-value="modelValue"
+    @update:model-value="$emit('update:model-value', $event)"
     filled
     :options="socialLinks"
     option-value="id"
@@ -60,6 +62,7 @@
 </template>
 
 <script>
+import dataUtil from 'src/utils/data.js'
 import locationUtil from 'src/utils/location.js'
 import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -69,6 +72,7 @@ import { useSocialStore } from 'stores/social-store.js'
 export default {
   name: 'SelectJobLink',
   props: {
+    modelValue: [Object, null],
     isRequired: {
       type: Boolean,
       default: false
@@ -80,10 +84,6 @@ export default {
   data () {
     return {
       isLoaded: false,
-      filterTxt: null,
-      socialStore: null,
-      authStore: null,
-      globalStore: null,
       locationUtil,
       socialUtil
     }
@@ -105,15 +105,29 @@ export default {
     }
   },
   async mounted () {
-    this.socialStore = useSocialStore()
-    this.authStore = useAuthStore()
-    this.globalStore = useGlobalStore()
     await this.authStore.setUser().then(() => {
       return Promise.all([
         this.socialStore.setSocialLinkFilters(this.authStore.propUser.id)
       ])
     })
+    this.socialLinks = this.socialStore.getSocialLinkFilters(this.authStore.propUser.id).map((link) => {
+      link.platformName = this.platformName
+      return link
+    })
+
+    // If a value is required and none is populated, use the default link
+    if ((!this.modelValue || dataUtil.isEmpty(this.modelValue)) && this.isRequired) {
+      const defaultLink = this.socialLinks.find((link) => link.is_default)
+      this.$emit('update:model-value', defaultLink)
+    }
     this.isLoaded = true
+  },
+  setup () {
+    return {
+      socialStore: useSocialStore(),
+      authStore: useAuthStore(),
+      globalStore: useGlobalStore()
+    }
   }
 }
 </script>

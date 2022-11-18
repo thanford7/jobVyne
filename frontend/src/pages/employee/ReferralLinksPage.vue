@@ -32,7 +32,23 @@
               v-for="socialLinkFilter in socialLinkFilters"
               class="col-12 col-md-4 q-pa-sm"
             >
-              <q-card class="h-100">
+              <q-card class="h-100" style="position: relative">
+                <CustomTooltip
+                  v-if="socialLinkFilter.is_default"
+                  :is_include_icon="false"
+                  style="position: absolute; top: 0; left: 0; transform: translateX(-5%) translateY(-60%);"
+                >
+                  <template v-slot:content>
+                    <q-chip
+                      v-if="socialLinkFilter.is_default"
+                      square dense color="secondary" text-color="white"
+                    >
+                      <q-icon name="star"/>&nbsp;
+                      Default
+                    </q-chip>
+                  </template>
+                  The default referral link will be used to auto-populate links for posts you create.
+                </CustomTooltip>
                 <div class="row q-pt-sm q-px-xs border-bottom-1-gray-500">
                   <q-chip
                     v-for="dept in socialLinkFilter.departments"
