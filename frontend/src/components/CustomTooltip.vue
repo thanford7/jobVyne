@@ -5,7 +5,7 @@
     <slot name="icon">
       <q-icon v-if="is_include_icon" :class="icon_color_class" tag="span" name="help_outline" :size="icon_size"/>
     </slot>
-    <q-tooltip :class="color_class" style="font-size: 14px;" max-width="500px">
+    <q-tooltip class="border-1-gray-300" :class="color_class" style="font-size: 14px;" max-width="500px">
       <slot/>
     </q-tooltip>
   </div>

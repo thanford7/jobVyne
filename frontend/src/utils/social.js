@@ -1,3 +1,4 @@
+import dataUtil from 'src/utils/data.js'
 import { FILE_TYPES } from 'src/utils/file.js'
 import locationUtil from 'src/utils/location.js'
 
@@ -31,6 +32,25 @@ class SocialUtil {
       text += '|[Any location]'
     }
     return text
+  }
+
+  getJobLinkUrl (jobLink) {
+    return `${window.location.origin}/jobs-link/${jobLink.id}`
+  }
+
+  getSocialLinks (platforms, jobLink) {
+    return platforms.reduce((socialLinks, platform) => {
+      const socialLink = dataUtil.getUrlWithParams({
+        isExcludeExistingParams: true,
+        path: this.getJobLinkUrl(jobLink),
+        addParams: [{ key: 'platform', val: platform.name }]
+      })
+      socialLinks.push(Object.assign(
+        dataUtil.pick(platform, ['name', 'logo']),
+        { socialLink }
+      ))
+      return socialLinks
+    }, [])
   }
 }
 

@@ -71,7 +71,7 @@
                   <q-space/>
                   <q-chip
                     dense clickable
-                    @click="utilStore.redirectUrl(getJobLinkUrl(socialLinkFilter), true)"
+                    @click="utilStore.redirectUrl(socialUtil.getJobLinkUrl(socialLinkFilter), true)"
                     icon-right="launch"
                     size="13px"
                   >
@@ -84,7 +84,7 @@
                     <div class="q-mb-sm">
                       <span class="text-bold">Social Links</span> <span class="text-small">(Click to copy)</span>
                     </div>
-                    <div v-for="socialLink in getSocialLinks(socialLinkFilter)" style="display: inline-block">
+                    <div v-for="socialLink in socialUtil.getSocialLinks(platforms, socialLinkFilter)" style="display: inline-block">
                       <q-chip clickable @click="dataUtil.copyText">
                         <div class="flex items-center">
                           <img :src="socialLink.logo" :alt="socialLink.name" style="height: 16px;">
@@ -221,7 +221,7 @@
               <div class="col-12">
                 <div class="flex items-center">
                   <h6 class="font-secondary" style="display: inline-block;">
-                    Link: <span class="copy-target">{{ getJobLinkUrl() }}</span>&nbsp;
+                    Link: <span class="copy-target">{{ socialUtil.getJobLinkUrl({ id: linkId }) }}</span>&nbsp;
                   </h6>
                   <span @click="dataUtil.copyText" style="cursor: pointer;">
                     <q-icon name="content_copy"></q-icon>
@@ -268,6 +268,7 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import jobsUtil from 'src/utils/jobs.js'
 import locationUtil from 'src/utils/location.js'
 import { getAjaxFormData } from 'src/utils/requests'
+import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store'
 import { useEmployerStore } from 'stores/employer-store'
 import { useSocialStore } from 'stores/social-store'
@@ -317,7 +318,8 @@ export default {
       selectedLinkId: null, // Used to drill into application details
       tab: 'current',
       jobColumns,
-      dataUtil
+      dataUtil,
+      socialUtil
     }
   },
   computed: {
@@ -333,10 +335,6 @@ export default {
         component: DialogShowDataTable,
         componentProps: { data: socialLinkFilter.performance.applications, ignoreColumns: ['id'] }
       })
-    },
-    getJobLinkUrl (jobLink) {
-      const id = (jobLink) ? jobLink.id : this.linkId
-      return `${window.location.origin}/jobs-link/${id}`
     },
     getJobLinkName (defaultName = null, { departments, cities, states, countries }) {
       let jobLinkName = ''
@@ -370,20 +368,6 @@ export default {
 
       text += '!'
       return text
-    },
-    getSocialLinks (jobLink) {
-      return this.platforms.reduce((socialLinks, platform) => {
-        const socialLink = dataUtil.getUrlWithParams({
-          isExcludeExistingParams: true,
-          path: this.getJobLinkUrl(jobLink),
-          addParams: [{ key: 'platform', val: platform.name }]
-        })
-        socialLinks.push(Object.assign(
-          dataUtil.pick(platform, ['name', 'logo']),
-          { socialLink }
-        ))
-        return socialLinks
-      }, [])
     },
     jobDataFilter (rows) {
       return jobsUtil.filterJobs(this.formData, rows)
