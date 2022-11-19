@@ -53,7 +53,7 @@
         </CustomTooltip>
       </div>
       <template v-if="employer">
-        <SelectEmployee v-model="formData.owner_id" :employer-id="employer.id" :is-multi="false"/>
+        <SelectEmployee v-model="formData.account_owner_id" :employer-id="employer.id" :is-multi="false"/>
       </template>
       <template v-else>
         <q-input

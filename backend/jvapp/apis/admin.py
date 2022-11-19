@@ -90,7 +90,7 @@ class AdminEmployerView(JobVyneAPIView):
             subscription.status = subscription_status or subscription.status
             subscription.save()
             
-        if owner_id := self.data.get('owner_id'):
+        if owner_id := self.data.get('account_owner_id'):
             new_account_owner = UserView.get_user(self.user, user_id=owner_id)
             account_owner = EmployerView.get_employer_account_owner(employer)
             if account_owner and new_account_owner != account_owner:
@@ -152,22 +152,23 @@ class AdminEmployerView(JobVyneAPIView):
             'employer_name': AttributeCfg(form_name='name'),
             'email_domains': None
         })
-        employer.logo = files.get('logo')[0] if files.get('logo') else None
+        
+        if 'logo' in files:
+            employer.logo = files.get('logo')[0] if files.get('logo') else None
         employer.save()
     
     @staticmethod
     def assign_employer_admin_permission(user, employer):
         admin_group = EmployerAuthGroup.objects.get(employer_id=None, name='Admin')
-        try:
+        user_admin_group_ids = {g.permission_group_id for g in user.employer_permission_group.all()}
+        # Only assign permission if user doesn't have it already
+        if admin_group.id not in user_admin_group_ids:
             UserEmployerPermissionGroup(
                 user=user,
                 employer=employer,
                 permission_group=admin_group,
                 is_employer_approved=True
             ).save()
-        except IntegrityError:
-            # User already has the admin permission
-            pass
 
 
 class AdminUserView(JobVyneAPIView):
