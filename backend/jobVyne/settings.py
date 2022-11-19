@@ -296,7 +296,7 @@ else:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # SQL Logging
-if env('SQL_LOG', cast=bool, default=None):
+if env('SQL_LOG', cast=bool, default=False):
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -336,7 +336,12 @@ GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'  # This is for location lookup of a
 GOOGLE_MAPS_KEY = env('GOOGLE_MAPS_KEY')  # This is for reverse geolocation lookup
 
 # Stripe payments
-STRIPE_PRIVATE_KEY = env('STRIPE_PRIVATE_KEY')
-STRIPE_WEBHOOK_PRIVATE_KEY = env('STRIPE_WEBHOOK_PRIVATE_KEY')
+IS_STRIPE_LIVE = env('IS_STRIPE_LIVE', cast=bool, default=False)
+if IS_STRIPE_LIVE:
+    STRIPE_PRIVATE_KEY = env('STRIPE_LIVE_PRIVATE_KEY')
+    STRIPE_WEBHOOK_PRIVATE_KEY = env('STRIPE_LIVE_WEBHOOK_PRIVATE_KEY')
+else:
+    STRIPE_PRIVATE_KEY = env('STRIPE_PRIVATE_KEY')
+    STRIPE_WEBHOOK_PRIVATE_KEY = env('STRIPE_WEBHOOK_PRIVATE_KEY')
 
 # CELERY_BROKER_URL = 'pyamqp://rabbitmq:5672'

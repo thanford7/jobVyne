@@ -58,6 +58,7 @@ urlpatterns = [
     path('billing/invoice/', stripe.StripeInvoiceView.as_view()),
     path('billing/invoice-pay/', stripe.StripePayInvoiceView.as_view()),
     path('billing/product/', stripe.StripeProductView.as_view()),
+    path('billing/test-status/', stripe.StripeTestStatus.as_view()),
     path('billing/setup/', stripe.StripeSetupIntentView.as_view()),
     re_path('^billing/subscription/((?P<subscription_id>\S+)/)?$', stripe.StripeSubscriptionView.as_view()),
     path('billing/webhooks/', stripe.StripeWebhooksView.as_view()),

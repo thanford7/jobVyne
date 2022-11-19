@@ -120,7 +120,10 @@ export default {
     uniqueCount++
     this.billingStore = useBillingStore()
     const authStore = useAuthStore()
-    await authStore.setUser()
+    await Promise.all([
+      authStore.setUser(),
+      this.billingStore.setIsPaymentLive()
+    ])
     const employerId = authStore.propUser.employer_id
     if (!this.invoice) {
       await this.billingStore.setEmployerPaymentSetup(employerId)
@@ -128,8 +131,10 @@ export default {
     } else {
       this.paymentSetupKey = this.invoice.payment_intent.client_secret
     }
+
+    const stripeKey = (this.billingStore.isLive) ? process.env.STRIPE_LIVE_PUBLIC_KEY : process.env.STRIPE_PUBLIC_KEY
     await loadScript(STRIPE_SCRIPT).then(() => {
-      this.stripe = window.Stripe(process.env.STRIPE_PUBLIC_KEY)
+      this.stripe = window.Stripe(stripeKey)
       this.setupStripePaymentDom()
     })
   }

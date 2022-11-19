@@ -267,6 +267,12 @@ class StripeProductView(JobVyneAPIView):
             lower_count = tier['up_to']
         
         return tiers
+    
+    
+class StripeTestStatus(StripeBaseView):
+    
+    def get(self, request):
+        return Response(status=status.HTTP_200_OK, data={'is_live': settings.IS_STRIPE_LIVE})
 
 
 class StripeSubscriptionView(StripeBaseView):
@@ -451,7 +457,7 @@ class StripeWebhooksView(APIView):
         except stripe.error.SignatureVerificationError as e:
             raise e
             
-            # Handle the event
+        # Handle the event
         if event['type'] in ('customer.subscription.updated', 'customer.subscription.deleted'):
             # No need to handle 'customer.subscription.created' event because we update
             # The subscription status when we make the API call
@@ -459,32 +465,6 @@ class StripeWebhooksView(APIView):
             jv_subscription = EmployerSubscription.objects.get(stripe_key=subscription.id)
             jv_subscription.status = subscription.status
             jv_subscription.save()
-        elif event['type'] == 'invoice.created':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.deleted':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.finalization_failed':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.finalized':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.marked_uncollectible':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.paid':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.payment_action_required':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.payment_failed':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.payment_succeeded':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.sent':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.upcoming':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.updated':
-            invoice = event['data']['object']
-        elif event['type'] == 'invoice.voided':
-            invoice = event['data']['object']
         elif event['type'] == 'payment_intent.succeeded':
             payment_intent = event['data']['object']
             self.update_payment_method(payment_intent.customer, payment_intent.payment_method)

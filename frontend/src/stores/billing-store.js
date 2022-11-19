@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
+import dataUtil from 'src/utils/data.js'
 
 export const useBillingStore = defineStore('billing', {
   state: () => ({
+    isLive: null,
     products: [],
     employerCharges: {},
     employerInvoices: {},
@@ -54,6 +56,12 @@ export const useBillingStore = defineStore('billing', {
           params: { employer_id: employerId }
         })
         this.employerPaymentMethods[employerId] = resp.data
+      }
+    },
+    async setIsPaymentLive () {
+      if (dataUtil.isNil(this.isLive)) {
+        const resp = await this.$api.get('billing/test-status/')
+        this.isLive = resp.data.is_live
       }
     },
     getProducts () {
