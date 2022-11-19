@@ -111,6 +111,5 @@ def get_token_from_get(url, payload):
     if r.status_code < 200 or r.status_code >= 400:
         raise ValueError(r.content)
     data = r.json()
-    print(data)
     # , data['expires_in']
     return data['access_token']
