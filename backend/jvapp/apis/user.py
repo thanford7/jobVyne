@@ -198,7 +198,8 @@ class UserView(JobVyneAPIView):
                 'user': user,
                 'domain': current_site.domain,
                 'uid': get_uid_from_user(user),
-                'token': generate_user_token(user, email_key)
+                'token': generate_user_token(user, email_key),
+                'is_exclude_final_message': False
             }
         )
         
@@ -380,7 +381,7 @@ class FeedbackView(JobVyneAPIView):
             'JobVyne | User Feedback', EMAIL_ADDRESS_SUPPORT,
             django_email_body_template='emails/support_email.html',
             django_context={
-                'is_exlude_final_message': True,
+                'is_exclude_final_message': True,
                 'user': self.user,
                 'message': self.data['message']
             },
