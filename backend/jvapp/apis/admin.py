@@ -1,6 +1,7 @@
 import json
 
 from django.core.paginator import Paginator
+from django.db import IntegrityError
 from django.db.models import Count, F, Q
 from django.db.transaction import atomic
 from rest_framework import status
@@ -157,12 +158,16 @@ class AdminEmployerView(JobVyneAPIView):
     @staticmethod
     def assign_employer_admin_permission(user, employer):
         admin_group = EmployerAuthGroup.objects.get(employer_id=None, name='Admin')
-        UserEmployerPermissionGroup(
-            user=user,
-            employer=employer,
-            permission_group=admin_group,
-            is_employer_approved=True
-        ).save()
+        try:
+            UserEmployerPermissionGroup(
+                user=user,
+                employer=employer,
+                permission_group=admin_group,
+                is_employer_approved=True
+            ).save()
+        except IntegrityError:
+            # User already has the admin permission
+            pass
 
 
 class AdminUserView(JobVyneAPIView):
