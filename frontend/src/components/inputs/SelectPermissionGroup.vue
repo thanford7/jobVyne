@@ -1,5 +1,6 @@
 <template>
   <q-select
+    v-if="isLoaded"
     filled multiple emit-value map-options use-chips
     :options="options"
     autocomplete="name"
@@ -59,6 +60,7 @@ export default {
   },
   data () {
     return {
+      isLoaded: false,
       userTypeUtil
     }
   },
@@ -89,6 +91,7 @@ export default {
   },
   async mounted () {
     await this.employerStore.setEmployerPermissions()
+    this.isLoaded = true
   },
   setup () {
     return { employerStore: useEmployerStore() }

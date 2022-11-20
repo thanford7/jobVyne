@@ -184,25 +184,6 @@ class DataUtil {
     }
   }
 
-  /**
-   * This ensures Vue picks up changes (opposed to plain old assignment)
-   * @param object: The object to be updated
-   * @param newObjectData: The new object data. Any keys in the object that are not in newObjectData will be deleted
-   */
-  updateObjectInPlace (object, newObjectData) {
-    Object.assign(object, newObjectData)
-
-    // Make sure there aren't any keys that used to be present, but should be removed
-    if (dataUtil.isObject(newObjectData) && dataUtil.isObject(object)) {
-      const newKeys = Object.keys(newObjectData)
-      Object.keys(object).forEach((key) => {
-        if (!newKeys.includes(key)) {
-          delete object[key]
-        }
-      })
-    }
-  }
-
   capitalize (string, isLowercaseRest = true) {
     if (!string) {
       return ''

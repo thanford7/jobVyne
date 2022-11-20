@@ -83,8 +83,8 @@ module.exports = configure(function (ctx) {
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
-      minify: !ctx.isSourceMap,
-      sourcemap: ctx.isSourceMap,
+      minify: !process.env.isSourceMap,
+      sourcemap: process.env.isSourceMap,
       // polyfillModulePreload: true,
       // distDir
 

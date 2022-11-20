@@ -49,7 +49,7 @@
                   <div v-if="isActiveEmployer && isActiveEmployee" class="row">
                     <div class="col-12">
                       <div v-if="!jobs.length" class="q-mb-md">
-                        <q-card class="q-pa-lg" :style="getSelectedCardStyle(job)">
+                        <q-card class="q-pa-lg">
                           <div class="text-h6 text-center">No current job openings</div>
                         </q-card>
                       </div>
