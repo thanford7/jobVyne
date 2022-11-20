@@ -31,6 +31,10 @@ export const useSocialAuthStore = defineStore('social-auth', {
         userTypeBit,
         isLogin
       })
+      const authUrl = new URL(providerCfg.auth_url)
+      Object.entries(providerCfg.auth_params).forEach(([key, val]) => {
+        authUrl.searchParams.append(key, encodeURIComponent(val))
+      })
       return buildURL(providerCfg.auth_url, providerCfg.auth_params)
     },
     async setUserSocialCredentials (isForceRefresh) {

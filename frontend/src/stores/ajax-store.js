@@ -72,8 +72,10 @@ export const useAjaxStore = defineStore('ajax', {
       const errorMsg = htmlDoc.querySelector('.detail .errormsg')
       if (errorMsg) {
         return errorMsg.textContent
+      } else if (htmlDoc) {
+        return htmlDoc.textContent
       }
-      return htmlDoc.textContent
+      return htmlText
     }
   }
 })
