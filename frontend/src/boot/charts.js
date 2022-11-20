@@ -45,5 +45,6 @@ Chart.register(
 // more info on params: https://v2.quasar.dev/quasar-cli/boot-files
 export default boot(async ({ app }) => {
   Chart.defaults.backgroundColor = colorUtil.getPaletteColor('secondary')
+  Chart.defaults.maintainAspectRatio = false
   app.config.globalProperties.$createChart = (ctx, cfg) => new Chart(ctx, cfg)
 })

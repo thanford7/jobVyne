@@ -67,7 +67,7 @@ module.exports = configure(function (ctx) {
       // vueDevtools,
       // vueOptionsAPI: false,
 
-      rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
+      rebuildCache: false, // rebuilds Vite/linter/etc cache on startup
 
       // publicPath: '/',
       analyze: ctx.dev, // Opens a graph of file size after build
@@ -83,8 +83,8 @@ module.exports = configure(function (ctx) {
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
-      minify: true,
-      sourcemap: false,
+      minify: !ctx.isSourceMap,
+      sourcemap: ctx.isSourceMap,
       // polyfillModulePreload: true,
       // distDir
 
