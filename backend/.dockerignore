@@ -1,5 +1,8 @@
 .env
+.env*
 Dockerfile
 Dockerfile*
-secret/
-secure/
+**/secret
+**/secure
+**/demoData
+e2e_db.sql

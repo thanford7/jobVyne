@@ -103,9 +103,10 @@
                             <q-separator class="q-mt-sm"/>
                             <div
                               class="q-px-sm q-pt-sm"
-                              v-html="(job.isShowFullDescription) ? formUtil.sanitizeHtml(job.job_description) : truncate(formUtil.sanitizeHtml(job.job_description), jobDescriptionCharacterLimit)"
+                              v-html="(job.isShowFullDescription) ? formUtil.sanitizeHtml(job.job_description) : formUtil.sanitizeHtml(job.job_description)"
                             ></div>
-                            <template v-if="truncate(formUtil.sanitizeHtml(job.job_description), jobDescriptionCharacterLimit) !== truncate(formUtil.sanitizeHtml(job.job_description), 999999999)">
+                            <template
+                              v-if="formUtil.sanitizeHtml(job.job_description) !== formUtil.sanitizeHtml(job.job_description)">
                               <div>
                                 <a
                                   v-if="!job.isShowFullDescription"
@@ -155,7 +156,9 @@
                               view and apply for jobs, please visit their
                             </span>
                             <span v-else>
-                              {{ profile.first_name }} {{ profile.last_name }} does not have an active account with {{ employer.name }}. If
+                              {{ profile.first_name }} {{
+                                profile.last_name
+                              }} does not have an active account with {{ employer.name }}. If
                               you wish to view and apply for jobs, please visit {{ employer.name }}'s
                             </span>
                             <a v-if="employer.company_jobs_page_url" :href="employer.company_jobs_page_url"
@@ -222,6 +225,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form.js'
@@ -235,14 +239,9 @@ import dataUtil from 'src/utils/data'
 import { useAuthStore } from 'stores/auth-store'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import { useGlobalStore } from 'stores/global-store'
-import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
-import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import dateTimeUtil from 'src/utils/datetime'
 import { storeToRefs } from 'pinia/dist/pinia'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
-import truncate from 'truncate-html'
-
-truncate.setup({ reserveLastWord: true })
 
 export default {
   data () {
@@ -262,11 +261,10 @@ export default {
       dataUtil,
       dateTimeUtil,
       formUtil,
-      locationUtil,
-      truncate
+      locationUtil
     }
   },
-  components: { CustomTooltip, EmployerProfile, ResponsiveWidth, FormJobApplication, CustomFooter },
+  components: { CustomTooltip, EmployerProfile, ResponsiveWidth, CustomFooter, FormJobApplication },
   computed: {
     employmentYears () {
       if (!this.profile.employment_start_date) {
@@ -308,7 +306,13 @@ export default {
       const resp = await this.$api.get(`social-link-jobs/${this.$route.params.filterId}`, {
         params: { page_count: this.pageNumber }
       })
-      const { jobs, employer, total_page_count: totalPageCount, owner_id: ownerId, is_active_employee: isActiveEmployee } = resp.data
+      const {
+        jobs,
+        employer,
+        total_page_count: totalPageCount,
+        owner_id: ownerId,
+        is_active_employee: isActiveEmployee
+      } = resp.data
       await this.employerStore.setEmployerSubscription(employer.id)
       const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
       this.isActiveEmployer = isActiveEmployer
@@ -353,13 +357,6 @@ export default {
       return {
         boxShadow: `0 0 5px 2px ${primaryColor}`
       }
-    },
-    openJobAppModal (jobApplication) {
-      return this.q.dialog({
-        component: DialogJobApp,
-        componentProps: { jobApplication, employer: this.employer },
-        noRouteDismiss: true
-      })
     }
   },
   async mounted () {

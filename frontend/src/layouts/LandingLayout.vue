@@ -92,6 +92,7 @@
 </template>
 
 <script>
+import { loadScript } from 'src/utils/load-script.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store'
 import CustomFooter from 'components/CustomFooter.vue'
@@ -104,6 +105,9 @@ export default {
     return {
       pagePermissionsUtil
     }
+  },
+  async created () {
+    await loadScript(`https://www.google.com/recaptcha/enterprise.js?render=${process.env.GOOGLE_CAPTCHA_KEY}`)
   },
   preFetch () {
     const authStore = useAuthStore()
