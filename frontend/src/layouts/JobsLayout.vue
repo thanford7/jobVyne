@@ -188,7 +188,7 @@
           </q-tab-panel>
           <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
             <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
-              <div class="col-12 col-md-4 q-pr-md-md q-mb-md q-mb-md-none">
+              <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
                 <div class="flex items-center">
                   <img
                     v-if="profile.profile_picture_url"
@@ -207,7 +207,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-12 col-md-6 q-pl-md-md">
+              <div class="col-12 col-md-4 q-pl-md-md">
                 <div v-for="response in profile.profile_responses">
                   <div class="text-h6">{{ response.question }}</div>
                   <div class="q-mt-sm q-mb-md">{{ response.response }}</div>

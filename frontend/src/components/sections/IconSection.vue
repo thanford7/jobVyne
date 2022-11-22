@@ -1,13 +1,13 @@
 <template>
   <div class="row q-gutter-y-md justify-center">
-    <div v-for="part in section.item_parts" class="col-12 col-sm-6 col-md-4 col-lg-3 q-px-sm">
+    <div v-for="part in section.item_parts" class="col-12 col-sm-6 q-px-sm">
       <q-card class="h-100">
         <q-card-section :style="sectionUtil.getTextStyle(section)">
           <div class="flex items-center justify-center">
             <q-icon v-if="part.icon" :name="part.icon.code" size="50px"/>
           </div>
           <h5 class="text-center">{{ part.header }}</h5>
-          <q-separator/>
+          <q-separator v-if="part.html_content"/>
           <div class="q-py-md" v-html="part.html_content"></div>
         </q-card-section>
       </q-card>

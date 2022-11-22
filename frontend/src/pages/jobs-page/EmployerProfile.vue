@@ -19,7 +19,7 @@
       :class="(idx === 0) ? 'q-pt-lg' : ''"
       :style="sectionUtil.getBackgroundStyle(section)"
     >
-      <ResponsiveWidth class="q-pb-xl">
+      <ResponsiveWidth class="q-pb-xl" :is-small="true">
         <SectionHeader
           :section="section"
           :section-idx="idx"
