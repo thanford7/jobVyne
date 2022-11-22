@@ -67,6 +67,9 @@ def send_email(subject_text, to_emails, django_context=None, django_email_body_t
     django_context['protocol'] = 'https'  # Overwrite protocol to always use https
     htmlContent = html_content or loader.render_to_string(django_email_body_template, django_context)
     
+    if not IS_PRODUCTION:
+        logger.info(f'Sending email to test address. This email would have been sent to {to_emails}')
+    
     message = Mail(
         from_email=from_email or EMAIL_ADDRESS_SEND,
         to_emails=to_emails if IS_PRODUCTION else EMAIL_ADDRESS_TEST,

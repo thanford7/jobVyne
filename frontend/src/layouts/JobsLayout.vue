@@ -225,6 +225,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
@@ -313,14 +314,17 @@ export default {
         owner_id: ownerId,
         is_active_employee: isActiveEmployee
       } = resp.data
-      await this.employerStore.setEmployerSubscription(employer.id)
+      await Promise.all([
+        this.employerStore.setEmployerSubscription(employer.id),
+        this.authStore.setApplications(this.user),
+        this.userStore.setUserProfile(ownerId)
+      ])
       const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
       this.isActiveEmployer = isActiveEmployer
       this.isActiveEmployee = isActiveEmployee
       this.jobs = (isActiveEmployer && isActiveEmployee) ? jobs : []
       this.employer = employer
 
-      await this.userStore.setUserProfile(ownerId)
       this.profile = this.userStore.getUserProfile(ownerId)
       this.jobPagesCount = totalPageCount
       Loading.hide()
@@ -357,6 +361,13 @@ export default {
       return {
         boxShadow: `0 0 5px 2px ${primaryColor}`
       }
+    },
+    openJobAppModal (jobApplication) {
+      return this.q.dialog({
+        component: DialogJobApp,
+        componentProps: { jobApplication, employer: this.employer },
+        noRouteDismiss: true
+      })
     }
   },
   async mounted () {
@@ -411,6 +422,7 @@ export default {
       user,
       applications,
       isRightDrawerOpen,
+      authStore,
       employerStore: useEmployerStore(),
       userStore: useUserStore(),
       q: useQuasar()

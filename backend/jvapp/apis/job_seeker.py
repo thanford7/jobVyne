@@ -99,23 +99,27 @@ class ApplicationView(JobVyneAPIView):
         elif application_template:
             resume = application_template.resume
         self.create_application(user, application, self.data, resume)
-        send_email(
-            'JobVyne | New application submission',
-            to_emails=[email],
-            from_email=EMAIL_ADDRESS_SEND,
-            django_email_body_template='emails/application_submission_email.html',
-            django_context={
-                'application': application
-            },
-            attachments=[
-                get_attachment(
-                    get_file_name(application.resume.name),
-                    get_encoded_file(application.resume.file.file),
-                    get_mime_from_in_memory_file(application.resume.file.file),
-                    get_file_name(application.resume.name)
-                )
-            ] if resume else None
-        )
+        
+        # Send a notification to the employer if they have it configured
+        employer = application.employer_job.employer
+        if employer.notification_email:
+            send_email(
+                'JobVyne | New application submission',
+                to_emails=[employer.notification_email],
+                from_email=EMAIL_ADDRESS_SEND,
+                django_email_body_template='emails/application_submission_email.html',
+                django_context={
+                    'application': application
+                },
+                attachments=[
+                    get_attachment(
+                        get_file_name(application.resume.name),
+                        get_encoded_file(application.resume.file.file),
+                        get_mime_from_in_memory_file(application.resume.file.file),
+                        get_file_name(application.resume.name)
+                    )
+                ] if resume else None
+            )
         
         if user:
             # Save or update application template to Django model
