@@ -58,9 +58,14 @@ class ApplicationsView(BaseDataView):
     }
     
     def get(self, request):
+        if not self.user.is_admin:
+            if self.employer_id and (self.user.employer_id or 0) != self.employer_id:
+                return Response('You do not have access to this employer', status=status.HTTP_401_UNAUTHORIZED)
+            if self.owner_id and self.user.id != self.owner_id:
+                return Response('You do not have access to this user', status=status.HTTP_401_UNAUTHORIZED)
         applications = self.get_job_applications(
             self.user, self.start_dt, self.end_dt,
-            employer_id=self.employer_id, owner_id=self.owner_id
+            employer_id=self.employer_id, owner_id=self.owner_id, is_ignore_permission=True
         )
 
         app_filter = Q()
@@ -86,7 +91,7 @@ class ApplicationsView(BaseDataView):
             if locations_filter := self.filter_by.get('locations'):
                 app_filter &= Q(employer_job__locations__in=locations_filter)
         
-        applications =applications.filter(app_filter)
+        applications = applications.filter(app_filter)
         
         if not self.is_raw_data:
             if 'owner_name' in self.group_by:
@@ -159,7 +164,7 @@ class ApplicationsView(BaseDataView):
         return {**application_data, **self.get_link_data(application.social_link_filter)}
     
     @staticmethod
-    def get_job_applications(user, start_date, end_date, employer_id=None, owner_id=None):
+    def get_job_applications(user, start_date, end_date, employer_id=None, owner_id=None, is_ignore_permission=False):
         app_filter = Q(created_dt__lte=end_date) & Q(created_dt__gte=start_date)
         if employer_id:
             app_filter &= Q(social_link_filter__employer_id=employer_id)
@@ -179,6 +184,9 @@ class ApplicationsView(BaseDataView):
                 'employer_job__locations__country'
             ) \
             .filter(app_filter)
+        
+        if is_ignore_permission:
+            return job_applications
         
         return JobApplication.jv_filter_perm(user, job_applications)
 

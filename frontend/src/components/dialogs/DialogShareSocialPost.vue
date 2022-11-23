@@ -19,6 +19,10 @@
       <div class="col-12">
         <div class="text-bold">{{ this.post.platform.name }} account</div>
         <q-checkbox v-for="cred in socialCredentials" v-model="formData.post_accounts[cred.email]" :label="cred.email"/>
+        <div v-if="!socialCredentials || !socialCredentials.length">
+          <q-icon name="warning" color="warning" size="24px"/> No {{ this.post.platform.name }} account connected. Connect your account in the
+          <a href="#" @click.prevent="goToSocialAccountsPage()">Social Accounts page</a>.
+        </div>
       </div>
       <div class="col-12">
         <PostLiveView
@@ -124,6 +128,10 @@ export default {
         this.isAjaxActive = false
         this.$emit('ok')
       })
+    },
+    goToSocialAccountsPage () {
+      this.$emit('hide')
+      this.$router.push({ name: 'employee-social-accounts' })
     }
   },
   mounted () {

@@ -102,20 +102,21 @@
                             </div>
                             <q-separator class="q-mt-sm"/>
                             <div
+                              :id="`job-description-${job.id}`"
                               class="q-px-sm q-pt-sm"
-                              v-html="(job.isShowFullDescription) ? formUtil.sanitizeHtml(job.job_description) : formUtil.sanitizeHtml(job.job_description)"
+                              :style="(job.isShowFullDescription) ? '' : 'max-height: 300px; overflow: hidden;'"
+                              v-html="formUtil.sanitizeHtml(job.job_description)"
                             ></div>
-                            <template
-                              v-if="formUtil.sanitizeHtml(job.job_description) !== formUtil.sanitizeHtml(job.job_description)">
-                              <div>
+                            <template v-if="hasJobDescriptionOverflow(job) || !dataUtil.isNil(job.isShowFullDescription)">
+                              <div v-if="!job.isShowFullDescription" class="q-py-md">
                                 <a
-                                  v-if="!job.isShowFullDescription"
                                   href="#" @click.prevent="job.isShowFullDescription = true"
                                 >
                                   Show full job description
                                 </a>
+                              </div>
+                              <div v-else>
                                 <a
-                                  v-else
                                   href="#" @click.prevent="job.isShowFullDescription = false"
                                 >
                                   Reduce job description
@@ -287,6 +288,13 @@ export default {
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
+    hasJobDescriptionOverflow (job) {
+      const el = document.getElementById(`job-description-${job.id}`)
+      if (!el) {
+        return false
+      }
+      return scrollUtil.getHasOverflow(el)
+    },
     async closeApplication () {
       this.isRightDrawerOpen = false
       this.jobApplication = null
