@@ -85,6 +85,7 @@ import { useQuasar } from 'quasar'
 import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil, { GROUPINGS } from 'src/utils/datetime.js'
+import userUtil from 'src/utils/user.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useDataStore } from 'stores/data-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
@@ -180,9 +181,7 @@ export default {
       }
     },
     getUserInitials (employeeData) {
-      const firstInitial = (employeeData.owner_first_name) ? dataUtil.capitalize(employeeData.owner_first_name[0]) : ''
-      const lastInital = (employeeData.owner_last_name) ? dataUtil.capitalize(employeeData.owner_last_name[0]) : ''
-      return firstInitial + lastInital
+      return userUtil.getUserInitials(employeeData, 'owner_first_name', 'owner_last_name')
     },
     openDataDialog (apps) {
       return this.q.dialog({

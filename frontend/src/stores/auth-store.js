@@ -37,10 +37,10 @@ export const useAuthStore = defineStore('auth', {
     }
   },
   actions: {
-    async logout () {
+    async logout (redirect = '/') {
       await this.$api.post('auth/logout/')
       this.user = {}
-      this.$router.push('/')
+      await this.$router.push(redirect)
     },
     async setUser (isForce = false) {
       if (isForce || !this.user || dataUtil.isEmpty(this.user)) {
@@ -49,7 +49,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async setApplications (user, isForce = false) {
-      if (!user) {
+      if (!user || dataUtil.isEmpty(user)) {
         return
       }
       if (isForce || !this.applications.length) {

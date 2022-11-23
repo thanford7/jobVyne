@@ -107,4 +107,6 @@ export default boot(({ app, ssrContext, store, router }) => {
   //       so you can easily perform requests against your app's API
 
   app.config.globalProperties.$global = emitterEvents
+
+  app.config.globalProperties.$log = (txt) => { console.log(txt) }
 })

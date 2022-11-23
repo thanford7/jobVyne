@@ -3,7 +3,7 @@
     base-title-text="Login"
     :is-include-buttons="false"
   >
-    <AuthAll :redirect-page-url="redirectPageUrl" :redirect-params="redirectParams"/>
+    <AuthAll :redirect-page-url="redirectPageUrl" :redirect-params="redirectParams" @login="closeDialog()"/>
   </DialogBase>
 </template>
 
@@ -22,6 +22,12 @@ export default {
     },
     redirectParams: {
       type: [Object, null]
+    }
+  },
+  methods: {
+    closeDialog () {
+      this.$emit('ok')
+      this.$emit('hide')
     }
   }
 }

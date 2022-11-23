@@ -77,6 +77,7 @@ export default {
         // User logged in from a dialog so redirect back to the page they were on
         this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })
       }
+      this.$emit('login')
     },
     setEmail () {
       if (!this.email && this.defaultEmail) {

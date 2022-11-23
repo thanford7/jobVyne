@@ -140,11 +140,7 @@ export default {
   components: { FileDisplayOrUpload, AuthAll, ListIcon },
   data () {
     return {
-      formData: Object.assign(
-        formDataTemplate,
-        (this.user) ? dataUtil.pick(this.user, ['first_name', 'last_name', 'email']) : {},
-        this?.user?.application_template || {}
-      ),
+      formData: this.resetFormData(),
       newResumeKey: 'resume',
       isApplicationSaved: false,
       formUtil,
@@ -169,6 +165,26 @@ export default {
     }
   },
   methods: {
+    openLoginModal () {
+      this.q.dialog({
+        component: DialogLogin,
+        componentProps: {
+          redirectPageUrl: window.location.pathname,
+          redirectParams: dataUtil.getQueryParams()
+        }
+      }).onOk(async () => {
+        await this.authStore.setUser(true)
+        this.formData = this.resetFormData()
+        this.$emit('login')
+      })
+    },
+    resetFormData () {
+      return Object.assign(
+        formDataTemplate,
+        (this.user) ? dataUtil.pick(this.user, ['first_name', 'last_name', 'email']) : {},
+        this?.user?.application_template || {}
+      )
+    },
     getHeaderStyle () {
       const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
       return {
@@ -210,22 +226,12 @@ export default {
     }
   },
   setup () {
-    const $q = useQuasar()
-    const openLoginModal = () => {
-      $q.dialog({
-        component: DialogLogin,
-        componentProps: {
-          redirectPageUrl: window.location.pathname,
-          redirectParams: dataUtil.getQueryParams()
-        }
-      })
-    }
     const authStore = useAuthStore()
     const { user } = storeToRefs(authStore)
     return {
       authStore,
       user,
-      openLoginModal
+      q: useQuasar()
     }
   }
 }

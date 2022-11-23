@@ -7,6 +7,19 @@
           <img :src="employer?.logo_url" alt="Logo" style="height: 40px; object-fit: scale-down">
         </q-toolbar-title>
       </q-toolbar>
+      <div v-if="user && !dataUtil.isEmpty(user)" class="q-pt-sm">
+        <div class="row flex-center">
+          <q-avatar v-if="user.profile_picture_url" size="32px">
+            <img :src="user.profile_picture_url">
+          </q-avatar>
+          <q-avatar v-else color="primary" text-color="white" size="32px">
+            {{ userUtil.getUserInitials(user) }}
+          </q-avatar>
+        </div>
+        <div>
+          <a href="#" @click.prevent="authStore.logout(getCurrentUrl())">Logout</a>
+        </div>
+      </div>
       <ResponsiveWidth class="justify-center">
         <q-tabs align="center" v-model="tab" :style="getTabStyle()">
           <q-tab name="jobs" label="Jobs"/>
@@ -27,6 +40,7 @@
       <FormJobApplication
         :job-application="jobApplication"
         :employer="employer"
+        @login="loadData()"
         @closeApplication="closeApplication"
       />
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
@@ -107,7 +121,8 @@
                               :style="(job.isShowFullDescription) ? '' : 'max-height: 300px; overflow: hidden;'"
                               v-html="formUtil.sanitizeHtml(job.job_description)"
                             ></div>
-                            <template v-if="hasJobDescriptionOverflow(job) || !dataUtil.isNil(job.isShowFullDescription)">
+                            <template
+                              v-if="hasJobDescriptionOverflow(job) || !dataUtil.isNil(job.isShowFullDescription)">
                               <div v-if="!job.isShowFullDescription" class="q-py-md">
                                 <a
                                   href="#" @click.prevent="job.isShowFullDescription = true"
@@ -232,6 +247,7 @@ import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form.js'
 import scrollUtil from 'src/utils/scroll.js'
+import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useUserStore } from 'stores/user-store.js'
 import { ref } from 'vue'
@@ -263,7 +279,8 @@ export default {
       dataUtil,
       dateTimeUtil,
       formUtil,
-      locationUtil
+      locationUtil,
+      userUtil
     }
   },
   components: { CustomTooltip, EmployerProfile, ResponsiveWidth, CustomFooter, FormJobApplication },
@@ -288,6 +305,9 @@ export default {
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
+    getCurrentUrl () {
+      return window.location.pathname
+    },
     hasJobDescriptionOverflow (job) {
       const el = document.getElementById(`job-description-${job.id}`)
       if (!el) {

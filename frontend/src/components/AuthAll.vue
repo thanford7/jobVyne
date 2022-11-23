@@ -5,6 +5,7 @@
       :default-email="defaultEmail"
       :user-type-bit="userTypeBit"
       :style-override="styleOverride"
+      @login="$emit('login')"
     />
     <SeparatorWithText>or</SeparatorWithText>
     <AuthSocialButtons
