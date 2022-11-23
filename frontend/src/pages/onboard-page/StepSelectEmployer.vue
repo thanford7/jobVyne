@@ -3,20 +3,24 @@
   <BaseStep
     title="Select your current employer"
   >
-    <div class="col-12 col-md-6">
-      <q-select
-        id="jv-employer-sel"
-        filled emit-value map-options
-        v-model="formData.employer_id"
-        :options="potentialEmployers"
-        autocomplete="name"
-        option-value="id"
-        option-label="name"
-        label="Employer"
-        lazy-rules
-        :rules="[val => val || 'Please select an option']"
-      />
-    </div>
+    <q-form ref="form">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <q-select
+            id="jv-employer-sel"
+            filled emit-value map-options
+            v-model="formData.employer_id"
+            :options="potentialEmployers"
+            autocomplete="name"
+            option-value="id"
+            option-label="name"
+            label="Employer"
+            lazy-rules
+            :rules="[val => val || 'Please select an option']"
+          />
+        </div>
+      </div>
+    </q-form>
     <template v-slot:buttons>
       <slot name="backButton"></slot>
       <slot name="continueButton"></slot>
@@ -26,6 +30,7 @@
 
 <script>
 import BaseStep from 'pages/onboard-page/BaseStep.vue'
+
 export default {
   name: 'StepSelectEmployer',
   components: { BaseStep },
@@ -36,6 +41,11 @@ export default {
   computed: {
     canContinue () {
       return Boolean(this.formData.unknown_employer_name)
+    }
+  },
+  methods: {
+    async isValidForm () {
+      return await this.$refs.form.validate()
     }
   }
 }

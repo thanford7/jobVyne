@@ -5,7 +5,7 @@
         <div class="rfs-h6">{{ title }}</div>
         <div>{{ subTitle }}</div>
       </div>
-      <div class="row q-mt-lg">
+      <div class="q-mt-lg">
         <slot/>
       </div>
     </q-card-section>
@@ -24,7 +24,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>

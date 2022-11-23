@@ -3,17 +3,21 @@
   <BaseStep
     title="Add a business email"
   >
-    <div class="col-12 col-md-6">
-      <EmailInput
-        v-model="email"
-        label="Business email"
-        :is-required="false"
-        :additional-rules="[
-          val => val !== personalEmail || 'Business email must be different than personal email'
-        ]"
-        @blur="formData.business_email = email"
-      />
-    </div>
+    <q-form ref="form">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <EmailInput
+            v-model="email"
+            label="Business email"
+            :is-required="false"
+            :additional-rules="[
+              val => val !== personalEmail || 'Business email must be different than personal email'
+            ]"
+            @blur="formData.business_email = email"
+          />
+        </div>
+      </div>
+    </q-form>
     <template v-slot:buttons>
       <slot name="backButton"></slot>
       <slot name="continueButton"></slot>
@@ -35,6 +39,11 @@ export default {
   data () {
     return {
       email: null
+    }
+  },
+  methods: {
+    async isValidForm () {
+      return await this.$refs.form.validate()
     }
   },
   mounted () {

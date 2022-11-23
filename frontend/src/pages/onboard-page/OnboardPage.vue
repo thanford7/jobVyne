@@ -19,6 +19,7 @@
       </div>
       <div class="q-pa-md">
         <component
+          ref="onboardStep"
           v-bind:is="steps[stepIdx].component"
           v-bind="steps[stepIdx].props"
         >
@@ -190,6 +191,10 @@ export default {
   },
   methods: {
     async incrementStep () {
+      const isValidForm = await this.$refs.onboardStep.isValidForm()
+      if (!isValidForm) {
+        return
+      }
       if (this.stepIdx === this.steps.length - 1) {
         await this.$api.put(`user/${this.user.id}/`, getAjaxFormData(this.formData))
         await this.authStore.setUser(true)
