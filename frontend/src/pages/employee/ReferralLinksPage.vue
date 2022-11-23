@@ -75,7 +75,10 @@
                     icon-right="launch"
                     size="13px"
                   >
-                    <q-avatar color="primary" text-color="white" size="20px">{{ socialLinkFilter.jobs_count }}</q-avatar>
+                    <q-avatar color="primary" text-color="white" size="20px">{{
+                        socialLinkFilter.jobs_count
+                      }}
+                    </q-avatar>
                     &nbsp;Open jobs
                   </q-chip>
                 </div>
@@ -84,7 +87,8 @@
                     <div class="q-mb-sm">
                       <span class="text-bold">Social Links</span> <span class="text-small">(Click to copy)</span>
                     </div>
-                    <div v-for="socialLink in socialUtil.getSocialLinks(platforms, socialLinkFilter)" style="display: inline-block">
+                    <div v-for="socialLink in socialUtil.getSocialLinks(platforms, socialLinkFilter)"
+                         style="display: inline-block">
                       <q-chip clickable @click="dataUtil.copyText">
                         <div class="flex items-center">
                           <img :src="socialLink.logo" :alt="socialLink.name" style="height: 16px;">
@@ -329,11 +333,6 @@ export default {
       socialUtil
     }
   },
-  computed: {
-    socialLinkFilters () {
-      return this.socialStore.getSocialLinkFilters(this.authStore.propUser.id)
-    }
-  },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getLocations: locationUtil.getFormattedLocations.bind(locationUtil),
@@ -426,7 +425,7 @@ export default {
     const authStore = useAuthStore()
     const utilStore = useUtilStore()
     const { user } = storeToRefs(authStore)
-    const { platforms } = storeToRefs(socialStore)
+    const { platforms, socialLinkFilters } = storeToRefs(socialStore)
 
     const pageTitle = 'Referral Links'
     const metaData = {
@@ -435,7 +434,17 @@ export default {
     }
     useMeta(metaData)
 
-    return { socialStore, employerStore, authStore, globalStore, utilStore, platforms, user, q: useQuasar() }
+    return {
+      socialStore,
+      employerStore,
+      authStore,
+      globalStore,
+      utilStore,
+      platforms,
+      socialLinkFilters,
+      user,
+      q: useQuasar()
+    }
   }
 }
 </script>

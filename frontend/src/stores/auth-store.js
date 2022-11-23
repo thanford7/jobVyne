@@ -39,8 +39,8 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async logout (redirect = '/') {
       await this.$api.post('auth/logout/')
-      this.user = {}
       await this.$router.push(redirect)
+      this.user = {}
     },
     async setUser (isForce = false) {
       if (isForce || !this.user || dataUtil.isEmpty(this.user)) {

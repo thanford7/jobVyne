@@ -65,7 +65,7 @@
           </template>
           <q-item
             clickable
-            @click="authStore.logout"
+            @click="authStore.logout()"
             v-ripple
           >
             <q-item-section avatar>
@@ -132,7 +132,7 @@
         </div>
         <div class="text-center">{{ menuItem.label }}</div>
       </div>
-      <div class="col-3 q-py-sm" v-ripple @click="authStore.logout">
+      <div class="col-3 q-py-sm" v-ripple @click="authStore.logout()">
         <div class="text-center">
           <q-icon name="logout" size="24px"/>
         </div>

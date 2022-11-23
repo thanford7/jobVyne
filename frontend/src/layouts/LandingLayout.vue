@@ -12,7 +12,7 @@
         <q-tabs class="gt-sm" align="right" shrink>
           <template v-if="authStore.propIsAuthenticated">
             <q-route-tab :to="pagePermissionsUtil.getDefaultLandingPage(authStore.propUser)" label="Dashboard"/>
-            <q-tab id="jv-logout-btn" label="Logout" @click="authStore.logout"/>
+            <q-tab id="jv-logout-btn" label="Logout" @click="authStore.logout()"/>
           </template>
           <template v-else>
             <q-route-tab :to="{ name: 'login', query: { isNew: 0 } }" label="Login"/>
@@ -49,7 +49,7 @@
                   exact clickable v-close-popup
                   v-ripple
                   label="Logout"
-                  @click="authStore.logout"
+                  @click="authStore.logout()"
                 >
                   <q-item-section>
                     Logout

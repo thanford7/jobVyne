@@ -41,7 +41,8 @@ export default {
   },
   methods: {
     async saveWaitlist () {
-      if (!this.$refs.emailInput.validate()) {
+      const isValidForm = await this.$refs.emailInput.validate()
+      if (!isValidForm) {
         return
       }
       this.isSavingWaitlist = true

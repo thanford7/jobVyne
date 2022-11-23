@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.auth.models import AnonymousUser
 from django.core.files import File
 from django.http import QueryDict
 from rest_framework.views import APIView
@@ -30,6 +31,8 @@ class JobVyneAPIView(APIView):
         # Django's dict method doesn't work for files - it drops all but the first uploaded file
         self.files = get_files(request)
         self.user = request.user
+        if isinstance(self.user, AnonymousUser):
+            self.user = None
         super().initial(request, *args, **kwargs)
         
     def get_query_param_list(self, key, default=None):

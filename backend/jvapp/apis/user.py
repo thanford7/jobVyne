@@ -374,15 +374,24 @@ class UserEmployeeProfileQuestionsView(JobVyneAPIView):
     
     
 class FeedbackView(JobVyneAPIView):
+    permission_classes = [AllowAny]
     
     def post(self, request):
         # Send email to JobVyne support team
+        if self.user:
+            user = {
+                'name': f'{self.user.first_name} {self.user.last_name}',
+                'email': self.user.email
+            }
+        else:
+            user = self.data
+
         send_email(
             'JobVyne | User Feedback', EMAIL_ADDRESS_SUPPORT,
             django_email_body_template='emails/support_email.html',
             django_context={
                 'is_exclude_final_message': True,
-                'user': self.user,
+                'user': user,
                 'message': self.data['message']
             },
             attachments=[

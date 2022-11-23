@@ -109,7 +109,8 @@ class ApplicationView(JobVyneAPIView):
                 from_email=EMAIL_ADDRESS_SEND,
                 django_email_body_template='emails/application_submission_email.html',
                 django_context={
-                    'application': application
+                    'application': application,
+                    'referrer': application.social_link_filter.owner
                 },
                 attachments=[
                     get_attachment(

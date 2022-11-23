@@ -1,23 +1,31 @@
 <template>
   <q-layout view="hHr lpR fFf">
 
-    <q-header v-if="isLoaded" elevated class="bg-white text-primary justify-center row">
+    <q-header v-if="isLoaded" elevated class="bg-white text-primary justify-center row" style="position: relative">
       <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
         <q-toolbar-title shrink>
           <img :src="employer?.logo_url" alt="Logo" style="height: 40px; object-fit: scale-down">
         </q-toolbar-title>
       </q-toolbar>
-      <div v-if="user && !dataUtil.isEmpty(user)" class="q-pt-sm">
-        <div class="row flex-center">
-          <q-avatar v-if="user.profile_picture_url" size="32px">
-            <img :src="user.profile_picture_url">
-          </q-avatar>
-          <q-avatar v-else color="primary" text-color="white" size="32px">
-            {{ userUtil.getUserInitials(user) }}
-          </q-avatar>
+      <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
+        <div class="q-mr-md clickable" :style="getTabStyle()" @click="openFeedbackModal()">
+          <div class="flex flex-center">
+            <q-icon name="feedback" size="24px"/>
+          </div>
+          <div>Get help</div>
         </div>
-        <div>
-          <a href="#" @click.prevent="authStore.logout(getCurrentUrl())">Logout</a>
+        <div v-if="user && !dataUtil.isEmpty(user)">
+          <div class="row flex-center">
+            <q-avatar v-if="user.profile_picture_url" size="24px">
+              <img :src="user.profile_picture_url">
+            </q-avatar>
+            <q-avatar v-else color="primary" text-color="white" size="24px">
+              {{ userUtil.getUserInitials(user) }}
+            </q-avatar>
+          </div>
+          <div>
+            <a href="#" @click.prevent="authStore.logout(getCurrentUrl())" style="color: gray">Logout</a>
+          </div>
         </div>
       </div>
       <ResponsiveWidth class="justify-center">
@@ -241,6 +249,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
@@ -395,6 +404,11 @@ export default {
         component: DialogJobApp,
         componentProps: { jobApplication, employer: this.employer },
         noRouteDismiss: true
+      })
+    },
+    openFeedbackModal () {
+      return this.q.dialog({
+        component: DialogFeedback
       })
     }
   },

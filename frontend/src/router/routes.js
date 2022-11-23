@@ -214,7 +214,7 @@ const routes = [
       {
         path: ':key(feedback)',
         name: 'feedback',
-        component: () => import('pages/FeedbackPage.vue')
+        component: () => import('pages/feedback-page/FeedbackPage.vue')
       }
     ]
   },
