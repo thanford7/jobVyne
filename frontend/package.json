@@ -1,8 +1,8 @@
 {
   "name": "frontend-jobvyne",
   "version": "0.0.1",
-  "description": "App to allow employers to leverage their employees social media for hiring",
-  "productName": "Job Vyne",
+  "description": "JobVyne helps employers increase employee referrals",
+  "productName": "JobVyne",
   "author": "JobVyne",
   "private": true,
   "scripts": {

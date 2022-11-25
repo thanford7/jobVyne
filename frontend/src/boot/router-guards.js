@@ -3,6 +3,8 @@ import dataUtil from 'src/utils/data'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests'
 
+const DEPLOY_TS_KEY = 'JV_DEPLOY_TS'
+
 const isMainPageFn = (to) => {
   if (!to) {
     return false
@@ -42,7 +44,16 @@ export default boot(({ app, router }) => {
     // Redirect if user doesn't have access to a specific page
     try {
       const resp = await $api.get('auth/check-auth/')
-      const user = resp.data
+      const { user, deploy_ts: deployTS } = resp.data
+
+      // Dynamically imported modules fail to load when a new code version is deployed
+      // The entire page needs to be refreshed when this occurs
+      const localDeployTS = localStorage.getItem(DEPLOY_TS_KEY)
+      if (localDeployTS !== deployTS) {
+        localStorage.setItem(DEPLOY_TS_KEY, deployTS)
+        window.location = to.path
+      }
+
       const isAuthenticated = user && !dataUtil.isEmptyOrNil(user)
 
       const isMainPage = isMainPageFn(to)

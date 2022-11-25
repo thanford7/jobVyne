@@ -7,6 +7,24 @@
           <BaseExpansionItem :is-include-separator="false">
             <template v-slot:header>
               <div class="text-h6">
+                Get started
+              </div>
+            </template>
+            <q-card>
+              <q-card-section>
+                <div>
+                  <q-icon name="check_circle" color="positive"/>
+                  Validate email address
+                </div>
+                <div>Add your personal link to your LinkedIn profile</div>
+                <div>Connect your LinkedIn account</div>
+                <div>Update your profile</div>
+              </q-card-section>
+            </q-card>
+          </BaseExpansionItem>
+          <BaseExpansionItem :is-include-separator="false">
+            <template v-slot:header>
+              <div class="text-h6">
                 Quick links for
                 <CustomTooltip :is_include_icon="false" color_class="bg-white">
                   <template v-slot:content>

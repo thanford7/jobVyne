@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
+import datetime
 import json
 import logging
 import os
@@ -30,6 +31,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('DJANGO_SECRET_KEY', default=get_random_secret_key())
 
 DEBUG = env('DEBUG', cast=bool, default=False)
+DEPLOY_TS = datetime.datetime.now()
 
 LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
 logger = setLogger(LOG_LEVEL)

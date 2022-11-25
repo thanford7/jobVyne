@@ -453,12 +453,10 @@ export default {
     const authStore = useAuthStore()
     const { user, applications } = storeToRefs(authStore)
 
-    const pageTitle = 'Jobs'
-    const metaData = {
-      title: pageTitle,
-      titleTemplate: globalStore.getPageTitle
-    }
-    useMeta(metaData)
+    useMeta(globalStore.getMetaCfg({
+      pageTitle: 'Jobs',
+      description: 'Apply to jobs on JobVyne'
+    }))
 
     return {
       user,
