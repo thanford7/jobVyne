@@ -73,11 +73,13 @@ module.exports = configure(function (ctx) {
       analyze: ctx.dev, // Opens a graph of file size after build
       env: (ctx.dev) ? {
         API_URL: '/api/v1/',
+        ASSETS_PATH: '/src/assets',
         JV_LOGO_URL: 'https://jobvyne-dev.nyc3.digitaloceanspaces.com/static-files/jobVyneLogo.png',
         GOOGLE_CAPTCHA_KEY: '6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp',
         STRIPE_PUBLIC_KEY: 'pk_test_51LRzlsEJHiHytoQBmLNj0LU3xg6V0vPE7rw92vCIsoxlUChlnGMqB93uAdAenZZVtZLChv9khkBUOsUBny3mXXFb009nRm5IiQ'
       } : {
         API_URL: '/backend/api/v1',
+        ASSETS_PATH: '/assets',
         GOOGLE_CAPTCHA_KEY: '6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl',
         JV_LOGO_URL: 'https://jobvyne.nyc3.digitaloceanspaces.com/static-files/jobVyneLogo.png',
         STRIPE_PUBLIC_KEY: 'pk_test_51M5bt2GNH25jX7UwbDX5HYNxdUC9vVnOVAcau11xfQP7Eq1xMjnP5LGxILYqJsvtcxhxk3xTwfJ3RmBs5XoctUXq00Rp9mTuAK',

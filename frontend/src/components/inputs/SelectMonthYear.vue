@@ -44,9 +44,13 @@ export default {
     }
   },
   mounted () {
-    // eslint-disable-next-line no-unused-vars
-    const [year, month, day] = this.modelValue.split('-')
-    this.monthYearText = `${month}/${year}`
+    if (this.modelValue) {
+      // eslint-disable-next-line no-unused-vars
+      const [year, month, day] = this.modelValue.split('-')
+      this.monthYearText = `${month}/${year}`
+    } else {
+      this.monthYearText = null
+    }
   }
 }
 </script>

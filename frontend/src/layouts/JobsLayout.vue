@@ -365,7 +365,7 @@ export default {
       this.jobs = (isActiveEmployer && isActiveEmployee) ? jobs : []
       this.employer = employer
 
-      this.profile = this.userStore.getUserProfile(ownerId)
+      this.profile = storeToRefs(this.userStore).userProfile
       this.jobPagesCount = totalPageCount
       Loading.hide()
     },

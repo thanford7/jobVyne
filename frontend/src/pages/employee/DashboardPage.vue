@@ -4,39 +4,174 @@
       <PageHeader title="Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div v-if="defaultReferralLink" class="col-12">
-          <BaseExpansionItem :is-include-separator="false">
+          <BaseExpansionItem v-if="!hasCompletedChecklist" :is-include-separator="false">
             <template v-slot:header>
               <div class="text-h6">
                 Get started
               </div>
             </template>
-            <q-card>
-              <q-card-section>
-                <div>
-                  <q-icon v-if="userEmployeeChecklist.is_email_verified" name="check_circle" color="positive"/>
-                  <q-icon v-else name="assignment" color="negative"/>
-                  Validate your email address
-                </div>
-                <div v-if="userEmployeeChecklist.has_secondary_email">
-                  <q-icon v-if="userEmployeeChecklist.is_business_email_verified" name="check_circle" color="positive"/>
-                  <q-icon v-else name="assignment" color="negative"/>
-                  Validate your business email address
-                </div>
-                <div>
-                  Add your personal link to your LinkedIn profile
-                </div>
-                <div>
-                  <q-icon v-if="userEmployeeChecklist.has_connected_linkedin" name="check_circle" color="positive"/>
-                  <q-icon v-else name="assignment" color="negative"/>
-                  Connect your LinkedIn account
-                </div>
-                <div>
-                  <q-icon v-if="userEmployeeChecklist.has_updated_profile" name="check_circle" color="positive"/>
-                  <q-icon v-else name="assignment" color="negative"/>
-                  Update your profile
-                </div>
-              </q-card-section>
-            </q-card>
+            <div class="q-mb-sm">
+              <i>
+                Referral bonuses can be worth thousands of dollars. Complete your profile setup in minutes.
+              </i>
+            </div>
+            <q-list dense>
+              <q-item class="bg-hover-gray-100">
+                <q-item-section>
+                  <div class="text-bold">
+                    <q-icon v-if="userEmployeeChecklist.is_email_verified" name="check_circle" color="positive"/>
+                    <q-icon v-else name="assignment" color="negative"/>
+                    Validate your email address
+                  </div>
+                  <ul v-if="!userEmployeeChecklist.is_email_verified" class="q-mb-none">
+                    <li>Go to your
+                      <a href="#"
+                         @click.prevent="$router.push({ name: 'profile', params: { key: 'profile' }, query: { tab: 'security' } })">
+                        account page
+                      </a>
+                    </li>
+                    <li>Click the "Send verification email" button for your primary email</li>
+                    <li>
+                      Open the email sent to your email address and click the button to "verify email".
+                      If you don't see the email, check your junk mail folder.
+                    </li>
+                  </ul>
+                </q-item-section>
+              </q-item>
+              <q-item v-if="!userEmployeeChecklist.is_email_employer_permitted" class="bg-hover-gray-100">
+                <q-item-section>
+                  <div class="text-bold">
+                    <q-icon v-if="userEmployeeChecklist.has_secondary_email" name="check_circle" color="positive"/>
+                    <q-icon v-else name="assignment" color="negative"/>
+                    Add your business email address
+                  </div>
+                  <ul v-if="!userEmployeeChecklist.has_secondary_email" class="q-mb-none">
+                    <li>Go to your
+                      <a href="#"
+                         @click.prevent="$router.push({ name: 'profile', params: { key: 'profile' } })">
+                        account page
+                      </a>
+                    </li>
+                    <li>Enter your business email</li>
+                    <li>
+                      Click the "Save" button.
+                    </li>
+                  </ul>
+                </q-item-section>
+              </q-item>
+              <q-item v-if="userEmployeeChecklist.has_secondary_email" class="bg-hover-gray-100">
+                <q-item-section>
+                  <div class="text-bold">
+                    <q-icon v-if="userEmployeeChecklist.is_business_email_verified" name="check_circle"
+                            color="positive"/>
+                    <q-icon v-else name="assignment" color="negative"/>
+                    Validate your business email address
+                  </div>
+                  <ul v-if="!userEmployeeChecklist.is_business_email_verified" class="q-mb-none">
+                    <li>Go to your
+                      <a href="#"
+                         @click.prevent="$router.push({ name: 'profile', params: { key: 'profile' }, query: { tab: 'security' } })">
+                        account page
+                      </a>
+                    </li>
+                    <li>Click the "Send verification email" button for your business email</li>
+                    <li>
+                      Open the email sent to your email address and click the button to "verify email".
+                      If you don't see the email, check your junk mail folder.
+                    </li>
+                  </ul>
+                </q-item-section>
+              </q-item>
+              <q-item class="bg-hover-gray-100">
+                <q-item-section>
+                  <div class="text-bold">
+                    <q-icon name="assignment" color="grey-7"/>
+                    Add your personal link to your LinkedIn profile
+                  </div>
+                  <ul class="q-mb-none">
+                    <li>Click the LinkedIn image in the "Quick links" section below to copy your unique link</li>
+                    <li>Navigate to your profile on <a href="https://www.linkedin.com" target="_blank">LinkedIn</a></li>
+                    <li>Add your unique link in one or more of the following places:</li>
+                    <ul>
+                      <li>
+                        Website link at the top of profile |
+                        <a href="#" @click.prevent="openImageExplainer([
+                          getAssetsPath('/employee-get-started/websiteLink1.png'),
+                          getAssetsPath('/employee-get-started/websiteLink2.png')
+                        ])"
+                        >
+                          show how to
+                        </a>
+                      </li>
+                      <li>
+                        Link in Experience section |
+                        <a href="#" @click.prevent="openImageExplainer([
+                          getAssetsPath('/employee-get-started/Experience1.png'),
+                          getAssetsPath('/employee-get-started/Experience2.png'),
+                          getAssetsPath('/employee-get-started/Experience3.png'),
+                          getAssetsPath('/employee-get-started/Experience4.png'),
+                          getAssetsPath('/employee-get-started/Experience5.png'),
+                          getAssetsPath('/employee-get-started/Experience6.png')
+                        ])"
+                        >
+                          show how to
+                        </a>
+                      </li>
+                      <li>
+                        Link in your Featured section |
+                        <a href="#" @click.prevent="openImageExplainer([
+                          getAssetsPath('/employee-get-started/Featured1.png'),
+                          getAssetsPath('/employee-get-started/Featured2.png'),
+                          getAssetsPath('/employee-get-started/Featured3.png'),
+                          getAssetsPath('/employee-get-started/Featured4.png')
+                        ])"
+                        >
+                          show how to
+                        </a>
+                      </li>
+                    </ul>
+                  </ul>
+                </q-item-section>
+              </q-item>
+              <q-item class="bg-hover-gray-100">
+                <q-item-section>
+                  <div class="text-bold">
+                    <q-icon v-if="userEmployeeChecklist.has_connected_linkedin" name="check_circle" color="positive"/>
+                    <q-icon v-else name="assignment" color="negative"/>
+                    Connect your LinkedIn account
+                  </div>
+                  <ul v-if="!userEmployeeChecklist.has_connected_linkedin" class="q-mb-none">
+                    <li>Go to your
+                      <a href="#"
+                         @click.prevent="$router.push({ name: 'employee-social-accounts', params: { key: 'employee-social-accounts' } })">
+                        account page
+                      </a>
+                    </li>
+                    <li>Click the "Connect account" button in the LinkedIn section</li>
+                    <li>Follow the instructions from the LinkedIn page</li>
+                  </ul>
+                </q-item-section>
+              </q-item>
+              <q-item class="bg-hover-gray-100">
+                <q-item-section>
+                  <div class="text-bold">
+                    <q-icon v-if="userEmployeeChecklist.has_updated_profile" name="check_circle" color="positive"/>
+                    <q-icon v-else name="assignment" color="negative"/>
+                    Update your profile
+                  </div>
+                  <ul v-if="!userEmployeeChecklist.has_updated_profile" class="q-mb-none">
+                    <li>Go to your
+                      <a href="#"
+                         @click.prevent="$router.push({ name: 'employee-profile-page', params: { key: 'employee-profile-page' } })">
+                        profile page
+                      </a>
+                    </li>
+                    <li>Fill in the basic information</li>
+                    <li>Answer at least one profile question</li>
+                  </ul>
+                </q-item-section>
+              </q-item>
+            </q-list>
           </BaseExpansionItem>
           <BaseExpansionItem :is-include-separator="false">
             <template v-slot:header>
@@ -115,14 +250,16 @@
 <script>
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogImgCarousel from 'components/dialogs/DialogImgCarousel.vue'
 import PageHeader from 'components/PageHeader.vue'
 import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
-import { Loading, useMeta } from 'quasar'
+import { Loading, useMeta, useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil, { GROUPINGS } from 'src/utils/datetime.js'
 import locationUtil from 'src/utils/location.js'
+import { getAssetsPath } from 'src/utils/requests.js'
 import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
@@ -141,13 +278,42 @@ export default {
       },
       dataUtil,
       locationUtil,
-      socialUtil
+      socialUtil,
+      getAssetsPath
     }
   },
   computed: {
     defaultReferralLink () {
       const referralLinks = this.socialStore.getSocialLinkFilters(this.user.id)
       return referralLinks.find((link) => link.is_default)
+    },
+    hasCompletedChecklist () {
+      return [
+        this.userEmployeeChecklist.is_email_verified,
+        this.userEmployeeChecklist.is_email_employer_permitted || this.userEmployeeChecklist.has_secondary_email,
+        !this.userEmployeeChecklist.has_secondary_email || this.userEmployeeChecklist.is_business_email_verified,
+        this.userEmployeeChecklist.has_updated_profile,
+        this.userEmployeeChecklist.has_connected_linkedin
+      ].every((val) => val)
+    }
+  },
+  watch: {
+    user: {
+      async handler () {
+        await this.userStore.setUserEmployeeChecklist(this.user.id)
+      },
+      deep: true
+    }
+  },
+  methods: {
+    openImageExplainer (imageSrcs) {
+      this.q.dialog({
+        component: DialogImgCarousel,
+        componentProps: {
+          title: 'Instructions',
+          imageSrcs
+        }
+      })
     }
   },
   preFetch () {
@@ -184,7 +350,9 @@ export default {
       socialStore,
       platforms,
       user,
-      userEmployeeChecklist
+      userEmployeeChecklist,
+      userStore,
+      q: useQuasar()
     }
   }
 }

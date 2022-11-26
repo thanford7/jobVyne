@@ -380,6 +380,7 @@ class UserEmployeeChecklistView(JobVyneAPIView):
         data = {
             'is_email_verified': user.is_email_verified,
             'is_business_email_verified': user.is_business_email_verified,
+            'is_email_employer_permitted': user.is_email_employer_permitted,
             'has_secondary_email': bool(user.business_email),
             'has_updated_profile': bool(user.profile_response.all())
         }

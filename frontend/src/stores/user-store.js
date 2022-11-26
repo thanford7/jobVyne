@@ -2,14 +2,14 @@ import { defineStore } from 'pinia'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    userProfiles: {}, // {userId: {<userProfile>}
+    userProfile: {},
     userEmployeeChecklist: {}
   }),
 
   actions: {
     async setUserProfile (userId) {
       const resp = await this.$api.get(`user/profile/${userId}/`)
-      this.userProfiles[userId] = resp.data
+      this.userProfile = resp.data
     },
     async setUserEmployeeChecklist (userId) {
       const resp = await this.$api.get(`user/employee-checklist/${userId}/`)

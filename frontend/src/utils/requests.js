@@ -60,3 +60,12 @@ export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) =>
     { isCancel: true, okFn, cancelFn, dismissFn }
   )
 }
+
+/**
+ * ~assets doesn't work when assigned to a variable so this function can be used to get the appropriate path
+ * @param relativePath {String}: The path from the assets folder, starting with the forward slash
+ * @returns {string}
+ */
+export const getAssetsPath = (relativePath) => {
+  return process.env.ASSETS_PATH + relativePath
+}
