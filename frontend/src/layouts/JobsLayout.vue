@@ -1,40 +1,42 @@
 <template>
   <q-layout view="hHr lpR fFf">
 
-    <q-header v-if="isLoaded" elevated class="bg-white text-primary justify-center row" style="position: relative">
-      <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
-        <q-toolbar-title shrink>
-          <img :src="employer?.logo_url" alt="Logo" style="height: 40px; object-fit: scale-down">
-        </q-toolbar-title>
-      </q-toolbar>
-      <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
-        <div class="q-mr-md clickable" :style="getTabStyle()" @click="openFeedbackModal()">
-          <div class="flex flex-center">
-            <q-icon name="feedback" size="24px"/>
+    <q-header v-if="isLoaded" elevated class="bg-white text-primary">
+      <div class="justify-center row" style="position: relative">
+        <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
+          <q-toolbar-title shrink>
+            <img :src="employer?.logo_url" alt="Logo" style="height: 40px; object-fit: scale-down">
+          </q-toolbar-title>
+        </q-toolbar>
+        <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
+          <div class="q-mr-md clickable" :style="getTabStyle()" @click="openFeedbackModal()">
+            <div class="flex flex-center">
+              <q-icon name="feedback" size="24px"/>
+            </div>
+            <div>Get help</div>
           </div>
-          <div>Get help</div>
+          <div v-if="user && !dataUtil.isEmpty(user)">
+            <div class="row flex-center">
+              <q-avatar v-if="user.profile_picture_url" size="24px">
+                <img :src="user.profile_picture_url">
+              </q-avatar>
+              <q-avatar v-else color="primary" text-color="white" size="24px">
+                {{ userUtil.getUserInitials(user) }}
+              </q-avatar>
+            </div>
+            <div>
+              <a href="#" @click.prevent="authStore.logout(getCurrentUrl())" style="color: gray">Logout</a>
+            </div>
+          </div>
         </div>
-        <div v-if="user && !dataUtil.isEmpty(user)">
-          <div class="row flex-center">
-            <q-avatar v-if="user.profile_picture_url" size="24px">
-              <img :src="user.profile_picture_url">
-            </q-avatar>
-            <q-avatar v-else color="primary" text-color="white" size="24px">
-              {{ userUtil.getUserInitials(user) }}
-            </q-avatar>
-          </div>
-          <div>
-            <a href="#" @click.prevent="authStore.logout(getCurrentUrl())" style="color: gray">Logout</a>
-          </div>
-        </div>
+        <ResponsiveWidth class="justify-center">
+          <q-tabs align="center" v-model="tab" :style="getTabStyle()">
+            <q-tab name="jobs" label="Jobs"/>
+            <q-tab v-if="employerPage && employerPage.is_viewable" name="company" :label="`About ${employer?.name}`"/>
+            <q-tab v-if="isShowEmployeeProfile" name="me" :label="`About ${profile?.first_name}`"/>
+          </q-tabs>
+        </ResponsiveWidth>
       </div>
-      <ResponsiveWidth class="justify-center">
-        <q-tabs align="center" v-model="tab" :style="getTabStyle()">
-          <q-tab name="jobs" label="Jobs"/>
-          <q-tab v-if="employerPage && employerPage.is_viewable" name="company" :label="`About ${employer?.name}`"/>
-          <q-tab v-if="isShowEmployeeProfile" name="me" :label="`About ${profile?.first_name}`"/>
-        </q-tabs>
-      </ResponsiveWidth>
     </q-header>
 
     <q-drawer
@@ -61,9 +63,9 @@
       </div>
     </q-drawer>
 
-    <q-page-container>
+    <q-page-container class="q-pt-none">
       <q-page v-if="isLoaded" class="scroll">
-        <q-tab-panels v-model="tab" animated>
+        <q-tab-panels v-model="tab" animated keep-alive>
           <q-tab-panel name="jobs">
             <div class="row justify-center">
               <ResponsiveWidth>
@@ -130,7 +132,7 @@
                               v-html="formUtil.sanitizeHtml(job.job_description)"
                             ></div>
                             <template
-                              v-if="hasJobDescriptionOverflow(job) || !dataUtil.isNil(job.isShowFullDescription)">
+                              v-if="job.hasDescriptionOverflow || hasJobDescriptionOverflow(job) || !dataUtil.isNil(job.isShowFullDescription)">
                               <div v-if="!job.isShowFullDescription" class="q-py-md">
                                 <a
                                   href="#" @click.prevent="job.isShowFullDescription = true"
@@ -322,7 +324,8 @@ export default {
       if (!el) {
         return false
       }
-      return scrollUtil.getHasOverflow(el)
+      job.hasDescriptionOverflow = scrollUtil.getHasOverflow(el)
+      return job.hasDescriptionOverflow
     },
     async closeApplication () {
       this.isRightDrawerOpen = false

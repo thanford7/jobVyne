@@ -42,7 +42,7 @@ class EmployerView(JobVyneAPIView):
             employer = self.get_employers(employer_id=employer_id)
             data = get_serialized_employer(
                 employer,
-                is_employer=(not isinstance(self.user, AnonymousUser)) and (
+                is_employer=self.user and (
                     self.user.is_admin
                     or (self.user.employer_id == employer_id and self.user.is_employer)
                 )

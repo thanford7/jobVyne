@@ -49,7 +49,7 @@ export default boot(({ app, router }) => {
       // Dynamically imported modules fail to load when a new code version is deployed
       // The entire page needs to be refreshed when this occurs
       const localDeployTS = localStorage.getItem(DEPLOY_TS_KEY)
-      if (localDeployTS !== deployTS) {
+      if (deployTS && (localDeployTS !== deployTS)) {
         localStorage.setItem(DEPLOY_TS_KEY, deployTS)
         window.location = to.path
       }

@@ -38,6 +38,7 @@ urlpatterns = [
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
+    re_path('^user/employee-checklist/(?P<user_id>[0-9]+)?/?$', user.UserEmployeeChecklistView.as_view()),
     re_path('^user/profile/(?P<user_id>[0-9]+)/?$', user.UserProfileView.as_view()),
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),

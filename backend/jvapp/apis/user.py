@@ -20,7 +20,7 @@ from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file, get_serialized_user_profile
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, get_attachment, get_encoded_file, send_email
-from jvapp.utils.oauth import OAUTH_CFGS
+from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
     get_user_key_from_token
 
@@ -371,6 +371,22 @@ class UserEmployeeProfileQuestionsView(JobVyneAPIView):
                 'response': user_responses.get(question.id)
             })
         return Response(status=status.HTTP_200_OK, data=formatted_questions)
+    
+    
+class UserEmployeeChecklistView(JobVyneAPIView):
+    
+    def get(self, request, user_id):
+        user = UserView.get_user(self.user, user_id=user_id)
+        data = {
+            'is_email_verified': user.is_email_verified,
+            'is_business_email_verified': user.is_business_email_verified,
+            'has_secondary_email': bool(user.business_email),
+            'has_updated_profile': bool(user.profile_response.all())
+        }
+        
+        social_credentials = UserSocialCredential.objects.filter(user_id=user_id).values_list('provider', flat=True)
+        data['has_connected_linkedin'] = OauthProviders.linkedin.value in social_credentials
+        return Response(status=status.HTTP_200_OK, data=data)
     
     
 class FeedbackView(JobVyneAPIView):

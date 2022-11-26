@@ -1,8 +1,16 @@
+from enum import Enum
+
 import requests
 from django.conf import settings
 
+
+class OauthProviders(Enum):
+    google = 'google-oauth2'
+    facebook = 'facebook'
+    linkedin = 'linkedin-oauth2'
+
 OAUTH_CFGS = {
-    'google-oauth2': {
+    OauthProviders.google.value: {
         'backend_key': 'GOOGLE',
         'name': 'Google',
         'token_url': 'https://oauth2.googleapis.com/token',
@@ -15,7 +23,7 @@ OAUTH_CFGS = {
             'redirect_uri': f'{settings.FRONTEND_URL}auth/google-oauth2/callback',
         }
     },
-    'facebook': {
+    OauthProviders.facebook.value: {
         'backend_key': 'FACEBOOK',
         'name': 'Facebook',
         'token_url': 'https://graph.facebook.com/v14.0/oauth/access_token',
@@ -27,7 +35,7 @@ OAUTH_CFGS = {
             'redirect_uri': f'{settings.FRONTEND_URL}auth/facebook/callback',
         }
     },
-    'linkedin-oauth2': {
+    OauthProviders.linkedin.value: {
         'backend_key': 'LINKEDIN',
         'name': 'LinkedIn',
         'token_url': 'https://www.linkedin.com/oauth/v2/accessToken',

@@ -13,12 +13,28 @@
             <q-card>
               <q-card-section>
                 <div>
-                  <q-icon name="check_circle" color="positive"/>
-                  Validate email address
+                  <q-icon v-if="userEmployeeChecklist.is_email_verified" name="check_circle" color="positive"/>
+                  <q-icon v-else name="assignment" color="negative"/>
+                  Validate your email address
                 </div>
-                <div>Add your personal link to your LinkedIn profile</div>
-                <div>Connect your LinkedIn account</div>
-                <div>Update your profile</div>
+                <div v-if="userEmployeeChecklist.has_secondary_email">
+                  <q-icon v-if="userEmployeeChecklist.is_business_email_verified" name="check_circle" color="positive"/>
+                  <q-icon v-else name="assignment" color="negative"/>
+                  Validate your business email address
+                </div>
+                <div>
+                  Add your personal link to your LinkedIn profile
+                </div>
+                <div>
+                  <q-icon v-if="userEmployeeChecklist.has_connected_linkedin" name="check_circle" color="positive"/>
+                  <q-icon v-else name="assignment" color="negative"/>
+                  Connect your LinkedIn account
+                </div>
+                <div>
+                  <q-icon v-if="userEmployeeChecklist.has_updated_profile" name="check_circle" color="positive"/>
+                  <q-icon v-else name="assignment" color="negative"/>
+                  Update your profile
+                </div>
               </q-card-section>
             </q-card>
           </BaseExpansionItem>
@@ -111,6 +127,7 @@ import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 import { useSocialStore } from 'stores/social-store.js'
+import { useUserStore } from 'stores/user-store.js'
 
 export default {
   name: 'DashboardPage',
@@ -136,12 +153,14 @@ export default {
   preFetch () {
     const authStore = useAuthStore()
     const socialStore = useSocialStore()
+    const userStore = useUserStore()
 
     Loading.show()
     return authStore.setUser().then(() => {
       return Promise.all([
         socialStore.setPlatforms(),
-        socialStore.setSocialLinkFilters(authStore.propUser.id)
+        socialStore.setSocialLinkFilters(authStore.propUser.id),
+        userStore.setUserEmployeeChecklist(authStore.propUser.id)
       ])
     }).finally(() => Loading.hide())
   },
@@ -149,8 +168,10 @@ export default {
     const authStore = useAuthStore()
     const globalStore = useGlobalStore()
     const socialStore = useSocialStore()
+    const userStore = useUserStore()
     const { user } = storeToRefs(authStore)
     const { platforms } = storeToRefs(socialStore)
+    const { userEmployeeChecklist } = storeToRefs(userStore)
 
     const pageTitle = 'Dashboard'
     const metaData = {
@@ -162,7 +183,8 @@ export default {
     return {
       socialStore,
       platforms,
-      user
+      user,
+      userEmployeeChecklist
     }
   }
 }
