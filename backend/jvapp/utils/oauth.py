@@ -100,24 +100,16 @@ def get_access_token_from_code(backend, code):
     payload = get_payload(backend, code)
 
     # different providers have different responses to their oauth endpoint
-    if backend in ('google-oauth2', 'linkedin-oauth2'):
-        return get_token_from_post(url, payload)
-    elif backend == 'facebook':
-        return get_token_from_get(url, payload)
+    is_post = backend != 'facebook'
+    return get_token(url, payload, is_post=is_post)
         
 
-def get_token_from_post(url, payload):
-    r = requests.post(url, data=payload)
+def get_token(url, payload, is_post=True):
+    if is_post:
+        r = requests.post(url, data=payload)
+    else:
+        r = requests.get(url, params=payload)
     if r.status_code < 200 or r.status_code >= 400:
         raise ValueError(r.content)
     token = r.json()['access_token']
     return token
-
-
-def get_token_from_get(url, payload):
-    r = requests.get(url, params=payload)
-    if r.status_code < 200 or r.status_code >= 400:
-        raise ValueError(r.content)
-    data = r.json()
-    # , data['expires_in']
-    return data['access_token']

@@ -5,8 +5,7 @@
         Live view
         <CustomTooltip icon_size="16px">
           This is roughly how the post will look once posted. There will be slight differences based on the social
-          platform
-          you post to.
+          platform you post to.
         </CustomTooltip>
       </div>
       <div class="q-pa-sm" style="white-space: pre-line;">

@@ -10,7 +10,6 @@
     <div class="row">
       <div class="col-12">
         <SelectJobLink
-          v-if="post.employer_id"
           v-model="formData.jobLink"
           :is-required="true"
           :platform-name="post.platform.name"
@@ -26,7 +25,6 @@
       </div>
       <div class="col-12">
         <PostLiveView
-          v-if="post.employer_id"
           :content="post.content"
           :file="(post.files) ? post.files[0] : null"
           :job-link="formData.jobLink"
@@ -80,6 +78,9 @@ export default {
       return Boolean((!this.post.employer_id || this.formData.jobLink) && this.postAccounts.length)
     },
     validationHelpText () {
+      if (this.isValidForm) {
+        return null
+      }
       let text = 'You must select at least one social account to post to'
       if (this.post.employer_id) {
         text += ' and select a job link'
@@ -112,7 +113,7 @@ export default {
         return
       }
       Object.values(this.socialCredentials).forEach((cred) => {
-        this.formData.post_accounts[cred.email] = false
+        this.formData.post_accounts[cred.email] = true
       })
     }
   },

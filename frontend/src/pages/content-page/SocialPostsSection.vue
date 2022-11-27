@@ -1,5 +1,5 @@
 <template>
-  <div class="q-gutter-y-md">
+  <div v-if="isLoaded" class="q-gutter-y-md">
     <CollapsableCard title="Post filters" :is-dense="true">
       <template v-slot:body>
         <div class="col-12 q-pa-sm">
@@ -22,7 +22,7 @@
     </q-card>
     <div class="row q-gutter-y-md">
       <div v-for="post in socialPosts" class="col-12 col-md-6 q-px-sm h-100">
-        <CollapsableCard class="h-100">
+        <CollapsableCard class="h-100" :can-collapse="false">
           <template v-slot:header-left>
             <img :src="post.platform.logo" alt="Social platform logo" style="max-height: 32px">
             <div class="row q-ml-md">
@@ -85,11 +85,11 @@
                       <img
                         v-if="fileUtil.isImage(file.url)"
                         :src="file.url" :alt="file.title"
-                        style="max-height: 150px"
+                        style="max-height: 150px; max-width: 100%;"
                       >
                       <video
                         v-if="fileUtil.isVideo(file.url)"
-                        style="max-height: 150px"
+                        style="max-height: 150px; max-width: 100%;"
                       >
                         <source :src="file.url">
                       </video>

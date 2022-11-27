@@ -4,7 +4,7 @@
     :primary-button-text="(!this.file) ? 'Create' : 'Update'"
     @ok="confirmAndSaveFile"
   >
-    <div class="q-gutter-y-md">
+    <div class="q-gutter-y-md q-mt-md">
       <FileDisplayOrUpload
         ref="fileUpload"
         :is-allow-file-update="false"

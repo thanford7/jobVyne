@@ -14,7 +14,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from social_django.utils import psa
+from social_django.models import UserSocialAuth
+from social_django.utils import load_strategy, psa
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.user import UserView
@@ -146,16 +147,17 @@ def social_auth(request, backend):
     
     if not user.is_active:
         return Response('User is not active', status=status.HTTP_401_UNAUTHORIZED)
+
+    # Email can be associated with multiple accounts
+    # Make sure all accounts have the latest token
+    if creds := UserSocialCredential.objects.filter(provider=backend, email=user.email):
+        for cred in creds:
+            cred.access_token = access_token
+        UserSocialCredential.objects.bulk_update(creds, ['access_token'])
     
-    # Update or create social credential
+    # Make sure the current user has the social credential
     try:
-        social_credential = UserSocialCredential.objects.get(
-            user=user,
-            provider=backend,
-            email=user.email
-        )
-        social_credential.access_token = access_token
-        social_credential.save()
+        UserSocialCredential.objects.get(user=user, provider=backend, email=user.email)
     except UserSocialCredential.DoesNotExist:
         UserSocialCredential(
             user=user,
@@ -169,6 +171,11 @@ def social_auth(request, backend):
         login(request, user)
 
     return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
+
+
+def get_refreshed_access_token(backend, user):
+    social = user.social_auth.get(provider=backend)
+    return social.get_access_token(load_strategy())
 
 
 class SocialAuthCredentialsView(APIView):

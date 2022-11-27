@@ -10,13 +10,14 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.auth import get_refreshed_access_token
 from jvapp.models import EmployerFile, SocialContentItem, SocialPost, SocialPostAudit, SocialPostFile, UserFile
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.content import get_serialized_social_post
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
-from jvapp.utils.oauth import OAUTH_CFGS
+from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
 
 
 def _get_url(text):
@@ -267,6 +268,10 @@ class ShareSocialPostView(JobVyneAPIView):
                 ).save()
             
             post = new_post
+        else:
+            # Update to the most recent content to account for changes in open jobs
+            post.formatted_content = formatted_content
+            post.save()
         
         file = next((f for f in post.file.all()), None)
         social_credentials = {
@@ -280,7 +285,7 @@ class ShareSocialPostView(JobVyneAPIView):
                     f'No account credentials were found for {post_account["platform_name"]} with email {post_account["email"]}')
                 continue
         
-            args = [cred.access_token, post.formatted_content]
+            args = [user, cred.access_token, post.formatted_content]
             kwargs = {'post_file': file.file if file else None}
             resp = None
             if cred.provider == 'linkedin-oauth2':
@@ -303,14 +308,25 @@ class ShareSocialPostView(JobVyneAPIView):
         return errors
     
     @staticmethod
-    def post_to_linkedin(access_token, post_content, post_file=None):
+    def get_linkedin_profile(access_token):
         authorization_header = {'Authorization': f'Bearer {access_token}'}
-        authorization_param = {'oauth2_access_token': access_token}
         profile_response = requests.get(
             url='https://api.linkedin.com/v2/me',
             headers=authorization_header
         )
-        profile = profile_response.json()
+        return profile_response.json()
+    
+    @staticmethod
+    def post_to_linkedin(user, access_token, post_content, post_file=None):
+        profile = ShareSocialPostView.get_linkedin_profile(access_token)
+        if serviceErrorCode := profile.get('serviceErrorCode'):
+            if serviceErrorCode == 65602:  # Token has expired. Try refreshing token
+                access_token = get_refreshed_access_token(OauthProviders.linkedin.value, user)
+                profile = ShareSocialPostView.get_linkedin_profile(access_token)
+                if serviceErrorCode := profile.get('serviceErrorCode'):
+                    raise ConnectionError(f'{serviceErrorCode}: {profile.get("message")}')
+            else:
+                raise ConnectionError(f'{serviceErrorCode}: {profile.get("message")}')
         author_urn = f'urn:li:person:{profile["id"]}'
     
         data = {
@@ -328,7 +344,8 @@ class ShareSocialPostView(JobVyneAPIView):
                 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
             }
         }
-        
+
+        authorization_param = {'oauth2_access_token': access_token}
         if post_file:
             # https://docs.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin?context=linkedin%2Fconsumer%2Fcontext
             # Step 1: Register the image upload

@@ -111,8 +111,7 @@ export default {
       ])
     })
     this.socialLinks = this.socialStore.getSocialLinkFilters(this.authStore.propUser.id).map((link) => {
-      link.platformName = this.platformName
-      return link
+      return Object.assign(dataUtil.deepCopy(link), { platformName: this.platformName })
     })
 
     // If a value is required and none is populated, use the default link

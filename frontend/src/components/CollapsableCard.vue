@@ -9,6 +9,7 @@
       <q-space/>
       <slot name="header"/>
       <q-btn
+        v-if="canCollapse"
         color="grey-7"
         flat dense
         :icon="isExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
@@ -31,6 +32,10 @@ export default {
     isDense: {
       type: Boolean,
       default: false
+    },
+    canCollapse: {
+      type: Boolean,
+      default: true
     }
   },
   data () {
