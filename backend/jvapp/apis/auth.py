@@ -144,28 +144,31 @@ def social_auth(request, backend):
         # this makes it tough to debug except by examining the server logs.
         return Response('Authentication failed', status=status.HTTP_400_BAD_REQUEST)
     
-    if user.is_active and data.get('isLogin', True):
-        login(request, user)
-        return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
-    elif not user.is_active:
+    if not user.is_active:
         return Response('User is not active', status=status.HTTP_401_UNAUTHORIZED)
-    else:
-        try:
-            social_credential = UserSocialCredential.objects.get(
-                user=request.user,
-                provider=backend,
-                email=user.email
-            )
-            social_credential.access_token = access_token
-            social_credential.save()
-        except UserSocialCredential.DoesNotExist:
-            UserSocialCredential(
-                user=request.user,
-                access_token=access_token,
-                provider=backend,
-                email=user.email
-            ).save()
-        return Response(status=status.HTTP_200_OK)
+    
+    # Update or create social credential
+    try:
+        social_credential = UserSocialCredential.objects.get(
+            user=user,
+            provider=backend,
+            email=user.email
+        )
+        social_credential.access_token = access_token
+        social_credential.save()
+    except UserSocialCredential.DoesNotExist:
+        UserSocialCredential(
+            user=user,
+            access_token=access_token,
+            provider=backend,
+            email=user.email
+        ).save()
+    
+    # Log the user in if needed
+    if data.get('isLogin', True):
+        login(request, user)
+
+    return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
 
 
 class SocialAuthCredentialsView(APIView):
