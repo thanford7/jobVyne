@@ -1,13 +1,30 @@
 import { date } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 
+// Keys are based on the values returned by Python's datetime.weekday()
+// This helps stay in sync with backend
+// jsDayOfWeek corresponds with JS getDay() method
+export const DAYS_OF_WEEK = {
+  0: { jsDayOfWeek: 1, name: 'Monday' },
+  1: { jsDayOfWeek: 2, name: 'Tuesday' },
+  2: { jsDayOfWeek: 3, name: 'Wednesday' },
+  3: { jsDayOfWeek: 4, name: 'Thursday' },
+  4: { jsDayOfWeek: 5, name: 'Friday' },
+  5: { jsDayOfWeek: 6, name: 'Saturday' },
+  6: { jsDayOfWeek: 0, name: 'Sunday' }
+}
+
 class DateTimeUtil {
   constructor () {
     this.shortDateFormat = 'MMM D, YYYY'
     this.longDateFormat = 'MMMM D, YYYY'
     this.dateTimeFormat = 'MM/DD/YYYY HH:mm:ss'
+    this.dateTimeFormatNoSeconds = 'MM/DD/YYYY HH:mm'
     this.serializeDateFormat = 'MM/DD/YYYY'
     this.serializeDateTimeFormat = 'MM/DD/YYYY HH:mm:ssZZ'
+
+    this.time12HRegex = /^(?<hour>1[0-2]|0?[1-9]):(?<minute>[0-5][0-9])(:(?<second>[0-5][0-9]))? ?(?<ampm>[AaPp][Mm])/
+    this.time24HRegex = /^(?<hour>0[0-9]|1[0-9]|2[0-3]):(?<minute>[0-5][0-9])(:(?<second>[0-5][0-9]))?$/
   }
 
   serializeDate (targetDate, isIncludeTime = false, isEndOfDay = false) {
@@ -30,8 +47,9 @@ class DateTimeUtil {
     return date.formatDate(dateStr, this.shortDateFormat)
   }
 
-  getDateTime (dateTimeStr) {
-    return date.formatDate(dateTimeStr, this.dateTimeFormat)
+  getDateTime (dateTimeStr, { isIncludeSeconds = true } = {}) {
+    const format = (isIncludeSeconds) ? this.dateTimeFormat : this.dateTimeFormatNoSeconds
+    return date.formatDate(dateTimeStr, format)
   }
 
   getStartOfMonthDate (targetDate, { asString = true, monthOffset = 0 } = {}) {
@@ -76,6 +94,14 @@ class DateTimeUtil {
     return parseInt(yearStr)
   }
 
+  getTimeStrFromDate (targetDate, { isIncludeSeconds = true } = {}) {
+    let format = 'HH:mm'
+    if (isIncludeSeconds) {
+      format += ':ss'
+    }
+    return date.formatDate(targetDate, format)
+  }
+
   getDateDifference (firstDate, secondDate, unit) {
     firstDate = this.forceToDate(firstDate)
     secondDate = this.forceToDate(secondDate)
@@ -86,6 +112,42 @@ class DateTimeUtil {
       return (daysDiff / 365).toFixed(1)
     } else {
       return daysDiff
+    }
+  }
+
+  /**
+   * @returns {string}: The region of the offset - e.g. America/Denver
+   */
+  getCurrentTimeZone () {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  }
+
+  getCurrentTimeZoneHourOffset () {
+    const minuteOffset = new Date().getTimezoneOffset()
+    let hourOffset = Math.abs(minuteOffset / 60).toString()
+    // 0 pad the hour offset
+    hourOffset = (hourOffset.length === 1) ? `0${hourOffset}` : hourOffset
+    // A negative offset means the timezone is ahead of UTC so the operator is "+"
+    const operator = (minuteOffset <= 0) ? '+' : '-'
+    return `${operator}${hourOffset}00`
+  }
+
+  parseTimeStr (timeStr) {
+    const time12HMatch = timeStr.match(this.time12HRegex)
+    const time24HMatch = timeStr.match(this.time24HRegex)
+    let hour, minute, second, ampm
+    if (time12HMatch) {
+      ({ hour, minute, second, ampm } = time12HMatch.groups)
+    } else if (time24HMatch) {
+      ({ hour, minute, second } = time24HMatch.groups)
+    } else {
+      return null
+    }
+    const hourInc = (ampm) ? ((ampm.toLowerCase() === 'pm') ? 12 : 0) : 0
+    return {
+      hour: parseInt(hour) + hourInc,
+      minute: parseInt(minute),
+      second: parseInt(second || '0')
     }
   }
 
@@ -143,16 +205,15 @@ class DateTimeUtil {
 
   /**
    * Check whether the targetDate is before the referenceDate
-   * @param targetDate {String}
-   * @param referenceDate {String}
-   * @param isInclusive {Boolean}
    * @returns {boolean}
    */
-  isBefore (targetDate, referenceDate, isInclusive = false) {
+  isBefore (targetDate, referenceDate, { isInclusive = false, isIncludeTime = true } = {}) {
     const normTargetDate = new Date(targetDate)
     const normReferenceDate = new Date(referenceDate)
-    normTargetDate.setHours(0, 0, 0, 0)
-    normReferenceDate.setHours(0, 0, 0, 0)
+    if (!isIncludeTime) {
+      normTargetDate.setHours(0, 0, 0, 0)
+      normReferenceDate.setHours(0, 0, 0, 0)
+    }
     if (isInclusive) {
       return normTargetDate <= normReferenceDate
     }
@@ -161,26 +222,25 @@ class DateTimeUtil {
 
   /**
    * Check whether the targetDate is after the referenceDate
-   * @param targetDate {String}
-   * @param referenceDate {String}
-   * @param isInclusive {Boolean}
    * @returns {boolean}
    */
-  isAfter (targetDate, referenceDate, isInclusive = false) {
+  isAfter (targetDate, referenceDate, { isInclusive = false, isIncludeTime = true } = {}) {
     const normTargetDate = new Date(targetDate)
     const normReferenceDate = new Date(referenceDate)
-    normTargetDate.setHours(0, 0, 0, 0)
-    normReferenceDate.setHours(0, 0, 0, 0)
+    if (!isIncludeTime) {
+      normTargetDate.setHours(0, 0, 0, 0)
+      normReferenceDate.setHours(0, 0, 0, 0)
+    }
     if (isInclusive) {
       return normTargetDate >= normReferenceDate
     }
     return normTargetDate > normReferenceDate
   }
 
-  isBetween (targetDate, startDate, endDate, { isStartInclusive = true, isEndInclusive = true } = {}) {
+  isBetween (targetDate, startDate, endDate, { isStartInclusive = true, isEndInclusive = true, isIncludeTime = true } = {}) {
     return (
-      !this.isAfter(targetDate, endDate, !isEndInclusive) &&
-      !this.isBefore(targetDate, startDate, !isStartInclusive)
+      !this.isAfter(targetDate, endDate, { isIncludeTime, isInclusive: !isEndInclusive }) &&
+      !this.isBefore(targetDate, startDate, { isIncludeTime, isInclusive: !isStartInclusive })
     )
   }
 }

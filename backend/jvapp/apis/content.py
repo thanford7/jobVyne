@@ -212,7 +212,7 @@ class SocialPostView(JobVyneAPIView):
         
         posts = SocialPost.objects \
             .select_related('user', 'employer', 'social_platform') \
-            .prefetch_related('file', 'audit', 'child_post') \
+            .prefetch_related('file', 'audit', 'child_post', 'post_credentials') \
             .filter(filter)
         posts = SocialPost.jv_filter_perm(user, posts)
         if post_id:
@@ -229,36 +229,46 @@ class ShareSocialPostView(JobVyneAPIView):
         if not (post_id := self.data.get('post_id')):
             return Response('A post ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        errors = self.post_to_accounts(
-            self.user, post_id, self.data['post_accounts'],
-            owner_id=self.data.get('owner_id'),
-            formatted_content=self.data.get('formatted_content')
-        )
+        post, is_new = self.create_or_update_post(self.user, post_id, self.data)
         data = {}
-        if errors:
-            data[ERROR_MESSAGES_KEY] = errors
+        if self.data.get('is_post_now'):
+            errors = self.post_to_accounts(self.user, post)
+            if errors:
+                data[ERROR_MESSAGES_KEY] = errors
+            else:
+                data[SUCCESS_MESSAGE_KEY] = 'Successfully posted'
         else:
-            data[SUCCESS_MESSAGE_KEY] = 'Successfully posted'
-        
+            data[SUCCESS_MESSAGE_KEY] = 'Created post' if is_new else 'Updated post'
+            
         return Response(status=status.HTTP_200_OK, data=data)
-        
+    
     @staticmethod
-    def post_to_accounts(user, post_id, post_accounts, owner_id=False, formatted_content=None):
-        errors = []
+    def update_common_post_attributes(post, data):
+        set_object_attributes(post, data, {
+            'formatted_content': None,
+            'is_auto_post': None,
+            'auto_weeks_between': None,
+            'auto_start_dt': None,
+            'auto_day_of_week': None
+        })
+    
+    @staticmethod
+    @atomic
+    def create_or_update_post(user, post_id, data):
         post = SocialPostView.get_social_posts(user, post_id=post_id)
-        if owner_id and not formatted_content:
-            errors.append('You must provide formatted content when copying a social post')
-            return errors
-        
+        if (owner_id := data.get('owner_id')) and (not data.get('formatted_content')):
+            raise ValueError('You must provide formatted content when copying a social post')
+    
         # Copy a post template that an employer created and assign it to the user that is posting
-        if owner_id:
+        is_new = bool(owner_id)
+        if is_new:
             new_post = SocialPost(
                 user_id=owner_id,
                 content=post.content,
-                formatted_content=formatted_content,
                 social_platform=post.social_platform,
                 original_post=post  # Allows us to track how many employees shared an employer's post
             )
+            ShareSocialPostView.update_common_post_attributes(new_post, data)
             new_post.jv_check_permission(PermissionTypes.CREATE.value, user)
             new_post.save()
             for file in post.file.all():
@@ -266,42 +276,45 @@ class ShareSocialPostView(JobVyneAPIView):
                     social_post=new_post,
                     file=file.file
                 ).save()
-            
+        
             post = new_post
         else:
             # Update to the most recent content to account for changes in open jobs
-            post.formatted_content = formatted_content
+            ShareSocialPostView.update_common_post_attributes(post, data)
             post.save()
         
-        file = next((f for f in post.file.all()), None)
-        social_credentials = {
-            (cred.provider, cred.email): cred for cred in UserSocialCredential.objects.filter(user_id=user.id)
-        }
-    
-        for post_account in post_accounts:
-            cred = social_credentials.get((post_account['provider'], post_account['email']))
-            if not cred:
-                errors.append(
-                    f'No account credentials were found for {post_account["platform_name"]} with email {post_account["email"]}')
-                continue
+        # Clear any credentials for social accounts and add the new ones
+        post.post_credentials.clear()
+        for cred_id in data['post_account_ids']:
+            post.post_credentials.add(cred_id)
         
-            args = [user, cred.access_token, post.formatted_content]
+        # Refetch to efficiently grab related objects for later use
+        return SocialPost.objects.prefetch_related('file', 'post_credentials').get(id=post.id), is_new
+        
+    @staticmethod
+    def post_to_accounts(user, post):
+        errors = []
+        file = next((f for f in post.file.all()), None)
+    
+        for post_account in post.post_credentials.all():
+            args = [user, post_account.access_token, post.formatted_content]
             kwargs = {'post_file': file.file if file else None}
             resp = None
-            if cred.provider == 'linkedin-oauth2':
+            if post_account.provider == 'linkedin-oauth2':
                 resp = ShareSocialPostView.post_to_linkedin(*args, **kwargs)
             
             status = None if not resp else resp.get('status')
+            platform_name = OAUTH_CFGS[post_account.provider]['name']
             if status and (status >= 300 or status < 200):
-                errorText = f'Issue with post to {post_account["platform_name"]} with email {post_account["email"]}. {resp["status"]}: '
+                errorText = f'Issue with post to {platform_name} with email {post_account.email}. {resp["status"]}: '
                 if msg := resp.get('message'):
                     errorText += msg
                 errors.append(errorText)
             elif resp:
                 SocialPostAudit(
                     social_post=post,
-                    email=cred.email,
-                    platform=OAUTH_CFGS[cred.provider]['name'],
+                    email=post_account.email,
+                    platform=platform_name,
                     posted_dt=timezone.now()
                 ).save()
         

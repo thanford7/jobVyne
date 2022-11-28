@@ -274,10 +274,10 @@ export default {
         if (this.jobsFilter.countries?.length && !dataUtil.getArrayIntersection(countryIds, jobCountryIds).length) {
           return false
         }
-        if (fromDate && dateTimeUtil.isBefore(job.open_date, fromDate)) {
+        if (fromDate && dateTimeUtil.isBefore(job.open_date, fromDate, { isIncludeTime: false })) {
           return false
         }
-        if (toDate && dateTimeUtil.isAfter(job.open_date, toDate)) {
+        if (toDate && dateTimeUtil.isAfter(job.open_date, toDate, { isIncludeTime: false })) {
           return false
         }
         if (ruleId > 0 && (!job.bonus_rule || job.bonus_rule.id !== ruleId)) {

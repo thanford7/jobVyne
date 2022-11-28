@@ -345,6 +345,7 @@ class UserSocialCredentialsView(JobVyneAPIView):
                 continue
             name = OAUTH_CFGS[cred.provider]['name']
             data[name].append({
+                'id': cred.id,
                 'email': cred.email,
                 'platform_name': name,
                 'provider': cred.provider

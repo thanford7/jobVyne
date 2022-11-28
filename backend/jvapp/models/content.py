@@ -71,6 +71,11 @@ class SocialPost(AuditFields, JobVynePermissionsMixin):
     formatted_content = models.TextField()
     social_platform = models.ForeignKey('SocialPlatform', on_delete=models.PROTECT)
     original_post = models.ForeignKey('SocialPost', null=True, blank=True, on_delete=models.SET_NULL, related_name='child_post')
+    post_credentials = models.ManyToManyField('UserSocialCredential')
+    is_auto_post = models.BooleanField(default=False)
+    auto_start_dt = models.DateTimeField(null=True, blank=True)
+    auto_weeks_between = models.SmallIntegerField(null=True, blank=True)
+    auto_day_of_week = models.SmallIntegerField(null=True, blank=True)
     
     class Meta:
         ordering = ('-created_dt',)
