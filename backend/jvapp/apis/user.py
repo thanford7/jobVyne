@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import Employer, EmployerAuthGroup
+from jvapp.models import Employer, EmployerAuthGroup, SocialPost
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import JobVyneUser, UserEmployeeProfileQuestion, UserEmployeeProfileResponse, UserFile, \
     UserSocialCredential, \
@@ -378,12 +378,14 @@ class UserEmployeeChecklistView(JobVyneAPIView):
     
     def get(self, request, user_id):
         user = UserView.get_user(self.user, user_id=user_id)
+        auto_posts = SocialPost.objects.filter(user_id=user.id, is_auto_post=True)
         data = {
             'is_email_verified': user.is_email_verified,
             'is_business_email_verified': user.is_business_email_verified,
             'is_email_employer_permitted': user.is_email_employer_permitted,
             'has_secondary_email': bool(user.business_email),
-            'has_updated_profile': bool(user.profile_response.all())
+            'has_updated_profile': bool(user.profile_response.all()),
+            'has_scheduled_auto_post': bool(auto_posts)
         }
         
         social_credentials = UserSocialCredential.objects.filter(user_id=user_id).values_list('provider', flat=True)

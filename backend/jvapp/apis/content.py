@@ -189,12 +189,22 @@ class SocialPostView(JobVyneAPIView):
         set_object_attributes(post, data, {
             'content': None,
             'formatted_content': None,
-            'social_platform_id': AttributeCfg(form_name='platform_id')
+            'social_platform_id': AttributeCfg(form_name='platform_id'),
+            'is_auto_post': None,
+            'auto_weeks_between': None,
+            'auto_start_dt': None,
+            'auto_day_of_week': None,
+            'link_filter_id': None
         })
         
         permission_type = PermissionTypes.EDIT.value if post.id else PermissionTypes.CREATE.value
         post.jv_check_permission(permission_type, user)
         post.save()
+
+        # Clear any credentials for social accounts and add the new ones
+        post.post_credentials.clear()
+        for cred_id in data['post_account_ids']:
+            post.post_credentials.add(cred_id)
         
         file = None
         if employer_file_id := data.get('employer_file_id'):
@@ -376,6 +386,9 @@ class ShareSocialPostView(JobVyneAPIView):
     
     @staticmethod
     def run_auto_posts(target_dt):
+        if not settings.IS_SEND_AUTO_POSTS:
+            return ['Auto-posts have been disabled in the configuration settings'], 0
+        
         auto_posts = SocialPost.objects\
             .select_related('link_filter') \
             .prefetch_related('file', 'post_credentials') \

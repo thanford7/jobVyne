@@ -106,12 +106,12 @@
           </BaseExpansionItem>
           <BaseExpansionItem
             v-if="!isEmployer"
-            :title="`Auto-post to ${platform.name}`" class="content-expansion"
+            :title="`Post to ${platform.name}`" class="content-expansion"
             :is-include-separator="false"
           >
             <template v-slot:header>
               <CustomTooltip>
-                Once you create this post, it will automatically be posted to the selected social accounts.
+                Once you create this post, it will be posted to the selected social accounts.
               </CustomTooltip>
             </template>
             <q-checkbox
@@ -130,6 +130,13 @@
               for one-click set-up.
             </div>
           </BaseExpansionItem>
+          <BaseExpansionItem
+            v-if="!isEmployer"
+            title="Schedule auto-posting" class="content-expansion"
+            :is-include-separator="false"
+          >
+            <FormAutoPost ref="autoPost"/>
+          </BaseExpansionItem>
         </template>
       </div>
     </div>
@@ -139,6 +146,7 @@
 <script>
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
+import FormAutoPost from 'components/dialogs/dialog-social-content/FormAutoPost.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import DialogSocialLink from 'components/dialogs/DialogSocialLink.vue'
 import SelectFiles from 'components/inputs/SelectFiles.vue'
@@ -176,7 +184,7 @@ export default {
   name: 'DialogSocialContent',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { PostLiveView, SelectJobLink, SelectFiles, BaseExpansionItem, CustomTooltip, DialogBase },
+  components: { FormAutoPost, PostLiveView, SelectJobLink, SelectFiles, BaseExpansionItem, CustomTooltip, DialogBase },
   props: {
     contentItem: {
       type: [Object, null],
@@ -299,7 +307,7 @@ export default {
         return
       }
       dataUtil.getForceArray(this.socialCredentials[this.platform.name]).forEach((cred) => {
-        this.formData.post_accounts[cred.email] = false
+        this.formData.post_accounts[cred.email] = true
       })
     }
   },
@@ -327,20 +335,29 @@ export default {
         dataUtil.pick(this.formData, ['content', 'formatted_content']),
         { platform_id: this.platform.id }
       )
+      data.link_filter_id = this.formData?.jobLink?.id
       if (this.formData.employer_file) {
         data.employer_file_id = this.formData.employer_file.id
       } else if (this.formData.user_file) {
         data.user_file_id = this.formData.user_file.id
       }
 
-      data.post_accounts = Object.entries(this.formData.post_accounts).reduce((data, [email, isShare]) => {
+      data.post_account_ids = Object.entries(this.formData.post_accounts).reduce((data, [email, isShare]) => {
         if (!isShare) {
           return data
         }
         const cred = this.socialCredentials[this.platform.name].find((c) => c.email === email)
-        data.push(cred)
+        data.push(cred.id)
         return data
       }, [])
+
+      // For some reason the ref to autoPost disappears after calling isValidForm so we grab the data first
+      const autoPostData = this.$refs.autoPost.getFormData()
+      const isValidAutoPost = await this.$refs.autoPost.isValidForm()
+      if (!isValidAutoPost) {
+        return
+      }
+      Object.assign(data, autoPostData)
 
       await method('social-post/', getAjaxFormData(data))
       if (this.isEmployer) {

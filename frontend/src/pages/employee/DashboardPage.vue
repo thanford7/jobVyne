@@ -4,7 +4,7 @@
       <PageHeader title="Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div v-if="defaultReferralLink" class="col-12">
-          <BaseExpansionItem v-if="!hasCompletedChecklist" :is-include-separator="false">
+          <BaseExpansionItem v-if="hasCompletedChecklist" :is-include-separator="false">
             <template v-slot:header>
               <div class="text-h6">
                 Get started
@@ -149,6 +149,38 @@
                     </li>
                     <li>Click the "Connect account" button in the LinkedIn section</li>
                     <li>Follow the instructions from the LinkedIn page</li>
+                  </ul>
+                </q-item-section>
+              </q-item>
+              <q-item class="bg-hover-gray-100">
+                <q-item-section>
+                  <div class="text-bold">
+                    <q-icon v-if="userEmployeeChecklist.has_scheduled_auto_post" name="check_circle" color="positive"/>
+                    <q-icon v-else name="assignment" color="negative"/>
+                    Send your first LinkedIn post and schedule auto-post
+                  </div>
+                  <ul v-if="!userEmployeeChecklist.has_scheduled_auto_post" class="q-mb-none">
+                    <li>Go to your
+                      <a href="#"
+                         @click.prevent="$router.push({ name: 'employee-content', params: { key: 'employee-content' } })">
+                        Posts and Content page
+                      </a>
+                    </li>
+                    <li>Post using an employer template</li>
+                    <ul>
+                      <li>Click the "Employer Post Templates" tab to check if there are any post templates you can share</li>
+                      <li>
+                        If there is at least one template, click the
+                        <q-icon name="share"/>
+                        icon and complete the form. Make sure "auto-post" is turned on
+                      </li>
+                    </ul>
+                    <li>Or create your own post</li>
+                    <ul>
+                      <li>Click the "Posts" tab</li>
+                      <li>Click the "Create post" button and select "LinkedIn"</li>
+                      <li>Complete the form and make sure "auto-post" is turned on</li>
+                    </ul>
                   </ul>
                 </q-item-section>
               </q-item>

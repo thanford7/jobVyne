@@ -36,61 +36,7 @@
           :label="(formData.is_post_now) ? 'On' : 'Off'"
         />
       </div>
-      <div class="col-12 q-mt-md">
-        <div>
-          <span class="text-bold">Auto-post </span>
-          <CustomTooltip icon_size="24px">
-            It's tough to stay on top of all the new jobs at your company. Auto-post will post to your account(s) on the
-            cadence you specify and will update the post with the most recent jobs. The post will only be sent if there
-            is at least one open job.
-          </CustomTooltip>
-        </div>
-        <q-toggle
-          v-model="formData.is_auto_post"
-          :label="(formData.is_auto_post) ? 'On' : 'Off'"
-        />
-        <q-form v-if="formData.is_auto_post" ref="autoPost">
-          <div class="row q-gutter-y-xs">
-            <div class="col-12 col-md-6 q-pr-md-sm q-mb-md q-mb-md-none">
-              <DateSelector v-model="formData.auto_start_date" label="Start date"/>
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input filled v-model="formData.auto_time" mask="time" :rules="['time']"
-                       :label="`Time of day (${dateTimeUtil.getCurrentTimeZone()})`">
-                <template v-slot:append>
-                  <q-icon name="access_time" class="cursor-pointer">
-                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                      <q-time v-model="formData.auto_time" :minute-options="[0, 15, 30, 45]">
-                        <div class="row items-center justify-end">
-                          <q-btn v-close-popup label="Close" color="primary" flat/>
-                        </div>
-                      </q-time>
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </q-input>
-            </div>
-            <div class="col-12 col-md-6 q-pr-md-sm">
-              <q-input
-                v-model.number="formData.auto_weeks_between"
-                label="Weeks between post"
-                type="number"
-                filled
-                :rules="[
-                 val => val && val > 0 || 'Value is required and must be greater than 0'
-              ]"
-              />
-            </div>
-            <div class="col-12 col-md-6">
-              <SelectDayOfWeek v-model="formData.auto_day_of_week"/>
-            </div>
-            <div class="col-12 text-small">
-              <q-icon name="info"/>
-              {{ nextPosts }}
-            </div>
-          </div>
-        </q-form>
-      </div>
+      <FormAutoPost ref="autoPost" :post="post" class="col-12 q-mt-md"/>
       <div class="col-12">
         <PostLiveView
           :content="post.content"
@@ -105,18 +51,14 @@
 </template>
 
 <script>
-/* eslint-disable camelcase */
+import FormAutoPost from 'components/dialogs/dialog-social-content/FormAutoPost.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
-import DateSelector from 'components/inputs/DateSelector.vue'
-import SelectDayOfWeek from 'components/inputs/SelectDayOfWeek.vue'
 import SelectJobLink from 'components/inputs/SelectJobLink.vue'
 import PostLiveView from 'pages/content-page/PostLiveView.vue'
-import dateTimeUtil, { DAYS_OF_WEEK } from 'src/utils/datetime.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useSocialAuthStore } from 'stores/social-auth-store.js'
-import dataUtil from 'src/utils/data.js'
 
 export const loadDialogShareSocialPostFn = () => {
   const socialAuthStore = useSocialAuthStore()
@@ -132,7 +74,7 @@ export default {
   name: 'DialogShareSocialPost',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { DateSelector, SelectDayOfWeek, DialogBase, SelectJobLink, PostLiveView },
+  components: { FormAutoPost, DialogBase, SelectJobLink, PostLiveView },
   props: {
     post: Object
   },
@@ -141,18 +83,11 @@ export default {
       formData: {
         link_filter: this.post.link_filter_id,
         post_accounts: {},
-        is_post_now: true,
-        is_auto_post: (!dataUtil.isNil(this.post.is_auto_post)) ? this.post.is_auto_post : true,
-        auto_weeks_between: this.post.auto_weeks_between || 2,
-        auto_start_date: dateTimeUtil.serializeDate((this.post.auto_start_dt) ? this.post.auto_start_dt : new Date()),
-        auto_time: (this.post.auto_start_dt) ? dateTimeUtil.getTimeStrFromDate(this.post.auto_start_dt, { isIncludeSeconds: false }) : '07:45',
-        // q-select expects a string value instead of a number
-        auto_day_of_week: (!dataUtil.isNil(this.post.auto_day_of_week)) ? this.post.auto_day_of_week.toString() : '0'
+        is_post_now: true
       },
       isAjaxActive: false,
       authStore: null,
-      socialAuthStore: null,
-      dateTimeUtil
+      socialAuthStore: null
     }
   },
   computed: {
@@ -188,20 +123,11 @@ export default {
       }
       return this.socialAuthStore.socialCredentials[this.post.platform.name]
     },
-    nextPosts () {
-      const { is_auto_post, auto_weeks_between, auto_time, auto_day_of_week } = this.formData
-      if (!(is_auto_post && auto_weeks_between && auto_time && !dataUtil.isNil(auto_day_of_week))) {
-        return 'Complete all auto post fields to see next post date'
-      }
-      const nextPostDt = this.calculatePostDate(0)
-      const secondPostDt = this.calculatePostDate(1)
-      return `Next post date is ${dateTimeUtil.getDateTime(nextPostDt, { isIncludeSeconds: false })}, followed by ${dateTimeUtil.getDateTime(secondPostDt, { isIncludeSeconds: false })}`
-    },
     btnText () {
-      const { is_post_now, is_auto_post } = this.formData
-      if (is_post_now && is_auto_post) {
+      const autoPostData = this.$refs?.autoPost?.getFormData() || {}
+      if (this.formData.is_post_now && autoPostData.is_auto_post) {
         return 'Post & Save'
-      } else if (is_post_now) {
+      } else if (this.formData.is_post_now) {
         return 'Post'
       }
       return 'Save'
@@ -222,11 +148,8 @@ export default {
       this.isAjaxActive = true
 
       // Make sure auto post fields are good
-      if (this.formData.is_auto_post) {
-        const isValid = await this.$refs.autoPost.validate()
-        if (!isValid) {
-          return
-        }
+      if (!await this.$refs.autoPost.isValidForm()) {
+        return
       }
 
       await this.$api.post('social-post/share/', getAjaxFormData(Object.assign(
@@ -235,10 +158,9 @@ export default {
           link_filter_id: this.formData.link_filter?.id,
           post_account_ids: this.postAccountIds,
           owner_id: (this.post.employer_id) ? this.authStore.propUser.id : null, // If this post is owned by an employer, we need to copy it for the owner
-          auto_start_dt: this.calculatePostDate(0)
-        }, dataUtil.pick(this.formData, [
-          'formatted_content', 'is_post_now', 'is_auto_post', 'auto_weeks_between', 'auto_day_of_week'
-        ])
+          formatted_content: this.formData.formatted_content,
+          is_post_now: this.formData.is_post_now
+        }, this.$refs.autoPost.getFormData()
       ))).finally(() => {
         this.isAjaxActive = false
         this.$emit('ok')
@@ -247,34 +169,6 @@ export default {
     goToSocialAccountsPage () {
       this.$emit('hide')
       this.$router.push({ name: 'employee-social-accounts' })
-    },
-    getAutoStartDt () {
-      const postDt = new Date(this.formData.auto_start_date)
-      const { hour, minute } = dateTimeUtil.parseTimeStr(this.formData.auto_time)
-      postDt.setHours(hour, minute, 0, 0)
-      return postDt
-    },
-    calculatePostDate (postIdx) {
-      const { auto_weeks_between, auto_day_of_week } = this.formData
-      const postDt = this.getAutoStartDt()
-
-      // Set the postDt to the next date landing on the targetDow
-      const targetDow = DAYS_OF_WEEK[auto_day_of_week].jsDayOfWeek
-      const postDow = postDt.getDay()
-      if (targetDow !== postDow) {
-        const dayDistance = (targetDow + 7 - postDow) % 7
-        postDt.setDate(postDt.getDate() + dayDistance)
-      }
-
-      // Find the first occurrence of the targetDate after the current date
-      const currentDt = new Date()
-      while (dateTimeUtil.isBefore(postDt, currentDt)) {
-        postDt.setDate(postDt.getDate() + 7)
-      }
-
-      // Get the nth occurrence based on postIdx
-      postDt.setDate(postDt.getDate() + (postIdx * 7 * auto_weeks_between))
-      return postDt
     }
   },
   mounted () {

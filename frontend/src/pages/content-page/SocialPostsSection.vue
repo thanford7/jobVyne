@@ -28,6 +28,7 @@
             <div class="row q-ml-md">
               <div class="col-12">
                 <div class="text-h6 text-h6--mobile">
+                  <q-icon v-if="post.is_auto_post" name="history" title="This is a recurring post"/>
                   Post<span v-if="isEmployer"> template</span><span v-if="isEmployees"> by {{ post.user_name }}</span>
                 </div>
               </div>

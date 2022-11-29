@@ -40,7 +40,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
-import { SOCIAL_CONTENT_PLACEHOLDERS } from 'components/dialogs/DialogSocialContent.vue'
+import { SOCIAL_CONTENT_PLACEHOLDERS } from 'components/dialogs/dialog-social-content/DialogSocialContent.vue'
 import dataUtil from 'src/utils/data.js'
 import fileUtil from 'src/utils/file.js'
 import { useAuthStore } from 'stores/auth-store.js'

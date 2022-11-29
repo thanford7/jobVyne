@@ -261,7 +261,7 @@
 import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
-import DialogSocialContent, { loadDialogSocialContentFn } from 'components/dialogs/DialogSocialContent.vue'
+import DialogSocialContent, { loadDialogSocialContentFn } from 'components/dialogs/dialog-social-content/DialogSocialContent.vue'
 import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
 import PageHeader from 'components/PageHeader.vue'
 import SocialPostsSection from 'pages/content-page/SocialPostsSection.vue'
