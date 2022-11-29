@@ -252,7 +252,7 @@ class SocialPostView(JobVyneAPIView):
             post.link_filter.employer.employer_name
         )
         
-        job_link = f'{settings.BASE_URL}/jobs-link/${post.link_filter.id}/?platform={post.social_platform.name}'
+        job_link = f'{settings.BASE_URL}/jobs-link/{post.link_filter.id}/?platform={post.social_platform.name}'
         formatted_content = formatted_content.replace(
             SocialPostView.ContentPlaceholders.JOB_LINK.value,
             job_link
