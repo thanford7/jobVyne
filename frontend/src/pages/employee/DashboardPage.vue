@@ -4,7 +4,7 @@
       <PageHeader title="Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div v-if="defaultReferralLink" class="col-12">
-          <BaseExpansionItem v-if="hasCompletedChecklist" :is-include-separator="false">
+          <BaseExpansionItem v-if="!hasCompletedChecklist" :is-include-separator="false">
             <template v-slot:header>
               <div class="text-h6">
                 Get started
@@ -325,7 +325,8 @@ export default {
         this.userEmployeeChecklist.is_email_employer_permitted || this.userEmployeeChecklist.has_secondary_email,
         !this.userEmployeeChecklist.has_secondary_email || this.userEmployeeChecklist.is_business_email_verified,
         this.userEmployeeChecklist.has_updated_profile,
-        this.userEmployeeChecklist.has_connected_linkedin
+        this.userEmployeeChecklist.has_connected_linkedin,
+        this.userEmployeeChecklist.has_scheduled_auto_post
       ].every((val) => val)
     }
   },
