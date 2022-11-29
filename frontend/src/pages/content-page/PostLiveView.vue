@@ -80,6 +80,7 @@ export default {
     },
     jobTitles () {
       const jobTitles = dataUtil.uniqArray(this.jobs.map((j) => j.job_title))
+      // TODO: Sort by post date
       jobTitles.sort()
       return jobTitles
     },
@@ -98,9 +99,15 @@ export default {
             addParams: [{ key: 'platform', val: this.jobLink.platformName }]
           })
         }
+
+        let formattedJobTitles = this.jobTitles.slice(0, 5).map((j) => `- ${j}`).join('\n')
+        if (this.jobTitles.length > 5) {
+          formattedJobTitles += '\n- And more jobs viewable on the website'
+        }
+
         formattedContent = formattedContent
           .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, jobLinkUrl)
-          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST, this.jobTitles.map((j) => `- ${j}`).join('\n'))
+          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST, formattedJobTitles)
       }
       return formattedContent
     },

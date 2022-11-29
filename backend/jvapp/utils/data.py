@@ -54,3 +54,7 @@ def coerce_bool(val):
         return val.lower() == 'true'
     
     raise ValueError(f'Unknown boolean val: {val}')
+
+
+def round_to(num, round_num):
+    return round(num / round_num) * round_num

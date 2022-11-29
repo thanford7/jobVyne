@@ -10,7 +10,7 @@
     <div class="row">
       <div class="col-12">
         <SelectJobLink
-          v-model="formData.jobLink"
+          v-model="formData.link_filter"
           :is-required="true"
           :platform-name="post.platform.name"
         />
@@ -95,7 +95,7 @@
         <PostLiveView
           :content="post.content"
           :file="(post.files) ? post.files[0] : null"
-          :job-link="formData.jobLink"
+          :job-link="formData.link_filter"
           :max-char-count="platformCfg.characterLimit"
           @content-update="formData.formatted_content = $event"
         />
@@ -139,6 +139,7 @@ export default {
   data () {
     return {
       formData: {
+        link_filter: this.post.link_filter_id,
         post_accounts: {},
         is_post_now: true,
         is_auto_post: (!dataUtil.isNil(this.post.is_auto_post)) ? this.post.is_auto_post : true,
@@ -156,7 +157,7 @@ export default {
   },
   computed: {
     isValidForm () {
-      return Boolean((!this.post.employer_id || this.formData.jobLink) && this.postAccountIds.length)
+      return Boolean((!this.post.employer_id || this.formData.link_filter) && this.postAccountIds.length)
     },
     validationHelpText () {
       if (this.isValidForm) {
@@ -231,9 +232,10 @@ export default {
       await this.$api.post('social-post/share/', getAjaxFormData(Object.assign(
         {
           post_id: this.post.id,
+          link_filter_id: this.formData.link_filter?.id,
           post_account_ids: this.postAccountIds,
           owner_id: (this.post.employer_id) ? this.authStore.propUser.id : null, // If this post is owned by an employer, we need to copy it for the owner
-          auto_start_dt: this.getAutoStartDt()
+          auto_start_dt: this.calculatePostDate(0)
         }, dataUtil.pick(this.formData, [
           'formatted_content', 'is_post_now', 'is_auto_post', 'auto_weeks_between', 'auto_day_of_week'
         ])

@@ -72,7 +72,7 @@ import { useSocialStore } from 'stores/social-store.js'
 export default {
   name: 'SelectJobLink',
   props: {
-    modelValue: [Object, null],
+    modelValue: [Object, String, null],
     isRequired: {
       type: Boolean,
       default: false
@@ -119,6 +119,13 @@ export default {
       const defaultLink = this.socialLinks.find((link) => link.is_default)
       this.$emit('update:model-value', defaultLink)
     }
+
+    // If an ID was passed for the modelValue, update to the entire object
+    if (this.modelValue && dataUtil.isString(this.modelValue)) {
+      const link = this.socialLinks.find((link) => link.id === this.modelValue)
+      this.$emit('update:model-value', link)
+    }
+
     this.isLoaded = true
   },
   setup () {

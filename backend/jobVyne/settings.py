@@ -48,8 +48,10 @@ if IS_LOCAL:
 else:
     CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com']
 
-# Application definition
+SUBDOMAIN = env('SUBDOMAIN', default=None)
+BASE_URL = 'https://localhost' if IS_LOCAL else (f'https://{SUBDOMAIN}.jobvyne.com' if SUBDOMAIN else 'https://jobvyne.com')
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

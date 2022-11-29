@@ -32,5 +32,6 @@ def get_serialized_social_post(social_post: SocialPost):
         'auto_start_dt': get_datetime_format_or_none(social_post.auto_start_dt),
         'auto_weeks_between': social_post.auto_weeks_between,
         'auto_day_of_week': social_post.auto_day_of_week,
-        'post_account_ids': [pc.id for pc in social_post.post_credentials.all()]
+        'post_account_ids': [pc.id for pc in social_post.post_credentials.all()],
+        'link_filter_id': social_post.link_filter_id
     }
