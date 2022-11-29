@@ -621,7 +621,8 @@ class EmployerUserView(JobVyneAPIView):
             for user in batched_users:
                 set_object_attributes(user, self.data, {
                     'first_name': None,
-                    'last_name': None
+                    'last_name': None,
+                    'employer_id': None
                 })
                 user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
                 current_user_permissions = {
@@ -659,7 +660,7 @@ class EmployerUserView(JobVyneAPIView):
                         user_employer_permissions_to_delete_filters.append(
                             Q(user_id=user.id) & Q(permission_group_id=group_id))
             
-            JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name'])
+            JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name', 'employer_id'])
             if user_employer_permissions_to_delete_filters:
                 def reduceFilters(allFilters, filter):
                     allFilters |= filter

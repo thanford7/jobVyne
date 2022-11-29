@@ -177,7 +177,7 @@ export default {
       }
 
       const potentialEmployers = [...this.potentialPersonalEmployers, ...this.potentialBusinessEmployers]
-      if (!this.user.employer_id && potentialEmployers.length > 1) {
+      if (!this.user.employer_id && potentialEmployers.length) {
         all.push({
           component: 'StepSelectEmployer',
           props: { formData: this.formData, potentialEmployers }

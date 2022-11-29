@@ -96,8 +96,8 @@
                       <li>
                         Website link at the top of profile |
                         <a href="#" @click.prevent="openImageExplainer([
-                          getAssetsPath('/employee-get-started/websiteLink1.png'),
-                          getAssetsPath('/employee-get-started/websiteLink2.png')
+                          '/images/employee-get-started/websiteLink1.png',
+                          '/images/employee-get-started/websiteLink2.png'
                         ])"
                         >
                           show how to
@@ -106,12 +106,12 @@
                       <li>
                         Link in Experience section |
                         <a href="#" @click.prevent="openImageExplainer([
-                          getAssetsPath('/employee-get-started/Experience1.png'),
-                          getAssetsPath('/employee-get-started/Experience2.png'),
-                          getAssetsPath('/employee-get-started/Experience3.png'),
-                          getAssetsPath('/employee-get-started/Experience4.png'),
-                          getAssetsPath('/employee-get-started/Experience5.png'),
-                          getAssetsPath('/employee-get-started/Experience6.png')
+                          '/images/employee-get-started/Experience1.png',
+                          '/images/employee-get-started/Experience2.png',
+                          '/images/employee-get-started/Experience3.png',
+                          '/images/employee-get-started/Experience4.png',
+                          '/images/employee-get-started/Experience5.png',
+                          '/images/employee-get-started/Experience6.png'
                         ])"
                         >
                           show how to
@@ -120,10 +120,10 @@
                       <li>
                         Link in your Featured section |
                         <a href="#" @click.prevent="openImageExplainer([
-                          getAssetsPath('/employee-get-started/Featured1.png'),
-                          getAssetsPath('/employee-get-started/Featured2.png'),
-                          getAssetsPath('/employee-get-started/Featured3.png'),
-                          getAssetsPath('/employee-get-started/Featured4.png')
+                          '/images/employee-get-started/Featured1.png',
+                          '/images/employee-get-started/Featured2.png',
+                          '/images/employee-get-started/Featured3.png',
+                          '/images/employee-get-started/Featured4.png'
                         ])"
                         >
                           show how to

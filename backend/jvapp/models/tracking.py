@@ -16,7 +16,7 @@ class PageView(models.Model, JobVynePermissionsMixin):
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     
     # Unique characteristics
-    ip_address = models.CharField(max_length=20, null=True, blank=True)
+    ip_address = models.CharField(max_length=40, null=True, blank=True)
     access_dt = models.DateTimeField(default=timezone.now)
     
     # location

@@ -42,7 +42,9 @@ class PageTrackView(APIView):
             page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)
         
         page_view.ip_address = parse_ip_address(meta.get('HTTP_X_FORWARDED_FOR')) or parse_ip_address(meta.get('REMOTE_ADDR'))
-        logger.info(f'IP Address: {page_view.ip_address}')
+        if page_view.ip_address and len(page_view.ip_address) > 40:
+            logger.warning(f'IP Address is too long: {page_view.ip_address}')
+            page_view.ip_address = None
         page_view.access_dt = timezone.now()
         
         location_data = None
