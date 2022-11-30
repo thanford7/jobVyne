@@ -22,6 +22,7 @@
           ref="onboardStep"
           v-bind:is="steps[stepIdx].component"
           v-bind="steps[stepIdx].props"
+          @continue="incrementStep"
         >
           <template v-slot:backButton>
             <q-btn

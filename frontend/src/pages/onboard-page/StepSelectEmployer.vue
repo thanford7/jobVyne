@@ -8,7 +8,7 @@
         <div class="col-12 col-md-6">
           <q-select
             id="jv-employer-sel"
-            filled emit-value map-options
+            filled emit-value map-options autofocus
             v-model="formData.employer_id"
             :options="potentialEmployers"
             autocomplete="name"

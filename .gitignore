@@ -8,3 +8,4 @@ backend/secret
 backend/secure
 *.pem
 *.crt
+docker-compose-mysql.yml

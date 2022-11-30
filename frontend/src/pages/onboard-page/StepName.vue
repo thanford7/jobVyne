@@ -8,13 +8,13 @@
         <div class="col-12 col-md-6 q-pa-sm">
           <q-input
             class="jv-fname"
-            filled
+            filled autofocus
             v-model="formData.first_name"
             label="First name"
             lazy-rules
             :rules="[
-          val => val && val.length > 0 || 'First name is required'
-        ]"
+              val => val && val.length > 0 || 'First name is required'
+            ]"
           />
         </div>
         <div class="col-12 col-md-6 q-pa-sm">
@@ -25,8 +25,9 @@
             label="Last name"
             lazy-rules
             :rules="[
-          val => val && val.length > 0 || 'Last name is required'
-        ]"
+              val => val && val.length > 0 || 'Last name is required'
+            ]"
+            @keyup.enter="$emit('continue')"
           />
         </div>
       </div>

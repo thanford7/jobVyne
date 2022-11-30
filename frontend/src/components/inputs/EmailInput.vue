@@ -34,7 +34,7 @@ export default {
   },
   computed: {
     rules () {
-      const rules = [
+      return [
         (val) => {
           if (this.isRequired && (!val || !val.length)) {
             return 'An email is required'
@@ -46,8 +46,6 @@ export default {
         },
         ...this.additionalRules
       ]
-
-      return rules
     }
   },
   data () {
