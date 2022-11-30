@@ -45,7 +45,6 @@
           <q-input
             filled
             v-model="formData.linkedin_url"
-            type="url"
             label="LinkedIn URL*"
             hint="www.linkedin.com/in/{your profile id}"
             lazy-rules
