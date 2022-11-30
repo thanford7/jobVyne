@@ -1,7 +1,9 @@
 from django.urls import path, re_path
 
-from jvapp.apis import admin, ats, auth, content, currency, data, employer, job_seeker, social, stripe, tracking, user, \
-    waitlist
+from jvapp.apis import (
+    admin, ats, auth, content, currency, data, employer, job_seeker, social,
+    stripe, test, tracking, user, waitlist
+)
 
 api_path = 'api/v1/'
 
@@ -82,7 +84,10 @@ urlpatterns = [
     
     # Social auth
     path('social/<backend>/', auth.social_auth),
-    path('social-credentials/', auth.SocialAuthCredentialsView.as_view())
+    path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
+    
+    # Test url
+    path('test/error-msg/', test.TestErrorView.as_view())
 ]
 
 handler404 = 'jvapp.views.handler404'

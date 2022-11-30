@@ -73,7 +73,7 @@ const routes = [
         path: 'dashboard',
         name: 'admin-dashboard',
         meta: { userTypeBits: USER_TYPES.Admin },
-        component: () => import('pages/DashboardPage.vue')
+        component: () => import('pages/admin/DashboardPage.vue')
       },
       {
         path: 'users',

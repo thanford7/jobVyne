@@ -61,7 +61,7 @@ export default {
   },
   methods: {
     async redirectAuthUrl (provider) {
-      window.location.href = await this.socialAuthStore.getOauthUrl(
+      const socialAuthUrl = await this.socialAuthStore.getOauthUrl(
         provider,
         {
           redirectPageUrl: window.location.pathname,
@@ -69,6 +69,7 @@ export default {
           isLogin: false
         }
       )
+      window.location.href = socialAuthUrl
     }
   },
   computed: {
