@@ -44,6 +44,28 @@ class DataUtil {
   }
 
   getBoolean (val) {
+    if (typeof val === 'boolean') {
+      return val
+    } else if (dataUtil.isNil(val)) {
+      return false
+    } else if (Array.isArray(val)) {
+      return Boolean(val.length)
+    } else if (dataUtil.isObject(val)) {
+      return !dataUtil.isEmpty(val)
+    } else if (dataUtil.isString(val)) {
+      if (val.toLowerCase() === 'true') {
+        return true
+      }
+      if (val.toLowerCase() === 'false') {
+        return false
+      }
+      const numberVal = Number(val)
+      if (!isNaN(numberVal)) {
+        return Boolean(numberVal)
+      }
+      return Boolean(val.length)
+    }
+
     return Boolean(val)
   }
 

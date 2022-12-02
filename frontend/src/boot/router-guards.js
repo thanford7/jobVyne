@@ -2,6 +2,7 @@ import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests'
+import { getDataFromMetaString } from 'stores/social-auth-store.js'
 
 const DEPLOY_TS_KEY = 'JV_DEPLOY_TS'
 
@@ -19,7 +20,7 @@ export default boot(({ app, router }) => {
     // Handle oauth callback
     if (to.name === 'auth-callback') {
       const provider = to.params.provider
-      const { state, redirectPageUrl, redirectParams, userTypeBit, isLogin } = JSON.parse(to.query.state)
+      const { state, redirectPageUrl, redirectParams, userTypeBit, isLogin } = getDataFromMetaString(to.query.state)
       try {
         await $api.post(
           `/social/${provider}/`,

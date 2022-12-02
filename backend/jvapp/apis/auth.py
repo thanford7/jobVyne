@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.decorators import method_decorator
@@ -24,7 +25,7 @@ from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
 from jvapp.utils.logger import getLogger
-from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
+from jvapp.utils.oauth import OauthProviders, get_access_token_from_code, OAUTH_CFGS
 
 __all__ = ('LoginView', 'LoginSetCookieView', 'LogoutView', 'CheckAuthView', 'SocialAuthCredentialsView')
 
@@ -126,49 +127,54 @@ def social_auth(request, backend):
     if state != settings.AUTH_STATE:
         return Response('Request state is not the same as the callback state', status=status.HTTP_401_UNAUTHORIZED)
     
-    access_token = get_access_token_from_code(backend, code)
-    
-    try:
-        # this line, plus the psa decorator above, are all that's
-        # necessary to get and populate a user object for any properly
-        # enabled/configured backend which python-social-auth can handle.
-        user = request.backend.do_auth(access_token, user_type_bits=data.get('userTypeBit'))
-    except HTTPError as e:
-        # An HTTPError bubbled up from the request to the social
-        # auth provider. This happens, at least in Google's case, every time you
-        # send a malformed or incorrect access key.
-        return Response(f'Invalid token: {e}', status=status.HTTP_400_BAD_REQUEST)
-    
-    if not user:
-        # Unfortunately, PSA swallows any information the backend provider
-        # generated as to why specifically the authentication failed;
-        # this makes it tough to debug except by examining the server logs.
-        return Response('Authentication failed', status=status.HTTP_400_BAD_REQUEST)
-    
-    if not user.is_active:
-        return Response('User is not active', status=status.HTTP_401_UNAUTHORIZED)
+    access_token, social_response = get_access_token_from_code(backend, code)
+    is_login = data.get('isLogin', True)  # We use social auth for login and also to connect to social accounts
+    if is_login:
+        user = request.backend.do_auth(access_token, response=social_response, user_type_bits=data.get('userTypeBit'))
+        if not user:
+            # Unfortunately, PSA swallows any information the backend provider
+            # generated as to why specifically the authentication failed;
+            # this makes it tough to debug except by examining the server logs.
+            return Response('Authentication failed', status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user.is_active:
+            return Response('User is not active', status=status.HTTP_401_UNAUTHORIZED)
 
-    # Email can be associated with multiple accounts
-    # Make sure all accounts have the latest token
-    if creds := UserSocialCredential.objects.filter(provider=backend, email=user.email):
-        for cred in creds:
-            cred.access_token = access_token
-        UserSocialCredential.objects.bulk_update(creds, ['access_token'])
-    
-    # Make sure the current user has the social credential
-    try:
-        UserSocialCredential.objects.get(user=user, provider=backend, email=user.email)
-    except UserSocialCredential.DoesNotExist:
-        UserSocialCredential(
-            user=user,
-            access_token=access_token,
-            provider=backend,
-            email=user.email
-        ).save()
-    
-    # Log the user in if needed
-    if data.get('isLogin', True):
         login(request, user)
+    else:
+        user = request.user
+        if isinstance(user, AnonymousUser):
+            return Response('You must be logged in to complete this action', status=status.HTTP_401_UNAUTHORIZED)
+        
+        user_data = request.backend.user_data(access_token)
+        if not isinstance(data, dict):
+            return Response(f'Something went wrong with the request to {backend}', status=status.HTTP_400_BAD_REQUEST)
+
+        user_details = request.backend.get_user_details(user_data)
+        user_email = user_details.get('email')
+        user_emails = [user_email] if user_email else None
+        
+        if not user_emails:
+            return Response(f'Could not identify an appropriate email address from {backend}', status=status.HTTP_400_BAD_REQUEST)
+        
+        for email in user_emails:
+            # Email can be associated with multiple accounts
+            # Make sure all accounts have the latest token
+            if creds := UserSocialCredential.objects.filter(provider=backend, email=email):
+                for cred in creds:
+                    cred.access_token = access_token
+                UserSocialCredential.objects.bulk_update(creds, ['access_token'])
+            
+            # Make sure the current user has the social credential
+            try:
+                UserSocialCredential.objects.get(user=user, provider=backend, email=email)
+            except UserSocialCredential.DoesNotExist:
+                UserSocialCredential(
+                    user=user,
+                    access_token=access_token,
+                    provider=backend,
+                    email=email
+                ).save()
 
     return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
 

@@ -2,6 +2,7 @@ from enum import Enum
 
 import requests
 from django.conf import settings
+from social_core.utils import parse_qs
 
 
 class OauthProviders(Enum):
@@ -101,15 +102,18 @@ def get_access_token_from_code(backend, code):
 
     # different providers have different responses to their oauth endpoint
     is_post = backend != 'facebook'
-    return get_token(url, payload, is_post=is_post)
+    response = get_social_response(url, payload, is_post=is_post)
+    return response['access_token'], response
         
 
-def get_token(url, payload, is_post=True):
+def get_social_response(url, payload, is_post=True):
     if is_post:
         r = requests.post(url, data=payload)
     else:
         r = requests.get(url, params=payload)
     if r.status_code < 200 or r.status_code >= 400:
         raise ValueError(r.content)
-    token = r.json()['access_token']
-    return token
+    try:
+        return r.json()
+    except ValueError:
+        return parse_qs(r.text)

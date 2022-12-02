@@ -12,7 +12,7 @@
             <template v-slot:header>
               <q-btn
                 unelevated dense
-                label="Connect account" icon="power" color="primary"
+                label="Connect account" icon="power" color="primary" class="q-pr-sm"
                 @click="redirectAuthUrl('linkedin-oauth2')"
               />
             </template>

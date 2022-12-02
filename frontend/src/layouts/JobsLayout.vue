@@ -25,7 +25,7 @@
               </q-avatar>
             </div>
             <div>
-              <a href="#" @click.prevent="authStore.logout(getCurrentUrl())" style="color: gray">Logout</a>
+              <a href="#" @click.prevent="logoutUser()" style="color: gray">Logout</a>
             </div>
           </div>
         </div>
@@ -48,6 +48,7 @@
       overlay bordered persistent
     >
       <FormJobApplication
+        ref="jobApplicationForm"
         :job-application="jobApplication"
         :employer="employer"
         @login="loadData()"
@@ -330,17 +331,25 @@ export default {
     async closeApplication () {
       this.isRightDrawerOpen = false
       this.jobApplication = null
-      await this.$router.replace({ name: this.$route.name, query: {} })
+      await this.$router.replace({
+        name: this.$route.name,
+        query: dataUtil.omit(this.$route.query || {}, ['jobId'])
+      })
     },
     async openApplication (e, jobId) {
       this.jobApplication = this.jobs.find((j) => j.id === jobId)
-      await this.$router.replace({ name: this.$route.name, query: { jobId } })
+      await this.$router.replace({ name: this.$route.name, query: Object.assign({}, this.$route.query, { jobId }) })
       if (window.innerWidth < 600) {
         this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
       } else {
         this.isRightDrawerOpen = true
       }
       scrollUtil.scrollToElement(document.getElementById(`job-${jobId}`))
+    },
+    async logoutUser () {
+      await this.authStore.logout(this.getCurrentUrl())
+      this.$refs.jobApplicationForm.resetFormData()
+      await this.loadData()
     },
     async loadData () {
       Loading.show()

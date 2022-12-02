@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import buildURL from 'axios/lib/helpers/buildURL'
+import dataUtil from 'src/utils/data.js'
 
 /*
 This is the process for social authentication:
@@ -9,6 +10,73 @@ This is the process for social authentication:
 (4) The router-guard uses the credentials from the incoming url to authenticate the user
 (5) The router-guard redirects the user to the ultimate page they land on
  */
+const META_STRING_DELIMITER = '|'
+const serializeBasicObject = (targetObj) => {
+  if (!targetObj) {
+    return ''
+  }
+  return Object.entries(targetObj).reduce((objString, [key, val]) => {
+    const param = `${key}=${val || ''}`
+    if (!objString.length) {
+      return param
+    }
+    return `${objString}${META_STRING_DELIMITER}${param}`
+  }, '')
+}
+
+const deserializeBasicObject = (targetStr) => {
+  if (!targetStr) {
+    return ''
+  }
+  const keyValPairs = targetStr.split(META_STRING_DELIMITER)
+  return keyValPairs.reduce((targetObj, keyValPair) => {
+    const splitIdx = keyValPair.indexOf('=')
+    const key = keyValPair.slice(0, splitIdx)
+    targetObj[key] = keyValPair.slice(splitIdx + 1, keyValPair.length)
+    return targetObj
+  }, {})
+}
+
+const metaDataCfg = {
+  state: {},
+  redirectPageUrl: {},
+  redirectParams: {
+    serialize: serializeBasicObject,
+    deserialize: deserializeBasicObject
+  },
+  userTypeBit: { deserialize: Number },
+  isLogin: { deserialize: dataUtil.getBoolean }
+}
+
+const getMetaString = (metaData) => {
+  return Object.entries(metaDataCfg).reduce((metaString, [metaDataKey, cfg]) => {
+    const val = (cfg.serialize) ? cfg.serialize(metaData[metaDataKey]) : metaData[metaDataKey]
+    const param = `${metaDataKey}=${val || ''}`
+    if (!metaString.length) {
+      return param
+    }
+    return `${metaString}${META_STRING_DELIMITER}${param}`
+  }, '')
+}
+
+export const getDataFromMetaString = (metaString) => {
+  const params = metaString.split(META_STRING_DELIMITER)
+  const data = params.reduce((metaData, param) => {
+    const splitIdx = param.indexOf('=')
+    const key = param.slice(0, splitIdx)
+    let val = param.slice(splitIdx + 1, param.length)
+    if (dataUtil.isNil(val) || !val.length) {
+      return metaData
+    }
+    const deserializer = metaDataCfg[key].deserialize
+    if (deserializer && val) {
+      val = deserializer(val)
+    }
+    metaData[key] = val
+    return metaData
+  }, {})
+  return data
+}
 
 export const useSocialAuthStore = defineStore('social-auth', {
   state: () => ({
@@ -24,13 +92,14 @@ export const useSocialAuthStore = defineStore('social-auth', {
       }
 
       const providerCfg = this.socialCfgs[provider]
-      providerCfg.auth_params.state = JSON.stringify({
+      const metaData = {
         state: providerCfg.auth_params.state,
         redirectPageUrl,
         redirectParams,
         userTypeBit,
         isLogin
-      })
+      }
+      providerCfg.auth_params.state = getMetaString(metaData)
       const authUrl = new URL(providerCfg.auth_url)
       Object.entries(providerCfg.auth_params).forEach(([key, val]) => {
         authUrl.searchParams.append(key, encodeURIComponent(val))

@@ -30,12 +30,12 @@ const AUTH_PLATFORMS = [
     name: 'Google',
     icon: 'fa-google',
     redirectProvider: 'google-oauth2'
-  },
-  {
-    name: 'Facebook',
-    icon: 'fa-facebook-f',
-    redirectProvider: 'facebook'
   }
+  // {
+  //   name: 'Facebook',
+  //   icon: 'fa-facebook-f',
+  //   redirectProvider: 'facebook'
+  // }
 ]
 
 export default {
