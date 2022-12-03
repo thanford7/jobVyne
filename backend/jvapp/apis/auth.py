@@ -1,3 +1,4 @@
+from datetime import timedelta
 from http import HTTPStatus
 
 from django.conf import settings
@@ -5,6 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from google.cloud import recaptchaenterprise_v1
@@ -157,26 +159,39 @@ def social_auth(request, backend):
         if not user_emails:
             return Response(f'Could not identify an appropriate email address from {backend}', status=status.HTTP_400_BAD_REQUEST)
         
+        expiration_seconds = social_response.get('expires_in')
+        expiration_dt = get_token_expiration_dt(expiration_seconds) if expiration_seconds else None
         for email in user_emails:
-            # Email can be associated with multiple accounts
-            # Make sure all accounts have the latest token
-            if creds := UserSocialCredential.objects.filter(provider=backend, email=email):
-                for cred in creds:
-                    cred.access_token = access_token
-                UserSocialCredential.objects.bulk_update(creds, ['access_token'])
-            
-            # Make sure the current user has the social credential
-            try:
-                UserSocialCredential.objects.get(user=user, provider=backend, email=email)
-            except UserSocialCredential.DoesNotExist:
-                UserSocialCredential(
-                    user=user,
-                    access_token=access_token,
-                    provider=backend,
-                    email=email
-                ).save()
+            update_all_social_creds(user, backend, email, access_token, expiration_dt)
 
     return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
+
+
+def update_all_social_creds(user, backend, email, access_token, expiration_dt):
+    # Email can be associated with multiple accounts
+    # Make sure all accounts have the latest token
+    if creds := UserSocialCredential.objects.filter(provider=backend, email=email):
+        for cred in creds:
+            cred.access_token = access_token
+            cred.expiration_dt = expiration_dt
+        UserSocialCredential.objects.bulk_update(creds, ['access_token', 'expiration_dt'])
+    
+    # Make sure the current user has the social credential
+    if user:
+        try:
+            UserSocialCredential.objects.get(user=user, provider=backend, email=email)
+        except UserSocialCredential.DoesNotExist:
+            UserSocialCredential(
+                user=user,
+                access_token=access_token,
+                provider=backend,
+                email=email,
+                expiration_dt=expiration_dt
+            ).save()
+
+
+def get_token_expiration_dt(expiration_seconds):
+    return timezone.now() + timedelta(seconds=expiration_seconds)
 
 
 def get_refreshed_access_token(backend, user):
@@ -256,8 +271,8 @@ def create_assessment(
         # For more information on interpreting the assessment,
         # see: https://cloud.google.com/recaptcha-enterprise/docs/interpret-assessment
         for reason in response.risk_analysis.reasons:
-            logger.error(reason)
-        logger.error(
+            logger.info(reason)
+        logger.info(
             "The reCAPTCHA score for this token is: "
             + str(response.risk_analysis.score)
         )

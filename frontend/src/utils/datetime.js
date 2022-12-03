@@ -158,7 +158,7 @@ class DateTimeUtil {
     return dateVal
   }
 
-  today () {
+  now () {
     return new Date()
   }
 

@@ -301,7 +301,7 @@ export default {
       if (!this.profile.employment_start_date) {
         return null
       }
-      return dateTimeUtil.getDateDifference(this.profile.employment_start_date, dateTimeUtil.today(), 'years')
+      return dateTimeUtil.getDateDifference(this.profile.employment_start_date, dateTimeUtil.now(), 'years')
     },
     isShowEmployeeProfile () {
       return Boolean(this.profile && this.profile.is_profile_viewable && this.profile.profile_responses.length)

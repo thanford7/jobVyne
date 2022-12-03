@@ -51,7 +51,7 @@ const metaDataCfg = {
 const getMetaString = (metaData) => {
   return Object.entries(metaDataCfg).reduce((metaString, [metaDataKey, cfg]) => {
     const val = (cfg.serialize) ? cfg.serialize(metaData[metaDataKey]) : metaData[metaDataKey]
-    const param = `${metaDataKey}=${val || ''}`
+    const param = `${metaDataKey}=${dataUtil.isNil(val) ? '' : val}`
     if (!metaString.length) {
       return param
     }

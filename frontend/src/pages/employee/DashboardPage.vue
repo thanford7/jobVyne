@@ -147,7 +147,7 @@
                         account page
                       </a>
                     </li>
-                    <li>Click the "Connect account" button in the LinkedIn section</li>
+                    <li>Click the "Connect LinkedIn" button</li>
                     <li>Follow the instructions from the LinkedIn page</li>
                   </ul>
                 </q-item-section>

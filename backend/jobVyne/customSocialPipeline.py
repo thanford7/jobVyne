@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.shortcuts import redirect
 
+from jvapp.apis.auth import get_token_expiration_dt, update_all_social_creds
 from jvapp.models import JobVyneUser
 from jvapp.models.user import UserSocialCredential
 
@@ -25,6 +26,8 @@ def create_user(strategy, details, backend, user=None, *args, **kwargs):
 def save_user_credentials(strategy, details, backend, user=None, *args, **kwargs):
     provider = backend.name
     access_token = kwargs['response']['access_token']
+    expiration_seconds = kwargs['response'].get('expires_in')
+    expiration_dt = get_token_expiration_dt(expiration_seconds) if expiration_seconds else None
     email = details['email']
     user_filter = Q(email=email) | Q(business_email=email)
     users = JobVyneUser.objects.prefetch_related('social_credential').filter(user_filter)
@@ -36,16 +39,16 @@ def save_user_credentials(strategy, details, backend, user=None, *args, **kwargs
             ),
             None
         )
-        if social_credential:
-            social_credential.access_token = access_token
-            social_credential.save()
-        else:
+        if not social_credential:
             UserSocialCredential(
                 user=jv_user,
                 access_token=access_token,
                 provider=provider,
-                email=email
+                email=email,
+                expiration_dt=expiration_dt
             ).save()
+
+    update_all_social_creds(user, backend, email, access_token, expiration_dt)
 
 
 def redirect_if_no_refresh_token(backend, response, social, *args, **kwargs):

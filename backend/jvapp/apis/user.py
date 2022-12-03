@@ -19,6 +19,7 @@ from jvapp.models.user import JobVyneUser, UserEmployeeProfileQuestion, UserEmpl
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file, get_serialized_user_profile
 from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, get_attachment, get_encoded_file, send_email
 from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
@@ -87,7 +88,7 @@ class UserView(JobVyneAPIView):
             'first_name': AttributeCfg(is_ignore_excluded=True),
             'last_name': AttributeCfg(is_ignore_excluded=True),
             'business_email': AttributeCfg(is_ignore_excluded=True),
-            'user_type_bits': None,
+            'user_type_bits': AttributeCfg(is_ignore_excluded=True),
             'employer_id': AttributeCfg(is_ignore_excluded=True),
             'is_profile_viewable': AttributeCfg(is_ignore_excluded=True),
             'job_title': AttributeCfg(is_ignore_excluded=True),
@@ -348,7 +349,8 @@ class UserSocialCredentialsView(JobVyneAPIView):
                 'id': cred.id,
                 'email': cred.email,
                 'platform_name': name,
-                'provider': cred.provider
+                'provider': cred.provider,
+                'expiration_dt': get_datetime_format_or_none(cred.expiration_dt)
             })
         return Response(status=status.HTTP_200_OK, data=data)
     

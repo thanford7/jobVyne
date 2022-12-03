@@ -296,6 +296,7 @@ class UserSocialCredential(models.Model):
     access_token = models.CharField(max_length=1000)
     provider = models.CharField(max_length=32)
     email = models.EmailField()
+    expiration_dt = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         unique_together = ('user', 'provider', 'email')

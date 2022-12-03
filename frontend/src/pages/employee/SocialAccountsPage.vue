@@ -8,31 +8,73 @@
       </PageHeader>
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12">
-          <CollapsableCard title="LinkedIn">
-            <template v-slot:header>
-              <q-btn
-                unelevated dense
-                label="Connect account" icon="power" color="primary" class="q-pr-sm"
-                @click="redirectAuthUrl('linkedin-oauth2')"
-              />
+          <q-btn
+            class="btn-bordered"
+            ripple color="primary"
+            @click="redirectAuthUrl('linkedin-oauth2')"
+          >
+            <q-icon tag="div" name="fa-brands fa-linkedin-in" class="q-mr-sm"/>
+            <div class="text-center">
+              Connect LinkedIn
+            </div>
+          </q-btn>
+        </div>
+        <div class="col-12">
+          <q-table
+            :rows="socialCredentialList"
+            :columns="socialCredentialColumns"
+            :rows-per-page-options="[100]"
+            :hide-bottom="true"
+          >
+            <template v-slot:header="props">
+              <q-tr :props="props">
+                <q-th
+                  v-for="col in props.cols"
+                  :key="col.name"
+                  :props="props"
+                >
+                  {{ col.label }}
+                </q-th>
+                <q-th auto-width>
+                  Actions
+                </q-th>
+              </q-tr>
             </template>
-            <template v-slot:body>
-              <div class="q-px-md">
-                <q-list>
-                  <q-item
-                    v-for="cred in (socialCredentials[SOCIAL_KEY_LINKED_IN] || [])"
-                  >
-                    <q-item-section>
-                      <div class="flex items-center">
-                        <q-icon name="check_circle" color="positive" class="q-mr-sm"/>
-                        {{ cred.email }}
-                      </div>
-                    </q-item-section>
-                  </q-item>
-                </q-list>
-              </div>
+
+            <template v-slot:body="props">
+              <q-tr :props="props">
+                <q-td
+                  v-for="col in props.cols"
+                  :key="col.name"
+                  :props="props"
+                >
+                  <template v-if="col.name === 'expiration_dt'">
+                    <q-chip
+                      v-if="props.row.daysToExpiration && props.row.daysToExpiration < 8"
+                      dense
+                      :color="getExpirationColor(props.row.daysToExpiration)"
+                      title="Use the refresh button to extend the expiration date"
+                    >
+                      {{ dataUtil.pluralize('day', props.row.daysToExpiration) }} left
+                    </q-chip>
+                    {{ col.value }}
+                  </template>
+                  <span v-else>{{ col.value }}</span>
+                </q-td>
+                <q-td auto-width>
+                  <q-btn
+                    color="primary" no-wrap dense icon="sync" label="Refresh" class="q-pr-sm"
+                    @click="redirectAuthUrl(props.row.provider)"
+                  />
+                </q-td>
+              </q-tr>
+              <q-tr v-show="props.expand" :props="props">
+                <q-td colspan="100%">
+                  <div class="text-left">This is expand slot for row above: {{ props.row.name }}.</div>
+                </q-td>
+              </q-tr>
             </template>
-          </CollapsableCard>
+          </q-table>
         </div>
       </div>
     </div>
@@ -40,26 +82,65 @@
 </template>
 
 <script>
-import CollapsableCard from 'components/CollapsableCard.vue'
 import PageHeader from 'components/PageHeader.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
 import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
+import dateTimeUtil from 'src/utils/datetime.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 import { useSocialAuthStore } from 'stores/social-auth-store.js'
 
 export default {
   name: 'SocialAccountsPage',
-  components: { CollapsableCard, PageHeader },
+  components: { PageHeader },
   data () {
     return {
       colorUtil,
+      dataUtil,
       SOCIAL_KEY_LINKED_IN: 'LinkedIn',
       SOCIAL_KEY_FACEBOOK: 'Facebook'
     }
   },
+  computed: {
+    socialCredentialList () {
+      return Object.values(this.socialCredentials).reduce((allVals, platformVals) => {
+        platformVals.forEach((cred) => {
+          if (!cred.expiration_dt) {
+            cred.daysToExpiration = null
+          } else {
+            cred.daysToExpiration = dateTimeUtil.getDateDifference(dateTimeUtil.now(), cred.expiration_dt, 'days')
+          }
+        })
+        return [...allVals, ...platformVals]
+      }, [])
+    },
+    socialCredentialColumns () {
+      return [
+        { name: 'platform_name', field: 'platform_name', label: 'Platform', align: 'left', sortable: true },
+        { name: 'email', field: 'email', label: 'Account', align: 'left', sortable: true },
+        {
+          name: 'expiration_dt',
+          field: 'expiration_dt',
+          label: 'Expiration',
+          align: 'left',
+          format: (val) => (val) ? dateTimeUtil.getShortDate(val) : 'Unknown',
+          sortable: true,
+          sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil)
+        }
+      ]
+    }
+  },
   methods: {
+    getExpirationColor (daysToExpiration) {
+      if (daysToExpiration > 7) {
+        return 'positive'
+      } else if (daysToExpiration > 2) {
+        return 'warning'
+      }
+      return 'negative'
+    },
     async redirectAuthUrl (provider) {
       const socialAuthUrl = await this.socialAuthStore.getOauthUrl(
         provider,
@@ -70,11 +151,6 @@ export default {
         }
       )
       window.location.href = socialAuthUrl
-    }
-  },
-  computed: {
-    socialCredentials () {
-      return this.socialAuthStore.socialCredentials || {}
     }
   },
   preFetch () {
@@ -90,6 +166,9 @@ export default {
   },
   setup () {
     const globalStore = useGlobalStore()
+    const socialAuthStore = useSocialAuthStore()
+    const { socialCredentials } = storeToRefs(socialAuthStore)
+
     const pageTitle = 'Social Accounts'
     const metaData = {
       title: pageTitle,
@@ -98,7 +177,8 @@ export default {
     useMeta(metaData)
 
     return {
-      socialAuthStore: useSocialAuthStore()
+      socialAuthStore,
+      socialCredentials
     }
   }
 }

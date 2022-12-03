@@ -4,9 +4,7 @@
       v-for="platform in AUTH_PLATFORMS"
       type="div"
       class="w-100 btn-bordered"
-      ripple
-      :flat="true"
-      :unelevated="true"
+      ripple flat unelevated
       @click="redirectAuthUrl(platform.redirectProvider)"
     >
       <q-icon tag="div" :name="`fa-brands ${platform.icon}`" class="q-mr-sm"/>
