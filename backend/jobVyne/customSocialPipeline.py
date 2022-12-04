@@ -48,7 +48,7 @@ def save_user_credentials(strategy, details, backend, user=None, *args, **kwargs
                 expiration_dt=expiration_dt
             ).save()
 
-    update_all_social_creds(user, backend, email, access_token, expiration_dt)
+    update_all_social_creds(user, provider, email, access_token, expiration_dt)
 
 
 def redirect_if_no_refresh_token(backend, response, social, *args, **kwargs):

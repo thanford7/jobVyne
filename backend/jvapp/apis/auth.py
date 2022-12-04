@@ -167,10 +167,10 @@ def social_auth(request, backend):
     return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
 
 
-def update_all_social_creds(user, backend, email, access_token, expiration_dt):
+def update_all_social_creds(user, provider, email, access_token, expiration_dt):
     # Email can be associated with multiple accounts
     # Make sure all accounts have the latest token
-    if creds := UserSocialCredential.objects.filter(provider=backend, email=email):
+    if creds := UserSocialCredential.objects.filter(provider=provider, email=email):
         for cred in creds:
             cred.access_token = access_token
             cred.expiration_dt = expiration_dt
@@ -179,12 +179,12 @@ def update_all_social_creds(user, backend, email, access_token, expiration_dt):
     # Make sure the current user has the social credential
     if user:
         try:
-            UserSocialCredential.objects.get(user=user, provider=backend, email=email)
+            UserSocialCredential.objects.get(user=user, provider=provider, email=email)
         except UserSocialCredential.DoesNotExist:
             UserSocialCredential(
                 user=user,
                 access_token=access_token,
-                provider=backend,
+                provider=provider,
                 email=email,
                 expiration_dt=expiration_dt
             ).save()
