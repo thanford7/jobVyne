@@ -1,9 +1,10 @@
+import logging
+
 from celery.schedules import crontab
 
-from jvapp.utils.logger import getLogger
 from .celery import app
 
-logger = getLogger()
+logger = logging.getLogger(__name__)
 
 
 @app.on_after_configure.connect

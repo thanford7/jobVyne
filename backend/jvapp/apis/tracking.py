@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from django.contrib.gis.geoip2 import GeoIP2
@@ -9,13 +10,12 @@ from rest_framework.views import APIView
 from user_agents import parse
 
 from jvapp.models import PageView, SocialPlatform
-from jvapp.utils.logger import getLogger
 
 __all__ = ('PageTrackView',)
 
 
 geo_locator = GeoIP2()
-logger = getLogger()
+logger = logging.getLogger(__name__)
 
 
 # Check whether the same IP address viewed the page within this number of minutes

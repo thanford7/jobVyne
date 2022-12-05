@@ -26,6 +26,8 @@ export const msgTypes = {
   }
 }
 
+const DEFAULT_ERROR_MSG = 'Something went wrong. The JobVyne team has been notified and will work on a fix as soon as possible.'
+
 const isString = (val) => val && typeof val.valueOf() === 'string'
 
 export const useAjaxStore = defineStore('ajax', {
@@ -42,7 +44,11 @@ export const useAjaxStore = defineStore('ajax', {
         if (data && data.detail) {
           msg += `: ${data.detail}`
         } else if (isString(data) && data.toLowerCase().includes('<!doctype html>')) {
-          msg += `: ${this.parseHtmlMessage(data)}`
+          let parsedMessage = this.parseHtmlMessage(data)
+          if (!parsedMessage || !parsedMessage.length) {
+            parsedMessage = DEFAULT_ERROR_MSG
+          }
+          msg += `: ${parsedMessage}`
         } else if (isString(data)) {
           msg += `: ${data}`
         }

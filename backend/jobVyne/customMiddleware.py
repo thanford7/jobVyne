@@ -1,7 +1,10 @@
+import logging
 import re
 
 from django.conf import settings
 from django.shortcuts import redirect
+
+logger = logging.getLogger(__name__)
 
 
 class AdminRedirectMiddleware:
@@ -26,3 +29,21 @@ class AdminRedirectMiddleware:
             response = redirect(f'/backend{request.path}')
 
         return response
+
+
+class ErrorHandlerMiddleware:
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+    def __call__(self, request):
+        return self.get_response(request)
+    
+    def process_exception(self, request, exception):
+        message = ''
+        try:
+            message = exception.args[0]
+        except:
+            pass
+        logger.exception(message)
+        return None

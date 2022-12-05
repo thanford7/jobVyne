@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from http import HTTPStatus
 
@@ -11,13 +12,11 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from google.cloud import recaptchaenterprise_v1
 from google.cloud.recaptchaenterprise_v1 import Assessment
-from requests import HTTPError
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from social_django.models import UserSocialAuth
 from social_django.utils import load_strategy, psa
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
@@ -26,14 +25,13 @@ from jvapp.models import JobVyneUser
 from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
-from jvapp.utils.logger import getLogger
-from jvapp.utils.oauth import OauthProviders, get_access_token_from_code, OAUTH_CFGS
+from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
 
 __all__ = ('LoginView', 'LoginSetCookieView', 'LogoutView', 'CheckAuthView', 'SocialAuthCredentialsView')
 
 from jvapp.utils.security import get_user_id_from_uid
 
-logger = getLogger()
+logger = logging.getLogger(__name__)
 
 # https://cloud.google.com/recaptcha-enterprise/docs/interpret-assessment
 ALLOWABLE_CAPTCHA_RISK_SCORE = 0.5

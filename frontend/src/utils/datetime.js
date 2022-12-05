@@ -163,7 +163,7 @@ class DateTimeUtil {
   }
 
   getCurrentYear () {
-    return this.today().getFullYear()
+    return this.now().getFullYear()
   }
 
   copyDate (date) {

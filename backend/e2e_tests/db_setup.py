@@ -1,4 +1,4 @@
-import argparse
+import logging
 import subprocess
 import warnings
 from contextlib import closing
@@ -6,11 +6,9 @@ from contextlib import closing
 import MySQLdb
 from django.conf import settings
 
-from jvapp.utils.logger import getLogger
-
 E2E_DB = 'jobvyne-cypress'
 E2E_DB_SQL_FILE_PATH = './e2e_db.sql'
-logger = getLogger()
+logger = logging.getLogger(__name__)
 
 # def parse_args():
 #     parser = argparse.ArgumentParser(

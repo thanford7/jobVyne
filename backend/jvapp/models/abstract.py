@@ -1,8 +1,7 @@
+import logging
 from enum import Enum
 
 from django.db import models
-
-from jvapp.utils.logger import getLogger
 
 __all__ = (
     'ALLOWED_UPLOADS_FILE', 'ALLOWED_UPLOADS_VIDEO', 'ALLOWED_UPLOADS_IMAGE', 'ALLOWED_UPLOADS_ALL',
@@ -10,7 +9,7 @@ __all__ = (
 )
 
 
-logger = getLogger()
+logger = logging.getLogger(__name__)
 
 
 ALLOWED_UPLOADS_FILE = ['doc', 'docx', 'pdf', 'txt', 'rtf']

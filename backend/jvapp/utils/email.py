@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import re
 from urllib.request import urlopen
@@ -9,8 +10,6 @@ from django.templatetags.static import static
 from sendgrid import SendGridAPIClient, Attachment, ContentId, Disposition, FileType, FileName, FileContent
 from sendgrid.helpers.mail import Mail
 
-from jvapp.utils.logger import getLogger
-
 IS_PRODUCTION = os.getenv('DB') == 'prod'
 EMAIL_ADDRESS_TEST = 'test@jobvyne.com'
 EMAIL_ADDRESS_SEND = 'no-reply@jobvyne.com'  # Email address where all emails originate from
@@ -18,7 +17,7 @@ EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
 EMAIL_ADDRESS_SALES = 'sales@jobvyne.com'
 EMAIL_ADDRESS_MARKETING = 'marketing@jobvyne.com'
 sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-logger = getLogger()
+logger = logging.getLogger(__name__)
 
 
 def get_encoded_file_from_url(fileUrl):

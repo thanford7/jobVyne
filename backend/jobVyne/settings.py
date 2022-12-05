@@ -13,12 +13,11 @@ import datetime
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
 import environ
-
-from jvapp.utils.logger import setLogger
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -32,10 +31,6 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', default=get_random_secret_key())
 
 DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
-
-LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
-logger = setLogger(LOG_LEVEL)
-logger.info(f'Base directory is: {BASE_DIR}')
 
 PREPEND_WWW = False
 ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend').split(',')
@@ -71,12 +66,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.BrokenLinkEmailsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'jobVyne.customMiddleware.AdminRedirectMiddleware'
+    'jobVyne.customMiddleware.AdminRedirectMiddleware',
+    'jobVyne.customMiddleware.ErrorHandlerMiddleware'
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -198,7 +195,7 @@ if IS_LOCAL:
         'default': db_config
     }
 else:
-    logger.info('CURRENTLY IN PRODUCTION MODE')
+    print('CURRENTLY IN PRODUCTION MODE')
     db_config['USER'] = env('MYSQL_USER', default='jobvyne')
     db_config['PASSWORD'] = env('MYSQL_PASSWORD')
     DATABASES = {
@@ -268,14 +265,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 STATIC_ROOT = '/static/'
 if IS_LOCAL:
-    logger.info('Using local static storage')
+    print('Using local static storage')
     STATIC_URL = '/static/'
     
     DEFAULT_FILE_STORAGE = 'jobVyne.customStorage.OverwriteStorage'
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
-    logger.info('Using S3 static storage')
+    print('Using S3 static storage')
     AWS_QUERYSTRING_AUTH = False
     AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
@@ -302,54 +299,64 @@ else:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# SQL Logging
-if env('SQL_LOG', cast=bool, default=False):
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-            },
+# Logging
+LOG_LEVEL = env('LOG_LEVEL', default=None) or 'DEBUG' if DEBUG else 'WARNING'
+print(f'Log level: {LOG_LEVEL}')
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'msg_only': {
+            'format': '{message}',
+            'style': '{',
         },
-        'root': {
-            'handlers': ['console'],
-            'level': 'WARNING',
+        'long': {
+            'format': '{asctime} | {name} | {levelname} | {message}',
+            'style': '{',
         },
-        'loggers': {
-            'django': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-                'propagate': False,
-            }
+        'simple': {
+            'format': '{levelname} | {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'long'
+        },
+        'sql': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'formatter': 'msg_only',
+            'filters': ['require_debug_true']
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'filters': ['require_debug_false']
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console', 'mail_admins'],
+            'level': LOG_LEVEL,
+            'propagate': False
+        },
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['sql'],
+            'propagate': False
         }
     }
-elif not IS_LOCAL:
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'gunicorn': {
-                'level': 'ERROR',
-                'class': 'logging.StreamHandler',
-            },
-            'mail_admins': {
-                'level': 'ERROR',
-                'class': 'django.utils.log.AdminEmailHandler'
-            }
-        },
-        'loggers': {
-            'gunicorn.errors': {
-                'level': 'ERROR',
-                'handlers': ['gunicorn'],
-                'propagate': True,
-            },
-            'django': {
-                'handlers': ['mail_admins'],
-                'propagate': True,
-            },
-        }
-    }
+}
 
 # reCAPTCHA
 GOOGLE_CAPTCHA_SITE_KEY = env('GOOGLE_CAPTCHA_SITE_KEY')

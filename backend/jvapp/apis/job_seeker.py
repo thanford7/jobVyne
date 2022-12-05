@@ -74,7 +74,7 @@ class ApplicationView(JobVyneAPIView):
         
         # Check if the user has an account, but is not logged in
         # TODO: Consider always creating a user account if the applicant is new
-        if not self.user.is_authenticated:
+        if not self.user:
             try:
                 user = JobVyneUser.objects.get(email=email)
             except JobVyneUser.DoesNotExist:
