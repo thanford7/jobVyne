@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 
 from jvapp.apis._apiBase import SUCCESS_MESSAGE_KEY
 from jvapp.models import Waitlist
-from jvapp.utils.email import send_email, EMAIL_ADDRESS_SALES
+from jvapp.utils.email import send_django_email, EMAIL_ADDRESS_SALES
 
 __all__ = ('WaitlistView', )
 
@@ -16,7 +16,7 @@ class WaitlistView(APIView):
     def post(self, request):
         email = request.data['email']
         Waitlist(email=email).save()
-        send_email(
+        send_django_email(
             'JobVyne Waitlist | Thanks for your interest!',
             to_emails=[email],
             from_email=EMAIL_ADDRESS_SALES,

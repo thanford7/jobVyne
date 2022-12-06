@@ -20,7 +20,7 @@ from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file, get_serialized_user_profile
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
-from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, get_attachment, get_encoded_file, send_email
+from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
 from jvapp.utils.security import check_user_token, generate_user_token, get_uid_from_user, get_user_id_from_uid, \
     get_user_key_from_token
@@ -191,7 +191,7 @@ class UserView(JobVyneAPIView):
     @staticmethod
     def send_email_verification_email(request, user, email_key):
         current_site = get_current_site(request)
-        send_email(
+        send_django_email(
             'JobVyne | Email Verification',
             getattr(user, email_key),
             django_email_body_template='emails/verify_email_email.html',
@@ -407,8 +407,8 @@ class FeedbackView(JobVyneAPIView):
             }
         else:
             user = self.data
-
-        send_email(
+        
+        send_django_email(
             'JobVyne | User Feedback', EMAIL_ADDRESS_SUPPORT,
             django_email_body_template='emails/support_email.html',
             django_context={
@@ -416,9 +416,7 @@ class FeedbackView(JobVyneAPIView):
                 'user': user,
                 'message': self.data['message']
             },
-            attachments=[
-                get_attachment(file.name, get_encoded_file(file.file), file.content_type, file.name) for file in self.files.get('files')
-            ] if self.files.get('files') else None
+            files=self.files.get('files')
         )
         
         return Response(status=status.HTTP_200_OK, data={
@@ -432,7 +430,7 @@ class JobVynePasswordResetForm(PasswordResetForm):
                   context, from_email, to_email, html_email_template_name=None):
         subject = context.get('subject', 'JobVyne | Reset Password')
         subject = ''.join(subject.splitlines())
-        send_email(
+        send_django_email(
             subject,
             to_email,
             django_context=context,

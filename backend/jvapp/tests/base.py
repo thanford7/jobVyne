@@ -1,7 +1,10 @@
+import json
 from datetime import timedelta
 
 import names
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -14,6 +17,7 @@ class BaseTestCase(TestCase):
     REQUEST_GET = 'GET'
     REQUEST_POST = 'POST'
     REQUEST_PUT = 'PUT'
+    DEFAULT_USER_PASSWORD = 'Super!Secure1'
     
     def setUp(self) -> None:
         self.client = APIClient()
@@ -35,6 +39,9 @@ class BaseTestCase(TestCase):
         )
         self.user_employee = self.create_user(
             JobVyneUser.USER_TYPE_EMPLOYEE, first_name='Shark', last_name='Nado', employer_id=self.employer.id
+        )
+        self.user_candidate = self.create_user(
+            JobVyneUser.USER_TYPE_CANDIDATE, first_name='Bobby', last_name='Dupree'
         )
         self.currency = Currency.objects.get(name='USD')
         self.job_departments = [self.create_job_department(name) for name in ['Software', 'Product', 'Marketing']]
@@ -84,16 +91,43 @@ class BaseTestCase(TestCase):
                 }
             )
         ]]
+        self.social_link = self.create_social_link(owner=self.user_employee)
     
-    def make_request(self, url, request_type, data=None):
+    def make_get_request(self, url, data=None):
+        return self._make_request(url, self.REQUEST_GET, data=data)
+    
+    def make_put_request(self, url, data=None, files=None):
+        return self._make_request(url, self.REQUEST_PUT, data=data, files=files)
+    
+    def make_post_request(self, url, data=None, files=None):
+        return self._make_request(url, self.REQUEST_POST, data=data, files=files)
+    
+    def _make_request(self, url, request_type, data=None, files=None):
+        """
+        :param url {str}:
+        :param request_type {str}:
+        :param data {dict}:
+        :param files {list}: List of tuples (<file key>, <file>)
+        :return: HttpResponse
+        """
         url = f'/{api_path}{url}'
         
         if request_type == self.REQUEST_GET:
             return self.client.get(url, data)
-        elif request_type == self.REQUEST_POST:
-            return self.client.post(url, data=data)
-        elif request_type == self.REQUEST_PUT:
-            return self.client.put(url, data=data)
+        else:
+            processed_data = {'data': json.dumps(data)}
+            if files:
+                for file_key, file in files:
+                    processed_data[file_key] = file
+            kwargs = {
+                # This matches how data is processed and sent from the frontend
+                'data': encode_multipart(data=processed_data, boundary=BOUNDARY),
+                'content_type': MULTIPART_CONTENT
+            }
+            if request_type == self.REQUEST_POST:
+                return self.client.post(url, **kwargs)
+            elif request_type == self.REQUEST_PUT:
+                return self.client.put(url, **kwargs)
     
     def create_employer(self, name):
         employer = Employer(employer_name=name)
@@ -120,15 +154,13 @@ class BaseTestCase(TestCase):
         first_name = first_name or names.get_first_name()
         last_name = last_name or names.get_last_name()
         email = email or f'{first_name}_{last_name}@jobvyne.com'
-        user = JobVyneUser(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            employer_id=employer_id,
-            user_type_bits=user_type_bits
-        )
+        user = JobVyneUser.objects.create_user(email, password=self.DEFAULT_USER_PASSWORD, **{
+            'first_name': first_name,
+            'last_name': last_name,
+            'employer_id': employer_id,
+            'user_type_bits': user_type_bits,
+        })
         
-        user.save()
         auth_group_names = auth_group_names or []
         for group_name in auth_group_names:
             auth_group = self.employer_permission_groups[group_name]
@@ -179,11 +211,11 @@ class BaseTestCase(TestCase):
         return job
     
     def create_referral_bonus_rule(
-        self, include_departments=None, exclude_departments=None,
-        include_cities=None, exclude_cities=None,
-        include_states=None, exclude_states=None,
-        include_countries=None, exclude_countries=None,
-        **kwargs
+            self, include_departments=None, exclude_departments=None,
+            include_cities=None, exclude_cities=None,
+            include_states=None, exclude_states=None,
+            include_countries=None, exclude_countries=None,
+            **kwargs
     ):
         rule = EmployerReferralBonusRule(**kwargs)
         rule.save()
@@ -192,26 +224,67 @@ class BaseTestCase(TestCase):
             rule.include_departments.add(dept)
         for dept in exclude_departments or []:
             rule.exclude_departments.add(dept)
-
+        
         for city in include_cities or []:
             rule.include_cities.add(city)
         for city in exclude_cities or []:
             rule.exclude_cities.add(city)
-
+        
         for state in include_states or []:
             rule.include_states.add(state)
         for state in exclude_states or []:
             rule.exclude_states.add(state)
-
+        
         for country in include_countries or []:
             rule.include_countries.add(country)
         for country in exclude_countries or []:
             rule.exclude_countries.add(country)
-            
-        return rule
         
+        return rule
+    
     def create_referral_bonus_rule_modifier(self, bonus_rule, **kwargs):
         modifier = EmployerReferralBonusRuleModifier(**kwargs)
         modifier.referral_bonus_rule = bonus_rule
         modifier.save()
         return modifier
+    
+    def create_social_link(self, owner, is_default=False, employer_id=None, cities=None, states=None, countries=None,
+                           departments=None):
+        social_link = SocialLinkFilter(
+            is_default=is_default,
+            owner=owner,
+            employer_id=employer_id or owner.employer_id
+        )
+        social_link.save()
+        
+        if cities:
+            for city in cities:
+                social_link.cities.add(city)
+        
+        if states:
+            for state in states:
+                social_link.states.add(state)
+        
+        if countries:
+            for country in countries:
+                social_link.countries.add(country)
+        
+        if departments:
+            for department in departments:
+                social_link.departments.add(department)
+        
+        return social_link
+    
+    def login_user(self, user):
+        resp = self.make_post_request('auth/login/', data={
+            'email': user.email,
+            'password': self.DEFAULT_USER_PASSWORD
+        })
+        if resp.status_code != 200:
+            raise PermissionError('Unable to login user')
+    
+    def get_dummy_file(self, file_name, file_type='application/pdf'):
+        return SimpleUploadedFile(file_name, b'Dummy file content', content_type=file_type)
+    
+    def assert_200_response(self, resp):
+        self.assertEqual(200, resp.status_code)

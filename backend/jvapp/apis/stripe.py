@@ -15,7 +15,7 @@ from jvapp.models import Employer, EmployerSubscription, PermissionName
 from jvapp.models.abstract import PermissionTypes
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_from_unix
-from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_email
+from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 
 stripe.api_key = settings.STRIPE_PRIVATE_KEY
 ACCEPTED_PAYMENT_TYPES = ['card', 'us_bank_account']
@@ -391,7 +391,7 @@ class StripeSubscriptionView(StripeBaseView):
     def delete(self, request, subscription_id):
         employer = self.check_employer_permissions(employer_id=self.data['employer_id'])
         
-        send_email('JobVyne | Customer cancellation', EMAIL_ADDRESS_SUPPORT, html_content=f'''
+        send_django_email('JobVyne | Customer cancellation', EMAIL_ADDRESS_SUPPORT, html_content=f'''
             <div>{employer.employer_name} (ID={employer.id}) cancelled their subscription</div>
         ''')
 

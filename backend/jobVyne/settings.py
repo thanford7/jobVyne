@@ -240,11 +240,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Email
 ADMINS = [('Todd', 'todd@jobvyne.com')]
-SENDGRID_API_KEY = env('SENDGRID_API_KEY')
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_HOST_USER = 'apikey'  # Exactly that.
-EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_HOST_PASSWORD = env('SENDGRID_API_KEY')
 EMAIL_PORT = 587  # 25 or 587 (for unencrypted/TLS connections).
 EMAIL_USE_TLS = True
 SERVER_EMAIL = 'no-reply@jobvyne.com'  # This is used to send error messages to admins

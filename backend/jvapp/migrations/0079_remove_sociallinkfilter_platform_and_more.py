@@ -34,5 +34,5 @@ class Migration(migrations.Migration):
             name='platform',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='jvapp.socialplatform'),
         ),
-        migrations.RunPython(update_platforms, atomic=True),
+        # migrations.RunPython(update_platforms, atomic=True),
     ]

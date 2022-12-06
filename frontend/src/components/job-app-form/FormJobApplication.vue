@@ -77,7 +77,12 @@
           </div>
 
           <div>
-            <q-btn ripple label="Submit application" :style="getButtonStyle()" type="submit"/>
+            <q-btn
+              ripple label="Submit application"
+              :style="getButtonStyle()"
+              :loading="isSaving"
+              type="submit"
+            />
           </div>
         </q-form>
       </div>
@@ -142,6 +147,7 @@ export default {
       formData: this.resetFormData(),
       newResumeKey: 'resume',
       isApplicationSaved: false,
+      isSaving: false,
       formUtil,
       USER_TYPES,
       USER_TYPE_CANDIDATE
@@ -203,6 +209,7 @@ export default {
       }
     },
     async saveApplication () {
+      this.isSaving = true
       const data = Object.assign(
         {},
         this.formData,
@@ -212,6 +219,7 @@ export default {
 
       // Make sure a resume is uploaded if existing resume is not being used
       if (this.$refs.resumeUpload.isUpload && !this.$refs.newResumeUpload.validate()) {
+        this.isSaving = false
         return
       }
 
@@ -222,6 +230,7 @@ export default {
       if (this.authStore.propIsAuthenticated) {
         this.$emit('closeApplication')
       }
+      this.isSaving = false
     }
   },
   setup () {

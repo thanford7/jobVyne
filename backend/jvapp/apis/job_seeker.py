@@ -17,8 +17,7 @@ from jvapp.permissions.general import IsAuthenticatedOrPost
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.utils.data import AttributeCfg, set_object_attributes
-from jvapp.utils.email import EMAIL_ADDRESS_SEND, get_attachment, get_encoded_file, send_email
-from jvapp.utils.file import get_file_name, get_mime_from_in_memory_file
+from jvapp.utils.email import EMAIL_ADDRESS_SEND, send_django_email
 
 __all__ = ('ApplicationView', 'ApplicationTemplateView')
 
@@ -103,7 +102,7 @@ class ApplicationView(JobVyneAPIView):
         # Send a notification to the employer if they have it configured
         employer = application.employer_job.employer
         if employer.notification_email:
-            send_email(
+            send_django_email(
                 'JobVyne | New application submission',
                 to_emails=[employer.notification_email],
                 from_email=EMAIL_ADDRESS_SEND,
@@ -113,14 +112,7 @@ class ApplicationView(JobVyneAPIView):
                     'application': application,
                     'referrer': application.social_link_filter.owner
                 },
-                attachments=[
-                    get_attachment(
-                        get_file_name(application.resume.name),
-                        get_encoded_file(application.resume.file.file),
-                        get_mime_from_in_memory_file(application.resume.file.file),
-                        get_file_name(application.resume.name)
-                    )
-                ] if resume else None
+                files=[application.resume.path] if resume else None
             )
         
         if user:
