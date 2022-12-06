@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import names
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
 from django.test import TestCase
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
@@ -20,6 +21,7 @@ class BaseTestCase(TestCase):
     DEFAULT_USER_PASSWORD = 'Super!Secure1'
     
     def setUp(self) -> None:
+        call_command('collectstatic', '--noinput')
         self.client = APIClient()
         self.employer_permission_groups = {g.name: g for g in EmployerAuthGroup.objects.all()}
         self.permissions = {p.name: p for p in EmployerPermission.objects.all()}

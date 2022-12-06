@@ -9,8 +9,11 @@ https://docs.djangoproject.com/en/4.0/howto/deployment/wsgi/
 
 import os
 
+from django.core.management import call_command
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'jobVyne.settings')
 
 application = get_wsgi_application()
+call_command('migrate', '--noinput')
+call_command('collectstatic', '--noinput')

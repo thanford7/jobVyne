@@ -1,3 +1,5 @@
+from django.core import mail
+
 from jvapp.models import JobApplication
 from jvapp.tests.base import BaseTestCase
 
@@ -10,33 +12,41 @@ class JobApplicationTestCase(BaseTestCase):
         self.assertEqual(len(self.jobs), len(resp.data['jobs']))
         
     def test_submit_an_application_new_user(self):
-        resume_file = self.get_dummy_file('resume.pdf')
         email = 'boggart1@hotmail.com'
-        resp = self._make_request('job-application/', self.REQUEST_POST, data={
-            'filter_id': str(self.social_link.id),
-            'email': email,
-            'job_id': self.jobs[0].id,
-            'first_name': 'Humphrey',
-            'last_name': 'Bogart',
-            'phone_number': '202-917-2200',
-            'linkedin_url': 'https://www.linkedin.com/boggart',
-        }, files=[('resume', resume_file)])
+        resp = self._submit_application(
+            email, phone_number='202-917-2200', linkedin_url='https://www.linkedin.com/boggart'
+        )
         self.assert_200_response(resp)
         applications = JobApplication.objects.filter(email=email)
         self.assertEqual(1, len(applications))
         
     def test_submit_an_application_logged_in_user(self):
         self.login_user(self.user_candidate)
-        resume_file = self.get_dummy_file('resume.pdf')
         email = 'boggart2@hotmail.com'
-        resp = self._make_request('job-application/', self.REQUEST_POST, data={
-            'filter_id': str(self.social_link.id),
-            'email': email,
-            'job_id': self.jobs[1].id,
-            'first_name': 'Stanley',
-            'last_name': 'Bogart'
-        }, files=[('resume', resume_file)])
+        resp = self._submit_application(email)
         self.assert_200_response(resp)
         applications = JobApplication.objects.filter(email=email)
         self.assertEqual(1, len(applications))
         
+    def test_email_to_employer(self):
+        # Adding a notification email will make all future applications trigger an email to the employer
+        self.employer.notification_email = 'bogus@jobvyne.com'
+        self.employer.save()
+        current_mail_count = len(mail.outbox)
+        resp = self._submit_application('toodaloo@yahoo.com')
+        self.assert_200_response(resp)
+        self.assertEqual(current_mail_count + 1, len(mail.outbox))
+        last_email = mail.outbox[-1]
+        self.assertIn('New application submission', last_email.subject)
+        
+    def _submit_application(self, email, phone_number=None, linkedin_url=None):
+        resume_file = self.get_dummy_file('resume.pdf')
+        return self._make_request('job-application/', self.REQUEST_POST, data={
+            'filter_id': str(self.social_link.id),
+            'email': email,
+            'job_id': self.jobs[0].id,
+            'first_name': 'Humphrey',
+            'last_name': 'Bogart',
+            'phone_number': phone_number,
+            'linkedin_url': linkedin_url,
+        }, files=[('resume', resume_file)])
