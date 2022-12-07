@@ -70,7 +70,7 @@ describe('Sign up process', () => {
 
     // Enter an email address not connected to an employer
     cy.get('#jv-back').click()
-    cy.get('.jv-email input').type('cypress-new@bogus.com').blur()
+    cy.get('.jv-email input').clear().type('cypress-new@bogus.com').blur()
     cy.get('#jv-forward').click()
     cy.get('.jv-employer-unknown').should('be.visible')
   })

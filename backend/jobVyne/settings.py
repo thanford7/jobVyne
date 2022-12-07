@@ -333,7 +333,7 @@ LOGGING = {
         },
         'sql': {
             'class': 'logging.StreamHandler',
-            'level': 'DEBUG',
+            # 'level': 'DEBUG',
             'formatter': 'msg_only',
             'filters': ['require_debug_true']
         },
@@ -350,7 +350,7 @@ LOGGING = {
             'propagate': False
         },
         'django.db.backends': {
-            'level': 'DEBUG',
+            'level': LOG_LEVEL,
             'handlers': ['sql'],
             'propagate': False
         }

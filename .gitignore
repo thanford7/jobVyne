@@ -6,6 +6,8 @@ media
 /docker_secrets
 backend/secret
 backend/secure
+backend/demoData
 *.pem
 *.crt
 docker-compose-mysql.yml
+docker-compose-cypress.yml
