@@ -7,9 +7,6 @@
 {% block final_message %}
     {% if is_exclude_final_message %}
     {% else %}
-    <p style="text-align:left">If you did not make this request, please ignore this email.</p>
-    <p style="text-align:left">Sincerely,</p>
-    <p style="text-align:left">JobVyne Team</p>
-    <p style="text-align:left">Questions or need help? Email us at {{ support_email }}</p>
+        {% include 'snippets/support_signoff.html' %}
     {% endif %}
 {% endblock final_message %}

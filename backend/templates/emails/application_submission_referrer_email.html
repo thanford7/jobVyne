@@ -1,0 +1,16 @@
+{% extends 'emails/base_email.html' %}
+
+{% block body %}
+    <p>
+        Congratulations! {{ application.first_name }} {{ application.last_name }} submitted an application for
+        the {{ job.job_title }} position using one of your referral links.
+    </p>
+    <p>
+        You can track all of your referrals by going to your
+        <a href="{{ base_url }}/employee/employee-links/" target="_blank">referral links page</a>
+        and clicking on the number of applications.
+    </p>
+{% endblock body %}
+{% block final_message %}
+    {% include 'snippets/support_signoff.html' %}
+{% endblock final_message %}

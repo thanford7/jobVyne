@@ -72,7 +72,6 @@ class ApplicationView(JobVyneAPIView):
             return Response('Email and job ID are required', status=status.HTTP_400_BAD_REQUEST)
         
         # Check if the user has an account, but is not logged in
-        # TODO: Consider always creating a user account if the applicant is new
         if not self.user:
             try:
                 user = JobVyneUser.objects.get(email=email)
@@ -99,20 +98,44 @@ class ApplicationView(JobVyneAPIView):
             resume = application_template.resume
         self.create_application(user, application, self.data, resume)
         
-        # Send a notification to the employer if they have it configured
+        ## Send notification emails
         employer = application.employer_job.employer
+        django_context = {
+            'job': application.employer_job,
+            'application': application,
+            'referrer': application.social_link_filter.owner,
+            'employer': employer
+        }
+        files = [application.resume.path] if resume else None
+        
+        # Email the job applicant
+        send_django_email(
+            f'JobVyne | Job application for {employer.employer_name}',
+            to_emails=[email],
+            from_email=EMAIL_ADDRESS_SEND,
+            django_email_body_template='emails/application_submission_candidate_email.html',
+            django_context=django_context,
+            files=files
+        )
+        
+        # Email the referrer
+        send_django_email(
+            f'JobVyne | Congratulations, you have a new referral',
+            to_emails=[application.social_link_filter.owner.email],
+            from_email=EMAIL_ADDRESS_SEND,
+            django_email_body_template='emails/application_submission_referrer_email.html',
+            django_context=django_context
+        )
+        
+        # Send a notification to the employer if they have it configured
         if employer.notification_email:
             send_django_email(
                 'JobVyne | New application submission',
                 to_emails=[employer.notification_email],
                 from_email=EMAIL_ADDRESS_SEND,
-                django_email_body_template='emails/application_submission_email.html',
-                django_context={
-                    'job': application.employer_job,
-                    'application': application,
-                    'referrer': application.social_link_filter.owner
-                },
-                files=[application.resume.path] if resume else None
+                django_email_body_template='emails/application_submission_employer_email.html',
+                django_context=django_context,
+                files=files
             )
         
         if user:

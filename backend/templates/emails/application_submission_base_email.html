@@ -1,7 +1,7 @@
 {% extends 'emails/base_email.html' %}
 
 {% block body %}
-    <p>A new application was submitted to JobVyne. The resume is attached.</p>
+    {% block topMessage %}{% endblock topMessage %}
     <table class="bordered" width="100%" cellpadding="0" cellspacing="0" style="min-width:100%; border-collapse: collapse;">
         <tbody>
         <tr>
@@ -42,4 +42,5 @@
         </tr>
         </tbody>
     </table>
+    {% block bottomMessage %}{% endblock bottomMessage %}
 {% endblock body %}

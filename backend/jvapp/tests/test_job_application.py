@@ -28,16 +28,15 @@ class JobApplicationTestCase(BaseTestCase):
         applications = JobApplication.objects.filter(email=email)
         self.assertEqual(1, len(applications))
         
-    def test_email_to_employer(self):
+    def test_email_notifications(self):
         # Adding a notification email will make all future applications trigger an email to the employer
         self.employer.notification_email = 'bogus@jobvyne.com'
         self.employer.save()
         current_mail_count = len(mail.outbox)
         resp = self._submit_application('toodaloo@yahoo.com')
         self.assert_200_response(resp)
-        self.assertEqual(current_mail_count + 1, len(mail.outbox))
-        last_email = mail.outbox[-1]
-        self.assertIn('New application submission', last_email.subject)
+        # 3 new emails should have been sent. One for each - employer, candidate, referrer
+        self.assertEqual(current_mail_count + 3, len(mail.outbox))
         
     def _submit_application(self, email, phone_number=None, linkedin_url=None):
         resume_file = self.get_dummy_file('resume.pdf')

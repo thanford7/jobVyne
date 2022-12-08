@@ -25,6 +25,7 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
     django_context = django_context or {}
     django_context['support_email'] = EMAIL_ADDRESS_SUPPORT
+    django_context['base_url'] = settings.BASE_URL
     django_context['protocol'] = 'https'  # Overwrite protocol to always use https
     html_content = html_content or loader.render_to_string(django_email_body_template, django_context)
     plain_content = strip_tags(html_content)
