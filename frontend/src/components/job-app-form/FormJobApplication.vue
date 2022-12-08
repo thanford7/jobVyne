@@ -15,6 +15,7 @@
           <q-input
             filled
             v-model="formData.first_name"
+            class="jv-form-job-app-fname"
             label="First name"
             lazy-rules
             :rules="[ val => val && val.length > 0 || 'First name is required']"
@@ -22,6 +23,7 @@
           <q-input
             filled
             v-model="formData.last_name"
+            class="jv-form-job-app-lname"
             label="Last name"
             lazy-rules
             :rules="[ val => val && val.length > 0 || 'Last name is required']"
@@ -29,6 +31,7 @@
           <q-input
             filled
             v-model="formData.email"
+            class="jv-form-job-app-email"
             type="email"
             label="Email"
             lazy-rules
@@ -45,6 +48,7 @@
           <q-input
             filled
             v-model="formData.linkedin_url"
+            class="jv-form-job-app-linkedin"
             label="LinkedIn URL*"
             hint="www.linkedin.com/in/{your profile id}"
             lazy-rules
@@ -64,7 +68,7 @@
                 filled bottom-slots clearable
                 v-model="formData.resume"
                 label="Resume"
-                class="q-mb-none"
+                class="q-mb-none jv-form-job-app-resume"
                 :accept="allowedResumeExtensionsStr"
                 max-file-size="1000000"
                 lazy-rules="ondemand"
@@ -78,6 +82,7 @@
 
           <div>
             <q-btn
+              class="jv-form-job-app-submit"
               ripple label="Submit application"
               :style="getButtonStyle()"
               :loading="isSaving"
@@ -89,7 +94,7 @@
     </template>
     <template v-else-if="!authStore.propIsAuthenticated">
       <div class="q-pa-sm" :style="getHeaderStyle()">
-        <div class="text-h6 text-center">Create an account</div>
+        <div class="text-h6 text-center jv-form-job-app-create">Create an account</div>
       </div>
       <div class="q-pa-sm q-mt-sm" :style="getTextStyle()">
         <div class="text-bold">Create an account and save time</div>
@@ -107,7 +112,30 @@
           :is-create="true"
           :style-override="getButtonStyle()"
           :user-type-bit="USER_TYPES[USER_TYPE_CANDIDATE]"
+          :user-props="{
+            first_name: formData.first_name,
+            last_name: formData.last_name
+          }"
           :default-email="formData.email"
+        />
+      </div>
+    </template>
+    <template v-else-if="isVerifyEmail">
+      <div class="q-pa-sm" :style="getHeaderStyle()">
+        <div class="text-h6 text-center jv-form-job-app-create">Last step</div>
+      </div>
+      <div class="q-pa-sm q-mt-sm" :style="getTextStyle()">
+        <q-icon name="celebration" size="64px"/>
+        <div class="text-bold q-mt-md">
+          Thanks for creating an account. We just sent you an email to verify your email address. Once you
+          verify your email, you will be able to track all of your job applications. Please reload this page
+          once you have completed this step.
+        </div>
+        <q-btn
+          class="jv-form-job-app-verify q-mt-md"
+          ripple label="Got it"
+          :style="getButtonStyle()"
+          @click="acknowledgeAndClose()"
         />
       </div>
     </template>
@@ -148,6 +176,7 @@ export default {
       newResumeKey: 'resume',
       isApplicationSaved: false,
       isSaving: false,
+      isVerifyEmail: false,
       formUtil,
       USER_TYPES,
       USER_TYPE_CANDIDATE
@@ -167,6 +196,12 @@ export default {
   watch: {
     jobApplication () {
       this.isApplicationSaved = false
+    },
+    user: {
+      handler () {
+        this.formData = this.resetFormData()
+      },
+      deep: true
     }
   },
   methods: {
@@ -179,12 +214,12 @@ export default {
         }
       }).onOk(async () => {
         await this.authStore.setUser(true)
-        this.formData = this.resetFormData()
         this.$emit('login')
       })
     },
     resetFormData () {
       return Object.assign(
+        {},
         formDataTemplate,
         (this.user) ? dataUtil.pick(this.user, ['first_name', 'last_name', 'email']) : {},
         this?.user?.application_template || {}
@@ -207,6 +242,10 @@ export default {
         backgroundColor: accentColor,
         color: colorUtil.getInvertedColor(accentColor)
       }
+    },
+    acknowledgeAndClose () {
+      this.isVerifyEmail = false
+      this.$emit('closeApplication')
     },
     async saveApplication () {
       this.isSaving = true
@@ -232,6 +271,11 @@ export default {
       }
       this.isSaving = false
     }
+  },
+  mounted () {
+    this.$global.$on('login', () => {
+      this.isVerifyEmail = true
+    })
   },
   setup () {
     const authStore = useAuthStore()

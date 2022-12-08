@@ -7,6 +7,7 @@
       <q-input
         filled
         readonly
+        class="jv-existing-file"
         :model-value="fileUtil.getFileNameFromUrl(fileUrl)"
         :label="`Current ${label}`"
       >

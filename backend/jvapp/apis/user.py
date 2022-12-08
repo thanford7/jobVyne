@@ -61,8 +61,14 @@ class UserView(JobVyneAPIView):
         password = self.data.get('password')
         if not email or not password:
             return Response('Email and password are required', status=status.HTTP_400_BAD_REQUEST)
+        
+        extra_user_props = {}
+        for prop in ('user_type_bits', 'first_name', 'last_name'):
+            prop_val = self.data.get(prop)
+            if prop_val is not None:
+                extra_user_props[prop] = prop_val
 
-        user = JobVyneUser.objects.create_user(email, password=password)
+        user = JobVyneUser.objects.create_user(email, password=password, **extra_user_props)
 
         # User wasn't created through social auth so we need to verify their email
         self.send_email_verification_email(request, user, 'email')

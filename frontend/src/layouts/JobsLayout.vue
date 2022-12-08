@@ -31,9 +31,9 @@
         </div>
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="getTabStyle()">
-            <q-tab name="jobs" label="Jobs"/>
-            <q-tab v-if="employerPage && employerPage.is_viewable" name="company" :label="`About ${employer?.name}`"/>
-            <q-tab v-if="isShowEmployeeProfile" name="me" :label="`About ${profile?.first_name}`"/>
+            <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
+            <q-tab v-if="employerPage && employerPage.is_viewable" id="jv-tab-company" name="company" :label="`About ${employer?.name}`"/>
+            <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me" :label="`About ${profile?.first_name}`"/>
           </q-tabs>
         </ResponsiveWidth>
       </div>
@@ -79,7 +79,7 @@
                         </q-card>
                       </div>
                       <div v-for="job in jobs" :key="job.id" class="q-mb-md">
-                        <q-card :style="getSelectedCardStyle(job)" :id="`job-${job.id}`">
+                        <q-card :style="getSelectedCardStyle(job)" :id="`job-${job.id}`" class="jv-job-card">
                           <div v-if="getJobApplication(job.id)" class="application-date" :style="getHeaderStyle()">
                             Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
                           </div>
@@ -154,6 +154,7 @@
                           <q-card-actions v-if="!getJobApplication(job.id)">
                             <q-btn
                               ripple unelevated
+                              class="jv-apply-btn"
                               label="Apply"
                               :style="getButtonStyle()"
                               @click="openApplication($event, job.id)"
@@ -317,9 +318,6 @@ export default {
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
-    getCurrentUrl () {
-      return window.location.pathname
-    },
     hasJobDescriptionOverflow (job) {
       const el = document.getElementById(`job-description-${job.id}`)
       if (!el) {
@@ -347,8 +345,7 @@ export default {
       scrollUtil.scrollToElement(document.getElementById(`job-${jobId}`))
     },
     async logoutUser () {
-      await this.authStore.logout(this.getCurrentUrl())
-      this.$refs.jobApplicationForm.resetFormData()
+      await this.authStore.logout(false)
       await this.loadData()
     },
     async loadData () {

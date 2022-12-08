@@ -4,8 +4,8 @@
       :is-create="isCreate"
       :default-email="defaultEmail"
       :user-type-bit="userTypeBit"
+      :user-props="userProps"
       :style-override="styleOverride"
-      @login="$emit('login')"
     />
     <SeparatorWithText>or</SeparatorWithText>
     <AuthSocialButtons
@@ -40,6 +40,9 @@ export default {
     },
     userTypeBit: {
       type: [Number, null]
+    },
+    userProps: {
+      type: [Object, null]
     },
     redirectPageUrl: {
       type: [String, null]

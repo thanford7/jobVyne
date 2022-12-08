@@ -3,8 +3,10 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from jvapp.apis.job_seeker import ApplicationTemplateView
 from jvapp.apis.social import SocialLinkFilterView
-from jvapp.models import EmployerAuthGroup, JobVyneUser, SocialLinkFilter, UserEmployerPermissionGroup
+from jvapp.models import EmployerAuthGroup, JobApplication, JobApplicationTemplate, JobVyneUser, SocialLinkFilter, \
+    UserEmployerPermissionGroup
 from jvapp.models.employer import is_default_auth_group
 
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
@@ -90,3 +92,30 @@ def generate_primary_social_link(sender, instance, *args, **kwargs):
                 'is_default': True
             }
         )
+
+       
+@receiver(post_save, sender=JobVyneUser)
+def link_job_applications(sender, instance, *args, **kwargs):
+    # User must have verified their email before we can show them completed job applications
+    if not instance.is_email_verified:
+        return
+    
+    orphaned_applications = JobApplication.objects.filter(email=instance.email, user__isnull=True)
+    for app in orphaned_applications:
+        app.user_id = instance.id
+        
+    JobApplication.objects.bulk_update(orphaned_applications, ['user_id'])
+    
+    # Create an application template for the user if they don't already have one
+    if (not ApplicationTemplateView.get_application_template(instance.id)) and orphaned_applications:
+        app_defaults = orphaned_applications[0]
+        JobApplicationTemplate(
+            owner=instance,
+            first_name=app_defaults.first_name,
+            last_name=app_defaults.last_name,
+            email=app_defaults.email,
+            phone_number=app_defaults.phone_number,
+            linkedin_url=app_defaults.linkedin_url,
+            resume=app_defaults.resume
+        ).save()
+    

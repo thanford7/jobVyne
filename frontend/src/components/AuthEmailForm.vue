@@ -1,6 +1,6 @@
 <template>
   <q-form
-    @submit="login"
+    @submit.prevent="login()"
   >
     <EmailInput v-model="email"/>
     <PasswordInput v-model="password" :is-validate="isCreate"/>
@@ -24,7 +24,6 @@ import formUtil from 'src/utils/form'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
-import { USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthEmailForm',
@@ -48,8 +47,10 @@ export default {
       default: null
     },
     userTypeBit: {
-      type: Number,
-      default: USER_TYPES.Employee
+      type: [Number, null]
+    },
+    userProps: {
+      type: [Object, null]
     },
     styleOverride: {
       type: Object,
@@ -62,22 +63,26 @@ export default {
   methods: {
     isGoodEmail: formUtil.isGoodEmail,
     async login () {
-      const userData = getAjaxFormData({
+      const userData = {
         email: this.email,
         password: this.password
-      })
-      if (this.isCreate) {
-        await this.$api.post('user/', userData)
       }
-      await this.$api.post('auth/login/', userData)
+      if (this.isCreate) {
+        userData.user_type_bits = this.userTypeBit
+        if (this.userProps) {
+          Object.assign(userData, this.userProps)
+        }
+        await this.$api.post('user/', getAjaxFormData(userData))
+      }
+      await this.$api.post('auth/login/', getAjaxFormData(userData))
+      await this.authStore.setUser(true)
       if (this.$route.name === 'login') {
-        await this.authStore.setUser(true)
-        this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))
+        await this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))
       } else {
         // User logged in from a dialog so redirect back to the page they were on
         this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })
       }
-      this.$emit('login')
+      this.$global.$emit('login')
     },
     setEmail () {
       if (!this.email && this.defaultEmail) {
