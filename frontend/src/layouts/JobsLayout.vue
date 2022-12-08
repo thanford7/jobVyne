@@ -25,7 +25,7 @@
               </q-avatar>
             </div>
             <div>
-              <a href="#" @click.prevent="logoutUser()" style="color: gray">Logout</a>
+              <a href="#" @click.prevent="logoutUser()" id="jv-logout" style="color: gray">Logout</a>
             </div>
           </div>
         </div>

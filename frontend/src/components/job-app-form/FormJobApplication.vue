@@ -5,7 +5,7 @@
         <div class="text-h6 text-center">Apply to {{ jobApplication.job_title }}</div>
       </div>
       <div v-if="!authStore.propIsAuthenticated" class="q-pa-sm">
-        <a href="#" @click="openLoginModal">Have an account? Login to auto-populate the form</a>
+        <a id="jv-form-job-app-login" href="#" @click="openLoginModal">Have an account? Login to auto-populate the form</a>
       </div>
       <div class="q-pa-sm q-mt-sm">
         <q-form
