@@ -65,7 +65,7 @@ export default boot(({ app, router }) => {
 
       if (!isAuthenticated && !to.meta.isNoAuth) {
         // redirect the user to the login page
-        return { name: 'login' }
+        return { name: 'login', query: { redirectPageUrl: to.path } }
       }
 
       const { canView, canEdit } = pagePermissionsUtil.getUserPagePermissions(user, to.name)

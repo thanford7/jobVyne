@@ -5,6 +5,7 @@
       :default-email="defaultEmail"
       :user-type-bit="userTypeBit"
       :user-props="userProps"
+      :redirect-page-url="redirectPageUrl"
       :style-override="styleOverride"
     />
     <SeparatorWithText>or</SeparatorWithText>

@@ -3,7 +3,7 @@
     <template v-slot:header>
       {{ (isCreate) ? newUserHeader : currentUserHeader }}
     </template>
-    <AuthAll :is-create="isCreate"/>
+    <AuthAll :is-create="isCreate" :redirect-page-url="$route.query?.redirectPageUrl"/>
     <div class="q-mt-md">
       <div v-if="isCreate">
         Current user? <a href="#" @click="toggleNewUser($event, 0)">Login here</a>
@@ -54,7 +54,7 @@ export default {
     },
     toggleNewUser (e, isNew) {
       e.preventDefault()
-      this.$router.push({ name: this.$route.name, query: { isNew } })
+      this.$router.push({ name: this.$route.name, query: Object.assign({}, this.$route.query, { isNew }) })
     }
   },
   setup () {
