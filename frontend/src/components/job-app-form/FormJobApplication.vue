@@ -122,7 +122,7 @@
     </template>
     <template v-else-if="isVerifyEmail">
       <div class="q-pa-sm" :style="getHeaderStyle()">
-        <div class="text-h6 text-center jv-form-job-app-create">Last step</div>
+        <div class="text-h6 text-center jv-form-job-app-confirm">Last step</div>
       </div>
       <div class="q-pa-sm q-mt-sm" :style="getTextStyle()">
         <q-icon name="celebration" size="64px"/>

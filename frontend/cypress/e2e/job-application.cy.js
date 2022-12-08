@@ -44,16 +44,40 @@ describe('Job application', () => {
     cy.get('.jv-login-btn').click()
     cy.wait('@createUser').its('response.statusCode').should('eq', 200)
 
-    // Job that was just applied to should no longer have the option to apply
+    // User should now be prompted to confirm their email
+    cy.get('.jv-form-job-app-confirm').should('have.text', 'Last step')
+
+    // TODO: Figure out how to update user's email_confirmation
+    // // Job that was just applied to should no longer have the option to apply
+    // cy.get('.jv-apply-btn').should('have.length', 4)
+    //
+    // // New application should have fields populated with user's content
+    // cy.get('.jv-apply-btn').first().click()
+    // cy.get('.jv-form-job-app-fname').should('have.text', firstName)
+    // cy.get('.jv-form-job-app-lname').should('have.text', lastName)
+    // cy.get('.jv-form-job-app-email').should('have.text', email)
+    // cy.get('.jv-form-job-app-linkedin').should('have.text', linkedIn)
+    // cy.get('.jv-existing-file input').should('have.text', 'TestResume.pdf')
+    //
+    // // New submission should work with all fields already filled in
+    // cy.get('.jv-form-job-app-submit').click()
+    // cy.wait('@jobApplication').its('response.statusCode').should('eq', 200)
+  })
+
+  it('Authenticated user should be able to submit an application', () => {
+    cy.login(Cypress.env('candidateUserEmail'), Cypress.env('candidateUserPassword'))
+    cy.visit('/jobs-link/3089c5b6-477a-4dbf-acff-a28d4ed69f89?platform=LinkedIn')
+
+    // User has already applied to one job so that apply button should be hidden
     cy.get('.jv-apply-btn').should('have.length', 4)
 
     // New application should have fields populated with user's content
     cy.get('.jv-apply-btn').first().click()
-    cy.get('.jv-form-job-app-fname').should('have.text', firstName)
-    cy.get('.jv-form-job-app-lname').should('have.text', lastName)
-    cy.get('.jv-form-job-app-email').should('have.text', email)
-    cy.get('.jv-form-job-app-linkedin').should('have.text', linkedIn)
-    cy.get('.jv-existing-file input').should('have.text', 'TestResume.pdf')
+    cy.get('.jv-form-job-app-fname input').should('have.value', 'Cypress')
+    cy.get('.jv-form-job-app-lname input').should('have.value', 'Candidate')
+    cy.get('.jv-form-job-app-email input').should('have.value', 'cy-candidate-user@jobvyne.com')
+    cy.get('.jv-form-job-app-linkedin input').should('have.value', 'www.linkedin.com/in/cypresscan')
+    cy.get('.jv-existing-file input').should('have.value', 'TestResume.pdf')
 
     // New submission should work with all fields already filled in
     cy.get('.jv-form-job-app-submit').click()
