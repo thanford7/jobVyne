@@ -75,7 +75,7 @@ describe('Job application', () => {
     cy.get('.jv-form-job-app-submit').should('not.exist')
 
     // When user logs out, all submission buttons should be shown
-    cy.get('#jv-logout').click({force: true})
+    cy.get('#jv-logout').click({ force: true })
     cy.wait('@logout').its('response.statusCode').should('eq', 200)
     cy.get('.jv-apply-btn').should('have.length', 5)
   })
