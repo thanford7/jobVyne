@@ -1,6 +1,6 @@
 from django.core import mail
 
-from jvapp.models import JobApplication
+from jvapp.models import JobApplication, MessageThread
 from jvapp.tests.base import BaseTestCase
 
 
@@ -33,10 +33,15 @@ class JobApplicationTestCase(BaseTestCase):
         self.employer.notification_email = 'bogus@jobvyne.com'
         self.employer.save()
         current_mail_count = len(mail.outbox)
+        current_message_thread_count = MessageThread.objects.filter(employer=self.employer).count()
         resp = self._submit_application('toodaloo@yahoo.com')
         self.assert_200_response(resp)
+        
         # 3 new emails should have been sent. One for each - employer, candidate, referrer
         self.assertEqual(current_mail_count + 3, len(mail.outbox))
+        
+        # A new message thread should have been started for this application
+        self.assertEqual(current_message_thread_count + 1, MessageThread.objects.filter(employer=self.employer).count())
         
     def _submit_application(self, email, phone_number=None, linkedin_url=None):
         resume_file = self.get_dummy_file('resume.pdf')

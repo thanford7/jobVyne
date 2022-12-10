@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def send_django_email(subject_text, to_emails, django_context=None, django_email_body_template=None, html_content=None,
-                      from_email=EMAIL_ADDRESS_SEND, cc_email=None, files=None):
+                      from_email=EMAIL_ADDRESS_SEND, cc_email=None, files=None, message_thread=None):
     if not settings.IS_SEND_EMAILS:
         return
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
@@ -57,7 +57,8 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
         body=plain_content,
         body_html=html_content,
         from_address=from_email,
-        created_dt=timezone.now()
+        created_dt=timezone.now(),
+        message_thread=message_thread
     )
     jv_message.save()
     recipients = []

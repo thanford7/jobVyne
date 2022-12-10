@@ -9,7 +9,7 @@ from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.ats import get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.user import UserView
-from jvapp.models import EmployerAts, JobVyneUser
+from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
 from jvapp.models.user import UserEmployerCandidate
@@ -129,13 +129,20 @@ class ApplicationView(JobVyneAPIView):
         
         # Send a notification to the employer if they have it configured
         if employer.notification_email:
+            message_thread = MessageThread(employer=employer)
+            message_thread.save()
+            MessageThreadContext(
+                message_thread=message_thread,
+                job_application=application
+            ).save()
             send_django_email(
                 'JobVyne | New application submission',
                 to_emails=[employer.notification_email],
                 from_email=EMAIL_ADDRESS_SEND,
                 django_email_body_template='emails/application_submission_employer_email.html',
                 django_context=django_context,
-                files=files
+                files=files,
+                message_thread=message_thread
             )
         
         if user:

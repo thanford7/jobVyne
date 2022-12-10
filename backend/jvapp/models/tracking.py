@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from jvapp.models.abstract import JobVynePermissionsMixin
 
-__all__ = ('PageView', 'Message', 'MessageRecipient', 'MessageAttachment')
+__all__ = ('PageView', 'Message', 'MessageRecipient', 'MessageAttachment', 'MessageThread', 'MessageThreadContext')
 
 
 class PageView(models.Model, JobVynePermissionsMixin):
@@ -62,6 +62,7 @@ class Message(models.Model):
     body_html = models.TextField(null=True, blank=True)
     from_address = models.CharField(max_length=255)
     created_dt = models.DateTimeField()
+    message_thread = models.ForeignKey('MessageThread', null=True, blank=True, on_delete=models.PROTECT, related_name='message')
 
 
 class MessageAttachment(models.Model):
@@ -79,3 +80,23 @@ class MessageRecipient(models.Model):
     opened_dt = models.DateTimeField(null=True, blank=True)
     clicked_dt = models.DateTimeField(null=True, blank=True)
     error_reason = models.CharField(max_length=500, null=True, blank=True)
+    
+
+class MessageThread(models.Model):
+    """ Group messages into a thread. Any entities added to a message thread will
+    have access to the messages within the thread. This is helpful, for example, if
+    multiple HR users are messaging with a job candidate. NOTE: Eventually we may
+    want to add a more generic MessageThreadGroup that can be defined by users, employer,
+    permissions, etc and a MessageThread could have multiple MessageThreadGroups
+    """
+    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    
+class MessageThreadContext(models.Model):
+    """ Allows message threads to be accessible from related models. For example, if a message
+    thread is about a job application, it can be accessed throught the JobApplication model
+    """
+    message_thread = models.ForeignKey('MessageThread', on_delete=models.CASCADE)
+    job_application = models.ForeignKey('JobApplication', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')
+    job = models.ForeignKey('EmployerJob', on_delete=models.SET_NULL, null=True, blank=True)
+    applicant = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True)
