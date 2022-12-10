@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
 
@@ -32,4 +32,4 @@ def get_unix_datetime(date_time: datetime):
 
 
 def get_datetime_from_unix(unix_time):
-    return datetime.utcfromtimestamp(int(unix_time))
+    return datetime.fromtimestamp(int(unix_time), tz=timezone.utc)

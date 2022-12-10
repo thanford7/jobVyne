@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -5,11 +6,16 @@ from email.mime.image import MIMEImage
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.db.models.fields.files import FieldFile
 from django.template import loader
 from django.templatetags.static import static
+from django.utils import timezone
 from django.utils.html import strip_tags
 
+from jvapp.models.tracking import Message, MessageAttachment, MessageRecipient
+
 IS_PRODUCTION = os.getenv('DB') == 'prod'
+MESSAGE_ID_KEY = 'jv_message_id'
 EMAIL_ADDRESS_TEST = 'test@jobvyne.com'
 EMAIL_ADDRESS_SEND = 'no-reply@jobvyne.com'  # Email address where all emails originate from
 EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
@@ -19,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def send_django_email(subject_text, to_emails, django_context=None, django_email_body_template=None, html_content=None,
-                      from_email=None, cc_email=None, files=None):
+                      from_email=EMAIL_ADDRESS_SEND, cc_email=None, files=None):
     if not settings.IS_SEND_EMAILS:
         return
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
@@ -44,12 +50,41 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
     if not isinstance(to_emails, list):
         to_emails = [to_emails]
     
+    # Save messages to the database so we can track delivery
+    jv_message = Message(
+        type=Message.MessageType.EMAIL.value,
+        subject=subject,
+        body=plain_content,
+        body_html=html_content,
+        from_address=from_email,
+        created_dt=timezone.now()
+    )
+    jv_message.save()
+    recipients = []
+    for recipient_email in to_emails + (cc_email or []):
+        recipients.append(MessageRecipient(
+            message=jv_message,
+            recipient_address=recipient_email
+        ))
+    MessageRecipient.objects.bulk_create(recipients)
+    message_attachments = []
+    for f in (files or []):
+        message_attachments.append(MessageAttachment(
+            message=jv_message,
+            file=f
+        ))
+    MessageAttachment.objects.bulk_create(message_attachments)
+    
+    # Send the actual email
     message = EmailMultiAlternatives(
         subject=subject,
         body=plain_content,
-        from_email=from_email or EMAIL_ADDRESS_SEND,
+        from_email=from_email,
         to=to_emails,
-        cc=cc_email
+        cc=cc_email,
+        headers={
+            'X-SMTPAPI': json.dumps({'unique_args': {MESSAGE_ID_KEY: jv_message.id}})
+        }
     )
     message.attach_alternative(html_content, "text/html")
 
@@ -59,16 +94,10 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
     logo.add_header('Content-ID', '<logo>')
     message.attach(logo)
     
-    if files:
-        for f in files:
-            # File might be an in-memory file that has just been uploaded or a
-            # file that is attached to a model instance. If it is attached to a
-            # model instance, we attach it using the path to the file which will
-            # be a string value
-            if isinstance(f, str):
-                message.attach_file(f)
-            else:
-                message.attach(f.name, f.read(), f.content_type)
+    # Note: Need to use message_attachments instead of files since in-memory files
+    # have already been read and will return b'' if attempted to read again
+    for attachment in message_attachments:
+        message.attach_file(attachment.file.path)
     
     return message.send()
 

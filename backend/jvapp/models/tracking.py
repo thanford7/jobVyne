@@ -1,10 +1,12 @@
+from enum import Enum
+
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
 from jvapp.models.abstract import JobVynePermissionsMixin
 
-__all__ = ('PageView',)
+__all__ = ('PageView', 'Message', 'MessageRecipient', 'MessageAttachment')
 
 
 class PageView(models.Model, JobVynePermissionsMixin):
@@ -49,3 +51,31 @@ class PageView(models.Model, JobVynePermissionsMixin):
     
         return query.filter(filter)
     
+    
+class Message(models.Model):
+    class MessageType(Enum):
+        EMAIL = 'EMAIL'
+    
+    type = models.CharField(max_length=5)
+    subject = models.TextField(null=True, blank=True)
+    body = models.TextField(null=True, blank=True)
+    body_html = models.TextField(null=True, blank=True)
+    from_address = models.CharField(max_length=255)
+    created_dt = models.DateTimeField()
+
+
+class MessageAttachment(models.Model):
+    message = models.ForeignKey('Message', on_delete=models.CASCADE, related_name='attachment')
+    file = models.FileField(upload_to='message_attachments')
+    
+    
+class MessageRecipient(models.Model):
+    message = models.ForeignKey('Message', on_delete=models.CASCADE, related_name='recipient')
+    recipient_address = models.CharField(max_length=255)
+    provider_message_key = models.CharField(max_length=80, null=True, blank=True)
+    processed_dt = models.DateTimeField(null=True, blank=True)
+    error_dt = models.DateTimeField(null=True, blank=True)
+    delivered_dt = models.DateTimeField(null=True, blank=True)
+    opened_dt = models.DateTimeField(null=True, blank=True)
+    clicked_dt = models.DateTimeField(null=True, blank=True)
+    error_reason = models.CharField(max_length=500, null=True, blank=True)

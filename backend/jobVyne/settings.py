@@ -33,7 +33,7 @@ DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,8a1f-71-196-128-60.ngrok.io').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_SEND_EMAILS = env('IS_SEND_EMAILS', cast=bool, default=True)
@@ -248,6 +248,7 @@ EMAIL_PORT = 587  # 25 or 587 (for unencrypted/TLS connections).
 EMAIL_USE_TLS = True
 SERVER_EMAIL = 'no-reply@jobvyne.com'  # This is used to send error messages to admins
 DEFAULT_FROM_EMAIL = 'no-reply@jobvyne.com'
+SENDGRID_WEBHOOK_KEY = env('SENDGRID_WEBHOOK_KEY')
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/

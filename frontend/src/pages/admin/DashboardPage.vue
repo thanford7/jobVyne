@@ -3,8 +3,9 @@
     <div class="q-ml-sm">
       <PageHeader title="Admin Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
-        <div class="col-12">
+        <div class="col-12 q-gutter-sm">
           <q-btn label="Test error message" color="primary" @click="getTestMsg"/>
+          <q-btn label="Test email" color="primary" @click="sendTestEmail"/>
         </div>
       </div>
     </div>
@@ -23,6 +24,9 @@ export default {
   methods: {
     getTestMsg () {
       this.$api.get('test/error-msg/')
+    },
+    sendTestEmail () {
+      this.$api.post('test/email/')
     }
   },
   preFetch () {

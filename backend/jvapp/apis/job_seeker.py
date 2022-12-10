@@ -106,7 +106,7 @@ class ApplicationView(JobVyneAPIView):
             'referrer': application.social_link_filter.owner,
             'employer': employer
         }
-        files = [application.resume.path] if resume else None
+        files = [application.resume] if resume else None
         
         # Email the job applicant
         send_django_email(

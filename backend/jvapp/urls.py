@@ -1,7 +1,7 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, employer, job_seeker, social,
+    admin, ats, auth, content, currency, data, email, employer, job_seeker, social,
     stripe, test, tracking, user, waitlist
 )
 
@@ -82,11 +82,15 @@ urlpatterns = [
     path('verify-email-generate/', user.UserEmailVerificationGenerateView.as_view()),
     path('verify-email/', user.UserEmailVerificationView.as_view()),
     
+    # Sendgrid email
+    path('sendgrid/webhooks/', email.SendgridWebhooksView.as_view()),
+    
     # Social auth
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
     
     # Test url
+    path('test/email/', test.TestEmailView.as_view()),
     path('test/error-msg/', test.TestErrorView.as_view())
 ]
 
