@@ -11,7 +11,7 @@ from sendgrid import EventWebhook
 
 from jvapp.models import Message, MessageRecipient
 from jvapp.utils.datetime import get_datetime_from_unix
-from jvapp.utils.email import EMAIL_ADDRESS_TEST, MESSAGE_ID_KEY
+from jvapp.utils.email import EMAIL_ADDRESS_TEST, MESSAGE_ENVIRONMENT_KEY, MESSAGE_ID_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,19 @@ class SendgridWebhooksView(APIView):
         recipients_to_save = []
         for event in event_data:
             event_type = event['event']
+            
+            # Sendgrid only allows one webhook url at a time. All messages are saved
+            # with their base url to identify which environment the message came from
+            # i.e. local, dev, production
+            # If the webhook is sending to a mismatched environment, we don't want to process the event
+            # Once we upgrade to a higher tier sendgrid account it's possible to create subaccounts to allow
+            # multiple webhook urls
+            if not (message_base_url := event.get(MESSAGE_ENVIRONMENT_KEY)):
+                logger.warning('Sendgrid webhook delivered an event without an web environment identifier')
+                continue
+            if message_base_url != settings.BASE_URL:
+                break
+                
             if not (message_id := event.get(MESSAGE_ID_KEY)):
                 logger.warning('Sendgrid webhook delivered an event without a unique message ID')
                 continue

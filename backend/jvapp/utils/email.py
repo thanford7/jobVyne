@@ -6,7 +6,6 @@ from email.mime.image import MIMEImage
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from django.db.models.fields.files import FieldFile
 from django.template import loader
 from django.templatetags.static import static
 from django.utils import timezone
@@ -16,6 +15,7 @@ from jvapp.models.tracking import Message, MessageAttachment, MessageRecipient
 
 IS_PRODUCTION = os.getenv('DB') == 'prod'
 MESSAGE_ID_KEY = 'jv_message_id'
+MESSAGE_ENVIRONMENT_KEY = 'jv_base_url'
 EMAIL_ADDRESS_TEST = 'test@jobvyne.com'
 EMAIL_ADDRESS_SEND = 'no-reply@jobvyne.com'  # Email address where all emails originate from
 EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
@@ -84,7 +84,7 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
         to=to_emails,
         cc=cc_email,
         headers={
-            'X-SMTPAPI': json.dumps({'unique_args': {MESSAGE_ID_KEY: jv_message.id}})
+            'X-SMTPAPI': json.dumps({'unique_args': {MESSAGE_ID_KEY: jv_message.id, MESSAGE_ENVIRONMENT_KEY: settings.BASE_URL}})
         }
     )
     message.attach_alternative(html_content, "text/html")
