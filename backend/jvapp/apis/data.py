@@ -2,14 +2,15 @@ import json
 from collections import defaultdict
 
 from django.core.paginator import Paginator
-from django.db.models import Count, F, Q, Value
+from django.db.models import Count, F, Prefetch, Q, Value
 from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek, TruncYear
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import EmployerJob, JobApplication, JobVyneUser, PageView
+from jvapp.models import EmployerJob, JobApplication, JobVyneUser, MessageThreadContext, PageView
 from jvapp.serializers.location import get_serialized_location
+from jvapp.serializers.social import get_serialized_message_thread
 from jvapp.utils.data import coerce_bool
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 
@@ -160,6 +161,13 @@ class ApplicationsView(BaseDataView):
         if is_employer or is_owner:
             application_data['first_name'] = application.first_name
             application_data['last_name'] = application.last_name
+            
+        if is_employer:
+            application_data['notification_email_dt'] = get_datetime_format_or_none(application.notification_email_dt)
+            application_data['notification_email_failure_dt'] = get_datetime_format_or_none(application.notification_email_failure_dt)
+            application_data['notification_ats_dt'] = get_datetime_format_or_none(application.notification_ats_dt)
+            application_data['notification_ats_failure_dt'] = get_datetime_format_or_none(application.notification_ats_failure_dt)
+            application_data['notification_ats_failure_msg'] = get_datetime_format_or_none(application.notification_ats_failure_msg)
         
         return {**application_data, **self.get_link_data(application.social_link_filter)}
     
@@ -170,6 +178,16 @@ class ApplicationsView(BaseDataView):
             app_filter &= Q(social_link_filter__employer_id=employer_id)
         if owner_id:
             app_filter &= Q(social_link_filter__owner_id=owner_id)
+        
+        # Include the message thread if this is the employer
+        message_thread_prefetch = Prefetch(
+            'message_thread_context',
+            queryset=MessageThreadContext.objects
+                .select_related('message_thread')
+                .prefetch_related('message_thread__message', 'message_thread__message__recipient')
+                .filter(message_thread__employer_id__isnull=False, message_thread__employer_id=employer_id)
+        )
+        
         job_applications = JobApplication.objects \
             .select_related(
                 'platform',
@@ -181,7 +199,8 @@ class ApplicationsView(BaseDataView):
                 'employer_job__locations',
                 'employer_job__locations__city',
                 'employer_job__locations__state',
-                'employer_job__locations__country'
+                'employer_job__locations__country',
+                message_thread_prefetch
             ) \
             .filter(app_filter)
         

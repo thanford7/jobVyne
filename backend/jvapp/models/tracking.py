@@ -63,6 +63,9 @@ class Message(models.Model):
     from_address = models.CharField(max_length=255)
     created_dt = models.DateTimeField()
     message_thread = models.ForeignKey('MessageThread', null=True, blank=True, on_delete=models.PROTECT, related_name='message')
+    
+    class Meta:
+        ordering = ('-created_dt',)
 
 
 class MessageAttachment(models.Model):
@@ -94,9 +97,9 @@ class MessageThread(models.Model):
     
 class MessageThreadContext(models.Model):
     """ Allows message threads to be accessible from related models. For example, if a message
-    thread is about a job application, it can be accessed throught the JobApplication model
+    thread is about a job application, it can be accessed through the JobApplication model
     """
-    message_thread = models.ForeignKey('MessageThread', on_delete=models.CASCADE)
+    message_thread = models.OneToOneField('MessageThread', on_delete=models.CASCADE, related_name='message_thread_context')
     job_application = models.ForeignKey('JobApplication', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')
-    job = models.ForeignKey('EmployerJob', on_delete=models.SET_NULL, null=True, blank=True)
-    applicant = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True)
+    job = models.ForeignKey('EmployerJob', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')
+    applicant = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')

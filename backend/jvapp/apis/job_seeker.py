@@ -2,11 +2,12 @@ from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
-from jvapp.apis.ats import get_ats_api
+from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.user import UserView
 from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext
@@ -172,7 +173,14 @@ class ApplicationView(JobVyneAPIView):
         if application.employer_job.ats_job_key:
             ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
             ats_api = get_ats_api(ats_cfg)
-            ats_candidate_key, ats_application_key = ats_api.create_application(application)
+            try:
+                ats_candidate_key, ats_application_key = ats_api.create_application(application)
+            # Capture the issue if something went wrong
+            except AtsError as e:
+                application.notification_ats_failure_dt = timezone.now()
+                application.notification_ats_failure_msg = str(e)
+                application.save()
+                raise e
             if user:
                 try:
                     UserEmployerCandidate(

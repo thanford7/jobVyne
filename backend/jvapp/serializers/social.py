@@ -1,3 +1,4 @@
+from jvapp.models import Message, MessageRecipient, MessageThread
 from jvapp.models.social import *
 
 __all__ = ['get_serialized_social_platform', 'get_serialized_social_link_filter']
@@ -45,3 +46,32 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         }
     
     return data
+
+
+def get_serialized_message(message: Message, is_include_recipients=True):
+    data = {
+        'type': message.type,
+        'subject': message.subject,
+        'from_address': message.from_address,
+        'created_dt': get_datetime_format_or_none(message.created_dt)
+    }
+    if is_include_recipients:
+        data['recipients'] = [get_serialized_message_recipient(r) for r in message.recipient.all()]
+    return data
+    
+    
+def get_serialized_message_recipient(recipient: MessageRecipient):
+    data = {
+        'address': recipient.recipient_address,
+        'processed_dt': get_datetime_format_or_none(recipient.processed_dt),
+        'error_dt': get_datetime_format_or_none(recipient.error_dt),
+        'delivered_dt': get_datetime_format_or_none(recipient.delivered_dt),
+        'opened_dt': get_datetime_format_or_none(recipient.opened_dt),
+        'clicked_dt': get_datetime_format_or_none(recipient.clicked_dt),
+        'error_reason': recipient.error_reason
+    }
+    return data
+
+
+def get_serialized_message_thread(msg_thread: MessageThread):
+    return [get_serialized_message(m) for m in msg_thread.message.all()]

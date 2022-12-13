@@ -63,7 +63,7 @@
                 </q-td>
                 <q-td auto-width>
                   <q-btn
-                    color="primary" no-wrap dense icon="sync" label="Refresh" class="q-pr-sm"
+                    color="gray-500" no-wrap dense icon="sync" label="Refresh" class="q-pr-sm"
                     @click="redirectAuthUrl(props.row.provider)"
                   />
                 </q-td>

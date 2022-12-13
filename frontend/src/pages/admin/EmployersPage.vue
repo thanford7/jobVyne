@@ -28,7 +28,7 @@
             <template v-slot:body="props">
               <q-tr :props="props">
                 <q-td auto-width>
-                  <q-btn size="sm" color="primary" round dense @click="openDialogAdminEmployer(props.row)"
+                  <q-btn size="sm" color="gray-500" round dense @click="openDialogAdminEmployer(props.row)"
                          icon="edit"/>
                 </q-td>
                 <q-td

@@ -18,125 +18,170 @@
         <DateRangeSelector v-model="dateRange" :is-clearable="false" placeholder="Submission date"/>
       </div>
     </template>
-    <template v-slot:header-cell-applicant="props">
-      <q-th :props="props">
-        {{ props.col.label }}
-        <TableFilter filter-name="Applicant"
-                     :has-filter="dataUtil.getBoolean(applicationFilter.applicantName && applicationFilter.applicantName.length)">
-          <q-input filled borderless debounce="300" v-model="applicationFilter.applicantName" placeholder="Applicant name">
-            <template v-slot:append>
-              <q-icon name="search"/>
-            </template>
-          </q-input>
-        </TableFilter>
-      </q-th>
-    </template>
-    <template v-slot:header-cell-email="props">
-      <q-th :props="props">
-        {{ props.col.label }}
-        <TableFilter filter-name="Email"
-                     :has-filter="dataUtil.getBoolean(applicationFilter.applicantEmail && applicationFilter.applicantEmail.length)">
-          <q-input filled borderless debounce="300" v-model="applicationFilter.applicantEmail" placeholder="Applicant email">
-            <template v-slot:append>
-              <q-icon name="search"/>
-            </template>
-          </q-input>
-        </TableFilter>
-      </q-th>
-    </template>
-    <template v-slot:header-cell-job_title="props">
-      <q-th :props="props">
-        {{ props.col.label }}
-        <TableFilter filter-name="Job title"
-                     :has-filter="dataUtil.getBoolean(applicationFilter.jobTitle && applicationFilter.jobTitle.length)">
-          <q-input filled borderless debounce="300" v-model="applicationFilter.jobTitle" placeholder="Job title">
-            <template v-slot:append>
-              <q-icon name="search"/>
-            </template>
-          </q-input>
-        </TableFilter>
-      </q-th>
-    </template>
-    <template v-slot:header-cell-locations="props">
-      <q-th :props="props">
-        {{ props.col.label }}
-        <TableFilter filter-name="Location"
-                     :has-filter="dataUtil.getBoolean(applicationFilter.locations && applicationFilter.locations.length)">
-          <SelectLocation v-model="applicationFilter.locations" :is-multi="true" :locations="locations"/>
-        </TableFilter>
-      </q-th>
-    </template>
-    <template v-slot:header-cell-referrer="props">
-      <q-th :props="props">
-        {{ props.col.label }}
-        <TableFilter filter-name="Referrer"
-                     :has-filter="dataUtil.getBoolean(applicationFilter.referrerName && applicationFilter.referrerName.length)">
-          <q-input filled borderless debounce="300" v-model="applicationFilter.referrerName" placeholder="Referrer name">
-            <template v-slot:append>
-              <q-icon name="search"/>
-            </template>
-          </q-input>
-        </TableFilter>
-      </q-th>
-    </template>
-    <template v-slot:body-cell-applicant="props">
-      <q-td class="text-center" :props="props">
-        {{ props.row.first_name }} {{ props.row.last_name }}
-      </q-td>
-    </template>
-    <template v-slot:body-cell-referrer="props">
-      <q-td class="text-center" :props="props">
-        {{ props.row.owner_first_name }} {{ props.row.owner_last_name }}
-      </q-td>
-    </template>
-    <template v-slot:body-cell-locations="props">
-      <q-td :props="props">
-        <template v-if="props.row.locations.length > 1">
-          <CustomTooltip>
-            <template v-slot:icon>
-              <q-chip
-                color="grey-7" text-color="white" size="md" icon="place"
-              >
-                Multiple locations
-              </q-chip>
-            </template>
-            <ul>
-              <li v-for="location in props.row.locations">
-                {{ locationUtil.getFullLocation(location) }}
-              </li>
-            </ul>
-          </CustomTooltip>
-        </template>
-        <q-chip
-          v-else-if="props.row.locations.length"
-          color="grey-7" text-color="white" size="md" icon="place"
+    <template v-slot:header="props">
+      <q-tr :props="props">
+        <q-th auto-width/>
+        <q-th
+          v-for="col in props.cols"
+          :key="col.name"
+          :props="props"
         >
-          {{ locationUtil.getFullLocation(props.row.locations[0]) }}
-        </q-chip>
-        <div v-else>None</div>
-      </q-td>
+          <template v-if="col.name === 'applicant'">
+            {{ col.label }}
+            <TableFilter filter-name="Applicant"
+                         :has-filter="dataUtil.getBoolean(applicationFilter.applicantName && applicationFilter.applicantName.length)">
+              <q-input filled borderless debounce="300" v-model="applicationFilter.applicantName"
+                       placeholder="Applicant name">
+                <template v-slot:append>
+                  <q-icon name="search"/>
+                </template>
+              </q-input>
+            </TableFilter>
+          </template>
+          <template v-else-if="col.name === 'email'">
+            {{ col.label }}
+            <TableFilter filter-name="Email"
+                         :has-filter="dataUtil.getBoolean(applicationFilter.applicantEmail && applicationFilter.applicantEmail.length)">
+              <q-input filled borderless debounce="300" v-model="applicationFilter.applicantEmail"
+                       placeholder="Applicant email">
+                <template v-slot:append>
+                  <q-icon name="search"/>
+                </template>
+              </q-input>
+            </TableFilter>
+          </template>
+          <template v-else-if="col.name === 'job_title'">
+            {{ col.label }}
+            <TableFilter filter-name="Job title"
+                         :has-filter="dataUtil.getBoolean(applicationFilter.jobTitle && applicationFilter.jobTitle.length)">
+              <q-input filled borderless debounce="300" v-model="applicationFilter.jobTitle" placeholder="Job title">
+                <template v-slot:append>
+                  <q-icon name="search"/>
+                </template>
+              </q-input>
+            </TableFilter>
+          </template>
+          <template v-else-if="col.name === 'locations'">
+            {{ col.label }}
+            <TableFilter filter-name="Location"
+                         :has-filter="dataUtil.getBoolean(applicationFilter.locations && applicationFilter.locations.length)">
+              <SelectLocation v-model="applicationFilter.locations" :is-multi="true" :locations="locations"/>
+            </TableFilter>
+          </template>
+          <template v-else-if="col.name === 'referrer'">
+            {{ col.label }}
+            <TableFilter filter-name="Referrer"
+                         :has-filter="dataUtil.getBoolean(applicationFilter.referrerName && applicationFilter.referrerName.length)">
+              <q-input filled borderless debounce="300" v-model="applicationFilter.referrerName"
+                       placeholder="Referrer name">
+                <template v-slot:append>
+                  <q-icon name="search"/>
+                </template>
+              </q-input>
+            </TableFilter>
+          </template>
+          <span v-else>{{ col.label }}</span>
+        </q-th>
+      </q-tr>
     </template>
-    <template v-slot:body-cell-linkedin_url="props">
-      <q-td :props="props">
-        <a v-if="props.value" :href="props.value" target="_blank" class="no-decoration">
-          <span class="text-gray-3">
-            <q-icon name="launch"/>&nbsp;
-          </span>
-          LinkedIn Profile
-        </a>
-        <div v-else>None</div>
-      </q-td>
-    </template>
-    <template v-slot:body-cell-resume_url="props">
-      <q-td :props="props">
-        <a v-if="props.value" :href="props.value" target="_blank" class="no-decoration">
-          <span class="text-gray-3 no-decoration">
-            <q-icon name="launch"/>&nbsp;
-          </span>
-          Resume
-        </a>
-        <div v-else>None</div>
-      </q-td>
+
+    <template v-slot:body="props">
+      <q-tr :props="props">
+        <q-td auto-width>
+          <q-btn size="sm" color="gray-500" round dense @click="props.expand = !props.expand"
+                 :icon="props.expand ? 'expand_less' : 'expand_more'" title="Expand details"/>
+        </q-td>
+        <q-td
+          v-for="col in props.cols"
+          :key="col.name"
+          :props="props"
+        >
+          <template v-if="col.name === 'applicant'">
+            <q-icon
+              v-if="getIsNotificationFailure(props.row)"
+              name="error" color="negative" size="24px"
+              title="Notification failure"
+            />
+            {{ props.row.first_name }} {{ props.row.last_name }}
+          </template>
+          <template v-else-if="col.name === 'referrer'">
+            {{ props.row.owner_first_name }} {{ props.row.owner_last_name }}
+          </template>
+          <template v-else-if="col.name === 'locations'">
+            <template v-if="props.row.locations.length > 1">
+              <CustomTooltip>
+                <template v-slot:icon>
+                  <q-chip
+                    color="grey-7" text-color="white" size="md" icon="place"
+                  >
+                    Multiple locations
+                  </q-chip>
+                </template>
+                <ul>
+                  <li v-for="location in props.row.locations">
+                    {{ locationUtil.getFullLocation(location) }}
+                  </li>
+                </ul>
+              </CustomTooltip>
+            </template>
+            <q-chip
+              v-else-if="props.row.locations.length"
+              color="grey-7" text-color="white" size="md" icon="place"
+            >
+              {{ locationUtil.getFullLocation(props.row.locations[0]) }}
+            </q-chip>
+            <div v-else>None</div>
+          </template>
+          <template v-else-if="col.name === 'linkedin_url'">
+            <a v-if="props.value" :href="props.value" target="_blank" class="no-decoration">
+            <span class="text-gray-3">
+              <q-icon name="launch"/>&nbsp;
+            </span>
+              LinkedIn Profile
+            </a>
+            <div v-else>None</div>
+          </template>
+          <template v-else-if="col.name === 'resume_url'">
+            <a v-if="props.value" :href="props.value" target="_blank" class="no-decoration">
+            <span class="text-gray-3 no-decoration">
+              <q-icon name="launch"/>&nbsp;
+            </span>
+              Resume
+            </a>
+            <div v-else>None</div>
+          </template>
+          <span v-else>{{ col.value }}</span>
+        </q-td>
+      </q-tr>
+      <q-tr v-show="props.expand" :props="props">
+        <q-td colspan="100%">
+          <div class="text-bold q-mb-sm">Notifications</div>
+          <div v-if="!getHasNotifications(props.row)">No notifications</div>
+          <template v-if="employer.notification_email">
+            <div v-if="props.row.notification_email_dt">
+              <q-icon name="check_circle" color="positive" size="16px"/>
+              Application emailed at {{ dateTimeUtil.getDateTime(props.row.notification_email_dt, { isIncludeSeconds: false }) }}
+              (current email is {{ employer.notification_email }})
+            </div>
+            <div v-if="props.row.notification_email_failure_dt">
+              <q-icon name="error" color="negative" size="16px"/>
+              Application email failed at {{ dateTimeUtil.getDateTime(props.row.notification_email_failure_dt, { isIncludeSeconds: false }) }}
+              (current email is {{ employer.notification_email }})
+            </div>
+          </template>
+          <template v-if="employer.ats_cfg">
+            <div v-if="props.row.notification_ats_dt">
+              <q-icon name="check_circle" color="positive" size="16px"/>
+              Application sent to {{ employer.ats_cfg.name }} at {{ dateTimeUtil.getDateTime(props.row.notification_ats_dt, { isIncludeSeconds: false }) }}
+            </div>
+            <div v-if="props.row.notification_ats_failure_dt">
+              <q-icon name="error" color="negative" size="16px"/>
+              Application failed to sent to {{ employer.ats_cfg.name }} at {{ dateTimeUtil.getDateTime(props.row.notification_ats_failure_dt, { isIncludeSeconds: false }) }}
+              <div>Reason: {{ props.row.notification_ats_failure_msg }}</div>
+            </div>
+          </template>
+        </q-td>
+      </q-tr>
     </template>
   </q-table>
 </template>
@@ -152,6 +197,7 @@ import dateTimeUtil from 'src/utils/datetime.js'
 import locationUtil from 'src/utils/location.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useDataStore } from 'stores/data-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
 
 const applicationFilterTemplate = {
   applicantName: null,
@@ -182,10 +228,12 @@ export default {
       isLoading: true,
       applications: [],
       locations: [],
+      employer: {},
       applicationFilter: { ...applicationFilterTemplate },
       pagination,
       dateRange: { ...defaultDateRange },
       dataUtil,
+      dateTimeUtil,
       locationUtil
     }
   },
@@ -231,6 +279,21 @@ export default {
     clearApplicationFilter () {
       this.applicationFilter = { ...applicationFilterTemplate }
     },
+    getIsNotificationFailure (application) {
+      if (this.employer.notification_email && application.notification_email_failure_dt) {
+        return true
+      }
+      if (this.employer.ats_cfg && application.notification_ats_failure_dt) {
+        return true
+      }
+      return false
+    },
+    getHasNotifications (application) {
+      return (
+        (this.employer.notification_email && (application.notification_email_dt || application.notification_email_failure_dt)) ||
+        (this.employer.ats_cfg && (application.notification_ats_dt || application.notification_ats_failure_dt))
+      )
+    },
     async fetchApplications ({ pagination = this.pagination, filter = this.applicationFilter } = {}) {
       if (!this.dateRange || !this.dateRange.from || !this.dateRange.to) {
         return {}
@@ -256,12 +319,17 @@ export default {
     }
   },
   async mounted () {
-    await this.fetchApplications()
+    await Promise.all([
+      this.fetchApplications(),
+      this.employerStore.setEmployer(this.authStore.propUser.employer_id)
+    ])
+    this.employer = this.employerStore.getEmployer(this.authStore.propUser.employer_id)
   },
   setup () {
     return {
       authStore: useAuthStore(),
-      dataStore: useDataStore()
+      dataStore: useDataStore(),
+      employerStore: useEmployerStore()
     }
   }
 }

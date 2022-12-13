@@ -33,6 +33,15 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     employer_job = models.ForeignKey(
         'EmployerJob', on_delete=models.CASCADE, related_name='job_application'
     )
+    
+    # Delivery notifications
+    notification_email_dt = models.DateTimeField(null=True, blank=True)
+    notification_email_failure_dt = models.DateTimeField(null=True, blank=True)
+    notification_ats_dt = models.DateTimeField(null=True, blank=True)
+    notification_ats_failure_dt = models.DateTimeField(null=True, blank=True)
+    notification_ats_failure_msg = models.CharField(max_length=1000, null=True, blank=True)
+    
+    #  Referral bonus tracking
     referral_bonus = models.FloatField(default=0)
     referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     referral_bonus_details = models.JSONField()
