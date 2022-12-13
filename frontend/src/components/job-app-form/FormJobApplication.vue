@@ -250,7 +250,9 @@ export default {
     async saveApplication () {
       this.isSaving = true
       const data = Object.assign(
-        {},
+        {
+          platform_name: this.$route?.query?.platform
+        },
         this.formData,
         this.$refs.resumeUpload.getValues(),
         { job_id: this.jobApplication.id, filter_id: this.$route.params.filterId }

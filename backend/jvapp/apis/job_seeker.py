@@ -10,7 +10,7 @@ from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.user import UserView
-from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext
+from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext, SocialPlatform
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
 from jvapp.models.user import UserEmployerCandidate
@@ -205,12 +205,20 @@ class ApplicationView(JobVyneAPIView):
     @atomic
     def create_application(user, application, data, resume):
         application.user = user
+        platform_name = data.get('platform_name')
+        platform = None
+        if platform_name:
+            try:
+                platform = SocialPlatform.objects.get(name__iexact=platform_name)
+            except SocialPlatform.DoesNotExist:
+                pass
         cfg = {
             'employer_job_id': AttributeCfg(form_name='job_id'),
             'social_link_filter_id': AttributeCfg(form_name='filter_id'),
             **APPLICATION_SAVE_CFG
         }
         set_object_attributes(application, data, cfg)
+        application.platform = platform
         application.resume = resume
         
         ApplicationView.add_application_referral_bonus(application)
