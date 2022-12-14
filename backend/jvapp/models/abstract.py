@@ -57,7 +57,7 @@ class JobVynePermissionsMixin:
             raise PermissionError('You do not have permission to view this object')
         
         if starting_length != ending_length:
-            logger.warn(f'User (ID={user.id}) does not have access to all query objects')
+            logger.warning(f'User (ID={user.id}) does not have access to all query objects')
             
         return query
     

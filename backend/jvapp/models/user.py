@@ -16,7 +16,7 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermi
 __all__ = (
     'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
     'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate',
-    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion'
+    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion', 'UserNotificationPreference'
 )
 
 from jvapp.utils.email import get_domain_from_email
@@ -337,3 +337,22 @@ class UserEmployeeProfileResponse(models.Model):
     
 class UserEmployeeProfileQuestion(models.Model):
     text = models.TextField()
+
+
+class UserNotificationPreference(models.Model, JobVynePermissionsMixin):
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='notification_preference')
+    notification_key = models.CharField(max_length=40)
+    is_enabled = models.BooleanField()
+
+    class Meta:
+        unique_together = ('user', 'notification_key')
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+    
+        return query.filter(user_id=user.id)
+    
+    def _jv_can_create(self, user):
+        return self.user_id == user.id

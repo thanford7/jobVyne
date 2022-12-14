@@ -5,7 +5,7 @@ export const msgTypes = {
   SUCCESS: {
     color: 'positive',
     textColor: 'black',
-    timeout: 10000
+    timeout: 6000
   },
   WARNING: {
     color: 'warning',

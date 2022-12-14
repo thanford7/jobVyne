@@ -1,8 +1,8 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, email, employer, job_seeker, social,
-    stripe, test, tracking, user, waitlist
+    admin, ats, auth, content, currency, data, email, employer, job_seeker, notification,
+    social, stripe, test, tracking, user, waitlist
 )
 
 api_path = 'api/v1/'
@@ -32,6 +32,7 @@ urlpatterns = [
     path('employer/user/activate/', employer.EmployerUserActivateView.as_view()),
     path('feedback/', user.FeedbackView.as_view()),
     re_path('^job-application/(?P<application_id>[0-9]+)?/?$', job_seeker.ApplicationView.as_view()),
+    path('notification-preference/', notification.UserNotificationPreferenceView.as_view()),
     path('page-view/', tracking.PageTrackView.as_view()),
     re_path('^social-content-item/(?P<item_id>[0-9]+)?/?$', content.SocialContentItemView.as_view()),
     re_path('^social-link-filter/(?P<link_filter_id>\S+)?/?$', social.SocialLinkFilterView.as_view()),

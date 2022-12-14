@@ -28,8 +28,10 @@
             <template v-else-if="isCompanyUser && !user.employer_id && !potentialEmployers.length">
               As an employee or employer user, you must first select your employer. Your current email
               address does not match with any employers on the JobVyne platform. If you have not yet
-              added your business email, add it in the <a href="/user/profile/?tab=general">"General" profile section</a>.
-              If your employer is still not found, you can use the help menu to receive assistance from the JobVyne team.
+              added your business email, add it in the <a href="/user/profile/?tab=general">"General" profile
+              section</a>.
+              If your employer is still not found, you can use the help menu to receive assistance from the JobVyne
+              team.
             </template>
             <template v-else>
               You must verify your email before getting access to most JobVyne features. Use the "Send verification
@@ -49,6 +51,7 @@
       >
         <q-tab name="general" label="General"/>
         <q-tab name="security" label="Security"/>
+        <q-tab name="notify" label="Notifications"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated :keep-alive="true">
         <q-tab-panel name="general">
@@ -284,6 +287,35 @@
             </div>
           </div>
         </q-tab-panel>
+        <q-tab-panel name="notify">
+          <div class="row q-gutter-y-sm">
+            <div class="col-12 q-gutter-x-sm q-mb-sm">
+              <template v-if="hasUserNotificationPreferenceDataChanged">
+                <q-btn
+                  ripple label="Undo" color="grey-6" icon="undo"
+                  @click="undoUserNotificationPreferenceChanges"
+                />
+                <q-btn
+                  ripple label="Save" color="accent" icon="save"
+                  @click="saveUserNotificationPreferenceChanges"
+                />
+              </template>
+            </div>
+            <div class="col-12">
+              <q-list separator>
+                <q-item v-for="notification in userNotificationPreferences" v-ripple>
+                  <q-item-section side top>
+                    <q-checkbox v-model="notification.is_enabled"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-bold">{{ notification.title }}</q-item-label>
+                    <q-item-label>{{ notification.description }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+          </div>
+        </q-tab-panel>
       </q-tab-panels>
     </div>
   </q-page>
@@ -306,6 +338,7 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
+import { useNotificationStore } from 'stores/notification-store.js'
 
 const userPermissionGroupColumns = [
   { name: 'employerName', field: 'employerName', align: 'left', label: 'Employer Name' },
@@ -315,7 +348,15 @@ const userPermissionGroupColumns = [
 
 export default {
   name: 'ProfilePage',
-  components: { SelectOrDisplayProfilePic, SelectUserType, PasswordInput, CustomTooltip, EmailInput, PageHeader, SeparatorWithText },
+  components: {
+    SelectOrDisplayProfilePic,
+    SelectUserType,
+    PasswordInput,
+    CustomTooltip,
+    EmailInput,
+    PageHeader,
+    SeparatorWithText
+  },
   data () {
     return {
       tab: 'general',
@@ -326,6 +367,8 @@ export default {
         new_password: null,
         new_password_confirm: null
       },
+      currentUserNotificationPreferences: [],
+      userNotificationPreferences: [],
       userPermissionGroupColumns,
       fileUtil,
       FILE_TYPES
@@ -351,6 +394,9 @@ export default {
     },
     hasUserDataChanged () {
       return !dataUtil.isDeepEqual(this.currentUserData, this.userData)
+    },
+    hasUserNotificationPreferenceDataChanged () {
+      return !dataUtil.isDeepEqual(this.currentUserNotificationPreferences, this.userNotificationPreferences)
     },
     userPermissionGroupRows () {
       return Object.entries(this.user.permission_groups_by_employer).map(([employerId, permissionGroups]) => {
@@ -435,6 +481,22 @@ export default {
     },
     sendVerificationEmail (email) {
       this.$api.post('verify-email-generate/', getAjaxFormData({ email }))
+    },
+    // Notify tab
+    undoUserNotificationPreferenceChanges () {
+      this.userNotificationPreferences = dataUtil.deepCopy(this.currentUserNotificationPreferences)
+    },
+    async updateUserNotificationPreferences (isForceRefresh) {
+      await this.notificationStore.setUserNotificationPreferences(this.user.id, isForceRefresh)
+      this.currentUserNotificationPreferences = dataUtil.deepCopy(this.notificationStore.getUserNotificationPreferences(this.user.id))
+      this.userNotificationPreferences = dataUtil.deepCopy(this.notificationStore.getUserNotificationPreferences(this.user.id))
+    },
+    async saveUserNotificationPreferenceChanges () {
+      await this.$api.put('notification-preference/', getAjaxFormData({
+        user_id: this.user.id,
+        notification_preferences: this.userNotificationPreferences
+      }))
+      await this.updateUserNotificationPreferences(true)
     }
   },
   mounted () {
@@ -442,17 +504,20 @@ export default {
     if (tab) {
       this.tab = tab
     }
+    this.updateUserNotificationPreferences(false)
   },
   preFetch () {
     const authStore = useAuthStore()
     const employerStore = useEmployerStore()
+    const notificationStore = useNotificationStore()
     Loading.show()
 
     return authStore.setUser().then(() => {
       return Promise.all([
         employerStore.setEmployer(authStore.propUser.employer_id),
         employerStore.setEmployersFromDomain(authStore.propUser.email),
-        employerStore.setEmployersFromDomain(authStore.propUser.business_email)
+        employerStore.setEmployersFromDomain(authStore.propUser.business_email),
+        notificationStore.setUserNotificationPreferences(authStore.propUser.id)
       ])
     }).finally(() => {
       Loading.hide()
@@ -475,6 +540,7 @@ export default {
       authStore,
       employerStore,
       globalStore,
+      notificationStore: useNotificationStore(),
       user
     }
   }
