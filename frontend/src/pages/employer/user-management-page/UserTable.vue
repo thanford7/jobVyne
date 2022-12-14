@@ -304,6 +304,7 @@ import userTypeUtil, {
 } from 'src/utils/user-types.js'
 import { useAdminStore } from 'stores/admin-store.js'
 import { useAuthStore } from 'stores/auth-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
 
 const getAllUserPermissionGroups = (user) => {
   return Object.values(user.permission_groups_by_employer).reduce((allGroups, permissionGroups) => {
@@ -342,6 +343,7 @@ export default {
       isLoading: true,
       users: [],
       selectedUsers: [],
+      subscription: {},
       userFilter: { ...userFilterTemplate },
       PERMISSION_NAMES: pagePermissionsUtil.PERMISSION_NAMES,
       dataUtil,
@@ -522,11 +524,16 @@ export default {
     await Promise.all([
       this.fetchUsers()
     ])
+    if (!this.isAdminMode) {
+      await this.employerStore.setEmployerSubscription(this.authStore.propUser.employer_id)
+      this.subscription = this.employerStore.getEmployerSubscription(this.authStore.propUser.employer_id)
+    }
   },
   setup () {
     return {
       authStore: useAuthStore(),
       adminStore: useAdminStore(),
+      employerStore: useEmployerStore(),
       q: useQuasar()
     }
   }
