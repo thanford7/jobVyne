@@ -1,4 +1,3 @@
-import base64
 import json
 import logging
 import os
@@ -14,6 +13,7 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from jvapp.models.tracking import Message, MessageAttachment, MessageRecipient
+from jvapp.utils.file import get_file_name
 
 IS_PRODUCTION = os.getenv('DB') == 'prod'
 MESSAGE_ID_KEY = 'jv_message_id'
@@ -28,14 +28,10 @@ logger = logging.getLogger(__name__)
 
 def get_file_from_path(file_path):
     is_url = bool(re.match('^http', file_path))
-    if is_url:
-        with urlopen(file_path) as file:
-            file = base64.b64encode(file.read()).decode()
-        return file
-    
-    with open(file_path, 'rb') as f:
-        file = f.read()
-    return file
+    file_opener = urlopen if is_url else lambda f: open(f, 'rb')
+    with file_opener(file_path) as file:
+        file_data = file.read()
+    return file_data
 
 
 def send_django_email(subject_text, to_emails, django_context=None, django_email_body_template=None, html_content=None,
@@ -110,7 +106,12 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
     # Note: Need to use message_attachments instead of files since in-memory files
     # have already been read and will return b'' if attempted to read again
     for attachment in message_attachments:
-        message.attach_file(attachment.file.path)
+        # S3 file storage doesn't support an absolute path so we fall back to the URL location of the file
+        try:
+            file_path = attachment.file.path
+        except NotImplementedError:
+            file_path = attachment.file.url
+        message.attach(get_file_name(file_path), get_file_from_path(file_path))
     
     return message.send()
 
