@@ -1,8 +1,10 @@
+import base64
 import json
 import logging
 import os
 import re
 from email.mime.image import MIMEImage
+from urllib.request import urlopen
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -22,6 +24,18 @@ EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
 EMAIL_ADDRESS_SALES = 'sales@jobvyne.com'
 EMAIL_ADDRESS_MARKETING = 'marketing@jobvyne.com'
 logger = logging.getLogger(__name__)
+
+
+def get_file_from_path(file_path):
+    is_url = bool(re.match('^http', file_path))
+    if is_url:
+        with urlopen(file_path) as file:
+            file = base64.b64encode(file.read()).decode()
+        return file
+    
+    with open(file_path, 'rb') as f:
+        file = f.read()
+    return file
 
 
 def send_django_email(subject_text, to_emails, django_context=None, django_email_body_template=None, html_content=None,
@@ -89,9 +103,7 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
     )
     message.attach_alternative(html_content, "text/html")
 
-    with open(static('jobVyneLogo.png'), 'rb') as f:
-        logo_data = f.read()
-    logo = MIMEImage(logo_data)
+    logo = MIMEImage(get_file_from_path(static('jobVyneLogo.png')))
     logo.add_header('Content-ID', '<logo>')
     message.attach(logo)
     

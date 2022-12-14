@@ -6,7 +6,7 @@ from contextlib import closing
 import MySQLdb
 from django.conf import settings
 
-E2E_DB = 'jobvyne-cypress'
+E2E_DB = 'jobvyne_cypress'
 E2E_DB_SQL_FILE_PATH = './e2e_db.sql'
 logger = logging.getLogger(__name__)
 
