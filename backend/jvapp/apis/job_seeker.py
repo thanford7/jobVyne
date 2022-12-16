@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
+from jvapp.apis.notification import NotificationPreferenceKey, UserNotificationPreferenceView
 from jvapp.apis.user import UserView
 from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext, SocialPlatform
 from jvapp.models.abstract import PermissionTypes
@@ -120,13 +121,16 @@ class ApplicationView(JobVyneAPIView):
         )
         
         # Email the referrer
-        send_django_email(
-            f'JobVyne | Congratulations, you have a new referral',
-            to_emails=[application.social_link_filter.owner.email],
-            from_email=EMAIL_ADDRESS_SEND,
-            django_email_body_template='emails/application_submission_referrer_email.html',
-            django_context=django_context
-        )
+        if UserNotificationPreferenceView.get_is_notification_enabled(
+                application.social_link_filter.owner, NotificationPreferenceKey.NEW_APPLICATION.value
+        ):
+            send_django_email(
+                f'JobVyne | Congratulations, you have a new referral',
+                to_emails=[application.social_link_filter.owner.email],
+                from_email=EMAIL_ADDRESS_SEND,
+                django_email_body_template='emails/application_submission_referrer_email.html',
+                django_context=django_context
+            )
         
         # Send a notification to the employer if they have it configured
         if employer.notification_email:

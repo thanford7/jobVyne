@@ -24,7 +24,8 @@ class WaitlistView(APIView):
             django_email_body_template='emails/waitlist_email.html',
             django_context={
                 'is_exclude_final_message': False
-            }
+            },
+            is_tracked=False
         )
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Thanks for your interest! You\'re on the waitlist.'

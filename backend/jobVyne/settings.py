@@ -45,6 +45,8 @@ else:
 
 SUBDOMAIN = env('SUBDOMAIN', default=None)
 BASE_URL = 'https://localhost' if IS_LOCAL else (f'https://{SUBDOMAIN}.jobvyne.com' if SUBDOMAIN else 'https://jobvyne.com')
+# Without this setting users will have different sign ins for different sub-domains (e.g. www.jobvyne.com vs jobvyne.com)
+SESSION_COOKIE_DOMAIN = env('SESSION_COOKIE_DOMAIN', default=None)  # '.jobvyne.com'
 IS_SEND_AUTO_POSTS = env('IS_SEND_AUTO_POSTS', cast=bool, default=False)
 
 # Application definition

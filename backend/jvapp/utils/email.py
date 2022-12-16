@@ -35,7 +35,7 @@ def get_file_from_path(file_path):
 
 
 def send_django_email(subject_text, to_emails, django_context=None, django_email_body_template=None, html_content=None,
-                      from_email=EMAIL_ADDRESS_SEND, cc_email=None, files=None, message_thread=None):
+                      from_email=EMAIL_ADDRESS_SEND, cc_email=None, files=None, message_thread=None, is_tracked=True):
     if not settings.IS_SEND_EMAILS:
         return
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
@@ -61,57 +61,64 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
         to_emails = [to_emails]
     
     # Save messages to the database so we can track delivery
-    jv_message = Message(
-        type=Message.MessageType.EMAIL.value,
-        subject=subject,
-        body=plain_content,
-        body_html=html_content,
-        from_address=from_email,
-        created_dt=timezone.now(),
-        message_thread=message_thread
-    )
-    jv_message.save()
-    recipients = []
-    for recipient_email in to_emails + (cc_email or []):
-        recipients.append(MessageRecipient(
-            message=jv_message,
-            recipient_address=recipient_email
-        ))
-    MessageRecipient.objects.bulk_create(recipients)
-    message_attachments = []
-    for f in (files or []):
-        message_attachments.append(MessageAttachment(
-            message=jv_message,
-            file=f
-        ))
-    MessageAttachment.objects.bulk_create(message_attachments)
+    if is_tracked:
+        jv_message = Message(
+            type=Message.MessageType.EMAIL.value,
+            subject=subject,
+            body=plain_content,
+            body_html=html_content,
+            from_address=from_email,
+            created_dt=timezone.now(),
+            message_thread=message_thread
+        )
+        jv_message.save()
+        recipients = []
+        for recipient_email in to_emails + (cc_email or []):
+            recipients.append(MessageRecipient(
+                message=jv_message,
+                recipient_address=recipient_email
+            ))
+        MessageRecipient.objects.bulk_create(recipients)
+        message_attachments = []
+        for f in (files or []):
+            message_attachments.append(MessageAttachment(
+                message=jv_message,
+                file=f
+            ))
+        MessageAttachment.objects.bulk_create(message_attachments)
     
     # Send the actual email
-    message = EmailMultiAlternatives(
-        subject=subject,
-        body=plain_content,
-        from_email=from_email,
-        to=to_emails,
-        cc=cc_email,
-        headers={
+    email_cfg = {
+        'subject': subject,
+        'body': plain_content,
+        'from_email': from_email,
+        'to': to_emails,
+        'cc': cc_email
+    }
+    if is_tracked:
+        email_cfg['headers'] = {
             'X-SMTPAPI': json.dumps({'unique_args': {MESSAGE_ID_KEY: jv_message.id, MESSAGE_ENVIRONMENT_KEY: settings.BASE_URL}})
         }
-    )
+    message = EmailMultiAlternatives(**email_cfg)
     message.attach_alternative(html_content, "text/html")
 
     logo = MIMEImage(get_file_from_path(static('jobVyneLogo.png')))
     logo.add_header('Content-ID', '<logo>')
     message.attach(logo)
     
-    # Note: Need to use message_attachments instead of files since in-memory files
-    # have already been read and will return b'' if attempted to read again
-    for attachment in message_attachments:
-        # S3 file storage doesn't support an absolute path so we fall back to the URL location of the file
-        try:
-            file_path = attachment.file.path
-        except NotImplementedError:
-            file_path = attachment.file.url
-        message.attach(get_file_name(file_path), get_file_from_path(file_path))
+    if is_tracked:
+        # Note: Need to use message_attachments instead of files since in-memory files
+        # have already been read and will return b'' if attempted to read again
+        for attachment in message_attachments:
+            # S3 file storage doesn't support an absolute path so we fall back to the URL location of the file
+            try:
+                file_path = attachment.file.path
+            except NotImplementedError:
+                file_path = attachment.file.url
+            message.attach(get_file_name(file_path), get_file_from_path(file_path))
+    else:
+        for f in (files or []):
+            message.attach(f.name, f.read())
     
     return message.send()
 

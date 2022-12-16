@@ -393,7 +393,7 @@ class StripeSubscriptionView(StripeBaseView):
         
         send_django_email('JobVyne | Customer cancellation', EMAIL_ADDRESS_SUPPORT, html_content=f'''
             <div>{employer.employer_name} (ID={employer.id}) cancelled their subscription</div>
-        ''')
+        ''', is_tracked=False)
 
         subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
         jv_subscription = EmployerSubscription.objects.get(stripe_key=subscription.id)

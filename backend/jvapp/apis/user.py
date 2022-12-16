@@ -207,7 +207,8 @@ class UserView(JobVyneAPIView):
                 'uid': get_uid_from_user(user),
                 'token': generate_user_token(user, email_key),
                 'is_exclude_final_message': False
-            }
+            },
+            is_tracked=False
         )
         
         
@@ -348,7 +349,7 @@ class UserSocialCredentialsView(JobVyneAPIView):
         data = defaultdict(list)
         for cred in social_credentials:
             # Google is only used for authentication, not for social sharing
-            if cred.provider == 'google-oauth2':
+            if cred.provider == OauthProviders.google.value:
                 continue
             name = OAUTH_CFGS[cred.provider]['name']
             data[name].append({
@@ -440,5 +441,6 @@ class JobVynePasswordResetForm(PasswordResetForm):
             subject,
             to_email,
             django_context=context,
-            django_email_body_template='emails/base_reset_password_email.html'
+            django_email_body_template='emails/base_reset_password_email.html',
+            is_tracked=False
         )

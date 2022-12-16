@@ -51,7 +51,7 @@ class SendgridWebhooksView(APIView):
             # Once we upgrade to a higher tier sendgrid account it's possible to create subaccounts to allow
             # multiple webhook urls
             if not (message_base_url := event.get(MESSAGE_ENVIRONMENT_KEY)):
-                logger.warning('Sendgrid webhook delivered an event without an web environment identifier')
+                logger.info('Sendgrid webhook delivered an event without a web environment identifier')
                 continue
             if message_base_url != settings.BASE_URL:
                 break
