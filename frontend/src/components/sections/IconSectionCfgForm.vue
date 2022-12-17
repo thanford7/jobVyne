@@ -15,7 +15,7 @@
 
 <script>
 import IconPicker from 'components/inputs/IconPicker.vue'
-import WysiwygEditor from 'components/section-editors/WysiwygEditor.vue'
+import WysiwygEditor from 'components/inputs/WysiwygEditor.vue'
 
 export default {
   name: 'IconSectionCfgForm',

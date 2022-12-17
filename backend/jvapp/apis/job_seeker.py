@@ -112,24 +112,27 @@ class ApplicationView(JobVyneAPIView):
         
         # Email the job applicant
         send_django_email(
-            f'JobVyne | Job application for {employer.employer_name}',
-            to_emails=[email],
+            f'Job application for {employer.employer_name}',
+            'emails/application_submission_candidate_email.html',
+            to_email=[email],
             from_email=EMAIL_ADDRESS_SEND,
-            django_email_body_template='emails/application_submission_candidate_email.html',
             django_context=django_context,
             files=files
         )
         
         # Email the referrer
         if UserNotificationPreferenceView.get_is_notification_enabled(
-                application.social_link_filter.owner, NotificationPreferenceKey.NEW_APPLICATION.value
+            application.social_link_filter.owner, NotificationPreferenceKey.NEW_APPLICATION.value
         ):
             send_django_email(
-                f'JobVyne | Congratulations, you have a new referral',
-                to_emails=[application.social_link_filter.owner.email],
+                f'Congratulations, you have a new referral',
+                'emails/application_submission_referrer_email.html',
+                to_email=[application.social_link_filter.owner.email],
                 from_email=EMAIL_ADDRESS_SEND,
-                django_email_body_template='emails/application_submission_referrer_email.html',
-                django_context=django_context
+                django_context={
+                    'is_unsubscribe': True,
+                    **django_context
+                }
             )
         
         # Send a notification to the employer if they have it configured
@@ -141,10 +144,10 @@ class ApplicationView(JobVyneAPIView):
                 job_application=application
             ).save()
             send_django_email(
-                'JobVyne | New application submission',
-                to_emails=[employer.notification_email],
+                'New application submission',
+                'emails/application_submission_employer_email.html',
+                to_email=[employer.notification_email],
                 from_email=EMAIL_ADDRESS_SEND,
-                django_email_body_template='emails/application_submission_employer_email.html',
                 django_context=django_context,
                 files=files,
                 message_thread=message_thread

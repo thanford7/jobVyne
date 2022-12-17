@@ -34,31 +34,47 @@ def get_file_from_path(file_path):
     return file_data
 
 
-def send_django_email(subject_text, to_emails, django_context=None, django_email_body_template=None, html_content=None,
-                      from_email=EMAIL_ADDRESS_SEND, cc_email=None, files=None, message_thread=None, is_tracked=True):
+def send_django_email(
+    subject_text, django_email_body_template,
+    to_email=None, cc_email=None, bcc_email=None, from_email=EMAIL_ADDRESS_SEND,
+    django_context=None, html_body_content=None,
+    files=None, message_thread=None, is_tracked=True
+):
     if not settings.IS_SEND_EMAILS:
         return
+    
+    if not any((to_email, cc_email, bcc_email)):
+        logger.warning('At least one email recipient is required')
+        return
+    
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
+    subject = f'JobVyne | {subject}'
     django_context = django_context or {}
     django_context['support_email'] = EMAIL_ADDRESS_SUPPORT
     django_context['base_url'] = settings.BASE_URL
     django_context['protocol'] = 'https'  # Overwrite protocol to always use https
-    html_content = html_content or loader.render_to_string(django_email_body_template, django_context)
+    django_context['html_body_content'] = html_body_content
+    html_content = loader.render_to_string(django_email_body_template, django_context)
     plain_content = strip_tags(html_content)
     
     if not IS_PRODUCTION:
         subject = '(Test) ' + subject
         logger.info(
-            f'Sending email to test address. This email would have been sent to {to_emails} and cced to {cc_email}')
+            f'Sending email to test address. This email would have been sent to {to_email}, cced to {cc_email}, and bcced to {bcc_email}')
         if cc_email:
             cc_email = [EMAIL_ADDRESS_TEST]
-        to_emails = [EMAIL_ADDRESS_TEST]
+        if bcc_email:
+            bcc_email = [EMAIL_ADDRESS_TEST]
+        to_email = [EMAIL_ADDRESS_TEST]
     
     if cc_email and not isinstance(cc_email, list):
         cc_email = [cc_email]
+        
+    if bcc_email and not isinstance(bcc_email, list):
+        bcc_email = [bcc_email]
     
-    if not isinstance(to_emails, list):
-        to_emails = [to_emails]
+    if not isinstance(to_email, list):
+        to_email = [to_email]
     
     # Save messages to the database so we can track delivery
     if is_tracked:
@@ -73,11 +89,17 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
         )
         jv_message.save()
         recipients = []
-        for recipient_email in to_emails + (cc_email or []):
-            recipients.append(MessageRecipient(
-                message=jv_message,
-                recipient_address=recipient_email
-            ))
+        for recipient_type, recipient_emails in (
+            (MessageRecipient.RecipientType.TO.value, to_email or []),
+            (MessageRecipient.RecipientType.CC.value, cc_email or []),
+            (MessageRecipient.RecipientType.BCC.value, bcc_email or [])
+        ):
+            for recipient_email in recipient_emails:
+                recipients.append(MessageRecipient(
+                    message=jv_message,
+                    recipient_address=recipient_email,
+                    recipient_type=recipient_type
+                ))
         MessageRecipient.objects.bulk_create(recipients)
         message_attachments = []
         for f in (files or []):
@@ -92,8 +114,9 @@ def send_django_email(subject_text, to_emails, django_context=None, django_email
         'subject': subject,
         'body': plain_content,
         'from_email': from_email,
-        'to': to_emails,
-        'cc': cc_email
+        'to': to_email,
+        'cc': cc_email,
+        'bcc': bcc_email
     }
     if is_tracked:
         email_cfg['headers'] = {

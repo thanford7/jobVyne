@@ -2,6 +2,7 @@
 
 {% block body %}
     {{ body_content }}
+    {{ html_body_content|safe }}
 {% endblock body %}
 
 {% block final_message %}

@@ -88,12 +88,15 @@ class Command(BaseCommand):
             
             for email, creds in grouped_expiring_social_credentials.items():
                 send_django_email(
-                    'JobVyne | Expiring Social Credentials', email,
+                    'Expiring Social Credentials',
+                    'emails/expiring_credential_email.html',
+                    to_email=email,
                     django_context={
                         'user_full_name': creds[0]['user_full_name'],
-                        'credentials': creds
+                        'credentials': creds,
+                        'is_exclude_final_message': True,
+                        'is_unsubscribe': True
                     },
-                    django_email_body_template='emails/expiring_credential_email.html',
                     is_tracked=False
                 )
             email_count = len(grouped_expiring_social_credentials.values())

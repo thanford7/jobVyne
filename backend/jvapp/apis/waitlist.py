@@ -17,11 +17,11 @@ class WaitlistView(APIView):
         email = request.data['email']
         Waitlist(email=email).save()
         send_django_email(
-            'JobVyne Waitlist | Thanks for your interest!',
-            to_emails=[email],
+            'Thanks for your interest!',
+            'emails/waitlist_email.html',
+            to_email=[email],
             from_email=EMAIL_ADDRESS_SALES,
             cc_email=EMAIL_ADDRESS_SALES,
-            django_email_body_template='emails/waitlist_email.html',
             django_context={
                 'is_exclude_final_message': False
             },

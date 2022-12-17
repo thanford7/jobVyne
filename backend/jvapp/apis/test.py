@@ -18,7 +18,16 @@ class TestEmailView(APIView):
     permission_classes = [IsAdmin]
     
     def post(self, request):
-        send_django_email('TEST EMAIL', [EMAIL_ADDRESS_TEST], html_content='<p>This is a test email</p>', is_tracked=False)
+        send_django_email(
+            'TEST EMAIL',
+            'emails/base_general_email.html',
+            to_email=[EMAIL_ADDRESS_TEST],
+            django_context={
+                'is_exclude_final_message': True
+            },
+            html_body_content='<p>This is a test email</p>',
+            is_tracked=False
+        )
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Test email sent'
         })

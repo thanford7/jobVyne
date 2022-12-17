@@ -198,9 +198,9 @@ class UserView(JobVyneAPIView):
     def send_email_verification_email(request, user, email_key):
         current_site = get_current_site(request)
         send_django_email(
-            'JobVyne | Email Verification',
-            getattr(user, email_key),
-            django_email_body_template='emails/verify_email_email.html',
+            'Email Verification',
+            'emails/verify_email_email.html',
+            to_email=getattr(user, email_key),
             django_context={
                 'user': user,
                 'domain': current_site.domain,
@@ -416,8 +416,8 @@ class FeedbackView(JobVyneAPIView):
             user = self.data
         
         send_django_email(
-            'JobVyne | User Feedback', EMAIL_ADDRESS_SUPPORT,
-            django_email_body_template='emails/support_email.html',
+            'User Feedback', 'emails/support_email.html',
+            to_email=EMAIL_ADDRESS_SUPPORT,
             django_context={
                 'is_exclude_final_message': True,
                 'user': user,
@@ -435,12 +435,12 @@ class JobVynePasswordResetForm(PasswordResetForm):
 
     def send_mail(self, subject_template_name, email_template_name,
                   context, from_email, to_email, html_email_template_name=None):
-        subject = context.get('subject', 'JobVyne | Reset Password')
+        subject = context.get('subject', 'Reset Password')
         subject = ''.join(subject.splitlines())
         send_django_email(
             subject,
-            to_email,
+            'emails/base_reset_password_email.html',
+            to_email=to_email,
             django_context=context,
-            django_email_body_template='emails/base_reset_password_email.html',
             is_tracked=False
         )

@@ -1,12 +1,16 @@
 from dataclasses import asdict, dataclass
 from enum import Enum
 
+from django.db.models import F, Q
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
-from jvapp.models import JobVyneUser, UserNotificationPreference
+from jvapp.models import Employer, JobVyneUser, MessageThread, UserNotificationPreference
 from jvapp.models.abstract import PermissionTypes
+from jvapp.permissions.employer import IsAdminOrEmployerPermission
+from jvapp.utils.email import send_django_email
+from jvapp.utils.sanitize import sanitize_html
 
 
 @dataclass
@@ -134,3 +138,77 @@ class UserNotificationPreferenceView(JobVyneAPIView):
         combined_notification_preferences = UserNotificationPreferenceView.get_combined_user_notification_preferences(None, user.id, is_check_permissions=False)
         notification_preference = next((cnp for cnp in combined_notification_preferences if cnp['key'] == notification_key), None)
         return bool(not notification_preference) or notification_preference['is_enabled']
+    
+    
+class NotificationView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def post(self, request):
+        filter_data = self.data['userFilters']
+        email_user_filter = Q()
+        employer_id = self.data.get('employer_id')
+        employer = None
+        if not (email_subject := self.data.get('emailSubject')):
+            return Response('An email subject is required', status=status.HTTP_400_BAD_REQUEST)
+        if not (email_body := self.data.get('emailBody')):
+            return Response('An email body is required', status=status.HTTP_400_BAD_REQUEST)
+        email_body = sanitize_html(email_body)
+        
+        if not self.user.is_admin or employer_id:
+            if not employer_id:
+                return Response('You must include an employer ID', status=status.HTTP_400_BAD_REQUEST)
+            employer_id = int(employer_id)
+            if employer_id != self.user.employer_id:
+                return Response('You do not have permission to post for this employer', status=status.HTTP_400_BAD_REQUEST)
+            
+            employer = Employer.objects.get(id=employer_id)
+            
+            email_user_filter &= Q(employer_id=employer_id)
+            if user_ids := filter_data.get('userIds'):
+                email_user_filter &= Q(id__in=user_ids)
+        else:
+            if employer_ids := filter_data.get('userEmployers'):
+                email_user_filter &= Q(employer_id__in=employer_ids)
+        
+        if user_type_bits := filter_data.get('userTypes'):
+            email_user_filter &= Q(
+                user_type_bits__lt=F('user_type_bits') + (1 * F('user_type_bits').bitand(user_type_bits))
+            )
+        
+        # Get full list of emails to send notification to
+        email_users = JobVyneUser.objects.filter(email_user_filter)
+        user_count = 0
+        user_emails = set()
+        for user in email_users:
+            # Don't email users that have turned off notifications
+            if not UserNotificationPreferenceView.get_is_notification_enabled(
+                user, NotificationPreferenceKey.PRODUCT_HELP.value
+            ):
+                continue
+            user_emails.add(user.email)
+            user_count += 1
+            if user.business_email:
+                user_emails.add(user.business_email)
+        
+        message_thread = None
+        if employer:
+            message_thread = MessageThread(employer=employer)
+            message_thread.save()
+        
+        send_django_email(
+            email_subject,
+            'emails/base_general_email.html',
+            bcc_email=list(user_emails),
+            django_context={
+                'employer_name': employer.employer_name if employer else None,
+                'is_exclude_final_message': True,
+                'is_unsubscribe': True
+            },
+            html_body_content=email_body,
+            message_thread=message_thread
+        )
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Sent email to {user_count} users at {len(user_emails)} different email addresses'
+        })
+        

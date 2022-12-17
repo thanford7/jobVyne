@@ -391,9 +391,18 @@ class StripeSubscriptionView(StripeBaseView):
     def delete(self, request, subscription_id):
         employer = self.check_employer_permissions(employer_id=self.data['employer_id'])
         
-        send_django_email('JobVyne | Customer cancellation', EMAIL_ADDRESS_SUPPORT, html_content=f'''
-            <div>{employer.employer_name} (ID={employer.id}) cancelled their subscription</div>
-        ''', is_tracked=False)
+        send_django_email(
+            'Customer cancellation',
+            'emails/base_general_email.html',
+            to_email=EMAIL_ADDRESS_SUPPORT,
+            django_context={
+                'is_exclude_final_message': True
+            },
+            html_body_content=f'''
+                <div>{employer.employer_name} (ID={employer.id}) cancelled their subscription</div>
+            ''',
+            is_tracked=False
+        )
 
         subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
         jv_subscription = EmployerSubscription.objects.get(stripe_key=subscription.id)

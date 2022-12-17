@@ -74,8 +74,14 @@ class MessageAttachment(models.Model):
     
     
 class MessageRecipient(models.Model):
+    class RecipientType(Enum):
+        TO = 'to'
+        CC = 'cc'
+        BCC = 'bcc'
+    
     message = models.ForeignKey('Message', on_delete=models.CASCADE, related_name='recipient')
     recipient_address = models.CharField(max_length=255)
+    recipient_type = models.CharField(max_length=3, default=RecipientType.TO.value)
     provider_message_key = models.CharField(max_length=80, null=True, blank=True)
     processed_dt = models.DateTimeField(null=True, blank=True)
     error_dt = models.DateTimeField(null=True, blank=True)

@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import WysiwygEditor from 'components/section-editors/WysiwygEditor.vue'
+import WysiwygEditor from 'components/inputs/WysiwygEditor.vue'
 
 export default {
   name: 'AccordionSectionCfgForm',

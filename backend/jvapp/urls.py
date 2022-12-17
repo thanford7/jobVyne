@@ -12,6 +12,7 @@ urlpatterns = [
     re_path('^admin/employer/(?P<employer_id>[0-9]+)?/?$', admin.AdminEmployerView.as_view()),
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
+    path('email/notification/', notification.NotificationView.as_view()),
     path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),

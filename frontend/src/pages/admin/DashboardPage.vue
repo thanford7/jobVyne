@@ -4,6 +4,11 @@
       <PageHeader title="Admin Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12 q-gutter-sm">
+          <div class="text-h6">Support</div>
+          <q-btn label="Product announcement email" color="primary" @click="openAnnouncementEmailDialog"/>
+        </div>
+        <div class="col-12 q-gutter-sm">
+          <div class="text-h6">Testing</div>
           <q-btn label="Test error message" color="primary" @click="getTestMsg"/>
           <q-btn label="Test email" color="primary" @click="sendTestEmail"/>
         </div>
@@ -13,8 +18,9 @@
 </template>
 
 <script>
+import DialogAnnouncementEmail from 'components/dialogs/DialogAnnouncementEmail.vue'
 import PageHeader from 'components/PageHeader.vue'
-import { Loading, useMeta } from 'quasar'
+import { Loading, useMeta, useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
@@ -24,6 +30,12 @@ export default {
   methods: {
     getTestMsg () {
       this.$api.get('test/error-msg/')
+    },
+    openAnnouncementEmailDialog () {
+      this.q.dialog({
+        component: DialogAnnouncementEmail,
+        componentProps: { employerId: null }
+      })
     },
     sendTestEmail () {
       this.$api.post('test/email/')
@@ -46,6 +58,10 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
+
+    return {
+      q: useQuasar()
+    }
   }
 }
 </script>
