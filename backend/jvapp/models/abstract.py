@@ -52,12 +52,14 @@ class JobVynePermissionsMixin:
         starting_length = len(query)
         query = cls._jv_filter_perm_query(user, query)
         ending_length = len(query)
+        object_name = query.model._meta.object_name
         
         if starting_length and not ending_length:
+            logger.warning(f'User (ID={user.id}) does not have access to an object ({object_name})')
             raise PermissionError('You do not have permission to view this object')
         
         if starting_length != ending_length:
-            logger.warning(f'User (ID={user.id}) does not have access to all query objects')
+            logger.warning(f'User (ID={user.id}) does not have access to all query objects ({object_name})')
             
         return query
     

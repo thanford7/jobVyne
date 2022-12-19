@@ -410,7 +410,6 @@ import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import subscriptionUtil, { SUBSCRIPTION_STATUS } from 'src/utils/subscription.js'
-import { useAjaxStore } from 'stores/ajax-store.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useBillingStore } from 'stores/billing-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
@@ -652,7 +651,6 @@ export default {
     useMeta(metaData)
 
     return {
-      ajaxStore: useAjaxStore(),
       authStore,
       billingStore,
       employerStore,

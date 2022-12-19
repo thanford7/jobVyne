@@ -3,8 +3,8 @@
 </template>
 
 <script>
+import messagesUtil from 'src/utils/messages.js'
 import { defineComponent } from 'vue'
-import { useAjaxStore } from 'stores/ajax-store'
 import { AJAX_EVENTS } from 'boot/axios'
 
 export default defineComponent({
@@ -16,12 +16,11 @@ export default defineComponent({
   },
   mounted () {
     if (!this.hasEventsLoaded) {
-      const ajaxStore = useAjaxStore()
-      ajaxStore.$on(AJAX_EVENTS.ERROR, (error) => {
-        ajaxStore.addErrorMsg(error)
+      this.$global.$on(AJAX_EVENTS.ERROR, (error) => {
+        messagesUtil.addErrorMsg(error)
       })
-      ajaxStore.$on(AJAX_EVENTS.SUCCESS, (msg) => {
-        ajaxStore.addSuccessMsg(msg)
+      this.$global.$on(AJAX_EVENTS.SUCCESS, (msg) => {
+        messagesUtil.addSuccessMsg(msg)
       })
       this.hasEventsLoaded = true
     }

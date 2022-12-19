@@ -94,6 +94,8 @@ class CheckAuthView(APIView):
         )
 
 
+@csrf_exempt
+@ensure_csrf_cookie
 @api_view(http_method_names=['POST'])
 @permission_classes([AllowAny])
 @psa()

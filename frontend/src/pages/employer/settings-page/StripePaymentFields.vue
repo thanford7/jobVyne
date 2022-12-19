@@ -25,6 +25,7 @@
 <script>
 import colorUtil from 'src/utils/color.js'
 import { loadScript, removeScript } from 'src/utils/load-script.js'
+import messagesUtil from 'src/utils/messages.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useBillingStore } from 'stores/billing-store.js'
 import { onUnmounted } from 'vue'
@@ -68,7 +69,7 @@ export default {
       })
 
       if (error) {
-        this.ajaxStore.addErrorMsg(error)
+        messagesUtil.addErrorMsg(error)
       }
       this.$emit('submitted')
     },

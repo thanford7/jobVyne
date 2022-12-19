@@ -184,8 +184,15 @@ class ApplicationsView(BaseDataView):
             'message_thread_context',
             queryset=MessageThreadContext.objects
                 .select_related('message_thread')
-                .prefetch_related('message_thread__message', 'message_thread__message__recipient')
-                .filter(message_thread__employer_id__isnull=False, message_thread__employer_id=employer_id)
+                .prefetch_related(
+                    'message_thread__message',
+                    'message_thread__message__recipient',
+                    'message_thread__message_groups'
+                )
+                .filter(
+                    message_thread__message_groups__employer_id__isnull=False,
+                    message_thread__message_groups__employer_id=employer_id
+                )
         )
         
         job_applications = JobApplication.objects \

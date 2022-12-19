@@ -1,6 +1,9 @@
 from django.core import mail
+from django.db.models import Q
 
+from jvapp.apis.notification import MessageView
 from jvapp.models import JobApplication, MessageThread
+from jvapp.models.tracking import MessageGroup
 from jvapp.tests.base import BaseTestCase
 
 
@@ -33,7 +36,7 @@ class JobApplicationTestCase(BaseTestCase):
         self.employer.notification_email = 'bogus@jobvyne.com'
         self.employer.save()
         current_mail_count = len(mail.outbox)
-        current_message_thread_count = MessageThread.objects.filter(employer=self.employer).count()
+        current_message_thread_count = self._get_message_thread_count()
         resp = self._submit_application('toodaloo@yahoo.com')
         self.assert_200_response(resp)
         
@@ -41,7 +44,22 @@ class JobApplicationTestCase(BaseTestCase):
         self.assertEqual(current_mail_count + 3, len(mail.outbox))
         
         # A new message thread should have been started for this application
-        self.assertEqual(current_message_thread_count + 1, MessageThread.objects.filter(employer=self.employer).count())
+        self.assertEqual(current_message_thread_count + 1, self._get_message_thread_count())
+        
+        # A new employer group should have been created to track all message threads related to this employer
+        self.assertEqual(1, self._get_message_group_count())
+
+        # Send another email and make sure another message group is NOT created. We should use the group that
+        # was just created
+        resp = self._submit_application('toodaloo2@yahoo.com')
+        self.assert_200_response(resp)
+        self.assertEqual(1, self._get_message_group_count())
+        
+    def _get_message_thread_count(self):
+        return MessageView.get_message_threads(Q(message_groups__employer=self.employer)).count()
+    
+    def _get_message_group_count(self):
+        return MessageGroup.objects.filter(employer=self.employer).count()
         
     def _submit_application(self, email, phone_number=None, linkedin_url=None):
         resume_file = self.get_dummy_file('resume.pdf')

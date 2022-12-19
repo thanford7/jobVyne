@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.models import Employer, JobVyneUser, MessageThread, UserNotificationPreference
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.tracking import Message, MessageGroup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.email import send_django_email
 from jvapp.utils.sanitize import sanitize_html
@@ -140,7 +141,7 @@ class UserNotificationPreferenceView(JobVyneAPIView):
         return bool(not notification_preference) or notification_preference['is_enabled']
     
     
-class NotificationView(JobVyneAPIView):
+class MessageView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
     
     def post(self, request):
@@ -192,8 +193,14 @@ class NotificationView(JobVyneAPIView):
         
         message_thread = None
         if employer:
-            message_thread = MessageThread(employer=employer)
+            all_message_groups = MessageGroupView.get_message_groups()
+            message_group = MessageGroupView.get_or_create_message_group({
+                'employer_id': employer.id,
+                'user_type_bits': JobVyneUser.USER_TYPE_EMPLOYER
+            }, all_message_groups)
+            message_thread = MessageThread()
             message_thread.save()
+            message_thread.message_groups.add(message_group)
         
         send_django_email(
             email_subject,
@@ -211,4 +218,73 @@ class NotificationView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'Sent email to {user_count} users at {len(user_emails)} different email addresses'
         })
+    
+    @staticmethod
+    def get_message_threads(message_thread_filter):
+        return MessageThread.objects\
+            .select_related(
+                'message_thread_context', 'message_thread_context__job', 'message_thread_context__applicant',
+                'message_thread_context__job_application'
+            )\
+            .prefetch_related(
+                'message', 'message__message_parent', 'message__attachment', 'message__recipient',
+                'message_groups'
+            )\
+            .filter(message_thread_filter)
+    
+    @staticmethod
+    def get_messages(message_filter, is_include_threads=False):
+        if not is_include_threads:
+            message_filter &= Q(message_thread__isnull=True)
         
+        return Message.objects\
+            .select_related('message_parent')\
+            .prefetch_related('attachment', 'recipient')\
+            .filter(message_filter)
+
+
+class MessageGroupView(JobVyneAPIView):
+    
+    @staticmethod
+    def get_message_groups(message_group_filter=None):
+        message_group_filter = message_group_filter or Q()
+        return MessageGroup.objects \
+            .select_related('employer') \
+            .prefetch_related('users') \
+            .filter(message_group_filter)
+    
+    @staticmethod
+    def get_or_create_message_group(data, message_groups):
+        user_ids = data.get('user_ids')
+        employer_id = data.get('employer_id')
+        user_type_bits = data.get('user_type_bits')
+        
+        if not MessageGroup.is_valid_instance(user_ids, employer_id):
+            raise ValueError('At least one user ID or employer ID is required')
+        
+        distinct_message_groups = {
+            mg.get_key(): mg for mg in message_groups
+        }
+        
+        message_group_key = MessageGroup.get_key_from_data(
+            user_ids, employer_id, user_type_bits
+        )
+        
+        existing_message_group = distinct_message_groups.get(message_group_key)
+        if existing_message_group:
+            return existing_message_group
+        
+        new_message_group = MessageGroup(
+            employer_id=employer_id,
+            user_type_bits=user_type_bits
+        )
+        new_message_group.save()
+        
+        if user_ids:
+            group_users_through_model = MessageGroup.users.through
+            group_users_through_model.objects.bulk_create([
+                group_users_through_model(message_group=new_message_group, jobvyneuser=user_id)
+                for user_id in user_ids
+            ])
+        
+        return new_message_group

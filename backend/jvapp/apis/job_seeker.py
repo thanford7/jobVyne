@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
-from jvapp.apis.notification import NotificationPreferenceKey, UserNotificationPreferenceView
+from jvapp.apis.notification import MessageGroupView, NotificationPreferenceKey, UserNotificationPreferenceView
 from jvapp.apis.user import UserView
 from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext, SocialPlatform
 from jvapp.models.abstract import PermissionTypes
@@ -137,8 +137,14 @@ class ApplicationView(JobVyneAPIView):
         
         # Send a notification to the employer if they have it configured
         if employer.notification_email:
-            message_thread = MessageThread(employer=employer)
+            all_message_groups = MessageGroupView.get_message_groups()
+            message_group = MessageGroupView.get_or_create_message_group({
+                'employer_id': employer.id,
+                'user_type_bits': JobVyneUser.USER_TYPE_EMPLOYER
+            }, all_message_groups)
+            message_thread = MessageThread()
             message_thread.save()
+            message_thread.message_groups.add(message_group)
             MessageThreadContext(
                 message_thread=message_thread,
                 job_application=application

@@ -1,5 +1,6 @@
 import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
+import messagesUtil from 'src/utils/messages.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import { getDataFromMetaString } from 'stores/social-auth-store.js'
@@ -27,6 +28,7 @@ export default boot(({ app, router }) => {
           getAjaxFormData({ code: to.query.code, state, userTypeBit, isLogin })
         )
       } catch (e) {
+        messagesUtil.addErrorMsg(e)
         return { name: 'error' }
       }
 

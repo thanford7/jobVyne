@@ -25,10 +25,10 @@
 </template>
 
 <script>
+import messagesUtil, { msgTypes } from 'src/utils/messages.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import formUtil from 'src/utils/form'
 import { useAuthStore } from 'stores/auth-store'
-import { msgTypes, useAjaxStore } from 'stores/ajax-store'
 
 export default {
   name: 'WaitlistSignUp',
@@ -51,7 +51,10 @@ export default {
         async () => {
           await this.$api.post('waitlist/', getAjaxFormData({ email: this.email }))
         },
-        () => this.ajaxStore.addMsg('Unable to complete waitlist sign up. reCAPTCHA authentication failed', msgTypes.ERROR),
+        () => messagesUtil.addMsg(
+          'Unable to complete waitlist sign up. reCAPTCHA authentication failed',
+          msgTypes.ERROR
+        ),
         () => {
           this.isSavingWaitlist = false
           this.email = null
@@ -61,7 +64,7 @@ export default {
     }
   },
   setup () {
-    return { ajaxStore: useAjaxStore(), authStore: useAuthStore() }
+    return { authStore: useAuthStore() }
   }
 }
 </script>
