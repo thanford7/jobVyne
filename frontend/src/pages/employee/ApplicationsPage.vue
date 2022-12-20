@@ -4,7 +4,7 @@
       <PageHeader title="Job applications"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12">
-          <ApplicationsTable :is-employer="true"/>
+          <ApplicationsTable :is-employer="false"/>
         </div>
       </div>
     </div>

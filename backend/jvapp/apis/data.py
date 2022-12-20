@@ -55,7 +55,8 @@ class ApplicationsView(BaseDataView):
         'job_title': 'employer_job__job_title',
         'email': 'email',
         'created_dt': 'created_dt',
-        'referrer': 'social_link_filter__owner__first_name'
+        'referrer': 'social_link_filter__owner__first_name',
+        'recommended': 'feedback_recommend_this_job'
     }
     
     def get(self, request):
@@ -91,6 +92,11 @@ class ApplicationsView(BaseDataView):
                 )
             if locations_filter := self.filter_by.get('locations'):
                 app_filter &= Q(employer_job__locations__in=locations_filter)
+            if recommended_filter := self.filter_by.get('recommended'):
+                rec_filter_q = Q(feedback_recommend_this_job__in=recommended_filter)
+                if None in recommended_filter:
+                    rec_filter_q |= Q(feedback_recommend_this_job__isnull=True)
+                app_filter &= rec_filter_q
         
         applications = applications.filter(app_filter)
         
@@ -161,6 +167,12 @@ class ApplicationsView(BaseDataView):
         if is_employer or is_owner:
             application_data['first_name'] = application.first_name
             application_data['last_name'] = application.last_name
+            application_data['feedback'] = {
+                'feedback_know_applicant': application.feedback_know_applicant,
+                'feedback_recommend_any_job': application.feedback_recommend_any_job,
+                'feedback_recommend_this_job': application.feedback_recommend_this_job,
+                'feedback_note': application.feedback_note
+            }
             
         if is_employer:
             application_data['notification_email_dt'] = get_datetime_format_or_none(application.notification_email_dt)

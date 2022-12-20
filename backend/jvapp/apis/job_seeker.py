@@ -214,6 +214,25 @@ class ApplicationView(JobVyneAPIView):
             }
         )
     
+    def put(self, request, application_id):
+        application = self.get_applications(self.user, application_id=application_id)
+        if self.user.id != application.social_link_filter.owner_id:
+            return Response('You do not have permission to review this application', status=status.HTTP_401_UNAUTHORIZED)
+        
+        set_object_attributes(application, self.data, {
+            'feedback_know_applicant': None,
+            'feedback_recommend_any_job': None,
+            'feedback_recommend_this_job': None,
+            'feedback_note': None
+        })
+        application.save()
+        
+        # TODO: Push feedback data to ATS
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Job application feedback successfully updated'
+        })
+    
     @staticmethod
     @atomic
     def create_application(user, application, data, resume):

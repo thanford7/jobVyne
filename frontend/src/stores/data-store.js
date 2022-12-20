@@ -10,13 +10,15 @@ export const useDataStore = defineStore('data', {
   }),
 
   actions: {
-    async getData (url, dataAttr, startDate, endDate, extraParams = {}) {
+    async getData (url, dataAttr, startDate, endDate, extraParams = {}, isForceRefresh = false) {
       startDate = dateTimeUtil.serializeDate(startDate, true)
       endDate = dateTimeUtil.serializeDate(endDate, true, true)
       const apiKey = this.makeApiKey(startDate, endDate, extraParams)
-      const data = this[dataAttr][apiKey]
-      if (data) {
-        return data
+      if (!isForceRefresh) {
+        const data = this[dataAttr][apiKey]
+        if (data) {
+          return data
+        }
       }
       const resp = await this.$api.get(url, {
         params: Object.assign({
@@ -27,18 +29,18 @@ export const useDataStore = defineStore('data', {
       this[dataAttr][apiKey] = resp.data
       return dataUtil.deepCopy(resp.data) // Copy to avoid mutation
     },
-    async getApplications (startDate, endDate, params) {
+    async getApplications (startDate, endDate, params, isForceRefresh = false) {
       return await this.getData(
         'data/applications/',
         'applications',
-        startDate, endDate, params
+        startDate, endDate, params, isForceRefresh
       )
     },
-    async getPageViews (startDate, endDate, params) {
+    async getPageViews (startDate, endDate, params, isForceRefresh = false) {
       return await this.getData(
         'data/page-views/',
         'pageViews',
-        startDate, endDate, params
+        startDate, endDate, params, isForceRefresh
       )
     },
     makeApiKey (startDate, endDate, extraParams) {

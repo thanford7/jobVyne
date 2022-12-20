@@ -68,6 +68,20 @@
               <SelectLocation v-model="applicationFilter.locations" :is-multi="true" :locations="locations"/>
             </TableFilter>
           </template>
+          <template v-else-if="col.name === 'recommended'">
+            {{ col.label }}
+            <TableFilter filter-name="Recommended"
+                         :has-filter="dataUtil.getBoolean(applicationFilter.recommended && applicationFilter.recommended.length)">
+              <q-select
+                v-model="applicationFilter.recommended"
+                filled emit-value map-options multiple use-chips
+                :options="applicantFeedbackUtil.getRecommendApplicantOpts()"
+                option-value="val"
+                option-label="label"
+                label="Would you recommend?"
+              />
+            </TableFilter>
+          </template>
           <template v-else-if="col.name === 'referrer'">
             {{ col.label }}
             <TableFilter filter-name="Referrer"
@@ -88,8 +102,17 @@
     <template v-slot:body="props">
       <q-tr :props="props">
         <q-td auto-width>
-          <q-btn size="sm" color="gray-500" round dense @click="props.expand = !props.expand"
-                 :icon="props.expand ? 'expand_less' : 'expand_more'" title="Expand details"/>
+          <q-btn
+            size="sm" color="gray-500" class="q-mr-sm" round dense
+            @click="props.expand = !props.expand"
+            :icon="props.expand ? 'expand_less' : 'expand_more'" title="Expand details"
+          />
+          <q-btn
+            size="sm" color="primary" dense
+            :icon="(hasApplicationFeedback(props.row)) ? 'edit' : 'add'"
+            :label="`${(hasApplicationFeedback(props.row)) ? 'Edit' : 'Add'} review `"
+            @click="openReviewDialog(props.row)"
+          />
         </q-td>
         <q-td
           v-for="col in props.cols"
@@ -133,7 +156,7 @@
             <div v-else>None</div>
           </template>
           <template v-else-if="col.name === 'linkedin_url'">
-            <a v-if="props.value" :href="props.value" target="_blank" class="no-decoration">
+            <a v-if="col.value" :href="col.value" target="_blank" class="no-decoration">
             <span class="text-gray-3">
               <q-icon name="launch"/>&nbsp;
             </span>
@@ -142,7 +165,7 @@
             <div v-else>None</div>
           </template>
           <template v-else-if="col.name === 'resume_url'">
-            <a v-if="props.value" :href="props.value" target="_blank" class="no-decoration">
+            <a v-if="col.value" :href="col.value" target="_blank" class="no-decoration">
             <span class="text-gray-3 no-decoration">
               <q-icon name="launch"/>&nbsp;
             </span>
@@ -160,26 +183,58 @@
           <template v-if="employer.notification_email">
             <div v-if="props.row.notification_email_dt">
               <q-icon name="check_circle" color="positive" size="16px"/>
-              Application emailed at {{ dateTimeUtil.getDateTime(props.row.notification_email_dt, { isIncludeSeconds: false }) }}
+              Application emailed at
+              {{ dateTimeUtil.getDateTime(props.row.notification_email_dt, { isIncludeSeconds: false }) }}
               (current email is {{ employer.notification_email }})
             </div>
             <div v-if="props.row.notification_email_failure_dt">
               <q-icon name="error" color="negative" size="16px"/>
-              Application email failed at {{ dateTimeUtil.getDateTime(props.row.notification_email_failure_dt, { isIncludeSeconds: false }) }}
+              Application email failed at
+              {{ dateTimeUtil.getDateTime(props.row.notification_email_failure_dt, { isIncludeSeconds: false }) }}
               (current email is {{ employer.notification_email }})
             </div>
           </template>
           <template v-if="employer.ats_cfg">
             <div v-if="props.row.notification_ats_dt">
               <q-icon name="check_circle" color="positive" size="16px"/>
-              Application sent to {{ employer.ats_cfg.name }} at {{ dateTimeUtil.getDateTime(props.row.notification_ats_dt, { isIncludeSeconds: false }) }}
+              Application sent to {{ employer.ats_cfg.name }} at
+              {{ dateTimeUtil.getDateTime(props.row.notification_ats_dt, { isIncludeSeconds: false }) }}
             </div>
             <div v-if="props.row.notification_ats_failure_dt">
               <q-icon name="error" color="negative" size="16px"/>
-              Application failed to sent to {{ employer.ats_cfg.name }} at {{ dateTimeUtil.getDateTime(props.row.notification_ats_failure_dt, { isIncludeSeconds: false }) }}
+              Application failed to sent to {{ employer.ats_cfg.name }} at
+              {{ dateTimeUtil.getDateTime(props.row.notification_ats_failure_dt, { isIncludeSeconds: false }) }}
               <div>Reason: {{ props.row.notification_ats_failure_msg }}</div>
             </div>
           </template>
+          <div v-if="hasApplicationFeedback(props.row)">
+            <div class="text-bold q-mt-md q-mb-sm">Feedback</div>
+            <div class="q-mb-sm">
+              <div class="text-bold">Do you know {{ props.row.first_name }}?</div>
+              <div>{{ applicantFeedbackUtil.getKnowApplicantLabel(props.row.feedback.feedback_know_applicant) }}</div>
+            </div>
+            <div class="q-mb-sm">
+              <div class="text-bold">Would you recommend {{ props.row.first_name }} for this job?</div>
+              <div>{{
+                  applicantFeedbackUtil.getRecommendApplicantLabel(props.row.feedback.feedback_recommend_this_job)
+                }}
+              </div>
+            </div>
+            <div class="q-mb-sm">
+              <div class="text-bold">Would you recommend {{ props.row.first_name }} for any job?</div>
+              <div>{{
+                  applicantFeedbackUtil.getRecommendApplicantLabel(props.row.feedback.feedback_recommend_any_job)
+                }}
+              </div>
+            </div>
+            <div class="q-mb-sm">
+              <div class="text-bold">Is there any other information you want to share about {{
+                  props.row.first_name
+                }}?
+              </div>
+              <div>{{ props.row.feedback.feedback_note }}</div>
+            </div>
+          </div>
         </q-td>
       </q-tr>
     </template>
@@ -189,9 +244,12 @@
 <script>
 
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogApplicantReview from 'components/dialogs/DialogApplicantReview.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
 import SelectLocation from 'components/inputs/SelectLocation.vue'
 import TableFilter from 'components/tables/TableFilter.vue'
+import { useQuasar } from 'quasar'
+import applicantFeedbackUtil from 'src/utils/applicant-feedback.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import locationUtil from 'src/utils/location.js'
@@ -223,6 +281,9 @@ const defaultDateRange = {
 export default {
   name: 'ApplicationsTable',
   components: { TableFilter, SelectLocation, CustomTooltip, DateRangeSelector },
+  props: {
+    isEmployer: Boolean
+  },
   data () {
     return {
       isLoading: true,
@@ -232,6 +293,7 @@ export default {
       applicationFilter: { ...applicationFilterTemplate },
       pagination,
       dateRange: { ...defaultDateRange },
+      applicantFeedbackUtil,
       dataUtil,
       dateTimeUtil,
       locationUtil
@@ -249,10 +311,18 @@ export default {
   },
   computed: {
     applicationColumns () {
-      return [
+      const fields = [
         { name: 'applicant', field: 'first_name', align: 'left', label: 'Applicant', sortable: true },
         { name: 'job_title', field: 'job_title', align: 'left', label: 'Job', sortable: true },
         { name: 'locations', field: 'locations', align: 'left', label: 'Job Locations' },
+        {
+          name: 'recommended',
+          field: (app) => app.feedback.feedback_recommend_this_job,
+          align: 'left',
+          label: 'Recommended',
+          format: (val) => applicantFeedbackUtil.getRecommendApplicantLabel(val),
+          sortable: true
+        },
         { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
         {
           name: 'phone_number',
@@ -270,14 +340,25 @@ export default {
           label: 'Submission Date',
           format: dateTimeUtil.getShortDate.bind(dateTimeUtil),
           sortable: true
-        },
-        { name: 'referrer', field: 'owner_first_name', align: 'left', label: 'Referrer', sortable: true }
+        }
       ]
+      if (this.isEmployer) {
+        fields.push({ name: 'referrer', field: 'owner_first_name', align: 'left', label: 'Referrer', sortable: true })
+      }
+      return fields
     }
   },
   methods: {
     clearApplicationFilter () {
       this.applicationFilter = { ...applicationFilterTemplate }
+    },
+    hasApplicationFeedback (application) {
+      for (const val of Object.values(application.feedback)) {
+        if (!dataUtil.isNil(val)) {
+          return true
+        }
+      }
+      return false
     },
     getIsNotificationFailure (application) {
       if (this.employer.notification_email && application.notification_email_failure_dt) {
@@ -294,22 +375,45 @@ export default {
         (this.employer.ats_cfg && (application.notification_ats_dt || application.notification_ats_failure_dt))
       )
     },
-    async fetchApplications ({ pagination = this.pagination, filter = this.applicationFilter } = {}) {
+    async removeApplicationQueryParam () {
+      await this.$router.replace({ name: this.$route.name, query: dataUtil.omit(this.$route.query, ['application']) })
+    },
+    async openReviewDialog (application) {
+      const newQueryParams = Object.assign({}, this.$route.query, { application: application.id })
+      await this.$router.replace({ name: this.$route.name, query: newQueryParams })
+      this.q.dialog({
+        component: DialogApplicantReview,
+        componentProps: { application, isEdit: this.hasApplicationFeedback(application) }
+      }).onOk(async () => {
+        await this.removeApplicationQueryParam()
+        await this.fetchApplications({ isForceRefresh: true })
+      }).onDismiss(async () => {
+        await this.removeApplicationQueryParam()
+      }).onCancel(async () => {
+        await this.removeApplicationQueryParam()
+      })
+    },
+    async fetchApplications (
+      { pagination = this.pagination, filter = this.applicationFilter, isForceRefresh = false } = {}
+    ) {
       if (!this.dateRange || !this.dateRange.from || !this.dateRange.to) {
         return {}
       }
       this.isLoading = true
+      const requestCfg = {
+        is_raw_data: true,
+        filter_by: JSON.stringify(filter),
+        page_count: pagination.page,
+        sort_order: pagination.sortBy,
+        is_descending: pagination.descending
+      }
+      if (this.isEmployer) {
+        requestCfg.employer_id = this.authStore.propUser.employer_id
+      } else {
+        requestCfg.owner_id = this.authStore.propUser.id
+      }
       const paginatedApplications = await this.dataStore.getApplications(
-        this.dateRange.from,
-        this.dateRange.to,
-        {
-          employer_id: this.authStore.propUser.employer_id,
-          is_raw_data: true,
-          filter_by: JSON.stringify(filter),
-          page_count: pagination.page,
-          sort_order: pagination.sortBy,
-          is_descending: pagination.descending
-        }
+        this.dateRange.from, this.dateRange.to, requestCfg, isForceRefresh
       )
       this.applications = paginatedApplications.applications || []
       this.locations = paginatedApplications.locations || []
@@ -324,12 +428,22 @@ export default {
       this.employerStore.setEmployer(this.authStore.propUser.employer_id)
     ])
     this.employer = this.employerStore.getEmployer(this.authStore.propUser.employer_id)
+
+    // Open the feedback dialog if the application ID is in the query
+    // Note this won't always work because the application ID could point to an
+    // application that isn't on the first page of application results
+    const { application: applicationId } = this.$route.query
+    const application = this.applications.find((app) => app.id === parseInt(applicationId))
+    if (application) {
+      await this.openReviewDialog(application)
+    }
   },
   setup () {
     return {
       authStore: useAuthStore(),
       dataStore: useDataStore(),
-      employerStore: useEmployerStore()
+      employerStore: useEmployerStore(),
+      q: useQuasar()
     }
   }
 }

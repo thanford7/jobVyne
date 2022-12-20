@@ -84,6 +84,12 @@ class PagePermissionsUtil {
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
           {
+            icon: 'contact_page',
+            key: 'employee-applications',
+            label: 'Job Applications',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
+          },
+          {
             icon: 'web',
             key: 'employee-profile-page',
             label: 'Profile Settings',

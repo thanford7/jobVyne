@@ -6,9 +6,11 @@
         the {{ job.job_title }} position using one of your referral links.
     </p>
     <p>
-        You can track all of your referrals by going to your
-        <a href="{{ base_url }}/employee/employee-links/" target="_blank">referral links page</a>
-        and clicking on the number of applications.
+        Please take a moment to
+        <a href="{{ base_url }}/employee/employee-applications/?application={{ application.id }}" target="_blank">provide feedback</a>
+        on this applicant by answering four quick questions. You can also track all of your referred
+        applications on the
+        <a href="{{ base_url }}/employee/employee-applications/" target="_blank">Job applications page</a>
     </p>
 {% endblock body %}
 

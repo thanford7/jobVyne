@@ -1,3 +1,5 @@
+from enum import Enum
+
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q
@@ -24,6 +26,16 @@ class JobApplicationFields(AuditFields):
 
 
 class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
+    class FeedbackKnowApplicantOpt(Enum):
+        NO_KNOW = 0
+        YES_KNOW_PROFESSIONALLY = 1
+        YES_KNOW_SOCIALLY = 2
+        
+    class FeedbackRecommendOpt(Enum):
+        NO = 0
+        YES = 1
+        NOT_SURE = 2
+        NOT_APPLICABLE = 3
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link_filter = models.ForeignKey(
@@ -40,6 +52,12 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     notification_ats_dt = models.DateTimeField(null=True, blank=True)
     notification_ats_failure_dt = models.DateTimeField(null=True, blank=True)
     notification_ats_failure_msg = models.CharField(max_length=1000, null=True, blank=True)
+    
+    # Referrer feedback
+    feedback_know_applicant = models.SmallIntegerField(null=True, blank=True)
+    feedback_recommend_any_job = models.SmallIntegerField(null=True, blank=True)
+    feedback_recommend_this_job = models.SmallIntegerField(null=True, blank=True)
+    feedback_note = models.TextField(null=True, blank=True)
     
     #  Referral bonus tracking
     referral_bonus = models.FloatField(default=0)
