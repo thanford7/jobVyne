@@ -69,7 +69,7 @@
           <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id"/>
         </div>
         <div class="col-12">
-          <q-btn label="Test connection" color="primary" @click="updateJobs"/>
+          <q-btn label="Test connection" color="primary" @click="updateJobs" :loading="isFetchingJobs"/>
           <span v-if="isGoodConnection" class="text-positive">
           &nbsp;<q-icon name="check_circle"/> Connection successful
         </span>
@@ -103,7 +103,8 @@ export default {
       authStore: useAuthStore(),
       employerStore: useEmployerStore(),
       q: useQuasar(),
-      isGoodConnection: false
+      isGoodConnection: false,
+      isFetchingJobs: false
     }
   },
   computed: {
@@ -155,14 +156,17 @@ export default {
       }
     },
     async updateJobs () {
+      this.isFetchingJobs = true
       const resp = await this.$api.put('ats/jobs/', getAjaxFormData({ ats_id: this.atsData.id }))
+      this.isFetchingJobs = false
       if (resp.status === 200) {
         this.isGoodConnection = true
       }
     },
     showGreenhouseUserDialog () {
       return this.q.dialog({
-        component: DialogGreenhouseUser
+        component: DialogGreenhouseUser,
+        componentProps: { employer: this.employerStore.getEmployer(this.authStore.propUser.employer_id) }
       })
     },
     showGreenhouseApiKeyDialog () {

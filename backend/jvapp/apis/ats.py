@@ -105,6 +105,15 @@ class BaseAts:
     def create_application(self, application):
         raise NotImplementedError()
     
+    def add_application_note(self, application, **kwargs):
+        raise NotImplementedError()
+    
+    def get_application(self, application_key):
+        raise NotImplementedError()
+    
+    def get_candidate_key(self, application_key):
+        raise NotImplementedError()
+    
     def save_jobs(self, employer_id, jobs):
         current_jobs = self.get_current_jobs(employer_id)
         job_departments = self.get_job_departments()
@@ -138,34 +147,40 @@ class BaseAts:
                 if job_data.department_name and not (job_department := job_departments.get(job_data.department_name.lower())):
                     job_department = JobDepartment(name=job_data.department_name)
                     job_department.save()
+                    job_departments[job_data.department_name.lower()] = job_department
                 current_job.job_department = job_department
                 current_job.employment_type = job_data.employment_type
                 current_job.salary_floor = job_data.salary_floor
                 current_job.salary_ceiling = job_data.salary_ceiling
                 current_job.salary_currency_id = job_data.salary_currency_type
+                jobs_list = update_jobs if not is_new else create_jobs
+                jobs_list.append(current_job)
+                
                 if (not is_new) and {l.id for l in job_data.locations} != {l.id for l in current_job.locations.all()}:
                     clear_location_job_ids.append(current_job.id)
                     for location in job_data.locations:
-                        create_job_locations.append(JobLocationsModel(location=location, employerjob=current_job))
+                        # jobs must be saved before the JobLocationsModel can be saved
+                        # since jobs aren't saved yet, we store a reference to where we can get the job once it is saved
+                        create_job_locations.append((location, is_new, len(jobs_list) - 1))
                 if is_new:
                     for location in job_data.locations:
-                        create_job_locations.append(JobLocationsModel(location=location, employerjob=current_job))
+                        create_job_locations.append((location, is_new, len(jobs_list) - 1))
                 
-                jobs_list = update_jobs if not is_new else create_jobs
-                jobs_list.append(current_job)
                 process_count += 1
             
             # Create and update jobs
-            new_jobs = EmployerJob.objects.bulk_create(create_jobs)
-            # Update job id so many to many models can be saved
             # bulk_create returns objects in the same order that they are provided
-            for new_job, job in zip(new_jobs, create_jobs):
-                job.id = new_job.id
+            create_jobs = EmployerJob.objects.bulk_create(create_jobs)
             EmployerJob.objects.bulk_update(update_jobs, EmployerJob.UPDATE_FIELDS)
             
             # Remove and add new locations
+            processed_create_job_locations = []
+            for (location, is_new, job_idx) in create_job_locations:
+                job_list = update_jobs if not is_new else create_jobs
+                job = job_list[job_idx]
+                processed_create_job_locations.append(JobLocationsModel(location=location, employerjob=job))
             JobLocationsModel.objects.filter(employerjob_id__in=clear_location_job_ids).delete()
-            JobLocationsModel.objects.bulk_create(create_job_locations)
+            JobLocationsModel.objects.bulk_create(processed_create_job_locations)
             
             create_jobs = []
             update_jobs = []
@@ -332,22 +347,36 @@ class GreenhouseAts(BaseAts):
             ats_application_key = str(candidate_data['application_ids'][0])
             
         # Add a note to the candidate so we know who referred them
-        note_url = f'https://harvest.greenhouse.io/v1/candidates/{ats_candidate_key}/activity_feed/notes'
+        referrer_note = f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
+                    for the {self.get_job_title_from_application(application)} position
+                    '''
+        self.add_application_note(referrer_note, candidate_key=ats_candidate_key)
+            
+        return ats_candidate_key, ats_application_key
+    
+    def add_application_note(self, note, candidate_key=None, **kwargs):
+        if not candidate_key:
+            raise AtsError(f'Could not save the note on candidate: A candidate key is required')
+        note_url = f'https://harvest.greenhouse.io/v1/candidates/{candidate_key}/activity_feed/notes'
         resp = requests.post(
             note_url,
             headers=self.get_request_headers(is_user_id=True),
             json={
                 'user_id': self.ats_user_id,
-                'body': f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
-                    for the {self.get_job_title_from_application(application)} position
-                    ''',
+                'body': note,
                 'visibility': 'public'
             }
         )
         if not is_good_response(resp):
             raise AtsError(f'Could not save the note on candidate: {get_resp_error_message(resp)}')
-            
-        return ats_candidate_key, ats_application_key
+        
+    def get_application(self, application_key):
+        application_url = f'https://harvest.greenhouse.io/v1/applications/{application_key}'
+        return self.get_data(application_url, {})
+    
+    def get_candidate_key(self, application_key):
+        application_data = self.get_application(application_key)
+        return application_data['candidate_id']
     
     def get_initial_job_application_stage_id(self, ats_job_key):
         stages = self.get_job_stages()

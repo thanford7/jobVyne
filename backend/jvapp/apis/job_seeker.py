@@ -1,3 +1,5 @@
+import logging
+
 from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.db.models import Q
@@ -22,6 +24,9 @@ from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.email import EMAIL_ADDRESS_SEND, send_django_email
 
 __all__ = ('ApplicationView', 'ApplicationTemplateView')
+
+
+logger = logging.getLogger(__name__)
 
 APPLICATION_SAVE_CFG = {
     'first_name': None,
@@ -227,7 +232,19 @@ class ApplicationView(JobVyneAPIView):
         })
         application.save()
         
-        # TODO: Push feedback data to ATS
+        if application.ats_application_key and application.employer_job.ats_job_key:
+            ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
+            ats_api = get_ats_api(ats_cfg)
+            referrer = application.social_link_filter.owner
+            referrer_note = f'''
+                {referrer.first_name} {referrer.last_name} provided feedback on this candidate:
+                Do you know the applicant? {application.get_know_applicant_label()}
+                Would you recommend this applicant for the { application.employer_job.job_title } position? {application.get_recommend_applicant_label(application.feedback_recommend_this_job)}
+                Would you recommend this applicant for any position? {application.get_recommend_applicant_label(application.feedback_recommend_any_job)}
+                Additional feedback:
+                {application.feedback_note}
+            '''
+            ats_api.add_application_note(referrer_note, candidate_key=ats_api.get_candidate_key(application.ats_application_key))
         
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Job application feedback successfully updated'

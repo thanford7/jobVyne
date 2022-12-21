@@ -3,7 +3,7 @@
     base-title-text="Create Harvest API key instructions"
     :is-include-buttons="false"
   >
-    <div class="q-gutter-y-md">
+    <div class="q-gutter-y-md q-mt-md">
       You must create an API key for JobVyne to connect to your Greenhouse instance. To do so:
       <ol>
         <li>Navigate to your Greenhouse admin website</li>

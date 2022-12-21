@@ -31,11 +31,26 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
         YES_KNOW_PROFESSIONALLY = 1
         YES_KNOW_SOCIALLY = 2
         
+    feedbackKnowApplicantLabels = {
+        FeedbackKnowApplicantOpt.NO_KNOW.value: 'No',
+        FeedbackKnowApplicantOpt.YES_KNOW_PROFESSIONALLY.value: 'Yes, professionally',
+        FeedbackKnowApplicantOpt.YES_KNOW_SOCIALLY.value: 'Yes, socially',
+    }
+        
     class FeedbackRecommendOpt(Enum):
         NO = 0
         YES = 1
         NOT_SURE = 2
         NOT_APPLICABLE = 3
+        
+    feedbackRecommendLabels = {
+        FeedbackRecommendOpt.NO.value: 'No',
+        FeedbackRecommendOpt.YES.value: 'Yes',
+        FeedbackRecommendOpt.NOT_SURE.value: 'Not sure',
+        FeedbackRecommendOpt.NOT_APPLICABLE.value: 'Not applicable'
+    }
+    
+    FEEDBACK_NO_RESPONSE_LABEL = 'No response'
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link_filter = models.ForeignKey(
@@ -85,6 +100,12 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
             filter |= employer_filter
 
         return query.filter(filter)
+    
+    def get_know_applicant_label(self):
+        return self.feedbackKnowApplicantLabels.get(self.feedback_know_applicant, self.FEEDBACK_NO_RESPONSE_LABEL)
+    
+    def get_recommend_applicant_label(self, val):
+        return self.feedbackRecommendLabels.get(val, self.FEEDBACK_NO_RESPONSE_LABEL)
 
 
 class JobApplicationTemplate(JobApplicationFields, JobVynePermissionsMixin):

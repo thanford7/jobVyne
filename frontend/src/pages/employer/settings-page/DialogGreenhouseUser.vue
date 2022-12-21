@@ -3,7 +3,7 @@
     base-title-text="Create user instructions"
     :is-include-buttons="false"
   >
-    <div class="q-gutter-y-md">
+    <div class="q-mt-md">
       All candidates submitted from JobVyne to Greenhouse must have a "referrer" user. You
       must create a "Site Admin" user in Greenhouse which JobVyne can use as the referrer for candidates. The Site Admin role
       is required because it is the only role allowed to create new candidates.
@@ -13,7 +13,7 @@
         <li>Click the "Configure" link (gear icon at the top right of the page)</li>
         <li>Click the "Users" link</li>
         <li>Click the "Add Users" button</li>
-        <li>Enter "jobvyne-partner@jobvyne.com" for the user email</li>
+        <li>Enter "{{ emailAddress }}" for the user email</li>
         <li>
           Click the "Assign" button for the "Site Admin" permission
         </li>
@@ -30,6 +30,20 @@ import DialogBase from 'components/dialogs/DialogBase.vue'
 
 export default {
   name: 'DialogGreenhouseUser',
-  components: { DialogBase }
+  components: { DialogBase },
+  props: {
+    employer: Object
+  },
+  computed: {
+    emailAddress () {
+      let email = ''
+      if (this.employer.name) {
+        email = this.employer.name.replaceAll(/[\W]/g, '_').toLowerCase()
+      } else {
+        email = '{company name}'
+      }
+      return email + '_gh+ats@jobvyne.com'
+    }
+  }
 }
 </script>

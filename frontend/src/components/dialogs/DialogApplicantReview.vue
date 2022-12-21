@@ -4,7 +4,6 @@
     :primary-button-text="`${(isEdit) ? 'Update' : 'Add'}`"
     width="700px"
     @ok="saveReview"
-    @hide="hideDialog"
   >
     <template v-slot:subTitle>
       Your applicant review is only visible to you and your company's HR department. The applicant will never
@@ -123,9 +122,6 @@ export default {
       ])
       await this.$api.put(`job-application/${this.application.id}`, getAjaxFormData(formData))
       this.$emit('ok')
-    },
-    hideDialog () {
-      this.$emit('hide')
     }
   },
   mounted () {
