@@ -108,6 +108,7 @@
             :icon="props.expand ? 'expand_less' : 'expand_more'" title="Expand details"
           />
           <q-btn
+            v-if="!isEmployer"
             size="sm" color="primary" dense
             :icon="(hasApplicationFeedback(props.row)) ? 'edit' : 'add'"
             :label="`${(hasApplicationFeedback(props.row)) ? 'Edit' : 'Add'} review `"
@@ -178,61 +179,65 @@
       </q-tr>
       <q-tr v-show="props.expand" :props="props">
         <q-td colspan="100%">
-          <div class="text-bold q-mb-sm">Notifications</div>
-          <div v-if="!getHasNotifications(props.row)">No notifications</div>
-          <template v-if="employer.notification_email">
-            <div v-if="props.row.notification_email_dt">
-              <q-icon name="check_circle" color="positive" size="16px"/>
-              Application emailed at
-              {{ dateTimeUtil.getDateTime(props.row.notification_email_dt, { isIncludeSeconds: false }) }}
-              (current email is {{ employer.notification_email }})
+          <div class="row">
+            <div class="col-12 col-md-2 q-px-sm">
+              <div class="text-bold q-mb-sm border-bottom-1-gray-300">Notifications</div>
+              <div v-if="!getHasNotifications(props.row)">No notifications</div>
+              <template v-if="employer.notification_email">
+                <div v-if="props.row.notification_email_dt">
+                  <q-icon name="check_circle" color="positive" size="16px"/>
+                  Application emailed at
+                  {{ dateTimeUtil.getDateTime(props.row.notification_email_dt, { isIncludeSeconds: false }) }}
+                  (current email is {{ employer.notification_email }})
+                </div>
+                <div v-if="props.row.notification_email_failure_dt">
+                  <q-icon name="error" color="negative" size="16px"/>
+                  Application email failed at
+                  {{ dateTimeUtil.getDateTime(props.row.notification_email_failure_dt, { isIncludeSeconds: false }) }}
+                  (current email is {{ employer.notification_email }})
+                </div>
+              </template>
+              <template v-if="employer.ats_cfg">
+                <div v-if="props.row.notification_ats_dt">
+                  <q-icon name="check_circle" color="positive" size="16px"/>
+                  Application sent to {{ employer.ats_cfg.name }} at
+                  {{ dateTimeUtil.getDateTime(props.row.notification_ats_dt, { isIncludeSeconds: false }) }}
+                </div>
+                <div v-if="props.row.notification_ats_failure_dt">
+                  <q-icon name="error" color="negative" size="16px"/>
+                  Application failed to sent to {{ employer.ats_cfg.name }} at
+                  {{ dateTimeUtil.getDateTime(props.row.notification_ats_failure_dt, { isIncludeSeconds: false }) }}
+                  <div>Reason: {{ props.row.notification_ats_failure_msg }}</div>
+                </div>
+              </template>
             </div>
-            <div v-if="props.row.notification_email_failure_dt">
-              <q-icon name="error" color="negative" size="16px"/>
-              Application email failed at
-              {{ dateTimeUtil.getDateTime(props.row.notification_email_failure_dt, { isIncludeSeconds: false }) }}
-              (current email is {{ employer.notification_email }})
-            </div>
-          </template>
-          <template v-if="employer.ats_cfg">
-            <div v-if="props.row.notification_ats_dt">
-              <q-icon name="check_circle" color="positive" size="16px"/>
-              Application sent to {{ employer.ats_cfg.name }} at
-              {{ dateTimeUtil.getDateTime(props.row.notification_ats_dt, { isIncludeSeconds: false }) }}
-            </div>
-            <div v-if="props.row.notification_ats_failure_dt">
-              <q-icon name="error" color="negative" size="16px"/>
-              Application failed to sent to {{ employer.ats_cfg.name }} at
-              {{ dateTimeUtil.getDateTime(props.row.notification_ats_failure_dt, { isIncludeSeconds: false }) }}
-              <div>Reason: {{ props.row.notification_ats_failure_msg }}</div>
-            </div>
-          </template>
-          <div v-if="hasApplicationFeedback(props.row)">
-            <div class="text-bold q-mt-md q-mb-sm">Feedback</div>
-            <div class="q-mb-sm">
-              <div class="text-bold">Do you know {{ props.row.first_name }}?</div>
-              <div>{{ applicantFeedbackUtil.getKnowApplicantLabel(props.row.feedback.feedback_know_applicant) }}</div>
-            </div>
-            <div class="q-mb-sm">
-              <div class="text-bold">Would you recommend {{ props.row.first_name }} for this job?</div>
-              <div>{{
-                  applicantFeedbackUtil.getRecommendApplicantLabel(props.row.feedback.feedback_recommend_this_job)
-                }}
+            <div v-if="hasApplicationFeedback(props.row)" class="col-12 col-md-4 q-px-sm">
+              <div class="text-bold q-mb-sm border-bottom-1-gray-300">Feedback</div>
+              <div class="q-mb-sm">
+                <div class="text-bold">Do you know {{ props.row.first_name }}?</div>
+                <div>{{ applicantFeedbackUtil.getKnowApplicantLabel(props.row.feedback.feedback_know_applicant) }}</div>
               </div>
-            </div>
-            <div class="q-mb-sm">
-              <div class="text-bold">Would you recommend {{ props.row.first_name }} for any job?</div>
-              <div>{{
-                  applicantFeedbackUtil.getRecommendApplicantLabel(props.row.feedback.feedback_recommend_any_job)
-                }}
+              <div class="q-mb-sm">
+                <div class="text-bold">Would you recommend {{ props.row.first_name }} for this job?</div>
+                <div>{{
+                    applicantFeedbackUtil.getRecommendApplicantLabel(props.row.feedback.feedback_recommend_this_job)
+                  }}
+                </div>
               </div>
-            </div>
-            <div class="q-mb-sm">
-              <div class="text-bold">Is there any other information you want to share about {{
-                  props.row.first_name
-                }}?
+              <div class="q-mb-sm">
+                <div class="text-bold">Would you recommend {{ props.row.first_name }} for any job?</div>
+                <div>{{
+                    applicantFeedbackUtil.getRecommendApplicantLabel(props.row.feedback.feedback_recommend_any_job)
+                  }}
+                </div>
               </div>
-              <div>{{ props.row.feedback.feedback_note }}</div>
+              <div class="q-mb-sm">
+                <div class="text-bold">Is there any other information you want to share about {{
+                    props.row.first_name
+                  }}?
+                </div>
+                <div>{{ props.row.feedback.feedback_note }}</div>
+              </div>
             </div>
           </div>
         </q-td>

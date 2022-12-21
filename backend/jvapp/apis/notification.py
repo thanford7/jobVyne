@@ -254,7 +254,8 @@ class MessageGroupView(JobVyneAPIView):
             .filter(message_group_filter)
     
     @staticmethod
-    def get_or_create_message_group(data, message_groups):
+    def get_or_create_message_group(data, message_groups=None):
+        message_groups = message_groups or MessageGroupView.get_message_groups()
         user_ids = data.get('user_ids')
         employer_id = data.get('employer_id')
         user_type_bits = data.get('user_type_bits')
@@ -288,3 +289,10 @@ class MessageGroupView(JobVyneAPIView):
             ])
         
         return new_message_group
+    
+    @staticmethod
+    def get_or_create_employer_message_group(employer_id, message_groups=None):
+        return MessageGroupView.get_or_create_message_group({
+                'employer_id': employer_id,
+                'user_type_bits': JobVyneUser.USER_TYPE_EMPLOYER
+            }, message_groups=message_groups)

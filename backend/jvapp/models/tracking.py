@@ -32,7 +32,7 @@ class PageView(models.Model, JobVynePermissionsMixin):
     browser = models.CharField(max_length=60, null=True, blank=True)
     browser_version = models.CharField(max_length=20, null=True, blank=True)
     operating_system = models.CharField(max_length=30, null=True, blank=True)
-    device_type = models.CharField(max_length=20, null=True, blank=True)
+    device_type = models.CharField(max_length=40, null=True, blank=True)
     device_brand = models.CharField(max_length=40, null=True, blank=True)
     device_model = models.CharField(max_length=40, null=True, blank=True)
     is_mobile = models.BooleanField(null=True, blank=True)

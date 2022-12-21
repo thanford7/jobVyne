@@ -91,8 +91,8 @@
                 <template v-slot:after>
                   <CustomTooltip>
                     If provided, a notification email will be sent to this address every time an application
-                    is submitted for any job. This is likely only necessary if your company doesn't use an
-                    applicant tracking system.
+                    is submitted for any job or an employee provides feedback on an applicant. This is likely
+                    only necessary if your company doesn't use an applicant tracking system.
                   </CustomTooltip>
                 </template>
               </EmailInput>

@@ -142,18 +142,7 @@ class ApplicationView(JobVyneAPIView):
         
         # Send a notification to the employer if they have it configured
         if employer.notification_email:
-            all_message_groups = MessageGroupView.get_message_groups()
-            message_group = MessageGroupView.get_or_create_message_group({
-                'employer_id': employer.id,
-                'user_type_bits': JobVyneUser.USER_TYPE_EMPLOYER
-            }, all_message_groups)
-            message_thread = MessageThread()
-            message_thread.save()
-            message_thread.message_groups.add(message_group)
-            MessageThreadContext(
-                message_thread=message_thread,
-                job_application=application
-            ).save()
+            message_thread = self.get_or_create_job_application_message_thread(employer.id, application)
             send_django_email(
                 'New application submission',
                 'emails/application_submission_employer_email.html',
@@ -231,6 +220,25 @@ class ApplicationView(JobVyneAPIView):
             'feedback_note': None
         })
         application.save()
+        
+        employer = application.employer_job.employer
+        if employer.notification_email:
+            message_thread = self.get_or_create_job_application_message_thread(employer.id, application)
+            send_django_email(
+                'Employee feedback on applicant',
+                'emails/employee_applicant_feedback.html',
+                to_email=[employer.notification_email],
+                from_email=EMAIL_ADDRESS_SEND,
+                django_context={
+                    'application': application,
+                    'referrer': application.social_link_filter.owner,
+                    'job': application.employer_job,
+                    'know_applicant': application.get_know_applicant_label(),
+                    'recommend_job': application.get_recommend_applicant_label(application.feedback_recommend_this_job),
+                    'recommend_any': application.get_recommend_applicant_label(application.feedback_recommend_any_job)
+                },
+                message_thread=message_thread
+            )
         
         if application.ats_application_key and application.employer_job.ats_job_key:
             ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
@@ -319,6 +327,24 @@ class ApplicationView(JobVyneAPIView):
             return applications[0]
         
         return applications
+    
+    @staticmethod
+    def get_or_create_job_application_message_thread(employer_id, application):
+        employer_message_group = MessageGroupView.get_or_create_employer_message_group(employer_id)
+        try:
+            return MessageThread.objects.get(
+                message_thread_context__job_application=application,
+                message_groups=employer_message_group
+            )
+        except MessageThread.DoesNotExist:
+            message_thread = MessageThread()
+            message_thread.save()
+            message_thread.message_groups.add(employer_message_group)
+            MessageThreadContext(
+                message_thread=message_thread,
+                job_application=application
+            ).save()
+            return message_thread
 
 
 class ApplicationTemplateView(JobVyneAPIView):

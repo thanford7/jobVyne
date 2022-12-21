@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 
 from django.contrib.gis.geoip2 import GeoIP2
+from django.db import DataError
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -33,44 +34,47 @@ class PageTrackView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
-        meta = request.META
-        page_view = PageView()
-        page_view.relative_url = request.data['relative_url']
-        page_view.social_link_filter_id = request.data.get('filter_id')
-        params = request.data.get('query') or {}
-        if platform_name := params.get('platform'):
-            page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)
-        
-        page_view.ip_address = parse_ip_address(meta.get('HTTP_X_FORWARDED_FOR')) or parse_ip_address(meta.get('REMOTE_ADDR'))
-        if page_view.ip_address and len(page_view.ip_address) > 40:
-            logger.warning(f'IP Address is too long: {page_view.ip_address}')
-            page_view.ip_address = None
-        page_view.access_dt = timezone.now()
-        
-        location_data = None
-        if page_view.ip_address:
-            try:
-                location_data = geo_locator.city(page_view.ip_address)
-            except Exception:
-                pass
-        if location_data:
-            page_view.city = location_data['city']
-            page_view.country = location_data['country_name']
-            page_view.region = location_data['region']
-            page_view.latitude = location_data['latitude']
-            page_view.longitude = location_data['longitude']
-    
-        if user_agent_str := meta.get('HTTP_USER_AGENT'):
-            set_user_agent_data(page_view, user_agent_str)
+        try:
+            meta = request.META
+            page_view = PageView()
+            page_view.relative_url = request.data['relative_url']
+            page_view.social_link_filter_id = request.data.get('filter_id')
+            params = request.data.get('query') or {}
+            if platform_name := params.get('platform'):
+                page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)
             
-        recent_page_views = PageView.objects.filter(
-            relative_url=page_view.relative_url,
-            ip_address=page_view.ip_address,
-            access_dt__gt=timezone.now() - timedelta(minutes=UNIQUE_VIEW_LOOKBACK_MINUTES)
-        )
+            page_view.ip_address = parse_ip_address(meta.get('HTTP_X_FORWARDED_FOR')) or parse_ip_address(meta.get('REMOTE_ADDR'))
+            if page_view.ip_address and len(page_view.ip_address) > 40:
+                logger.warning(f'IP Address is too long: {page_view.ip_address}')
+                page_view.ip_address = None
+            page_view.access_dt = timezone.now()
+            
+            location_data = None
+            if page_view.ip_address:
+                try:
+                    location_data = geo_locator.city(page_view.ip_address)
+                except Exception:
+                    pass
+            if location_data:
+                page_view.city = location_data['city']
+                page_view.country = location_data['country_name']
+                page_view.region = location_data['region']
+                page_view.latitude = location_data['latitude']
+                page_view.longitude = location_data['longitude']
         
-        if not len(recent_page_views):
-            page_view.save()
+            if user_agent_str := meta.get('HTTP_USER_AGENT'):
+                set_user_agent_data(page_view, user_agent_str)
+                
+            recent_page_views = PageView.objects.filter(
+                relative_url=page_view.relative_url,
+                ip_address=page_view.ip_address,
+                access_dt__gt=timezone.now() - timedelta(minutes=UNIQUE_VIEW_LOOKBACK_MINUTES)
+            )
+            
+            if not len(recent_page_views):
+                page_view.save()
+        except DataError as e:
+            logger.error(e)
 
         return Response(status=status.HTTP_200_OK)
 
