@@ -87,17 +87,9 @@
                     <div class="q-mb-sm">
                       <span class="text-bold">Social Links</span> <span class="text-small">(Click to copy)</span>
                     </div>
-                    <div v-for="socialLink in socialUtil.getSocialLinks(platforms, socialLinkFilter)"
-                         style="display: inline-block">
-                      <q-chip clickable @click="dataUtil.copyText">
-                        <div class="flex items-center">
-                          <img :src="socialLink.logo" :alt="socialLink.name" style="height: 16px;">
-                          <span class="copy-target" style="display: none;">{{ socialLink.socialLink }}</span>
-                        </div>
-                      </q-chip>
-                    </div>
+                    <ReferralLinkButtons :social-link-filter="socialLinkFilter"/>
                   </div>
-                  <div>
+                  <div class="q-mt-sm">
                     <div class="text-bold">Performance</div>
                     <div class="q-mx-sm q-my-xs" style="display: inline-block;">
                       <div>{{ socialLinkFilter.performance.views.total }}</div>
@@ -275,6 +267,7 @@ import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
+import ReferralLinkButtons from 'components/ReferralLinkButtons.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import jobsUtil from 'src/utils/jobs.js'
 import locationUtil from 'src/utils/location.js'
@@ -321,7 +314,7 @@ const formDataTemplate = {
 }
 
 export default {
-  components: { SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, PageHeader, CustomTooltip },
+  components: { ReferralLinkButtons, SelectJobCountry, SelectJobState, SelectJobCity, SelectJobDepartment, PageHeader, CustomTooltip },
   data () {
     return {
       formData: { ...formDataTemplate },
@@ -411,7 +404,6 @@ export default {
 
     return authStore.setUser().then(() => {
       return Promise.all([
-        socialStore.setPlatforms(),
         socialStore.setSocialLinkFilters(authStore.propUser.id),
         employerStore.setEmployer(authStore.propUser.employer_id),
         employerStore.setEmployerJobs(authStore.propUser.employer_id)
@@ -425,7 +417,7 @@ export default {
     const authStore = useAuthStore()
     const utilStore = useUtilStore()
     const { user } = storeToRefs(authStore)
-    const { platforms, socialLinkFilters } = storeToRefs(socialStore)
+    const { socialLinkFilters } = storeToRefs(socialStore)
 
     const pageTitle = 'Referral Links'
     const metaData = {
@@ -440,7 +432,6 @@ export default {
       authStore,
       globalStore,
       utilStore,
-      platforms,
       socialLinkFilters,
       user,
       q: useQuasar()

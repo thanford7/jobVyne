@@ -59,8 +59,13 @@ class JobSeekerAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(SocialPlatform, SocialLinkFilter)
-class SocialAdmin(admin.ModelAdmin):
+@admin.register(SocialPlatform)
+class SocialPlatformAdmin(admin.ModelAdmin):
+    list_display = ('name', 'sort_order', 'is_displayed')
+    ordering = ('sort_order',)
+
+@admin.register(SocialLinkFilter)
+class SocialLinkAdmin(admin.ModelAdmin):
     pass
 
 

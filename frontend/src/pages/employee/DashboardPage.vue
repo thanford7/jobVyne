@@ -241,15 +241,7 @@
             </template>
             <div>
               <div class="text-small q-mb-sm">Click icon to copy link</div>
-              <div v-for="socialLink in socialUtil.getSocialLinks(platforms, defaultReferralLink)"
-                   style="display: inline-block">
-                <q-chip clickable @click="dataUtil.copyText" size="16px">
-                  <div class="flex items-center">
-                    <img :src="socialLink.logo" :alt="socialLink.name" style="height: 20px;">
-                    <span class="copy-target" style="display: none;">{{ socialLink.socialLink }}</span>
-                  </div>
-                </q-chip>
-              </div>
+              <ReferralLinkButtons :social-link-filter="defaultReferralLink"/>
             </div>
           </BaseExpansionItem>
         </div>
@@ -284,6 +276,7 @@ import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogImgCarousel from 'components/dialogs/DialogImgCarousel.vue'
 import PageHeader from 'components/PageHeader.vue'
+import ReferralLinkButtons from 'components/ReferralLinkButtons.vue'
 import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
 import LinkPerformanceChart from 'pages/employer/dashboard-page/LinkPerformanceChart.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
@@ -300,7 +293,7 @@ import { useUserStore } from 'stores/user-store.js'
 
 export default {
   name: 'DashboardPage',
-  components: { BaseExpansionItem, CustomTooltip, LinkPerformanceChart, EmployeeLeaderBoard, PageHeader },
+  components: { ReferralLinkButtons, BaseExpansionItem, CustomTooltip, LinkPerformanceChart, EmployeeLeaderBoard, PageHeader },
   data () {
     return {
       GROUPINGS,
@@ -357,7 +350,6 @@ export default {
     Loading.show()
     return authStore.setUser().then(() => {
       return Promise.all([
-        socialStore.setPlatforms(),
         socialStore.setSocialLinkFilters(authStore.propUser.id),
         userStore.setUserEmployeeChecklist(authStore.propUser.id)
       ])
@@ -369,7 +361,6 @@ export default {
     const socialStore = useSocialStore()
     const userStore = useUserStore()
     const { user } = storeToRefs(authStore)
-    const { platforms } = storeToRefs(socialStore)
     const { userEmployeeChecklist } = storeToRefs(userStore)
 
     const pageTitle = 'Dashboard'
@@ -381,7 +372,6 @@ export default {
 
     return {
       socialStore,
-      platforms,
       user,
       userEmployeeChecklist,
       userStore,

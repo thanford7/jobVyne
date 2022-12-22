@@ -46,7 +46,7 @@ class SocialUtil {
         addParams: [{ key: 'platform', val: platform.name }]
       })
       socialLinks.push(Object.assign(
-        dataUtil.pick(platform, ['name', 'logo']),
+        dataUtil.pick(platform, ['name', 'logo', 'is_displayed']),
         { socialLink }
       ))
       return socialLinks

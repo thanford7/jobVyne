@@ -10,12 +10,14 @@ __all__ = ('SocialPlatform', 'SocialLinkFilter')
 class SocialPlatform(models.Model):
     name = models.CharField(max_length=50, unique=True)
     logo = models.ImageField(upload_to='logos', null=True, blank=True)
+    is_displayed = models.BooleanField(default=True)
+    sort_order = models.SmallIntegerField(default=1)
     
     def __str__(self):
         return self.name
     
     class Meta:
-        ordering = ('name', )
+        ordering = ('sort_order', )
         
 
 class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):

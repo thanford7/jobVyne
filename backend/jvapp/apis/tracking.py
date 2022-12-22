@@ -41,7 +41,10 @@ class PageTrackView(APIView):
             page_view.social_link_filter_id = request.data.get('filter_id')
             params = request.data.get('query') or {}
             if platform_name := params.get('platform'):
-                page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)
+                try:
+                    page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)
+                except SocialPlatform.DoesNotExist:
+                    pass
             
             page_view.ip_address = parse_ip_address(meta.get('HTTP_X_FORWARDED_FOR')) or parse_ip_address(meta.get('REMOTE_ADDR'))
             if page_view.ip_address and len(page_view.ip_address) > 40:

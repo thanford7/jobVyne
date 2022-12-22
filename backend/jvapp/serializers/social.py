@@ -9,6 +9,8 @@ from jvapp.utils.datetime import get_datetime_format_or_none
 def get_serialized_social_platform(social_platform: SocialPlatform):
     return {
         'id': social_platform.id,
+        'sort_order': social_platform.sort_order,
+        'is_displayed': social_platform.is_displayed,
         'name': social_platform.name,
         'logo': social_platform.logo.url if social_platform.logo else None
     }

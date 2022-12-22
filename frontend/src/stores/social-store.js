@@ -11,7 +11,7 @@ export const useSocialStore = defineStore('social', {
     async setPlatforms () {
       if (!this.platforms) {
         const resp = await this.$api.get('social-platform/')
-        this.platforms = dataUtil.sortBy(resp.data, 'name')
+        this.platforms = dataUtil.sortBy(resp.data, 'sort_order')
       }
     },
     async setSocialLinkFilters (userId, isForceRefresh = false) {
