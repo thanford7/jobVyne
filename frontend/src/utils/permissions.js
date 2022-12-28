@@ -68,7 +68,7 @@ class PagePermissionsUtil {
       },
       [USER_TYPES.Employee]: {
         viewLabel: 'Employee',
-        viewIcon: 'work',
+        viewIcon: 'badge',
         namespace: 'employee',
         menuItems: [
           {
@@ -81,6 +81,12 @@ class PagePermissionsUtil {
             icon: 'link',
             key: 'employee-links',
             label: 'Referral Links',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
+          },
+          {
+            icon: 'work',
+            key: 'employee-jobs',
+            label: 'Jobs',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
           {

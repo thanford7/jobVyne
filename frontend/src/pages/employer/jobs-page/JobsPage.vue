@@ -24,7 +24,7 @@
           <BonusesSection/>
         </q-tab-panel>
         <q-tab-panel name="job">
-          <JobsSection/>
+          <JobsSection :is-employer="true"/>
         </q-tab-panel>
       </q-tab-panels>
     </div>
@@ -34,12 +34,10 @@
 <script>
 import PageHeader from 'components/PageHeader.vue'
 import BonusesSection from 'pages/employer/jobs-page/BonusesSection.vue'
-import JobsSection from 'pages/employer/jobs-page/JobsSection.vue'
-import { storeToRefs } from 'pinia/dist/pinia'
+import JobsSection from 'pages/employer/jobs-page/jobs-table/JobsSection.vue'
 import { Loading, useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { useAuthStore } from 'stores/auth-store.js'
-import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
@@ -70,25 +68,15 @@ export default {
     }
   },
   preFetch () {
-    const employerStore = useEmployerStore()
     const authStore = useAuthStore()
     Loading.show()
 
-    return authStore.setUser().then(() => {
-      return Promise.all([
-        employerStore.setEmployer(authStore.propUser.employer_id),
-        employerStore.setEmployerJobs(authStore.propUser.employer_id),
-        employerStore.setEmployerBonusRules(authStore.propUser.employer_id)
-      ])
-    }).finally(() => {
+    return authStore.setUser().finally(() => {
       Loading.hide()
     })
   },
   setup () {
-    const employerStore = useEmployerStore()
     const globalStore = useGlobalStore()
-    const authStore = useAuthStore()
-    const { user } = storeToRefs(authStore)
 
     const pageTitle = 'Jobs & Referral Bonuses'
     const metaData = {
@@ -96,8 +84,6 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-
-    return { employerStore, authStore, user }
   }
 }
 </script>

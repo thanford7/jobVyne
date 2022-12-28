@@ -74,6 +74,7 @@ sanitizer = Sanitizer({
     'tags': allowed_tags,
     'attributes': allowed_attributes,
     'add_nofollow': True,
+    'separate': ('br',),
     'element_preprocessors': [
         bold_span_to_strong,
         italic_span_to_em,
@@ -90,5 +91,8 @@ sanitizer = Sanitizer({
 })
 
 
-def sanitize_html(html_text):
+def sanitize_html(html_text, is_email=False):
+    if is_email:
+        # New lines are not honored in html interpreters like email
+        html_text = html_text.replace('\n', '<br/>')
     return sanitizer.sanitize(html_text)

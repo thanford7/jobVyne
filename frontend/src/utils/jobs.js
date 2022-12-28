@@ -1,6 +1,17 @@
 import dataUtil from 'src/utils/data.js'
 
 class JobsUtil {
+  constructor () {
+    // Note these names must match the ones in the socialplatform objects
+    // See jvapp_socialplatform table
+    this.shareTypes = {
+      EMAIL: 'email',
+      SMS: 'text',
+      QR: 'qr code',
+      LINK: 'general'
+    }
+  }
+
   filterJobs (formData, jobs) {
     const departmentIds = (formData.departments) ? formData.departments.map((department) => department.id) : []
     const cityIds = (formData.cities) ? formData.cities.map((city) => city.id) : []

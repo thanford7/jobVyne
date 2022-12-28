@@ -57,6 +57,7 @@ def send_django_email(
     html_content = loader.render_to_string(django_email_body_template, django_context)
     plain_content = strip_tags(html_content)
     
+    # Make sure emails aren't sent to actual people when not in production
     if not IS_PRODUCTION:
         subject = '(Test) ' + subject
         logger.info(
@@ -66,6 +67,7 @@ def send_django_email(
         if bcc_email:
             bcc_email = [EMAIL_ADDRESS_TEST]
         to_email = [EMAIL_ADDRESS_TEST]
+        from_email = EMAIL_ADDRESS_SEND
     
     if cc_email and not isinstance(cc_email, list):
         cc_email = [cc_email]

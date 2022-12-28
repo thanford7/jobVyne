@@ -54,7 +54,8 @@ class PageView(models.Model, JobVynePermissionsMixin):
     
 class Message(models.Model):
     class MessageType(Enum):
-        EMAIL = 'EMAIL'
+        EMAIL = 'email'
+        SMS = 'text'
     
     type = models.CharField(max_length=5)
     subject = models.TextField(null=True, blank=True)

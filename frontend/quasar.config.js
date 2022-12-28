@@ -255,7 +255,8 @@ module.exports = configure(function (ctx) {
       //     target: 'http://backend:8000'
       //   }
       // },
-      open: true // opens browser window automatically
+      open: true, // opens browser window automatically
+      hmr: true
     }
   }
   return cfg

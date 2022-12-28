@@ -120,6 +120,12 @@ const routes = [
         component: () => import('pages/employee/ReferralLinksPage.vue')
       },
       {
+        path: ':key(employee-jobs)',
+        name: 'employee-jobs',
+        meta: { userTypeBits: USER_TYPES.Employee },
+        component: () => import('pages/employee/JobsPage.vue')
+      },
+      {
         path: ':key(employee-applications)',
         name: 'employee-applications',
         meta: { userTypeBits: USER_TYPES.Employee },

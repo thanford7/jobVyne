@@ -9,14 +9,17 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
 from jvapp.apis.employer import EmployerJobView, EmployerView
-from jvapp.models import JobApplication, PageView
+from jvapp.models import JobApplication, Message, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
 from jvapp.serializers.social import *
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 
-__all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView')
+__all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView', 'ShareSocialLinkView')
+
+from jvapp.utils.email import send_django_email
+from jvapp.utils.sanitize import sanitize_html
 
 
 class SocialPlatformView(JobVyneAPIView):
@@ -51,21 +54,28 @@ class SocialLinkFilterView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data=data)
     
     def post(self, request):
-        newLink = SocialLinkFilter()
-        is_duplicate = self.create_or_update_link_filter(newLink, self.data, self.user)
-        if is_duplicate and not self.data.get('is_default'):
-            data = {
-                WARNING_MESSAGES_KEY: ['A referral link with these filters already exists']
-            }
-        elif is_duplicate:
-            data = {
-                SUCCESS_MESSAGE_KEY: 'A referral link with these filters already exists. The default property was updated'
-            }
+        new_link = SocialLinkFilter()
+        new_link, is_duplicate = self.create_or_update_link_filter(new_link, self.data, self.user)
+        is_get_or_create = self.data.get('is_get_or_create')
+        data = {}
+        # Sometimes we want to silently get or create a link (e.g. when a user is sharing an individual job)
+        if not is_get_or_create:
+            if is_duplicate and not self.data.get('is_default'):
+                data = {
+                    WARNING_MESSAGES_KEY: ['A referral link with these filters already exists']
+                }
+            elif is_duplicate:
+                data = {
+                    SUCCESS_MESSAGE_KEY: 'A referral link with these filters already exists. The default property was updated'
+                }
+            else:
+                data = {
+                    SUCCESS_MESSAGE_KEY: 'Created a new referral link'
+                }
+        if is_get_or_create:
+            data['link_filter'] = get_serialized_social_link_filter(new_link)
         else:
-            data = {
-                SUCCESS_MESSAGE_KEY: 'Created a new referral link'
-            }
-        data['id'] = newLink.id
+            data['id'] = new_link.id
         return Response(status=status.HTTP_200_OK, data=data)
     
     def put(self, request):
@@ -106,6 +116,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             'is_default': AttributeCfg(is_ignore_excluded=True)
         }
         is_new = not link_filter.created_dt
+        is_duplicate = False
         if is_new:
             cfg = {
                 'owner_id': None,
@@ -134,13 +145,10 @@ class SocialLinkFilterView(JobVyneAPIView):
             
         if job_ids := data.get('job_ids'):
             link_filter.jobs.set(job_ids)
-            
-        existing_filters = {
-            f.get_unique_key(): f for f in
-            SocialLinkFilterView.get_link_filters(
-                user, link_filter_filter=Q(owner_id=link_filter.owner_id), is_use_permissions=False
-            ) if f.id != link_filter.id
-        }
+        
+        existing_filters = SocialLinkFilterView.get_user_existing_filters(
+            user, link_filter.owner_id, current_link_filter_id=link_filter.id
+        )
         
         # Remove default flag from previous filters
         if link_filter.is_default:
@@ -161,9 +169,18 @@ class SocialLinkFilterView(JobVyneAPIView):
                 link_filter.delete()
             else:
                 raise ValueError('A referral link with these filters already exists')
-            return True
+            is_duplicate = True
         
-        return False
+        return (existing_filter or link_filter), is_duplicate
+    
+    @staticmethod
+    def get_user_existing_filters(user, owner_id, current_link_filter_id=None):
+        return {
+            f.get_unique_key(): f for f in
+            SocialLinkFilterView.get_link_filters(
+                user, link_filter_filter=Q(owner_id=owner_id), is_use_permissions=False
+            ) if (f.id != current_link_filter_id or not current_link_filter_id)
+        }
             
     @staticmethod
     def get_link_filters(
@@ -252,3 +269,25 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs_filter &= Q(id__in=[j.id for j in link_filter.jobs.all()])
             
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+    
+    
+class ShareSocialLinkView(JobVyneAPIView):
+    
+    def post(self, request):
+        job_link = SocialLinkFilterView.get_link_filters(self.user, link_filter_id=self.data['socialLinkId'])
+        if self.user.id != job_link.owner_id:
+            return Response('You do not have access to this job link', status=status.HTTP_401_UNAUTHORIZED)
+        share_type = self.data['shareType']
+        if share_type == Message.MessageType.EMAIL.value:
+            send_django_email(
+                self.data['emailSubject'], 'emails/base_general_email.html',
+                to_email=self.data['toEmail'], from_email=self.data['fromEmail'],
+                html_body_content=sanitize_html(f'<p>{self.data["emailBody"]}</p>', is_email=True),
+                django_context={
+                    'is_exclude_final_message': True
+                }
+            )
+            
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Message sent to {self.data["toEmail"]}'
+        })

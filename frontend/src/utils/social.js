@@ -38,13 +38,17 @@ class SocialUtil {
     return `${window.location.origin}/jobs-link/${jobLink.id}`
   }
 
+  getSocialLink (platformName, jobLink) {
+    return dataUtil.getUrlWithParams({
+      isExcludeExistingParams: true,
+      path: this.getJobLinkUrl(jobLink),
+      addParams: [{ key: 'platform', val: platformName }]
+    })
+  }
+
   getSocialLinks (platforms, jobLink) {
     return platforms.reduce((socialLinks, platform) => {
-      const socialLink = dataUtil.getUrlWithParams({
-        isExcludeExistingParams: true,
-        path: this.getJobLinkUrl(jobLink),
-        addParams: [{ key: 'platform', val: platform.name }]
-      })
+      const socialLink = this.getSocialLink(platform.name, jobLink)
       socialLinks.push(Object.assign(
         dataUtil.pick(platform, ['name', 'logo', 'is_displayed']),
         { socialLink }

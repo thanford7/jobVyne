@@ -8,7 +8,7 @@
       {{ dataUtil.pluralize('job', jobs.length) }} selected. Adding a referral bonus directly to a job
       will override all referral bonus rules that may apply, including time based modifiers
     </template>
-    <div class="q-gutter-y-md">
+    <div class="q-gutter-y-md q-mt-sm">
       <div class="row">
         <div class="col-12">
           <MoneyInput

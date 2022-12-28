@@ -1,5 +1,5 @@
 <template>
-  <div class="row q-gutter-y-md" style="min-width: 500px;">
+  <div v-if="isLoaded" class="row q-gutter-y-md" style="min-width: 500px;">
     <div class="col-12 col-md-5">
       <MoneyInput
         label="Default bonus amount"
@@ -168,6 +168,7 @@ export default {
   components: { CustomTooltip, DraggableItem, DroppableItem, MoneyInput },
   data () {
     return {
+      isLoaded: false,
       bonusUtil,
       colorUtil,
       dataUtil,
@@ -202,19 +203,19 @@ export default {
         query: { ruleId: (bonusRule) ? bonusRule.id : -1, tab: 'job' }
       })
     },
-    async updateData () {
-      await this.employerStore.setEmployer(this.user.employer_id, true)
-      await this.employerStore.setEmployerBonusRules(this.user.employer_id, true)
-      await this.employerStore.setEmployerJobs(this.user.employer_id, true)
+    async updateData (isForceRefresh) {
+      await this.employerStore.setEmployer(this.user.employer_id, isForceRefresh)
+      await this.employerStore.setEmployerBonusRules(this.user.employer_id, isForceRefresh)
+      await this.employerStore.setEmployerJobs(this.user.employer_id, isForceRefresh)
     },
     async copyBonusRule (bonusRule) {
       bonusRule.order_idx = this.employerStore.getEmployerBonusRules(this.user.employer_id).length
       await this.$api.post('employer/bonus/rule/', getAjaxFormData(bonusRule))
-      await this.updateData()
+      await this.updateData(true)
     },
     async deleteBonusRule (bonusRule) {
       await this.$api.delete(`employer/bonus/rule/${bonusRule.id}/`)
-      await this.updateData()
+      await this.updateData(true)
     },
     async openBonusRuleDialog (bonusRule) {
       await loadDialogBonusRuleFn()
@@ -232,15 +233,19 @@ export default {
         employer_id: this.user.employer_id,
         ...this.employerBonusDefaults
       }))
-      await this.updateData()
+      await this.updateData(true)
     },
     async saveBonusRuleOrder (ruleIds) {
       await this.$api.put('employer/bonus/rule/order/', getAjaxFormData({
         employer_id: this.user.employer_id,
         rule_ids: ruleIds
       }))
-      await this.updateData()
+      await this.updateData(true)
     }
+  },
+  async mounted () {
+    await this.updateData(false)
+    this.isLoaded = true
   },
   setup () {
     const employerStore = useEmployerStore()
