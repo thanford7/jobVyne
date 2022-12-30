@@ -14,9 +14,6 @@ export const useUserStore = defineStore('user', {
     async setUserEmployeeChecklist (userId) {
       const resp = await this.$api.get(`user/employee-checklist/${userId}/`)
       this.userEmployeeChecklist = resp.data
-    },
-    getUserProfile (userId) {
-      return this.userProfiles[userId]
     }
   }
 })

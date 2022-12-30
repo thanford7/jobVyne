@@ -6,7 +6,7 @@
       class="phone-container"
       lazy-rules
       :rules="[
-        () => isValid || 'Please provide a valid phone number'
+        () => !isRequired || isValid || 'Please provide a valid phone number'
       ]"
     >
       <vue-tel-input
@@ -23,8 +23,8 @@
           'us','uy','za'
         ]"
         :inputOptions="{
-          placeholder: 'Phone number',
-          autofocus: true
+          placeholder: label || 'Phone number',
+          autofocus: isAutoFocus
         }"
         :styleClasses="['phone']"
         :valid-characters-only="true"
@@ -42,7 +42,13 @@ export default {
   name: 'PhoneInput',
   components: { VueTelInput },
   props: {
-    modelValue: [String, null]
+    modelValue: [String, null],
+    isRequired: Boolean,
+    label: [String, null],
+    isAutoFocus: {
+      type: Boolean,
+      default: false
+    }
   },
   data () {
     return {

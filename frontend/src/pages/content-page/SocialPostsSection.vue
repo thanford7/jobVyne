@@ -38,9 +38,13 @@
             </div>
           </template>
           <template v-slot:header>
-            <q-btn v-if="isUserView" flat dense icon="share" text-color="grey-6"
-                   @click="openSharePostDialog(post)"/>
-            <q-btn v-if="isEditable" flat dense icon="delete" text-color="negative" @click="deletePost(post)"/>
+            <q-btn
+              v-if="isUserView"
+              outline dense icon="share" text-color="grey-8" label="Share or edit"
+              class="q-mr-sm"
+              @click="openSharePostDialog(post)"
+            />
+            <q-btn v-if="isEditable" outline dense icon="delete" text-color="negative" @click="deletePost(post)"/>
           </template>
           <template v-slot:body>
             <div class="w-100">

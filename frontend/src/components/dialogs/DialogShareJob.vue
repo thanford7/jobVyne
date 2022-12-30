@@ -59,7 +59,7 @@
           </template>
           <template v-if="shareType === jobsUtil.shareTypes.SMS">
             <div class="col-12">
-              <PhoneInput v-model="formData.phoneNumber"/>
+              <PhoneInput v-model="formData.phoneNumber" :is-auto-focus="true" :is-required="true"/>
             </div>
             <div class="col-12">
               <q-input

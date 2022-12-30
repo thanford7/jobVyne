@@ -431,7 +431,7 @@ export default {
       this.employer = this.employerStore.getEmployer(this.$route.params.employerId)
       if (this.$route.params.ownerId) {
         await this.userStore.setUserProfile(this.$route.params.ownerId)
-        this.profile = this.userStore.getUserProfile(this.$route.params.ownerId)
+        this.profile = this.userStore.userProfile
       } else {
         this.profile = null
       }

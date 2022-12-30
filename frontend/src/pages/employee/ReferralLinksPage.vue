@@ -50,13 +50,27 @@
                   The default referral link will be used to auto-populate links for posts you create.
                 </CustomTooltip>
                 <div class="row q-pt-sm q-px-xs border-bottom-1-gray-100">
+                  <template v-if="hasSocialLinkJobs(socialLinkFilter)">
+                    <q-chip
+                      v-if="socialLinkFilter.jobs.length === 1"
+                      color="lime-9" text-color="white" dense size="13px"
+                    >
+                      {{ socialLinkFilter.jobs[0].title }}
+                    </q-chip>
+                    <CustomTooltip v-else>
+                      <template v-slot:content>Multiple jobs</template>
+                      <ul>
+                        <li v-for="job in socialLinkFilter.jobs">{{ job.title }}</li>
+                      </ul>
+                    </CustomTooltip>
+                  </template>
                   <q-chip
                     v-for="dept in socialLinkFilter.departments"
                     dense color="blue-grey-7" text-color="white" size="13px"
                   >
                     {{ dept.name }}
                   </q-chip>
-                  <q-chip v-if="!socialLinkFilter.departments.length" dense size="13px">
+                  <q-chip v-if="!socialLinkFilter.departments.length && !hasSocialLinkJobs(socialLinkFilter)" dense size="13px">
                     Any department
                   </q-chip>
                   <q-chip
@@ -65,7 +79,7 @@
                   >
                     {{ loc.name }}
                   </q-chip>
-                  <q-chip v-if="!getLocations(socialLinkFilter).length" dense size="13px">
+                  <q-chip v-if="!getLocations(socialLinkFilter).length && !hasSocialLinkJobs(socialLinkFilter)" dense size="13px">
                     Any location
                   </q-chip>
                   <q-space/>
@@ -329,6 +343,9 @@ export default {
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getLocations: locationUtil.getFormattedLocations.bind(locationUtil),
+    hasSocialLinkJobs (socialLinkFilter) {
+      return socialLinkFilter.jobs && socialLinkFilter.jobs.length
+    },
     openDataDialog (socialLinkFilter) {
       return this.q.dialog({
         component: DialogShowDataTable,

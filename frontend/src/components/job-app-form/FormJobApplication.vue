@@ -13,7 +13,7 @@
           class="q-gutter-xs"
         >
           <q-input
-            filled
+            filled autofocus
             v-model="formData.first_name"
             class="jv-form-job-app-fname"
             label="First name"
@@ -37,14 +37,7 @@
             lazy-rules
             :rules="[ val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'A valid email is required']"
           />
-          <q-input
-            filled
-            v-model="formData.phone_number"
-            type="tel"
-            label="Phone number*"
-            lazy-rules
-            :rules="[ val => !val || !val.length || formUtil.isGoodPhoneNumber(val) || 'The phone number must be valid']"
-          />
+          <PhoneInput v-model="formData.phone_number" label="Phone number*" :is-required="false"/>
           <q-input
             filled
             v-model="formData.linkedin_url"
@@ -143,6 +136,7 @@
 </template>
 
 <script>
+import PhoneInput from 'components/inputs/PhoneInput.vue'
 import colorUtil from 'src/utils/color.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests'
@@ -169,7 +163,7 @@ const formDataTemplate = {
 
 export default {
   name: 'FormJobApplication',
-  components: { FileDisplayOrUpload, AuthAll, ListIcon },
+  components: { PhoneInput, FileDisplayOrUpload, AuthAll, ListIcon },
   data () {
     return {
       formData: this.resetFormData(),
