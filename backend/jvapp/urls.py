@@ -1,8 +1,8 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, email, employer, job_seeker, notification,
-    social, stripe, test, tracking, user, waitlist
+    admin, ats, auth, content, currency, data, email, employer, job_seeker, message,
+    notification, social, stripe, test, tracking, user, waitlist
 )
 
 api_path = 'api/v1/'
@@ -87,6 +87,9 @@ urlpatterns = [
     
     # Sendgrid email
     path('sendgrid/webhooks/', email.SendgridWebhooksView.as_view()),
+    
+    # Twilio SMS
+    path('twilio/webhooks/', message.TwilioWebhooksView.as_view()),
     
     # Social auth
     path('social/<backend>/', auth.social_auth),

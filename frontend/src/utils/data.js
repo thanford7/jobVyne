@@ -1,4 +1,4 @@
-import { useUtilStore } from 'stores/utility-store'
+import messagesUtil, { msgTypes } from 'src/utils/messages.js'
 import clone from 'just-clone'
 import pluralize from 'pluralize'
 
@@ -86,27 +86,22 @@ class DataUtil {
   }
 
   copyText (e) {
-    const utilStore = useUtilStore()
     const targetEl = e.currentTarget
     const copyTargetEl = targetEl.closest('div').querySelector('.copy-target')
     const text = copyTargetEl.innerText || copyTargetEl.value
-    const copyMsgId = utilStore.getNewElId()
     navigator.clipboard.writeText(text).then(
       () => {
-        targetEl.parentNode.insertAdjacentHTML(
-          'beforeend',
-          `<span id="${copyMsgId}" class="text-positive text-small"> Copied successfully</span>`
+        messagesUtil.addMsg(
+          'Copied successfully',
+          Object.assign({}, msgTypes.SUCCESS, { timeout: 3000 })
         )
       }, () => {
-        targetEl.parentNode.insertAdjacentHTML(
-          'beforeend',
-          `<span id="${copyMsgId}" class="text-negative text-small"> Copy failed. Please copy manually</span>`
+        messagesUtil.addMsg(
+          'Copy failed. Please copy manually',
+          Object.assign({}, msgTypes.ERROR, { timeout: 3000 })
         )
       }
     )
-    setTimeout(() => {
-      document.getElementById(copyMsgId).remove()
-    }, 3000)
   }
 
   getUrlWithoutQueryParams () {

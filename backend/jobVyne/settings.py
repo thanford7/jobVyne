@@ -150,6 +150,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.JSONParser',
         'jobVyne.multiPartJsonParser.MultiPartJsonParser',
+        'rest_framework.parsers.FormParser'
     )
 }
 
@@ -251,6 +252,10 @@ EMAIL_USE_TLS = True
 SERVER_EMAIL = 'no-reply@jobvyne.com'  # This is used to send error messages to admins
 DEFAULT_FROM_EMAIL = 'no-reply@jobvyne.com'
 SENDGRID_WEBHOOK_KEY = env('SENDGRID_WEBHOOK_KEY')
+
+# SMS
+TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN')
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/

@@ -87,7 +87,7 @@ class MessageRecipient(models.Model):
     recipient_user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.SET_NULL, related_name='message_recipient')
     recipient_address = models.CharField(max_length=255)
     recipient_type = models.CharField(max_length=3, default=RecipientType.TO.value)
-    provider_message_key = models.CharField(max_length=80, null=True, blank=True)
+    provider_message_key = models.CharField(max_length=80, null=True, blank=True, unique=True)
     processed_dt = models.DateTimeField(null=True, blank=True)
     error_dt = models.DateTimeField(null=True, blank=True)
     delivered_dt = models.DateTimeField(null=True, blank=True)

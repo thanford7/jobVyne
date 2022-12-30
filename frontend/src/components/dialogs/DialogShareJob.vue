@@ -1,7 +1,8 @@
 <template>
   <DialogBase
     base-title-text="Share job"
-    :primary-button-text="primaryButtonText"
+    :primary-button-text="primaryBtnText"
+    :is-include-buttons="hasButtons"
     width="700px"
     :is-valid-form-fn="isValidForm"
     @ok="shareJob"
@@ -56,6 +57,55 @@
               />
             </div>
           </template>
+          <template v-if="shareType === jobsUtil.shareTypes.SMS">
+            <div class="col-12">
+              <PhoneInput v-model="formData.phoneNumber"/>
+            </div>
+            <div class="col-12">
+              <q-input
+                v-model="formData.textBody"
+                filled autogrow label="Text message"
+                type="textarea"
+                :rules="[
+                    (val) => val && val.length || 'An text message is required',
+                    (val) => !val.includes('{name}') || 'Remember to update the {name} of your recipient'
+                  ]"
+              />
+            </div>
+          </template>
+          <template v-if="shareType === jobsUtil.shareTypes.QR">
+            <div class="col-12 text-center">
+              <QrCode :qr-value="socialLinkUrl"/>
+            </div>
+          </template>
+          <template v-if="shareType === jobsUtil.shareTypes.LINK">
+            <div class="col-12">
+              <div>
+                <q-input
+                  v-model="socialLinkUrl"
+                  filled disable
+                  label="Job link"
+                >
+                  <template v-slot:after>
+                    <q-btn flat stretch icon="content_copy" @click="dataUtil.copyText($event)"/>
+                    <span class="copy-target hidden">{{ socialLinkUrl }}</span>
+                  </template>
+                </q-input>
+              </div>
+            </div>
+            <div class="col-12">
+              <q-input
+                v-model="shortMessage"
+                filled autogrow label="Message"
+                type="textarea"
+              >
+                <template v-slot:after>
+                  <q-btn flat stretch icon="content_copy" @click="dataUtil.copyText($event)"/>
+                  <span class="copy-target hidden">{{ shortMessage }}</span>
+                </template>
+              </q-input>
+            </div>
+          </template>
         </div>
       </q-form>
     </div>
@@ -65,6 +115,9 @@
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import EmailInput from 'components/inputs/EmailInput.vue'
+import PhoneInput from 'components/inputs/PhoneInput.vue'
+import QrCode from 'components/QrCode.vue'
+import dataUtil from 'src/utils/data.js'
 import jobsUtil from 'src/utils/jobs.js'
 import locationUtil from 'src/utils/location.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
@@ -77,7 +130,7 @@ export default {
   name: 'DialogShareJob',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { EmailInput, DialogBase },
+  components: { PhoneInput, QrCode, EmailInput, DialogBase },
   props: {
     job: Object,
     shareType: String
@@ -89,23 +142,31 @@ export default {
         fromEmail: null,
         toEmail: null,
         emailSubject: null,
-        emailBody: null
+        emailBody: null,
+        phoneNumber: null,
+        textBody: null
       },
+      shortMessage: null,
       socialLink: null,
+      socialLinkUrl: null,
       employerStore: useEmployerStore(),
       employer: null,
       user: null,
+      dataUtil,
       jobsUtil
     }
   },
   computed: {
+    hasButtons () {
+      return [jobsUtil.shareTypes.EMAIL, jobsUtil.shareTypes.SMS].includes(this.shareType)
+    },
     jobLocation () {
       if (this.job.locations.length > 1) {
         return 'Multiple locations'
       }
       return locationUtil.getFullLocation(this.job.locations[0])
     },
-    primaryButtonText () {
+    primaryBtnText () {
       if (this.shareType === jobsUtil.shareTypes.EMAIL) {
         return 'Send email'
       } else {
@@ -140,13 +201,18 @@ export default {
     this.socialLinkUrl = socialUtil.getSocialLink(this.shareType, this.socialLink)
     this.employer = this.employerStore.getEmployer(this.job.employer_id)
     this.user = authStore.propUser
+    this.shortMessage = `My company, ${this.employer.name}, is hiring for a ${this.job.job_title} position and I think you would be a great fit. If you're interested, you can use this link to view more details and apply:
+
+${this.socialLinkUrl}`
+    this.formData.textBody = `(Sent by ${this.user.first_name} ${this.user.last_name})
+Hi {name},
+${this.shortMessage}
+    `
+
     this.formData.fromEmail = this.user.email
     this.formData.emailSubject = `Job opportunity - ${this.job.job_title}`
     this.formData.emailBody = `Hi {name},
-My company, ${this.employer.name}, is hiring for a ${this.job.job_title} position and I think you
-would be a great fit. If you're interested, you can use this link to view more details and apply:
-
-${this.socialLinkUrl}
+${this.shortMessage}
 
 If you have any questions, feel free to email me.
 

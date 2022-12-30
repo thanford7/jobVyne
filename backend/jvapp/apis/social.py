@@ -19,6 +19,7 @@ from jvapp.utils.data import AttributeCfg, set_object_attributes
 __all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView', 'ShareSocialLinkView')
 
 from jvapp.utils.email import send_django_email
+from jvapp.utils.message import send_sms_message
 from jvapp.utils.sanitize import sanitize_html
 
 
@@ -288,6 +289,11 @@ class ShareSocialLinkView(JobVyneAPIView):
                 }
             )
             
-        return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: f'Message sent to {self.data["toEmail"]}'
-        })
+            return Response(status=status.HTTP_200_OK, data={
+                SUCCESS_MESSAGE_KEY: f'Message sent to {self.data["toEmail"]}'
+            })
+        elif share_type == Message.MessageType.SMS.value:
+            send_sms_message(self.data['textBody'], self.data['phoneNumber'])
+            return Response(status=status.HTTP_200_OK, data={
+                SUCCESS_MESSAGE_KEY: f'Message sent to {self.data["phoneNumber"]}'
+            })

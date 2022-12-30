@@ -131,19 +131,19 @@
               </CustomTooltip>
               <CustomTooltip :is_include_icon="false">
                 <template v-slot:content>
-                  <q-btn class="q-mr-xs" color="primary" outline round dense @click="() => 0" icon="textsms"/>
+                  <q-btn class="q-mr-xs" color="primary" outline round dense @click="openShareJobDialog(props.row, jobsUtil.shareTypes.SMS)" icon="textsms"/>
                 </template>
                 Send text message
               </CustomTooltip>
               <CustomTooltip :is_include_icon="false">
                 <template v-slot:content>
-                  <q-btn class="q-mr-xs" color="primary" outline round dense @click="() => 0" icon="qr_code_2"/>
+                  <q-btn class="q-mr-xs" color="primary" outline round dense @click="openShareJobDialog(props.row, jobsUtil.shareTypes.QR)" icon="qr_code_2"/>
                 </template>
                 Open QR code
               </CustomTooltip>
               <CustomTooltip :is_include_icon="false">
                 <template v-slot:content>
-                  <q-btn color="primary" outline round dense @click="() => 0" icon="link"/>
+                  <q-btn color="primary" outline round dense @click="openShareJobDialog(props.row, jobsUtil.shareTypes.LINK)" icon="link"/>
                 </template>
                 Get shareable link
               </CustomTooltip>
