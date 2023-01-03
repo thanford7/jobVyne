@@ -179,7 +179,7 @@
       </q-tr>
       <q-tr v-show="props.expand" :props="props">
         <q-td colspan="100%">
-          <div class="row">
+          <div class="row" style="white-space: normal">
             <div class="col-12 col-md-2 q-px-sm">
               <div class="text-bold q-mb-sm border-bottom-1-gray-300">Notifications</div>
               <div v-if="!getHasNotifications(props.row)">No notifications</div>
@@ -205,7 +205,7 @@
                 </div>
                 <div v-if="props.row.notification_ats_failure_dt">
                   <q-icon name="error" color="negative" size="16px"/>
-                  Application failed to sent to {{ employer.ats_cfg.name }} at
+                  Application failed to be sent to {{ dataUtil.capitalize(employer.ats_cfg.name) }} at
                   {{ dateTimeUtil.getDateTime(props.row.notification_ats_failure_dt, { isIncludeSeconds: false }) }}
                   <div>Reason: {{ props.row.notification_ats_failure_msg }}</div>
                 </div>

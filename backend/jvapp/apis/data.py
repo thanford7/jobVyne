@@ -179,7 +179,7 @@ class ApplicationsView(BaseDataView):
             application_data['notification_email_failure_dt'] = get_datetime_format_or_none(application.notification_email_failure_dt)
             application_data['notification_ats_dt'] = get_datetime_format_or_none(application.notification_ats_dt)
             application_data['notification_ats_failure_dt'] = get_datetime_format_or_none(application.notification_ats_failure_dt)
-            application_data['notification_ats_failure_msg'] = get_datetime_format_or_none(application.notification_ats_failure_msg)
+            application_data['notification_ats_failure_msg'] = application.notification_ats_failure_msg
         
         return {**application_data, **self.get_link_data(application.social_link_filter)}
     
