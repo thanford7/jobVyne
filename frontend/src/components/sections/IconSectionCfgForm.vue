@@ -7,7 +7,7 @@
     <IconPicker v-model="part.icon"/>
   </div>
   <div class="col-12 q-mb-md">
-    <WysiwygEditor
+    <WysiwygEditor2
       placeholder="Text below the icon..."
       v-model="part.html_content"/>
   </div>
@@ -15,11 +15,11 @@
 
 <script>
 import IconPicker from 'components/inputs/IconPicker.vue'
-import WysiwygEditor from 'components/inputs/WysiwygEditor.vue'
+import WysiwygEditor2 from 'components/inputs/WysiwygEditor2.vue'
 
 export default {
   name: 'IconSectionCfgForm',
-  components: { IconPicker, WysiwygEditor },
+  components: { IconPicker, WysiwygEditor2 },
   props: {
     part: Object
   }

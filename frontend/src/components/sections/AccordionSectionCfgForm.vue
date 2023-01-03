@@ -4,7 +4,7 @@
     <q-input filled v-model="part.header" label="Accordion item header"/>
   </div>
   <div class="col-12 q-mb-md">
-    <WysiwygEditor
+    <WysiwygEditor2
       v-model="part.html_content"
       placeholder="Accordion text..."
     />
@@ -12,11 +12,11 @@
 </template>
 
 <script>
-import WysiwygEditor from 'components/inputs/WysiwygEditor.vue'
+import WysiwygEditor2 from 'components/inputs/WysiwygEditor2.vue'
 
 export default {
   name: 'AccordionSectionCfgForm',
-  components: { WysiwygEditor },
+  components: { WysiwygEditor2 },
   props: {
     part: Object
   }

@@ -24,7 +24,7 @@
     />
   </div>
   <div class="col-12">
-    <WysiwygEditor
+    <WysiwygEditor2
       v-model="section.item_parts[0].html_content"
       placeholder="Section text..."
     />
@@ -37,10 +37,10 @@
 
 <script>
 import SelectFiles from 'components/inputs/SelectFiles.vue'
+import WysiwygEditor2 from 'components/inputs/WysiwygEditor2.vue'
 import LiveView from 'components/sections/LiveView.vue'
 import SectionHeader from 'components/sections/SectionHeader.vue'
 import TextSection from 'components/sections/TextSection.vue'
-import WysiwygEditor from 'components/inputs/WysiwygEditor.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { FILE_TYPES } from 'src/utils/file.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -50,7 +50,7 @@ export default {
   props: {
     section: Object
   },
-  components: { SelectFiles, TextSection, LiveView, SectionHeader, WysiwygEditor },
+  components: { SelectFiles, TextSection, LiveView, SectionHeader, WysiwygEditor2 },
   data () {
     return {
       FILE_TYPES

@@ -5,14 +5,40 @@ from html_sanitizer.sanitizer import bold_span_to_strong, italic_span_to_em, tag
 
 __all__ = ('sanitize_html',)
 
+text_align_class_map = {
+    'left': 'text-left',
+    'center': 'text-center',
+    'right': 'text-right'
+}
+
+
+def _get_style_value(element, style_key):
+    style = element.get('style')
+    if not style or (style_key not in style):
+        return None
+    style_val = next((s for s in style.split(';') if style_key in s), None)
+    if style_val is None:
+        return None
+    return style_val.split(':')[1].strip()
+
+
+def text_align_to_class_sanitizer(element):
+    text_alignment = _get_style_value(element, 'text-align')
+    if text_alignment is None:
+        return element
+    
+    alignment_class = text_align_class_map.get(text_alignment)
+    if not alignment_class:
+        return element
+    
+    element.classes.add(alignment_class)
+    return element
+
 
 def font_size_to_header_sanitizer(element):
-    style = element.get('style')
-    if not style or ('font-size' not in style):
+    font_size_px = _get_style_value(element, 'font-size')
+    if font_size_px is None:
         return element
-
-    font_size_style = next((s for s in style.split(';') if 'font-size' in s), None)
-    font_size_px = font_size_style.split(':')[1].strip()
     if 'px' not in font_size_px:
         return element
 
@@ -26,12 +52,10 @@ def font_size_to_header_sanitizer(element):
 
 
 def font_weight_sanitizer(element):
-    style = element.get('style')
-    if not style or ('font-weight' not in style):
+    font_weight = _get_style_value(element, 'font-weight')
+    if font_weight is None:
         return element
-
-    font_weight_style = next((s for s in style.split(';') if 'font-weight' in s), None)
-    font_weight = int(font_weight_style.split(':')[1].strip())
+    font_weight = int(font_weight)
     if font_weight >= 400:
         element.tag = 'strong'
     
@@ -64,7 +88,7 @@ allowed_tags = {
     'li', 'br', 'sub', 'sup', 'hr', 'div', 'span', 'blockquote', 'font', 'strong'
 }
 allowed_attributes = {
-        'a': ('href', 'name', 'target', 'title', 'id', 'rel'),  # Default setting
+    'a': ('href', 'name', 'target', 'title', 'id', 'rel'),  # Default setting
 }
 for el in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'div', 'span', 'font'):
     allowed_attributes[el] = ('class',)
@@ -83,6 +107,7 @@ sanitizer = Sanitizer({
         tag_replacer('form', 'p'),
         tag_replacer('font', 'span'),
         target_blank_noopener,
+        text_align_to_class_sanitizer,
         font_size_to_header_sanitizer,
         font_weight_sanitizer,
         header_size_reducer_sanitizer,

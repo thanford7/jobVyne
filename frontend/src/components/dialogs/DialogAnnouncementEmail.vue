@@ -15,7 +15,7 @@
               val => val && val.length > 0 || 'Email subject is required'
             ]"
           />
-          <WysiwygEditor v-model="emailBody"/>
+          <WysiwygEditor2 v-model="emailBody"/>
         </div>
         <div class="col-md-4 col-12 q-pl-md-sm q-gutter-y-md">
           <div class="text-bold">
@@ -39,14 +39,14 @@ import DialogBase from 'components/dialogs/DialogBase.vue'
 import SelectEmployee from 'components/inputs/SelectEmployee.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
-import WysiwygEditor from 'components/inputs/WysiwygEditor.vue'
+import WysiwygEditor2 from 'components/inputs/WysiwygEditor2.vue'
 import { getAjaxFormData } from 'src/utils/requests.js'
 
 export default {
   name: 'DialogAnnouncementEmail',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { SelectEmployee, SelectEmployer, DialogBase, SelectUserType, WysiwygEditor },
+  components: { SelectEmployee, SelectEmployer, DialogBase, SelectUserType, WysiwygEditor2 },
   props: {
     employerId: [Number, String, null] // If no employerId, we are in admin mode
   },
