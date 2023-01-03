@@ -4,5 +4,4 @@ Dockerfile
 Dockerfile*
 **/secret
 **/secure
-**/demoData
 e2e_db.sql

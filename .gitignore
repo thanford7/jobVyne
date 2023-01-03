@@ -6,7 +6,6 @@ media
 /docker_secrets
 backend/secret
 backend/secure
-backend/demoData
 backend/.env*
 *.pem
 *.crt
