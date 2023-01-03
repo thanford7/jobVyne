@@ -3,7 +3,7 @@
     :base-title-text="`${(isEdit) ? 'Update' : 'Add'} review for ${application.first_name} ${application.last_name}`"
     :primary-button-text="`${(isEdit) ? 'Update' : 'Add'}`"
     width="700px"
-    @ok="saveReview"
+    @ok="saveReview()"
   >
     <template v-slot:subTitle>
       Your applicant review is only visible to you and your company's HR department. The applicant will never
@@ -114,12 +114,12 @@ export default {
   },
   methods: {
     async saveReview () {
-      const formData = dataUtil.pick(this, [
-        'feedback_know_applicant',
-        'feedback_recommend_any_job',
-        'feedback_recommend_this_job',
-        'feedback_note'
-      ])
+      const formData = {
+        feedback_know_applicant: this.feedback_know_applicant,
+        feedback_recommend_any_job: this.feedback_recommend_any_job,
+        feedback_recommend_this_job: this.feedback_recommend_this_job,
+        feedback_note: this.feedback_note
+      }
       await this.$api.put(`job-application/${this.application.id}`, getAjaxFormData(formData))
       this.$emit('ok')
     }

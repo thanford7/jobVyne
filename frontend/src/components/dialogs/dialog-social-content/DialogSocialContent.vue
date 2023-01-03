@@ -6,7 +6,7 @@
     :is-full-screen="true"
     :is-o-k-btn-enabled="isValidForm"
     :ok-btn-help-text="validationHelpText"
-    @ok="save"
+    @ok="save()"
     @show="focusInput"
   >
     <div class="row q-mt-md q-gutter-y-md">
@@ -119,14 +119,16 @@
               v-model="formData.post_accounts[cred.email]"
               :label="cred.email"
             />
-            <div v-if="!socialAuthStore.socialCredentials[platform.name] || !socialAuthStore.socialCredentials[platform.name].length">
+            <div
+              v-if="!socialAuthStore.socialCredentials[platform.name] || !socialAuthStore.socialCredentials[platform.name].length">
               You do not have a {{ platform.name }} account connected. Go to the
               <q-btn
                 class="a-style"
                 flat no-caps dense type="a"
                 :to="{ name: 'employee-social-accounts' }"
                 @click="closeDialog"
-              >social accounts page</q-btn>
+              >social accounts page
+              </q-btn>
               for one-click set-up.
             </div>
           </BaseExpansionItem>
@@ -335,29 +337,31 @@ export default {
         dataUtil.pick(this.formData, ['content', 'formatted_content']),
         { platform_id: this.platform.id }
       )
-      data.link_filter_id = this.formData?.jobLink?.id
       if (this.formData.employer_file) {
         data.employer_file_id = this.formData.employer_file.id
       } else if (this.formData.user_file) {
         data.user_file_id = this.formData.user_file.id
       }
 
-      data.post_account_ids = Object.entries(this.formData.post_accounts).reduce((data, [email, isShare]) => {
-        if (!isShare) {
-          return data
-        }
-        const cred = this.socialCredentials[this.platform.name].find((c) => c.email === email)
-        data.push(cred.id)
-        return data
-      }, [])
-
       // For some reason the ref to autoPost disappears after calling isValidForm so we grab the data first
-      const autoPostData = this.$refs.autoPost.getFormData()
-      const isValidAutoPost = await this.$refs.autoPost.isValidForm()
-      if (!isValidAutoPost) {
-        return
+      if (!this.isEmployer) {
+        data.link_filter_id = this.formData?.jobLink?.id
+        data.post_account_ids = Object.entries(this.formData.post_accounts).reduce((data, [email, isShare]) => {
+          if (!isShare) {
+            return data
+          }
+          const cred = this.socialCredentials[this.platform.name].find((c) => c.email === email)
+          data.push(cred.id)
+          return data
+        }, [])
+
+        const autoPostData = this.$refs.autoPost.getFormData()
+        const isValidAutoPost = await this.$refs.autoPost.isValidForm()
+        if (!isValidAutoPost) {
+          return
+        }
+        Object.assign(data, autoPostData)
       }
-      Object.assign(data, autoPostData)
 
       await method('social-post/', getAjaxFormData(data))
       if (this.isEmployer) {

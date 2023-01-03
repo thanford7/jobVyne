@@ -203,7 +203,7 @@ class SocialPostView(JobVyneAPIView):
 
         # Clear any credentials for social accounts and add the new ones
         post.post_credentials.clear()
-        for cred_id in data['post_account_ids']:
+        for cred_id in data.get('post_account_ids', []):
             post.post_credentials.add(cred_id)
         
         file = None
