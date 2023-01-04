@@ -15,28 +15,21 @@
         <div class="row q-gutter-y-sm">
           <template v-if="shareType === jobsUtil.shareTypes.EMAIL">
             <div class="col-12 col-md-6 q-pr-md-sm">
-              <template v-if="this.user.business_email">
-                <q-select
-                  v-model="formData.fromEmail"
-                  filled emit-value
-                  :options="[
-                { val: this.user.email },
-                { val: this.user.business_email }
-              ]"
-                  option-value="val"
-                  option-label="val"
-                  label="Sent from email"
-                />
-              </template>
               <q-input
-                v-else
                 v-model="formData.fromEmail"
                 filled disable
                 label="Sent from email"
-              />
+              >
+                <template v-slot:after>
+                  <CustomTooltip>
+                    Email must come from a JobVyne email address. If you want to send an email from your
+                    own email address, copy the subject and message below and use your own email messenger (e.g. Gmail).
+                  </CustomTooltip>
+                </template>
+              </q-input>
             </div>
             <div class="col-12 col-md-6 q-pl-md-sm">
-              <EmailInput v-model="formData.toEmail" label="Send to email"/>
+              <EmailInput v-model="formData.toEmail" label="Send to email" autofocus/>
             </div>
             <div class="col-12">
               <q-input
@@ -124,6 +117,7 @@ import { getAjaxFormData } from 'src/utils/requests.js'
 import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
+import { useGlobalStore } from 'stores/global-store.js'
 import { useSocialStore } from 'stores/social-store.js'
 
 export default {
@@ -187,6 +181,7 @@ export default {
   },
   async mounted () {
     const authStore = useAuthStore()
+    const globalStore = useGlobalStore()
     const socialStore = useSocialStore()
     await Promise.all([
       authStore.setUser(),
@@ -208,16 +203,15 @@ ${this.socialLinkUrl}`
 Hi {name},
 ${this.shortMessage}
     `
-
-    this.formData.fromEmail = this.user.email
-    this.formData.emailSubject = `Job opportunity - ${this.job.job_title}`
+    this.formData.fromEmail = globalStore.emailReferral
+    this.formData.emailSubject = `Job opportunity - ${this.job.job_title} - From ${this.user.first_name} ${this.user.last_name}`
     this.formData.emailBody = `Hi {name},
 ${this.shortMessage}
 
-If you have any questions, feel free to email me.
+If you have any questions, feel free to email me at ${this.user.email}
 
 Best,
-${this.user.first_name}
+${this.user.first_name} ${this.user.last_name}
 `
     this.isLoaded = true
   }

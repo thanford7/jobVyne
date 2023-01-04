@@ -38,6 +38,7 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     async logout (redirect = '/') {
+      await this.$api.get('auth/login-set-cookie/')
       await this.$api.post('auth/logout/')
       if (redirect) {
         await this.$router.push(redirect)

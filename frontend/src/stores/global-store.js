@@ -5,7 +5,8 @@ export const useGlobalStore = defineStore('global', {
     nullValueStr: '[None]',
     nullValueAnyStr: '[Any]',
     websiteName: 'JobVyne',
-    currencies: null
+    currencies: null,
+    emailReferral: 'referral@jobvyne.com'
   }),
 
   actions: {
