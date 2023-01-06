@@ -279,7 +279,7 @@ export default defineComponent({
   components: { TestimonialCard, ListIcon, BenefitItem, HowItWorksItem, ResponsiveWidth },
   data () {
     return {
-      autoplay: 7000, // NUmber of milliseconds to show each slide
+      autoplay: 7000, // Number of milliseconds to show each slide
       slide: 1
     }
   },
