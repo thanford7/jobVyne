@@ -34,7 +34,7 @@
               <div class="border-1-negative border-rounded q-pa-md">
                 <div class="rfs-h5 text-center q-mb-lg">Traditional Referral Programs</div>
                 <div class="text-center q-mb-lg">
-                  <q-img class="w-25" src="~assets/icons/one-to-one.png" alt="One to one sharing"/>
+                  <q-img class="w-25" src="~assets/icons/one-to-one2.png" alt="One to one sharing"/>
                 </div>
                 <div class="rfs-h6 q-mb-lg">
                   Employee referral programs are "one to one". An employee has to know of a job candidate that
@@ -58,7 +58,7 @@
               <div class="border-1-positive border-rounded q-pa-md h-100">
                 <div class="rfs-h5 text-center q-mb-lg">JobVyne Platform</div>
                 <div class="text-center q-mb-lg">
-                  <q-img class="w-25" src="~assets/icons/many-to-one.png" alt="Many to one sharing"/>
+                  <q-img class="w-25" src="~assets/icons/many-to-one2.png" alt="Many to one sharing"/>
                 </div>
                 <div class="rfs-h6 q-mb-lg">
                   JobVyne automatically posts multiple recent jobs to employees' social networks. Job candidates
@@ -107,7 +107,6 @@
                     Hiring managers have been very happy with the quality of the applicants as well."
                     name="Heather Waldron"
                     job-title="HR Generalist"
-                    style="overflow: visible;"
                   />
                 </div>
               </q-carousel-slide>

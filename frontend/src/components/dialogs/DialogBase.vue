@@ -58,6 +58,8 @@
             class="bg-accent"
             :disable="!isOKBtnEnabled"
             flat ripple text-color="white"
+            :icon="primaryButtonIcon"
+            :icon-right="primaryButtonIconRight"
             :label="primaryButtonText"
             :loading="isLoading"
             @click="onOkClick"
@@ -79,6 +81,12 @@ export default {
     primaryButtonText: {
       type: String,
       default: 'Submit'
+    },
+    primaryButtonIcon: {
+      type: [String, null]
+    },
+    primaryButtonIconRight: {
+      type: [String, null]
     },
     baseTitleText: {
       type: [String, null]

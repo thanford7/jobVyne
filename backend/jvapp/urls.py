@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from jvapp.apis import (
     admin, ats, auth, content, currency, data, email, employer, job_seeker, message,
-    notification, social, stripe, test, tracking, user, waitlist
+    notification, sales, social, stripe, test, tracking, user
 )
 
 api_path = 'api/v1/'
@@ -47,7 +47,10 @@ urlpatterns = [
     re_path('^user/profile/(?P<user_id>[0-9]+)/?$', user.UserProfileView.as_view()),
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
-    path('waitlist/', waitlist.WaitlistView.as_view()),
+    
+    # Sales
+    path('sales/inquiry/', sales.SalesInquiryView.as_view()),
+    path('sales/waitlist/', sales.WaitlistView.as_view()),
     
     # Chart Data
     path('data/applications/', data.ApplicationsView.as_view()),

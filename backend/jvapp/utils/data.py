@@ -10,7 +10,7 @@ class AttributeCfg:
     is_ignore_excluded: bool = True  # If true, doesn't modify the attribute if it's not included in the form data
 
 
-def set_object_attributes(obj, data: dict, form_cfg: dict):
+def set_object_attributes(obj: object, data: dict, form_cfg: dict):
     for key, attribute_cfg in form_cfg.items():
         attribute_cfg = attribute_cfg or AttributeCfg()
         

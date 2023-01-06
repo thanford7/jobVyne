@@ -49,7 +49,7 @@ export default {
       this.authStore.executeIfCaptchaValid(
         'WAITLIST',
         async () => {
-          await this.$api.post('waitlist/', getAjaxFormData({ email: this.email }))
+          await this.$api.post('sales/waitlist/', getAjaxFormData({ email: this.email }))
         },
         () => messagesUtil.addMsg(
           'Unable to complete waitlist sign up. reCAPTCHA authentication failed',
