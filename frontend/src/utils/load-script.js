@@ -6,10 +6,13 @@ function createTag (src) {
   return script
 }
 
-function addListeners (script, resolve, reject) {
+function addListeners (script, callback, resolve, reject) {
   script.addEventListener('error', reject)
   script.addEventListener('abort', reject)
   script.addEventListener('load', function loadScriptHandler () {
+    if (callback) {
+      callback()
+    }
     script.setAttribute('data-loaded', '')
     resolve(removeScript.bind(null, script))
   })
@@ -26,7 +29,7 @@ export function removeScript (scriptOrSrc) {
   if (script) script.parentNode.removeChild(script)
 }
 
-export function loadScript (src) {
+export function loadScript (src, callback = null) {
   return new Promise((resolve, reject) => {
     let script = document.querySelector(`script[src="${src}"]`)
 
@@ -36,7 +39,7 @@ export function loadScript (src) {
     }
 
     script = createTag(src)
-    addListeners(script, resolve, reject)
+    addListeners(script, callback, resolve, reject)
     document.head.appendChild(script)
   })
 }

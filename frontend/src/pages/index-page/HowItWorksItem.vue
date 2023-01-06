@@ -6,26 +6,24 @@
       </div>
     </div>
     <div class="col-12 col-md-8 q-mt-lg q-mt-md-none">
-      <div class="rfs-h6">
+      <div class="rfs-h5">
         {{ header }}
       </div>
-      <q-list class="q-mt-md">
-        <q-item v-for="benefit in benefits">
-          <q-item-section avatar>
-            <q-icon name="thumb_up_alt" color="primary"/>
-          </q-item-section>
-          <q-item-section>
-            {{ benefit }}
-          </q-item-section>
-        </q-item>
-      </q-list>
+      <ListIcon class="q-mt-md rfs-h6"
+        :items="benefits"
+        color="primary"
+        icon-name="thumb_up_alt" icon-size="50px"
+      />
     </div>
   </div>
 </template>
 
 <script>
+import ListIcon from 'components/ListIcon.vue'
+
 export default {
   name: 'HowItWorksItem',
+  components: { ListIcon },
   props: {
     header: String,
     benefits: Array

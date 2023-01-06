@@ -69,24 +69,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.login-container {
-  position: relative;
-  height: 100vh;
-  width: 100%;
-
-  &::before {
-    content: "";
-    background: url('../../assets/background/connectwork.png') no-repeat center center fixed;
-    background-size: cover;
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    opacity: 0.2;
-    overflow: hidden;
-  }
-}
-</style>

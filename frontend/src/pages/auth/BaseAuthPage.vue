@@ -35,7 +35,7 @@ export default {
 
   &::before {
     content: "";
-    background: url('../../assets/background/connectwork.png') no-repeat center center fixed;
+    background: url('../../assets/background/vine1.jpeg') no-repeat center center fixed;
     background-size: cover;
     position: absolute;
     top: 0;

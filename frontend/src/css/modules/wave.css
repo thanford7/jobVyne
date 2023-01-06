@@ -1,0 +1,31 @@
+.wave {
+  --size: 20px;
+  --p: 10px;
+  --R: 22.4px; /*sqrt(var(--p) *var(--p) + var(--size) *var(--size));*/
+  /*  import math*/
+  /*def get_val(p, size):*/
+  /*    return math.sqrt(p*p + size*size)*/
+
+  mask: /* Gradient 1 */ radial-gradient(var(--R) at left 50% bottom calc(var(--size) + var(--p)), #000 99%, #0000 101%) left calc(50% - 2 * var(--size)) bottom 0 / calc(4 * var(--size)) 51% repeat-x,
+    /* Gradient 2 */ radial-gradient(var(--R) at left 50% bottom calc(-1 * var(--p)), #0000 99%, #000 101%) left 50% bottom var(--size) / calc(4 * var(--size)) calc(51% - var(--size)) repeat-x,
+    /* Gradient 3 */ radial-gradient(var(--R) at left 50% top calc(var(--size) + var(--p)), #000 99%, #0000 101%) left calc(50% - 2 * var(--size)) top 0 / calc(4 * var(--size)) 51% repeat-x,
+    /* Gradient 4 */ radial-gradient(var(--R) at left 50% top calc(-1 * var(--p)), #0000 99%, #000 101%) left 50% top var(--size) / calc(4 * var(--size)) calc(51% - var(--size)) repeat-x;
+}
+
+.wave-top {
+  --size: 20px;
+  --p: 10px;
+  --R: 22.4px;
+
+  mask: radial-gradient(var(--R) at left 50% top calc(var(--size) + var(--p)), #000 99%, #0000 101%) left calc(50% - 2 * var(--size)) top 0 / calc(4 * var(--size)) 51% repeat-x,
+    radial-gradient(var(--R) at left 50% top calc(-1 * var(--p)), #0000 99%, #000 101%) left 50% top var(--size) / calc(4 * var(--size)) calc(51% - var(--size)) repeat-x;
+}
+
+.wave-bottom {
+  --size: 20px;
+  --p: 10px;
+  --R: 22.4px;
+
+  mask: radial-gradient(var(--R) at left 50% bottom calc(var(--size) + var(--p)), #000 99%, #0000 101%) left calc(50% - 2 * var(--size)) bottom 0 / calc(4 * var(--size)) 51% repeat-x,
+    radial-gradient(var(--R) at left 50% bottom calc(-1 * var(--p)), #0000 99%, #000 101%) left 50% bottom var(--size) / calc(4 * var(--size)) calc(51% - var(--size)) repeat-x;
+}

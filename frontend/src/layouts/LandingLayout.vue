@@ -18,7 +18,7 @@
             <q-route-tab :to="{ name: 'login', query: { isNew: 0 } }" label="Login"/>
             <q-route-tab
               :to="{ name: 'login', query: { isNew: 1 } }"
-              label="Sign up"
+              label="Employee sign up"
               class="bg-accent text-white"
             />
           </template>
@@ -72,7 +72,7 @@
                   :to="{ name: 'login', query: { isNew: 1 } }"
                 >
                   <q-item-section>
-                    Sign up
+                    Employee sign up
                   </q-item-section>
                 </q-item>
               </template>

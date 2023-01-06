@@ -19,8 +19,8 @@ $accent    : darken(#9BA2FF, 10%);
 $dark      : #1D1D1D;
 $dark-page : #121212;
 
-$positive  : #5AD780;
-$negative  : #EF8276;
+$positive  : #26C281;
+$negative  : #D24D57;
 $info      : #6795DA;
 $warning   : #F2CD61;
 
@@ -46,5 +46,7 @@ $gray-color-map: (
 $brand-color-map: (
   'primary': $primary,
   'secondary': $secondary,
-  'accent': $accent
+  'accent': $accent,
+  'negative': $negative,
+  'positive': $positive
 );

@@ -2,7 +2,7 @@
   <q-list>
     <q-item v-for="item in items">
       <q-item-section avatar>
-        <q-icon :color="getColor(item)" :name="getIcon(item)"/>
+        <q-icon :color="getColor(item)" :name="getIcon(item)" :size="iconSize"/>
       </q-item-section>
       <q-item-section>
         {{ getText(item) }}
@@ -23,7 +23,11 @@ export default {
     //    color and icon are optional. If not supplied, defaults are used
     items: { type: Array },
     color: { type: String },
-    iconName: { type: String }
+    iconName: { type: String },
+    iconSize: {
+      type: String,
+      default: '32px'
+    }
   },
   methods: {
     getText (item) {
