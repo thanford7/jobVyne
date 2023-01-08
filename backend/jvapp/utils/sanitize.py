@@ -98,7 +98,7 @@ sanitizer = Sanitizer({
     'tags': allowed_tags,
     'attributes': allowed_attributes,
     'add_nofollow': True,
-    'separate': ('br',),
+    'separate': ('br', 'li'),
     'element_preprocessors': [
         bold_span_to_strong,
         italic_span_to_em,

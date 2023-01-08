@@ -3,6 +3,7 @@
     base-title-text="Send announcement email"
     primary-button-text="Send"
     :is-full-screen="true"
+    :is-valid-form-fn="isValidForm"
     @ok="sendEmail"
   >
     <q-form ref="form">
@@ -62,11 +63,10 @@ export default {
     }
   },
   methods: {
+    async isValidForm () {
+      return await this.$refs.form.validate()
+    },
     async sendEmail () {
-      const isValidForm = await this.$refs.form.validate()
-      if (!isValidForm) {
-        return
-      }
       await this.$api.post('email/notification/', getAjaxFormData({
         emailSubject: this.emailSubject,
         emailBody: this.emailBody,
