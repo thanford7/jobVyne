@@ -58,7 +58,7 @@ defaultSpiders = [
 def run_crawlers():
     print('Running job scraper')
     # addCrawlers(defaultRunner, defaultSpiders)
-    add_crawlers(defaultRunner, [HospitalIQSpider])
+    # add_crawlers(defaultRunner, [HospitalIQSpider])
     print('Added crawlers')
     defaultRunner.start()
 

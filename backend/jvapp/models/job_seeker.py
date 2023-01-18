@@ -4,7 +4,7 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q
 
-from jvapp.models.user import PermissionName, get_user_upload_location
+from jvapp.models.user import get_user_upload_location
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePermissionsMixin
 
 __all__ = ('JobApplication', 'JobApplicationTemplate')
@@ -51,6 +51,12 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     }
     
     FEEDBACK_NO_RESPONSE_LABEL = 'No response'
+
+    class ApplicationStatus(Enum):
+        APPLIED = 'applied'
+        INTERVIEWING = 'interviewing'
+        HIRED = 'hired'
+        DECLINED = 'declined'
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link_filter = models.ForeignKey(
@@ -78,6 +84,9 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     referral_bonus = models.FloatField(default=0)
     referral_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     referral_bonus_details = models.JSONField()
+    
+    application_status_dt = models.DateTimeField(null=True, blank=True)
+    application_status = models.CharField(max_length=30, default=ApplicationStatus.APPLIED.value, blank=True)
     
     ats_application_key = models.CharField(max_length=30, null=True, blank=True)
     

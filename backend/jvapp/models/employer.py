@@ -96,11 +96,32 @@ class EmployerSubscription(models.Model, JobVynePermissionsMixin):
 class EmployerAts(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='ats_cfg')
     name = models.CharField(max_length=20)
-    email = models.EmailField()
-    api_key = models.CharField(max_length=50)
+
+    # Credentials used by Greenhouse, Lever
+    email = models.EmailField(null=True, blank=True)
+    api_key = models.CharField(max_length=50, null=True, blank=True)
+    
+    # Credentials used by Lever
+    access_token = models.CharField(max_length=1400, null=True, blank=True)
+    refresh_token = models.CharField(max_length=1400, null=True, blank=True)
+    access_token_expire_dt = models.DateTimeField(null=True, blank=True)
+    refresh_token_expire_dt = models.DateTimeField(null=True, blank=True)
+    
+    # Custom fields used by Greenhouse
     job_stage_name = models.CharField(max_length=50, null=True, blank=True)
     employment_type_field_key = models.CharField(max_length=30, null=True, blank=True)
     salary_range_field_key = models.CharField(max_length=30, null=True, blank=True)
+    
+    # Webhooks
+    is_webhook_enabled = models.BooleanField(default=False)
+    webhook_stage_change_key = models.CharField(max_length=50, null=True, blank=True)
+    webhook_stage_change_token = models.CharField(max_length=50, null=True, blank=True)
+    webhook_archive_key = models.CharField(max_length=50, null=True, blank=True)
+    webhook_archive_token = models.CharField(max_length=50, null=True, blank=True)
+    webhook_hire_key = models.CharField(max_length=50, null=True, blank=True)
+    webhook_hire_token = models.CharField(max_length=50, null=True, blank=True)
+    webhook_delete_key = models.CharField(max_length=50, null=True, blank=True)
+    webhook_delete_token = models.CharField(max_length=50, null=True, blank=True)
     
     class Meta:
         unique_together = ('employer', 'name')
@@ -118,9 +139,17 @@ class EmployerAts(AuditFields, JobVynePermissionsMixin):
 class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     UPDATE_FIELDS = [
         'job_title', 'job_description', 'job_department', 'open_date', 'close_date',
-        'salary_currency', 'salary_floor', 'salary_ceiling', 'employment_type',
+        'salary_currency', 'salary_interval', 'salary_floor', 'salary_ceiling', 'employment_type',
         'ats_job_key', 'modified_dt'
     ]
+    
+    class SalaryInterval(Enum):
+        YEAR = 'year'
+        MONTH = 'month'
+        WEEK = 'week'
+        DAY = 'day'
+        HOUR = 'hour'
+        ONCE = 'once'
     
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
     job_title = models.CharField(max_length=100)
@@ -129,6 +158,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     open_date = models.DateField(null=True, blank=True)
     close_date = models.DateField(null=True, blank=True)
     salary_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True, to_field='name', default='USD', related_name='job')
+    salary_interval = models.CharField(max_length=20, null=True, blank=True)
     salary_floor = models.FloatField(null=True, blank=True)
     salary_ceiling = models.FloatField(null=True, blank=True)
     referral_bonus = models.FloatField(null=True, blank=True)

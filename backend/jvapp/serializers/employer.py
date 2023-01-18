@@ -48,12 +48,16 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         ]
     
     if is_employer:
+        from jvapp.apis.ats import LeverOauthTokenView  # Avoid circular import
         ats_cfg = next((c for c in employer.ats_cfg.all()), None)
         data['ats_cfg'] = {
             'id': ats_cfg.id,
             'name': ats_cfg.name,
             'email': ats_cfg.email,
             'api_key': obfuscate_string(ats_cfg.api_key),
+            'has_access_token': bool(ats_cfg.refresh_token),
+            'is_token_expired': LeverOauthTokenView.has_refresh_token_expired(ats_cfg),
+            'is_webhook_enabled': ats_cfg.is_webhook_enabled,
             'job_stage_name': ats_cfg.job_stage_name,
             'employment_type_field_key': ats_cfg.employment_type_field_key,
             'salary_range_field_key': ats_cfg.salary_range_field_key

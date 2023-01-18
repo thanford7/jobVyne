@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.notification import MessageGroupView, NotificationPreferenceKey, UserNotificationPreferenceView
@@ -94,7 +94,9 @@ class ApplicationView(JobVyneAPIView):
             is_ignore_permissions=True
         )
         if len(applications):
-            return Response('You have already applied to this job', status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_200_OK, data={
+                WARNING_MESSAGES_KEY: [f'You have already applied to this job using the email {email}']
+            })
         
         # Save application to Django model
         application = JobApplication()
@@ -182,25 +184,26 @@ class ApplicationView(JobVyneAPIView):
             ats_api = get_ats_api(ats_cfg)
             try:
                 ats_candidate_key, ats_application_key = ats_api.create_application(application)
+                if user:
+                    try:
+                        UserEmployerCandidate(
+                            user=user,
+                            employer=application.employer_job.employer,
+                            ats_candidate_key=ats_candidate_key
+                        ).save()
+                    except IntegrityError:
+                        pass
+
+                application.ats_application_key = ats_application_key
+                application.save()
+
             # Capture the issue if something went wrong
             except AtsError as e:
                 application.notification_ats_failure_dt = timezone.now()
                 application.notification_ats_failure_msg = str(e)
                 application.save()
-                raise e
-            if user:
-                try:
-                    UserEmployerCandidate(
-                        user=user,
-                        employer=application.employer_job.employer,
-                        ats_candidate_key=ats_candidate_key
-                    ).save()
-                except IntegrityError:
-                    pass
-                    
-            application.ats_application_key = ats_application_key
-            application.save()
-        
+                logger.exception(f'Failed to push application to {ats_api.NAME} ATS for employer ID ({employer.id})', e)
+
         return Response(
             status=status.HTTP_200_OK,
             data={

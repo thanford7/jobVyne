@@ -10,14 +10,12 @@
         filled clearable emit-value map-options
         label="ATS Name"
         v-model="atsFormData.name"
-        :options="[
-          {val: 'greenhouse', label: 'Greenhouse'}
-        ]"
+        :options="atsOptions"
         option-value="val"
         option-label="label"
       />
     </div>
-    <template v-if="atsFormData.name === 'greenhouse'">
+    <template v-if="atsFormData.name === ATS_CFGS.greenhouse.key">
       <div class="col-12">
         <q-input filled label="Greenhouse User Email" v-model="atsFormData.email">
           <template v-slot:after>
@@ -36,7 +34,7 @@
           </template>
         </q-input>
       </div>
-      <template v-if="atsData && atsData.id">
+      <template v-if="atsData && atsData.id && atsData.name === ATS_CFGS.greenhouse.key">
         <div class="col-12">
           <SelectAtsCustomField
             label="Employment Type Field"
@@ -66,7 +64,7 @@
           </SelectAtsCustomField>
         </div>
         <div class="col-12">
-          <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id"/>
+          <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id" :ats_name="ATS_CFGS.greenhouse.key"/>
         </div>
         <div class="col-12">
           <q-btn label="Test connection" color="primary" @click="updateJobs" :loading="isFetchingJobs"/>
@@ -76,6 +74,51 @@
         </div>
       </template>
     </template>
+    <template v-if="atsFormData.name === ATS_CFGS.lever.key">
+      <div class="col-12">
+        <q-btn
+          v-if="!atsData.has_access_token || atsData.is_token_expired"
+          label="Connect Lever" color="primary" @click="connectLeverAccount"
+        />
+        <div v-else class="border-rounded bg-positive q-pa-xs">
+          <q-icon name="check_circle" color="white"/> <span class="text-white">Connected</span>
+        </div>
+      </div>
+      <div class="col-12">
+        <q-input filled label="Lever User Email" v-model="atsFormData.email">
+          <template v-slot:after>
+            <q-btn
+              label="Fill suggested email" color="primary"
+              class="h-100"
+              @click="atsFormData.email = suggestedEmployerEmail"
+            />
+            <CustomTooltip>
+              <p>
+                A Lever user account is required to submit applications to Lever.
+                JobVyne will create a Lever user with this email address.
+                The user will have "Team Member" privileges.
+                The email address must use one of your company's domains.
+              </p>
+              <p>
+                Suggested email: <span class="text-bold">{{ suggestedEmployerEmail }}</span>
+              </p>
+            </CustomTooltip>
+          </template>
+        </q-input>
+      </div>
+      <div class="col-12">
+        <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id" :ats_name="ATS_CFGS.lever.key"/>
+      </div>
+      <div class="col-12">
+        <SelectYesNo v-model="atsFormData.is_webhook_enabled" label="Confirm webhooks enabled" :is-multi="false">
+          <template v-slot:after>
+            <span class="text-small">
+              <a href="#" @click.prevent="showLeverWebhookDialog">Show instructions</a>
+            </span>
+          </template>
+        </SelectYesNo>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -83,33 +126,51 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import SelectAtsCustomField from 'components/inputs/greenhouse/SelectAtsCustomField.vue'
 import SelectAtsJobStage from 'components/inputs/greenhouse/SelectAtsJobStage.vue'
+import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import DialogGreenhouseApiKey from 'pages/employer/settings-page/DialogGreenhouseApiKey.vue'
 import DialogGreenhouseUser from 'pages/employer/settings-page/DialogGreenhouseUser.vue'
+import DialogLeverWebhook from 'pages/employer/settings-page/DialogLeverWebhook.vue'
 import { useQuasar } from 'quasar'
+import { ATS_CFGS } from 'src/utils/ats.js'
 import dataUtil from 'src/utils/data.js'
+import messagesUtil, { msgTypes } from 'src/utils/messages.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
+import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'IntegrationSection',
-  components: { SelectAtsCustomField, SelectAtsJobStage, CustomTooltip },
+  components: { SelectYesNo, SelectAtsCustomField, SelectAtsJobStage, CustomTooltip },
   props: {
     atsData: [Object, null]
   },
   data () {
     return {
+      ATS_CFGS,
       atsFormData: {},
       authStore: useAuthStore(),
       employerStore: useEmployerStore(),
+      globalStore: useGlobalStore(),
       q: useQuasar(),
       isGoodConnection: false,
       isFetchingJobs: false
     }
   },
   computed: {
+    atsOptions () {
+      return Object.values(ATS_CFGS).map((cfg) => ({ val: cfg.key, label: cfg.name }))
+    },
     hasChanged () {
       return (!this.atsData && !dataUtil.isEmpty(this.atsFormData)) || !dataUtil.isDeepEqual(this.atsData, this.atsFormData)
+    },
+    suggestedEmployerEmail () {
+      const employer = this.employerStore.getEmployer(this.authStore.propUser.employer_id)
+      const email = 'jobvyne_referral@'
+      if (employer.email_domains && employer.email_domains.length) {
+        return email + employer.email_domains.split(',')[0]
+      }
+      return email + '{your email domain}'
     }
   },
   watch: {
@@ -122,7 +183,7 @@ export default {
           return
         }
         if (this.atsFormData.name !== this.atsData.name) {
-          this.atsFormData.id = null
+          this.atsFormData = {}
         } else {
           this.atsFormData.id = this.atsData.id
         }
@@ -163,6 +224,7 @@ export default {
         this.isGoodConnection = true
       }
     },
+    // Greenhouse
     showGreenhouseUserDialog () {
       return this.q.dialog({
         component: DialogGreenhouseUser,
@@ -173,10 +235,45 @@ export default {
       return this.q.dialog({
         component: DialogGreenhouseApiKey
       })
+    },
+    // Lever
+    showLeverWebhookDialog () {
+      return this.q.dialog({
+        component: DialogLeverWebhook
+      })
+    },
+    async connectLeverAccount () {
+      // Refresh existing connection
+      if (this.atsData.has_access_token && !this.atsData.is_token_expired) {
+        await this.$api.put('lever/oauth-token/', getAjaxFormData({
+          name: this.ATS_CFGS.lever.key,
+          employer_id: this.authStore.propUser.employer_id
+        }))
+        this.$emit('updateEmployer')
+      } else {
+        // Create new connection through Oauth
+        window.location.replace(encodeURI(this.globalStore.leverOauthUrl))
+      }
     }
   },
-  mounted () {
+  async mounted () {
     this.resetAtsFormData()
+    await this.globalStore.setLeverOauthUrl()
+
+    // Handle redirect after user authenticates from Oauth
+    const { code, state, error: errorType, error_description: errorDescription } = dataUtil.getQueryParams()
+    if (errorType) {
+      messagesUtil.addMsg(`${errorType}: ${errorDescription}`, msgTypes.ERROR)
+    }
+    if (code && state) {
+      await this.$api.post('lever/oauth-token/', getAjaxFormData({
+        code,
+        state,
+        name: this.ATS_CFGS.lever.key,
+        employer_id: this.authStore.propUser.employer_id
+      }))
+      this.$emit('updateEmployer')
+    }
   }
 }
 </script>

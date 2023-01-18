@@ -45,6 +45,9 @@ else:
 
 SUBDOMAIN = env('SUBDOMAIN', default=None)
 BASE_URL = 'https://localhost' if IS_LOCAL else (f'https://{SUBDOMAIN}.jobvyne.com' if SUBDOMAIN else 'https://jobvyne.com')
+API_PATH = 'api/v1/'
+API_URL = f'{BASE_URL}/{API_PATH}'
+
 # Without this setting users will have different sign ins for different sub-domains (e.g. www.jobvyne.com vs jobvyne.com)
 SESSION_COOKIE_DOMAIN = env('SESSION_COOKIE_DOMAIN', default=None)  # '.jobvyne.com'
 IS_SEND_AUTO_POSTS = env('IS_SEND_AUTO_POSTS', cast=bool, default=False)
@@ -156,6 +159,7 @@ REST_FRAMEWORK = {
 
 ROOT_URLCONF = 'jobVyne.urls'
 
+FRONTEND_PORT = env('FRONTEND_PORT', default='9000')
 if frontend_url_override := env('FRONTEND_URL_OVERRIDE', default=None):
     FRONTEND_URL = frontend_url_override
 elif IS_LOCAL:
@@ -390,5 +394,30 @@ if IS_STRIPE_LIVE:
 else:
     STRIPE_PRIVATE_KEY = env('STRIPE_PRIVATE_KEY')
     STRIPE_WEBHOOK_PRIVATE_KEY = env('STRIPE_WEBHOOK_PRIVATE_KEY')
+    
+# Lever
+LEVER_SCOPE = ' '.join([
+    'applications:read:admin',
+    'notes:write:admin',
+    'opportunities:write:admin',
+    'postings:read:admin',
+    'referrals:read:admin',
+    'sources:read:admin',
+    'stages:read:admin',
+    'webhooks:write:admin',
+    'offline_access'
+])
+LEVER_CALLBACK_URL = '/employer/employer-settings?tab=integration'
+LEVER_CLIENT_ID = env('LEVER_CLIENT_ID')
+LEVER_CLIENT_SECRET = env('LEVER_CLIENT_SECRET')
+LEVER_STATE = env('LEVER_STATE')
+if LEVER_DEBUG := env('LEVER_DEBUG', cast=bool, default=True):
+    LEVER_BASE_URL = 'https://api.sandbox.lever.co/v1/'
+    LEVER_REDIRECT_BASE = 'https://sandbox-lever.auth0.com/authorize'
+    LEVER_AUTH_TOKEN_URL = 'https://sandbox-lever.auth0.com/oauth/token'
+else:
+    LEVER_BASE_URL = 'https://api.lever.co/v1/'
+    LEVER_REDIRECT_BASE = 'https://auth.lever.co/authorize'
+    LEVER_AUTH_TOKEN_URL = 'https://auth.lever.co/oauth/token'
 
 # CELERY_BROKER_URL = 'pyamqp://rabbitmq:5672'

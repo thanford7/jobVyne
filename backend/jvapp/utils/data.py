@@ -30,6 +30,8 @@ def get_list_intersection(list1, list2):
 
 
 def obfuscate_string(text, allowed_chars=5):
+    if not text:
+        return text
     allowed_chars = min(allowed_chars, len(text))
     cut_off = len(text) - allowed_chars
     return '*' * (cut_off) + text[cut_off:]
@@ -54,6 +56,16 @@ def coerce_bool(val):
         return val.lower() == 'true'
     
     raise ValueError(f'Unknown boolean val: {val}')
+
+
+def coerce_int(val, default=None, is_raise_error=False):
+    try:
+        return int(val)
+    except ValueError as e:
+        if is_raise_error:
+            raise e
+        return default
+    
 
 
 def round_to(num, round_num):

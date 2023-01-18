@@ -2,7 +2,7 @@
   <q-select
     filled emit-value map-options
     :options="stages"
-    option-value="name"
+    option-value="key"
     option-label="name"
     label="Initial Candidate Stage"
     :loading="!isLoaded"
@@ -19,13 +19,14 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
-import dataUtil from 'src/utils/data.js'
+import atsUtil from 'src/utils/ats.js'
 
 export default {
   name: 'SelectAtsJobStage',
   components: { CustomTooltip },
   props: {
-    ats_id: Number
+    ats_id: Number,
+    ats_name: String
   },
   data () {
     return {
@@ -37,10 +38,7 @@ export default {
     const resp = await this.$api.get('ats/stages/', {
       params: { ats_id: this.ats_id }
     })
-    this.stages = dataUtil.sortBy(
-      dataUtil.uniqBy(resp.data.map((s) => ({ name: s.name, priority: s.priority })), 'name'),
-      'priority',
-      true)
+    this.stages = atsUtil.getFormattedStageOptions(resp.data, this.ats_name)
     this.isLoaded = true
   }
 }

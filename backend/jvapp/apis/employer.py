@@ -1,6 +1,5 @@
 from functools import reduce
 
-from django.contrib.auth.models import AnonymousUser
 from django.db.models import Count, F, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -114,13 +113,7 @@ class EmployerAtsView(JobVyneAPIView):
         if not (employer_id := self.data.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        # Delete any existing ats configurations before adding the new one
-        if existing_ats := EmployerAts.objects.filter(employer_id=employer_id):
-            for delete_ats in existing_ats:
-                delete_ats.jv_check_permission(PermissionTypes.DELETE.value, self.user)
-            existing_ats.delete()
-        
-        ats = EmployerAts(employer_id=employer_id)
+        ats = self.get_new_ats_cfg(self.user, employer_id, self.data['name'])
         self.update_ats(self.user, ats, self.data)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully created ATS configuration'
@@ -147,18 +140,46 @@ class EmployerAtsView(JobVyneAPIView):
         })
     
     @staticmethod
+    def get_new_ats_cfg(user, employer_id, ats_name):
+        existing_ats = EmployerAts.objects.filter(employer_id=employer_id)
+        if existing_ats:
+            # Check whether there is an existing cfg for the ats that is supposed to be created (e.g. Greenhouse)
+            same_ats = next((ats for ats in existing_ats if ats.name == ats_name), None)
+            if same_ats:
+                return same_ats
+            
+            # If the ats cfg is for a different provider, we need to delete the old one
+            # Example: ATS name is Lever and the existing ATS is for Greenhouse
+            if existing_ats:
+                for delete_ats in existing_ats:
+                    delete_ats.jv_check_permission(PermissionTypes.DELETE.value, user)
+                existing_ats.delete()
+    
+        return EmployerAts(employer_id=employer_id)
+    
+    @staticmethod
     @atomic
     def update_ats(user, ats, data):
+        from jvapp.apis.ats import LeverAts, get_ats_api  # Avoid circular import
         set_object_attributes(ats, data, {
-            'name': None,
-            'email': None,
-            'job_stage_name': None,
-            'employment_type_field_key': None,
-            'salary_range_field_key': None
+            'name': AttributeCfg(is_ignore_excluded=True),
+            'email': AttributeCfg(is_ignore_excluded=True),
+            'job_stage_name': AttributeCfg(is_ignore_excluded=True),
+            'employment_type_field_key': AttributeCfg(is_ignore_excluded=True),
+            'salary_range_field_key': AttributeCfg(is_ignore_excluded=True),
+            'access_token': AttributeCfg(is_ignore_excluded=True),
+            'refresh_token': AttributeCfg(is_ignore_excluded=True)
         })
-        api_key = data.get('api_key')
-        if api_key and not is_obfuscated_string(api_key):
-            ats.api_key = api_key
+        
+        if ats.name == LeverAts.NAME and ats.email:
+            ats_api = get_ats_api(ats)
+            # TODO: Waiting on Lever to provide permission
+            # user_data = ats_api.get_or_create_jobvyne_lever_user(ats.email)
+            # ats.api_key = user_data['id']
+        else:
+            api_key = data.get('api_key')
+            if api_key and not is_obfuscated_string(api_key):
+                ats.api_key = api_key
         
         permission_type = PermissionTypes.EDIT.value if ats.id else PermissionTypes.CREATE.value
         ats.jv_check_permission(permission_type, user)

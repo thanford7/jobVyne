@@ -1,22 +1,40 @@
 import base64
+import hashlib
+import hmac
 import json
+import logging
 import re
+import urllib.parse
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 import requests
+from django.conf import settings
+from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.employer import EmployerAtsView
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import EmployerAts, EmployerJob, JobDepartment
+from jvapp.models import Employer, EmployerAts, EmployerJob, JobApplication, JobDepartment
 from jvapp.models.abstract import PermissionTypes
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
-from jvapp.utils.datetime import get_datetime_or_none
+from jvapp.utils.data import coerce_int
+from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none, get_unix_datetime
 from jvapp.utils.response import is_good_response
 from jvapp.utils.sanitize import sanitize_html
+
+
+logger = logging.getLogger(__name__)
+
+
+REQUEST_FN_GET = requests.get
+REQUEST_FN_POST = requests.post
+REQUEST_FN_PUT = requests.put
 
 
 class AtsError(Exception):
@@ -47,6 +65,7 @@ class JobData:
     salary_floor: float = None
     salary_ceiling: float = None
     salary_currency_type: str = None
+    salary_interval: str = None
     locations: list = None
 
 
@@ -55,8 +74,10 @@ def is_response_object(obj):
 
 
 class BaseAts:
+    NAME = None  # Override with ATS name for subclasses
     BATCH_SIZE = 500
     JOBVYNE_TAG = 'JOBVYNE'
+    DEFAULT_APP_LOOKBACK_DAYS = 120  # Number of days to pull applications for status updates
     
     def __init__(self, ats_cfg):
         self.ats_cfg = ats_cfg
@@ -70,11 +91,21 @@ class BaseAts:
     def get_resp_data(resp):
         return json.loads(resp.text)
     
-    def get_current_jobs(self, employer_id):
+    def get_current_applications(self, start_dt=None):
+        start_dt = start_dt or (timezone.now() - timedelta(days=self.DEFAULT_APP_LOOKBACK_DAYS))
+        return {
+            app.ats_application_key or f'JOBVYNE-{app.id}': app
+            for app in
+            JobApplication.objects.filter(employer_job__employer_id=self.ats_cfg.employer_id, created_dt__gte=start_dt)
+        }
+    
+    def get_current_jobs(self):
         return {
             job.ats_job_key or f'JOBVYNE-{job.id}': job
             for job in
-            EmployerJob.objects.prefetch_related('locations').filter(employer_id=employer_id, close_date__isnull=True)
+            EmployerJob.objects
+                .prefetch_related('locations')
+                .filter(employer_id=self.ats_cfg.employer_id, close_date__isnull=True)
         }
     
     def get_job_departments(self):
@@ -90,13 +121,21 @@ class BaseAts:
     def get_job_title_from_application(self, application):
         return application.employer_job.job_title
     
+    def get_encoded_resume(self, application):
+        return get_base64_encoded_str(application.resume.open('rb').read()) if application.resume else None
+    
+    def get_referral_note(self, application):
+        return f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
+        for the {self.get_job_title_from_application(application)} position
+        '''
+    
     def get_ats_user_id(self):
-        raise NotImplementedError()
+        return None
     
     def get_custom_fields(self):
         raise NotImplementedError()
     
-    def get_noramlized_job_data(self, job):
+    def get_normalized_job_data(self, job):
         raise NotImplementedError()
     
     def get_job_stages(self):
@@ -114,8 +153,8 @@ class BaseAts:
     def get_candidate_key(self, application_key):
         raise NotImplementedError()
     
-    def save_jobs(self, employer_id, jobs):
-        current_jobs = self.get_current_jobs(employer_id)
+    def save_jobs(self, jobs):
+        current_jobs = self.get_current_jobs()
         job_departments = self.get_job_departments()
         process_count = 0
         jobs_count = len(jobs)
@@ -128,9 +167,9 @@ class BaseAts:
         while process_count < jobs_count:
             batch_jobs = jobs[process_count:process_count + self.BATCH_SIZE]
             for job in batch_jobs:
-                job_data = self.get_noramlized_job_data(job)
+                job_data = self.get_normalized_job_data(job)
                 current_job = current_jobs.get(job_data.ats_job_key) or EmployerJob(
-                    employer_id=employer_id,
+                    employer_id=self.ats_cfg.employer_id,
                     created_dt=now
                 )
                 current_job.modified_dt = now
@@ -192,9 +231,33 @@ class BaseAts:
         for job in close_jobs:
             job.close_date = now.date()
         EmployerJob.objects.bulk_update(close_jobs, ['close_date'])
+        
+    def save_application_statuses(self, application_statuses):
+        current_applications = self.get_current_applications()
+        applications_to_update = []
+        for application_key, status_data in application_statuses.items():
+            if not (application := current_applications.get(application_key)):
+                continue
+            if status_data.get('is_archived'):
+                new_status = JobApplication.ApplicationStatus.DECLINED
+            else:
+                new_status = status_data['status']
+            
+            if application.application_status != new_status:
+                application.application_status = new_status
+                application.application_status_dt = timezone.now()
+            
+            if len(applications_to_update) == self.BATCH_SIZE:
+                JobApplication.objects.bulk_update(applications_to_update, ['application_status', 'application_status_dt'])
+                applications_to_update = []
+                
+        if len(applications_to_update):
+            JobApplication.objects.bulk_update(applications_to_update, ['application_status', 'application_status_dt'])
 
 
 class GreenhouseAts(BaseAts):
+    NAME = 'greenhouse'
+    
     datetime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
     candidates_url = 'https://harvest.greenhouse.io/v1/candidates'
     custom_fields_url = 'https://harvest.greenhouse.io/v1/custom_fields/job'
@@ -260,7 +323,7 @@ class GreenhouseAts(BaseAts):
     def get_job_stages(self):
         return self.get_paginated_data(self.job_stages_url, {})
     
-    def get_noramlized_job_data(self, job):
+    def get_normalized_job_data(self, job):
         custom_fields = job['custom_fields']
         employment_type_key = self.ats_cfg.employment_type_field_key or 'employment_type'
         salary_range_key = self.ats_cfg.salary_range_field_key or 'salary_range'
@@ -287,7 +350,7 @@ class GreenhouseAts(BaseAts):
     def create_application(self, application):
         # Check whether candidate exists
         candidates = self.get_paginated_data(self.candidates_url, {'email': application.email})
-        resume = get_base64_encoded_str(application.resume.open('rb').read()) if application.resume else None
+        resume = self.get_encoded_resume(application)
         ats_job_key = application.employer_job.ats_job_key
         application_data = {
             'job_id': ats_job_key,
@@ -347,10 +410,7 @@ class GreenhouseAts(BaseAts):
             ats_application_key = str(candidate_data['application_ids'][0])
             
         # Add a note to the candidate so we know who referred them
-        referrer_note = f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
-                    for the {self.get_job_title_from_application(application)} position
-                    '''
-        self.add_application_note(referrer_note, candidate_key=ats_candidate_key)
+        self.add_application_note(self.get_referral_note(application), candidate_key=ats_candidate_key)
             
         return ats_candidate_key, ats_application_key
     
@@ -369,6 +429,32 @@ class GreenhouseAts(BaseAts):
         )
         if not is_good_response(resp):
             raise AtsError(f'Could not save the note on candidate: {get_resp_error_message(resp)}')
+
+    def get_application_statuses(self):
+        applications = self.get_applications()
+        return {
+            app['id']: {
+                'status': self.get_application_status(app)
+            } for app in applications
+        }
+    
+    @staticmethod
+    def get_application_status(application):
+        application_status = application['status']
+        if application_status == 'hired':
+            return JobApplication.ApplicationStatus.HIRED.value
+        elif application_status == 'rejected':
+            return JobApplication.ApplicationStatus.DECLINED.value
+        else:
+            return application['current_stage']['name']
+
+    def get_applications(self, app_start_date=None):
+        app_start_date = app_start_date or (timezone.now() - timedelta(days=self.DEFAULT_APP_LOOKBACK_DAYS))
+        app_start_timestamp = get_unix_datetime(app_start_date)
+        return self.get_paginated_data(
+            'https://harvest.greenhouse.io/v1/applications/',
+            {'last_activity_after': app_start_timestamp}
+        )
         
     def get_application(self, application_key):
         application_url = f'https://harvest.greenhouse.io/v1/applications/{application_key}'
@@ -420,8 +506,230 @@ class GreenhouseAts(BaseAts):
         return get_datetime_or_none(dt, format=self.datetime_format, as_date=as_date)
 
 
+class LeverAts(BaseAts):
+    NAME = 'lever'
+    
+    EVENT_STAGE_CHANGE = 'candidateStageChange'
+    EVENT_HIRED = 'candidateHired'
+    EVENT_ARCHIVE_CHANGE = 'candidateArchiveChange'
+    EVENT_DELETED = 'candidateDeleted'
+
+    def get_paginated_data(self, relative_url, item_id=None, body_cfg=None):
+        has_next = True
+        next = None
+        data = []
+        relative_url = f'{relative_url}/{item_id}' if item_id else relative_url
+        while has_next:
+            response = self.get_data(REQUEST_FN_GET, relative_url, next_key=next, body_cfg=body_cfg)
+            has_next = response.get('hasNext')
+            next = response.get('next')
+            data += response.get('data', [])
+    
+        return data
+
+    def get_data(self, request_method_fn, relative_url, next_key=None, body_cfg=None, is_JSON=False, is_multipart_form=False):
+        body = {}  # {'responseType': 'json'}
+        if body_cfg:
+            body = {**body_cfg, **body}
+        if next_key:
+            body['offset'] = next_key
+        url = f'{settings.LEVER_BASE_URL}{relative_url}'
+        
+        if LeverOauthTokenView.has_access_token_expired(self.ats_cfg):
+            LeverOauthTokenView.refresh_access_token(self.ats_cfg)
+    
+        headers = {'Authorization': f'Bearer {self.ats_cfg.access_token}'}
+        if is_JSON or is_multipart_form:
+            content_type = 'application/json' if is_JSON else 'multipart/form-data'
+            headers = {**headers, 'Content-Type': content_type}
+        request_kwargs = {'headers': headers}
+        if is_JSON:
+            request_kwargs['json'] = body
+        else:
+            request_kwargs['data'] = body
+    
+        response = request_method_fn(url, **request_kwargs)
+        return response.json()
+
+    def get_jobs(self):
+        jobs = self.get_paginated_data('postings', body_cfg={'state': 'published'})
+        # TODO: Waiting on Lever to add necessary permissions to pull requisition data
+        # requisitions = self.get_requisitions()
+        # if requisitions:
+        #     for job in jobs:
+        #         if not (requisition_codes := job['requisitionCodes']):
+        #             continue
+        #         requisition_code = requisition_codes[0]
+        #         requisition = requisitions.get(requisition_code)
+        #         if requisition and (compensation := requisition['compensationBand']):
+        #             min_salary, max_salary, interval = self.get_normalized_salary(compensation)
+        #             job['salary_floor'] = min_salary
+        #             job['salary_ceiling'] = max_salary
+        #             job['salary_interval'] = interval
+        #             job['salary_currency'] = compensation['currency']
+            
+        return jobs
+    
+    def get_requisitions(self):
+        requisitions = self.get_paginated_data('requisitions', body_cfg={'status': 'open'}) or []
+        return {r['requisitionCode']: r for r in requisitions}
+
+    def get_normalized_job_data(self, job):
+        raw_location = job['categories']['location']
+        if job['workplaceType'] == 'remote':
+            raw_location = f'remote {raw_location}'
+        locations = [self.location_parser.get_location(raw_location) if raw_location else None]
+        data = JobData(
+            ats_job_key=str(job['id']),
+            job_title=job['text'],
+            job_description=job.get('descriptionHtml', '') + job.get('closingHtml', ''),
+            open_date=get_datetime_from_unix(job['createdAt']),
+            department_name=f'job["categories"]["team"] - job["categories"]["department"]',
+            employment_type=job['categories']['commitment'],
+            # TODO: Waiting on Lever for permission
+            # salary_floor=job.get('salary_floor'),
+            # salary_ceiling=job.get('salary_ceiling'),
+            # salary_currency_type=job.get('salary_currency'),
+            # salary_interval=job.get('salary_interval')
+            locations=[l for l in locations if l]
+        )
+        return data
+
+    def create_application(self, application):
+        body_cfg = {
+            'name': f'{application.first_name} {application.last_name}',
+            'postings': [application.employer_job.ats_job_key],
+            'stage': self.ats_cfg.job_stage_name,
+            'emails[]': application.email,
+            'resumeFile': [self.get_encoded_resume(application)],
+            'tags[]': self.JOBVYNE_TAG,
+            'sources[]': self.JOBVYNE_TAG,
+            'origin[]': 'referred',
+            'createdAt': get_unix_datetime(timezone.now())
+        }
+        if application.phone_number:
+            body_cfg['phones[]'] = application.phone_number
+        if application.linkedin_url:
+            body_cfg['links[]'] = application.linkedin_url
+        
+        # TODO: Lever documentation doesn't show what the response is for this request
+        resp = self.get_data(
+            REQUEST_FN_POST,
+            f'opportunities?perform_as={self.ats_cfg.api_key}&parse=true&perform_as_posting_owner=true',
+            is_multipart_form=True,
+            body_cfg=body_cfg
+        )
+        if not is_good_response(resp):
+            raise AtsError(f'Could not save candidate: {get_resp_error_message(resp)}')
+
+        # TODO: Need to get candidate key and application key from response
+        return None, None
+    
+    def add_application_note(self, note, opportunity_key=None, **kwargs):
+        if not opportunity_key:
+            raise AtsError('Could not save the note on candidate: An opportunity key is required')
+        self.get_data(
+            REQUEST_FN_POST,
+            f'opportunities/{opportunity_key}/notes?perform_as={self.ats_cfg.api_key}',
+            is_JSON=True,
+            body_cfg={
+                'value': note
+            }
+        )
+        
+    def add_webhook(self, event):
+        webhook_url = f'{settings.API_URL}lever/webhooks/{self.ats_cfg.employer_id}/'
+        resp = self.get_data(
+            REQUEST_FN_POST, 'webhooks', is_JSON=True, body_cfg={
+                'url': webhook_url,
+                'event': event,
+                'configuration': {
+                    'conditions': {
+                        'origins': ['referred']
+                    }
+                }
+            }
+        )
+        if not is_good_response(resp):
+            raise AtsError(f'Could not add webhook: {get_resp_error_message(resp)}')
+        return resp['data']['data']
+    
+    def get_application_statuses(self):
+        applications = self.get_applications()
+        return {
+            app['id']: {
+                'status': app['stage']['text'],
+                'is_archived': bool(app['archivedAt'])
+            } for app in applications
+        }
+    
+    def get_applications(self, app_start_date=None):
+        app_start_date = app_start_date or (timezone.now() - timedelta(days=self.DEFAULT_APP_LOOKBACK_DAYS))
+        app_start_timestamp = get_unix_datetime(app_start_date)
+        return self.get_paginated_data(f'opportunities?expand=applications&expand=stage&tag={self.JOBVYNE_TAG}&created_at_start={app_start_timestamp}')
+        
+    def get_application(self, opportunity_key):
+        resp = self.get_data(REQUEST_FN_GET, f'opportunities/{opportunity_key}?expand=applications&expand=stage')
+        if not is_good_response(resp):
+            raise AtsError(f'Could not get application: {get_resp_error_message(resp)}')
+        return resp['data']
+
+    def get_job_stages(self):
+        return self.get_paginated_data('stages')
+    
+    def get_job_stage(self, stage_key):
+        resp = self.get_data(REQUEST_FN_GET, f'stages/{stage_key}')
+        if not is_good_response(resp):
+            raise AtsError(f'Could not get job stage: {get_resp_error_message(resp)}')
+        return resp['data']
+    
+    def get_jobvyne_lever_user(self, email):
+        users = self.get_data(REQUEST_FN_GET, f'users?email={urllib.parse.quote(email)}')
+        return users[0] if users else None
+    
+    def get_or_create_jobvyne_lever_user(self, email):
+        user = self.get_jobvyne_lever_user(email)
+        if not user:
+            resp = self.get_data(REQUEST_FN_POST, 'users', is_JSON=True, body_cfg={
+                'name': 'JobVyne',
+                'email': email,
+                'accessRole': 'team member'
+            })
+            user = resp['data']
+        
+        return user
+    
+    @staticmethod
+    def get_normalized_salary(compensation):
+        min_salary = coerce_int(compensation['min'])
+        max_salary = coerce_int(compensation['max'])
+        interval = compensation['interval']
+        if not all([min_salary, max_salary, interval]):
+            return None, None, None
+        if interval == 'per-year-salary':
+            return min_salary, max_salary, EmployerJob.SalaryInterval.YEAR.value
+        if interval == 'per-month-salary':
+            return min_salary, max_salary, EmployerJob.SalaryInterval.MONTH.value
+        if interval == 'semi-month-salary':
+            return min_salary * 2, max_salary * 2, EmployerJob.SalaryInterval.MONTH.value
+        if interval == 'bi-month-salary':
+            return min_salary / 2, max_salary / 2, EmployerJob.SalaryInterval.MONTH.value
+        if interval == 'bi-week-salary':
+            return min_salary / 2, max_salary / 2, EmployerJob.SalaryInterval.WEEK.value
+        if interval == 'per-week-salary':
+            return min_salary, max_salary, EmployerJob.SalaryInterval.WEEK.value
+        if interval == 'per-day-wage':
+            return min_salary, max_salary, EmployerJob.SalaryInterval.DAY.value
+        if interval == 'per-hour-wage':
+            return min_salary, max_salary, EmployerJob.SalaryInterval.HOUR.value
+        if interval == 'one-time':
+            return min_salary, max_salary, EmployerJob.SalaryInterval.ONCE.value
+        return None, None, None
+
+
 ats_map = {
-    'greenhouse': GreenhouseAts
+    GreenhouseAts.NAME: GreenhouseAts,
+    LeverAts.NAME: LeverAts
 }
 
 
@@ -450,7 +758,7 @@ class AtsJobsView(AtsBaseView):
     
     def put(self, request):
         jobs = self.ats_api.get_jobs()
-        self.ats_api.save_jobs(self.ats_cfg.employer_id, jobs)
+        self.ats_api.save_jobs(jobs)
         return Response(status=status.HTTP_200_OK)
     
     
@@ -466,3 +774,215 @@ class AtsCustomFieldsView(AtsBaseView):
     def get(self, request):
         fields = self.ats_api.get_custom_fields()
         return Response(status=status.HTTP_200_OK, data=fields)
+    
+    
+class LeverOauthUrlView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def get(self, request):
+        lever_redirect_url = self.get_redirect_url(request)
+        lever_oauth_url = f'{settings.LEVER_REDIRECT_BASE}?client_id={settings.LEVER_CLIENT_ID}&redirect_uri={lever_redirect_url}&state={settings.LEVER_STATE}&response_type=code&scope={settings.LEVER_SCOPE}&prompt=consent&audience={settings.LEVER_BASE_URL}'
+        return Response(status=status.HTTP_200_OK, data=lever_oauth_url)
+    
+    @staticmethod
+    def get_redirect_url(request):
+        if settings.IS_LOCAL:
+            # Lever requires the port for local connections
+            base_url = f'{request.get_host()}:{settings.FRONTEND_PORT}'
+        else:
+            base_url = get_current_site(request).domain
+        return f'https://{base_url}{settings.LEVER_CALLBACK_URL}'
+    
+
+class LeverOauthTokenView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    ACCESS_TOKEN_EXPIRATION_SECONDS = 60 * 60  # 1 hour
+    REFRESH_TOKEN_EXPIRATION_SECONDS = 60 * 60 * 24 * 30  # 30 days
+    EXPIRATION_BUFFER_SECONDS = 60 * 2
+    
+    def post(self, request):
+        if self.data.get('state') != settings.LEVER_STATE:
+            return Response('Request state is incorrect', status=status.HTTP_400_BAD_REQUEST)
+        
+        if not (employer_id := self.data.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+
+        ats_cfg = EmployerAtsView.get_new_ats_cfg(self.user, employer_id, LeverAts.NAME)
+        if not self.has_refresh_token_expired(ats_cfg):
+            self.refresh_access_token(ats_cfg)
+        else:
+            response = requests.post(settings.LEVER_AUTH_TOKEN_URL, {
+                'client_id': settings.LEVER_CLIENT_ID,
+                'client_secret': settings.LEVER_CLIENT_SECRET,
+                'grant_type': 'authorization_code',
+                'code': self.data.get('code'),
+                'redirect_uri': LeverOauthUrlView.get_redirect_url(request)
+            })
+    
+            if response.status_code != 200:
+                self.raise_response_error(response)
+    
+            data = response.json()
+            EmployerAtsView.update_ats(self.user, ats_cfg, {**data, **self.data})
+            self.update_token_expiration(ats_cfg)
+            ats_cfg.save()
+        
+        # Add webhook configuration
+        ats_api = get_ats_api(ats_cfg)
+        for event, key_attr, token_attr in (
+            (LeverAts.EVENT_STAGE_CHANGE, 'webhook_stage_change_key', 'webhook_stage_change_token'),
+            (LeverAts.EVENT_ARCHIVE_CHANGE, 'webhook_archive_key', 'webhook_archive_token'),
+            (LeverAts.EVENT_HIRED, 'webhook_hire_key', 'webhook_hire_token'),
+            (LeverAts.EVENT_DELETED, 'webhook_delete_key', 'webhook_delete_token')
+        ):
+            # Don't add a new webhook if one already exists
+            if getattr(ats_cfg, key_attr, None):
+                continue
+                
+            webhook_data = ats_api.add_webhook(event)
+            setattr(ats_cfg, key_attr, webhook_data['id'])
+            setattr(ats_cfg, token_attr, webhook_data['configuration']['signatureToken'])
+        
+        ats_cfg.save()
+            
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Lever successfully connected'
+        })
+    
+    def put(self, request):
+        if not (employer_id := self.data.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+
+        ats_cfg = EmployerAtsView.get_new_ats_cfg(self.user, employer_id, LeverAts.NAME)
+        self.refresh_access_token(ats_cfg)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Lever successfully connected'
+        })
+
+    @staticmethod
+    def has_access_token_expired(ats_cfg):
+        if not (ats_cfg.access_token and ats_cfg.access_token_expire_dt):
+            return True
+        return (ats_cfg.access_token_expire_dt - timedelta(seconds=LeverOauthTokenView.EXPIRATION_BUFFER_SECONDS)) < timezone.now()
+    
+    @staticmethod
+    def has_refresh_token_expired(ats_cfg):
+        if not (ats_cfg.refresh_token and ats_cfg.refresh_token_expire_dt):
+            return True
+        return (ats_cfg.refresh_token_expire_dt - timedelta(seconds=LeverOauthTokenView.EXPIRATION_BUFFER_SECONDS)) < timezone.now()
+    
+    @staticmethod
+    def refresh_access_token(ats_cfg):
+        if not ats_cfg.refresh_token:
+            raise ConnectionError('No refresh token exists for this employer')
+        if LeverOauthTokenView.has_refresh_token_expired(ats_cfg):
+            raise ConnectionError('The refresh token has already expired')
+        response = requests.post(settings.LEVER_AUTH_TOKEN_URL, {
+            'client_id': settings.LEVER_CLIENT_ID,
+            'client_secret': settings.LEVER_CLIENT_SECRET,
+            'grant_type': 'refresh_token',
+            'refresh_token': ats_cfg.refresh_token
+        })
+
+        if response.status_code != 200:
+            LeverOauthTokenView.raise_response_error(response)
+
+        data = response.json()
+        ats_cfg.access_token = data['access_token']
+        ats_cfg.refresh_token = data['refresh_token']
+        LeverOauthTokenView.update_token_expiration(ats_cfg)
+        ats_cfg.save()
+        
+    @staticmethod
+    def update_token_expiration(ats_cfg):
+        ats_cfg.access_token_expire_dt = timezone.now() + timedelta(seconds=LeverOauthTokenView.ACCESS_TOKEN_EXPIRATION_SECONDS)
+        ats_cfg.refresh_token_expire_dt = timezone.now() + timedelta(seconds=LeverOauthTokenView.REFRESH_TOKEN_EXPIRATION_SECONDS)
+        
+    @staticmethod
+    def raise_response_error(response):
+        raise ConnectionError(f'({response.status_code}) Unable to connect to Lever: {response.reason}')
+
+
+class LeverWebhooksView(APIView):
+    permission_classes = [AllowAny]
+    hook_events = {
+        LeverAts.EVENT_STAGE_CHANGE: {
+            'name': 'stage change',
+            'token_attr': 'webhook_stage_change_token'
+        },
+        LeverAts.EVENT_HIRED: {
+            'name': 'candidate hire',
+            'token_attr': 'webhook_hire_token',
+            'status': JobApplication.ApplicationStatus.HIRED.value
+        },
+        LeverAts.EVENT_ARCHIVE_CHANGE: {
+            'name': 'candidate archive',
+            'token_attr': 'webhook_archive_token',
+        },
+        LeverAts.EVENT_DELETED: {
+            'name': 'candidate delete',
+            'token_attr': 'webhook_delete_token',
+            'status': JobApplication.ApplicationStatus.DECLINED.value
+        }
+    }
+    
+    def post(self, request, employer_id):
+        data = request.data
+        employer = Employer.objects.prefetch_related('ats_cfg').get(id=employer_id)
+        logging_message_start = f'{employer.employer_name} (ID={employer.id}) |'
+        ats_cfg = next((cfg for cfg in employer.ats_cfg.all()), None)
+        if not ats_cfg:
+            logger.error(f'{logging_message_start} No active connection with Lever')
+            return Response(status=status.HTTP_200_OK)
+        
+        event = data['event']
+        event_cfg = self.hook_events[event]
+        hook_token = getattr(ats_cfg, event_cfg['token_attr'])
+        if not hook_token:
+            logger.error(f'{logging_message_start} The signature token for the {event_cfg["name"]} webhook has not been configured')
+            return Response(status=status.HTTP_200_OK)
+    
+        is_authorized_request = self.validate_lever_request(data, hook_token)
+        if not is_authorized_request:
+            logger.warning(f'{logging_message_start} Unauthorized Lever webhook request')
+            return Response(status=status.HTTP_200_OK)
+    
+        # If data is empty, it was just a test connection
+        if not data['data']:
+            return Response(status=status.HTTP_200_OK)
+    
+        event_data = data['data']
+        try:
+            job_application = JobApplication.objects.get(ats_application_key=event_data['opportunityId'])
+        except JobApplication.DoesNotExist:
+            logger.warning(
+                f'{logging_message_start} Webhook received request for unknown application. Opportunity key: {event_data["opportunityId"]}'
+            )
+            return Response(status=status.HTTP_200_OK)
+        
+        # Update application status and datetime
+        ats_api = get_ats_api(ats_cfg)
+        application_status = event_cfg.get('status')
+        if application_status:
+            pass
+        elif event == 'candidateStageChange':
+            stage_key = event_data['toStageId']
+            job_stage = ats_api.get_job_stage(stage_key)
+            application_status = job_stage['text']
+        elif event == 'candidateArchiveChange':
+            if event_data['toArchived']:
+                application_status = JobApplication.ApplicationStatus.DECLINED.value
+            else:
+                application = ats_api.get_application(event_data['opportunityId'])
+                application_status = application['stage']['text']
+        
+        job_application.application_status = application_status
+        job_application.application_status_dt = timezone.now()
+        job_application.save()
+    
+    @staticmethod
+    def validate_lever_request(request_data, signature_token):
+        plain_text = request_data.get('token') + str(request_data['triggeredAt'])
+        hash = hmac.new(bytes(signature_token, 'UTF-8'), plain_text.encode(), hashlib.sha256).hexdigest()
+        return hash == request_data['signature']

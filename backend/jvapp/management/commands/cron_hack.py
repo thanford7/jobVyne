@@ -3,7 +3,7 @@ import threading
 
 from django.core.management import BaseCommand
 
-from jvapp.management.commands.ats_jobs import save_jobs
+from jvapp.management.commands.ats_jobs import save_ats_data
 from scraper.scraper.runSpiders import run_crawlers
 
 """
@@ -40,7 +40,7 @@ class Command(BaseCommand):
         event = threading.Event()
         task_1 = threading.Thread(target=worker, args=(
             event,
-            lambda: save_jobs(writer, success_style),
+            lambda: save_ats_data(writer, success_style),
             writer, '<save ATS jobs>', 30
         ))
         task_2 = threading.Thread(target=worker, args=(
@@ -58,7 +58,7 @@ class Command(BaseCommand):
         
         # async def main_command():
         #     task_1 = asyncio.create_task(run_task(
-        #         lambda: save_jobs(writer, success_style),
+        #         lambda: save_ats_data(writer, success_style),
         #         writer, '<save ATS jobs>', 30
         #     ))
         #     task_2 = asyncio.create_task(run_task(run_crawlers, writer, '<job web scraper>', 4))

@@ -5,8 +5,6 @@ from jvapp.apis import (
     notification, sales, social, stripe, test, tracking, user
 )
 
-api_path = 'api/v1/'
-
 urlpatterns = [
     # General Data
     re_path('^admin/employer/(?P<employer_id>[0-9]+)?/?$', admin.AdminEmployerView.as_view()),
@@ -60,6 +58,9 @@ urlpatterns = [
     path('ats/custom-fields/', ats.AtsCustomFieldsView.as_view()),
     path('ats/jobs/', ats.AtsJobsView.as_view()),
     path('ats/stages/', ats.AtsStagesView.as_view()),
+    path('lever/oauth-token/', ats.LeverOauthTokenView.as_view()),
+    path('lever/oauth-url/', ats.LeverOauthUrlView.as_view()),
+    re_path('^lever/webhooks/(?P<employer_id>[0-9]+)?/?$', ats.LeverWebhooksView.as_view()),
     
     # Billing
     path('billing/charge/', stripe.StripeChargeView.as_view()),

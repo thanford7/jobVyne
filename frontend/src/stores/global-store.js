@@ -6,7 +6,8 @@ export const useGlobalStore = defineStore('global', {
     nullValueAnyStr: '[Any]',
     websiteName: 'JobVyne',
     currencies: null,
-    emailReferral: 'referral@jobvyne.com'
+    emailReferral: 'referral@jobvyne.com',
+    leverOauthUrl: null
   }),
 
   actions: {
@@ -14,6 +15,12 @@ export const useGlobalStore = defineStore('global', {
       if (!this.currencies) {
         const resp = await this.$api.get('currency/')
         this.currencies = resp.data
+      }
+    },
+    async setLeverOauthUrl () {
+      if (!this.leverOauthUrl) {
+        const resp = await this.$api.get('lever/oauth-url/')
+        this.leverOauthUrl = resp.data
       }
     },
     getPageTitle (pageName) {

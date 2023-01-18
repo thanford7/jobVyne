@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 
 import names
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
@@ -11,7 +12,6 @@ from rest_framework.test import APIClient
 
 from jvapp.models import *
 from jvapp.models.user import StandardPermissionGroups
-from jvapp.urls import api_path
 
 
 class BaseTestCase(TestCase):
@@ -112,7 +112,7 @@ class BaseTestCase(TestCase):
         :param files {list}: List of tuples (<file key>, <file>)
         :return: HttpResponse
         """
-        url = f'/{api_path}{url}'
+        url = f'/{settings.API_PATH}{url}'
         
         if request_type == self.REQUEST_GET:
             return self.client.get(url, data)
