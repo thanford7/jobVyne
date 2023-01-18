@@ -7,6 +7,7 @@ from jvapp.apis import (
 
 urlpatterns = [
     # General Data
+    path('admin/ats-failure/', admin.AdminAtsFailureView.as_view()),
     re_path('^admin/employer/(?P<employer_id>[0-9]+)?/?$', admin.AdminEmployerView.as_view()),
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),

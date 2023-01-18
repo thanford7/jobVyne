@@ -173,9 +173,8 @@ class EmployerAtsView(JobVyneAPIView):
         
         if ats.name == LeverAts.NAME and ats.email:
             ats_api = get_ats_api(ats)
-            # TODO: Waiting on Lever to provide permission
-            # user_data = ats_api.get_or_create_jobvyne_lever_user(ats.email)
-            # ats.api_key = user_data['id']
+            user_data = ats_api.get_or_create_jobvyne_lever_user(ats.email)
+            ats.api_key = user_data['id']
         else:
             api_key = data.get('api_key')
             if api_key and not is_obfuscated_string(api_key):

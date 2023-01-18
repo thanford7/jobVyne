@@ -3,7 +3,8 @@ import { defineStore } from 'pinia'
 export const useAdminStore = defineStore('admin', {
   state: () => ({
     employers: [],
-    paginatedUsers: {} // {total_page_count: <int>, total_user_count: <int>, users: [<user1>, ...]}
+    paginatedUsers: {}, // {total_page_count: <int>, total_user_count: <int>, users: [<user1>, ...]}
+    failedAtsApplications: []
   }),
 
   actions: {
@@ -18,6 +19,12 @@ export const useAdminStore = defineStore('admin', {
         params: { page_count: pageCount, filters, sort_order: sortOrder, is_descending: isDescending }
       })
       this.paginatedUsers = resp.data
+    },
+    async setFailedAtsApplications (isForce = false) {
+      if (!this.failedAtsApplications.length || isForce) {
+        const resp = await this.$api.get('admin/ats-failure/')
+        this.failedAtsApplications = resp.data
+      }
     }
   }
 })

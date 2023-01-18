@@ -1,22 +1,77 @@
 import json
 
 from django.core.paginator import Paginator
-from django.db import IntegrityError
-from django.db.models import Count, F, Q
+from django.db.models import F, Q
 from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis.ats import get_ats_api
 from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
+from jvapp.apis.job_seeker import ApplicationView
 from jvapp.apis.user import UserView
-from jvapp.models import Employer, EmployerAuthGroup, EmployerSubscription, JobVyneUser, UserEmployerPermissionGroup
+from jvapp.models import Employer, EmployerAts, EmployerAuthGroup, EmployerSubscription, JobVyneUser, \
+    UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
+from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
+
+
+class AdminAtsFailureView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def get(self, request):
+        failed_applications = self.get_failed_applications()
+        
+        return Response(status=status.HTTP_200_OK, data=[self.get_serialized_application(app) for app in failed_applications])
+    
+    def post(self, request):
+        failed_applications = self.get_failed_applications()
+        ats_cfgs = {
+            ats_cfg.employer_id: ats_cfg for ats_cfg in EmployerAts.objects.all()
+        }
+        app_save_count = 0
+        for app in failed_applications:
+            ats_cfg = ats_cfgs.get(app.employer_job.employer_id)
+            ats_api = get_ats_api(ats_cfg)
+            try:
+                applicant = JobVyneUser.objects.get(email=app.email)
+            except JobVyneUser.DoesNotExist:
+                applicant = None
+            is_success = ApplicationView.save_application_to_ats(ats_api, applicant, app)
+            
+            # Stop trying to push applications if the connection is still failing
+            if not is_success:
+                break
+            
+            app_save_count += 1
+            
+        data = {}
+        if app_save_count:
+            data[SUCCESS_MESSAGE_KEY] = f'Successfully pushed {app_save_count} applications'
+        
+        app_unsave_count = len(failed_applications) - app_save_count
+        if app_unsave_count:
+            data[ERROR_MESSAGES_KEY] = f'Failed to push {app_unsave_count} applications'
+        
+        return Response(status=status.HTTP_200_OK, data=data)
+    
+    def get_failed_applications(self):
+        return ApplicationView.get_applications(
+            self.user, application_filter=Q(notification_ats_failure_dt__isnull=False), is_ignore_permissions=True
+        )
+    
+    def get_serialized_application(self, application):
+        app_data = base_application_serializer(application)
+        app_data['employer_name'] = application.employer_job.employer.employer_name
+        app_data['employer_id'] = application.employer_job.employer_id
+        app_data['title'] = application.employer_job.job_title
+        return app_data
 
 
 class AdminEmployerView(JobVyneAPIView):

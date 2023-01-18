@@ -553,20 +553,19 @@ class LeverAts(BaseAts):
 
     def get_jobs(self):
         jobs = self.get_paginated_data('postings', body_cfg={'state': 'published'})
-        # TODO: Waiting on Lever to add necessary permissions to pull requisition data
-        # requisitions = self.get_requisitions()
-        # if requisitions:
-        #     for job in jobs:
-        #         if not (requisition_codes := job['requisitionCodes']):
-        #             continue
-        #         requisition_code = requisition_codes[0]
-        #         requisition = requisitions.get(requisition_code)
-        #         if requisition and (compensation := requisition['compensationBand']):
-        #             min_salary, max_salary, interval = self.get_normalized_salary(compensation)
-        #             job['salary_floor'] = min_salary
-        #             job['salary_ceiling'] = max_salary
-        #             job['salary_interval'] = interval
-        #             job['salary_currency'] = compensation['currency']
+        requisitions = self.get_requisitions()
+        if requisitions:
+            for job in jobs:
+                if not (requisition_codes := job['requisitionCodes']):
+                    continue
+                requisition_code = requisition_codes[0]
+                requisition = requisitions.get(requisition_code)
+                if requisition and (compensation := requisition['compensationBand']):
+                    min_salary, max_salary, interval = self.get_normalized_salary(compensation)
+                    job['salary_floor'] = min_salary
+                    job['salary_ceiling'] = max_salary
+                    job['salary_interval'] = interval
+                    job['salary_currency'] = compensation['currency']
             
         return jobs
     
@@ -586,11 +585,10 @@ class LeverAts(BaseAts):
             open_date=get_datetime_from_unix(job['createdAt']),
             department_name=f'job["categories"]["team"] - job["categories"]["department"]',
             employment_type=job['categories']['commitment'],
-            # TODO: Waiting on Lever for permission
-            # salary_floor=job.get('salary_floor'),
-            # salary_ceiling=job.get('salary_ceiling'),
-            # salary_currency_type=job.get('salary_currency'),
-            # salary_interval=job.get('salary_interval')
+            salary_floor=job.get('salary_floor'),
+            salary_ceiling=job.get('salary_ceiling'),
+            salary_currency_type=job.get('salary_currency'),
+            salary_interval=job.get('salary_interval'),
             locations=[l for l in locations if l]
         )
         return data

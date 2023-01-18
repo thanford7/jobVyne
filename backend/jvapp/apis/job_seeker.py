@@ -182,27 +182,7 @@ class ApplicationView(JobVyneAPIView):
         if application.employer_job.ats_job_key:
             ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
             ats_api = get_ats_api(ats_cfg)
-            try:
-                ats_candidate_key, ats_application_key = ats_api.create_application(application)
-                if user:
-                    try:
-                        UserEmployerCandidate(
-                            user=user,
-                            employer=application.employer_job.employer,
-                            ats_candidate_key=ats_candidate_key
-                        ).save()
-                    except IntegrityError:
-                        pass
-
-                application.ats_application_key = ats_application_key
-                application.save()
-
-            # Capture the issue if something went wrong
-            except AtsError as e:
-                application.notification_ats_failure_dt = timezone.now()
-                application.notification_ats_failure_msg = str(e)
-                application.save()
-                logger.exception(f'Failed to push application to {ats_api.NAME} ATS for employer ID ({employer.id})', e)
+            self.save_application_to_ats(ats_api, user, application)
 
         return Response(
             status=status.HTTP_200_OK,
@@ -283,6 +263,32 @@ class ApplicationView(JobVyneAPIView):
         
         ApplicationView.add_application_referral_bonus(application)
         application.save()
+        
+    @staticmethod
+    def save_application_to_ats(ats_api, applicant, application):
+        try:
+            ats_candidate_key, ats_application_key = ats_api.create_application(application)
+            if applicant:
+                try:
+                    UserEmployerCandidate(
+                        user=applicant,
+                        employer=application.employer_job.employer,
+                        ats_candidate_key=ats_candidate_key
+                    ).save()
+                except IntegrityError:
+                    pass
+        
+            application.ats_application_key = ats_application_key
+            application.save()
+            return True
+    
+        # Capture the issue if something went wrong
+        except AtsError as e:
+            application.notification_ats_failure_dt = timezone.now()
+            application.notification_ats_failure_msg = str(e)
+            application.save()
+            logger.exception(f'Failed to push application to {ats_api.NAME} ATS for employer ID ({application.employer_job.employer_id})', e)
+            return False
         
     @staticmethod
     def add_application_referral_bonus(application):
