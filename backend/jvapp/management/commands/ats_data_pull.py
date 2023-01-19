@@ -10,7 +10,11 @@ from jvapp.models import EmployerAts
 logger = logging.getLogger(__name__)
 
 
-def save_ats_data(writer, success_style):
+def save_ats_data(writer=None, success_style=None):
+    if not writer:
+        writer = lambda x: print(x)
+    if not success_style:
+        success_style = lambda x: x
     ats_cfgs = EmployerAts.objects.select_related('employer').all()
     for ats in ats_cfgs:
         writer(f'Starting to save jobs for {ats.employer.employer_name}')
@@ -21,7 +25,7 @@ def save_ats_data(writer, success_style):
         except Exception as e:
             logger.error(f'Error saving jobs for {ats.employer.employer_name}', exc_info=e)
             writer(f'Error saving jobs for {ats.employer.employer_name}')
-            writer(e)
+            writer(str(e))
         writer(f'Successfully saved jobs for {ats.employer.employer_name}')
 
         writer(f'Starting to save application statuses for {ats.employer.employer_name}')
@@ -31,7 +35,7 @@ def save_ats_data(writer, success_style):
         except Exception as e:
             logger.error(f'Error saving application statuses for {ats.employer.employer_name}', exc_info=e)
             writer(f'Error saving application statuses for {ats.employer.employer_name}')
-            writer(e)
+            writer(str(e))
         writer(f'Successfully saved application statuses for {ats.employer.employer_name}')
         
     writer(success_style(f'Updated data from ATS for {len(ats_cfgs)} employers'))

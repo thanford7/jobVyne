@@ -80,6 +80,7 @@ def secure_link_sanitizer(element):
             # Only update for no protocol or http. Other protocols like mail should be left alone
             if not protocol or protocol == 'http':
                 element.attrib['href'] = f'https://{link}'
+        element.attrib['target'] = '_blank'
     
     return element
 
@@ -93,8 +94,7 @@ allowed_attributes = {
 for el in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'div', 'span', 'font'):
     allowed_attributes[el] = ('class',)
 
-
-sanitizer = Sanitizer({
+default_sanitizer_cfg = {
     'tags': allowed_tags,
     'attributes': allowed_attributes,
     'add_nofollow': True,
@@ -113,10 +113,19 @@ sanitizer = Sanitizer({
         header_size_reducer_sanitizer,
         secure_link_sanitizer
     ],
-})
+}
+default_sanitizer = Sanitizer(default_sanitizer_cfg)
 
 
-def sanitize_html(html_text, is_email=False):
+def get_sanitizer(cfg_override=None, add_element_preprocessors=None):
+    cfg_override = cfg_override or {}
+    sanitizer_cfg = {**default_sanitizer_cfg, **cfg_override}
+    if add_element_preprocessors:
+        sanitizer_cfg['element_preprocessors'] += add_element_preprocessors
+    return Sanitizer(sanitizer_cfg)
+
+
+def sanitize_html(html_text, is_email=False, sanitizer=default_sanitizer):
     if is_email:
         # New lines are not honored in html interpreters like email
         html_text = html_text.replace('\n', '<br/>')

@@ -44,10 +44,13 @@ class LocationParser:
         if location := self.location_lookups.get(location_text):
             return location
 
-        resp = requests.get(self.BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
+        is_remote = 'remote' in location_text.lower()
+        resp = requests.get(self.BASE_URL, params={
+            'address': location_text.lower().replace('remote', '').replace(':', '').strip(),
+            'key': settings.GOOGLE_MAPS_KEY
+        })
         raw_data = json.loads(resp.content)
         data = self.parse_location_resp(raw_data)
-        is_remote = 'remote' in location_text.lower()
         if not data:
             try:
                 location = Location.objects.get(text=location_text)
@@ -61,9 +64,9 @@ class LocationParser:
             try:
                 location = Location.objects.get(
                     is_remote=is_remote,
-                    city__name=data['city'],
-                    state__name=data['state'],
-                    country__name=data['country']
+                    city__name=data.get('city'),
+                    state__name=data.get('state'),
+                    country__name=data.get('country')
                 )
             except Location.DoesNotExist:
                 location = Location(

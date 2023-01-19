@@ -6,7 +6,7 @@
     <div class="q-gutter-y-md q-mt-md">
       <p>
         Webhooks are required to update job applications when there is a stage change in Lever.
-        By default, this information is only viewable by JobVyne users with employer permissions.
+        By default, this information is only viewable by JobVyne users at your company with employer permissions.
       </p>
       <p class="text-bold">Note: You will need "Super admin" priveleges to complete the actions below.</p>
       <ol>

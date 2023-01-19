@@ -402,8 +402,11 @@ LEVER_SCOPE = ' '.join([
     'opportunities:write:admin',
     'postings:read:admin',
     'referrals:read:admin',
+    'requisitions:read:admin',
+    'requisition_fields:read:admin',
     'sources:read:admin',
     'stages:read:admin',
+    'users:write:admin',
     'webhooks:write:admin',
     'offline_access'
 ])

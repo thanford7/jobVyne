@@ -168,7 +168,8 @@ class EmployerAtsView(JobVyneAPIView):
             'employment_type_field_key': AttributeCfg(is_ignore_excluded=True),
             'salary_range_field_key': AttributeCfg(is_ignore_excluded=True),
             'access_token': AttributeCfg(is_ignore_excluded=True),
-            'refresh_token': AttributeCfg(is_ignore_excluded=True)
+            'refresh_token': AttributeCfg(is_ignore_excluded=True),
+            'is_webhook_enabled': AttributeCfg(is_ignore_excluded=True)
         })
         
         if ats.name == LeverAts.NAME and ats.email:

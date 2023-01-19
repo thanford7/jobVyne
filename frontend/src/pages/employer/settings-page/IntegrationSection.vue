@@ -3,7 +3,7 @@
     <div class="text-h6">Applicant Tracking System</div>
     <div v-if="hasChanged" class="col-12">
       <q-btn ripple label="Save" icon="save" color="primary" @click="saveAts"/>
-      <q-btn ripple label="Undo" icon="undo" color="grey-6" class="q-ml-sm" @click="resetAtsFormData"/>
+      <q-btn ripple label="Undo" icon="undo" color="grey-6" class="q-ml-sm" @click="resetAtsFormData()"/>
     </div>
     <div class="col-12">
       <q-select
@@ -13,6 +13,7 @@
         :options="atsOptions"
         option-value="val"
         option-label="label"
+        @update:model-value="resetAtsFormData($event, !$event)"
       />
     </div>
     <template v-if="atsFormData.name === ATS_CFGS.greenhouse.key">
@@ -64,7 +65,8 @@
           </SelectAtsCustomField>
         </div>
         <div class="col-12">
-          <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id" :ats_name="ATS_CFGS.greenhouse.key"/>
+          <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id"
+                             :ats_name="ATS_CFGS.greenhouse.key"/>
         </div>
         <div class="col-12">
           <q-btn label="Test connection" color="primary" @click="updateJobs" :loading="isFetchingJobs"/>
@@ -75,49 +77,56 @@
       </template>
     </template>
     <template v-if="atsFormData.name === ATS_CFGS.lever.key">
-      <div class="col-12">
+      <div
+        v-if="!atsData || !atsData.has_access_token || atsData.is_token_expired"
+        class="col-12"
+      >
         <q-btn
-          v-if="!atsData.has_access_token || atsData.is_token_expired"
           label="Connect Lever" color="primary" @click="connectLeverAccount"
         />
-        <div v-else class="border-rounded bg-positive q-pa-xs">
-          <q-icon name="check_circle" color="white"/> <span class="text-white">Connected</span>
+      </div>
+      <template v-else>
+        <div class="col-12">
+          <div class="border-rounded bg-positive q-pa-xs">
+            <q-icon name="check_circle" color="white"/>
+            <span class="text-white">Connected</span>
+          </div>
         </div>
-      </div>
-      <div class="col-12">
-        <q-input filled label="Lever User Email" v-model="atsFormData.email">
-          <template v-slot:after>
-            <q-btn
-              label="Fill suggested email" color="primary"
-              class="h-100"
-              @click="atsFormData.email = suggestedEmployerEmail"
-            />
-            <CustomTooltip>
-              <p>
-                A Lever user account is required to submit applications to Lever.
-                JobVyne will create a Lever user with this email address.
-                The user will have "Team Member" privileges.
-                The email address must use one of your company's domains.
-              </p>
-              <p>
-                Suggested email: <span class="text-bold">{{ suggestedEmployerEmail }}</span>
-              </p>
-            </CustomTooltip>
-          </template>
-        </q-input>
-      </div>
-      <div class="col-12">
-        <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id" :ats_name="ATS_CFGS.lever.key"/>
-      </div>
-      <div class="col-12">
-        <SelectYesNo v-model="atsFormData.is_webhook_enabled" label="Confirm webhooks enabled" :is-multi="false">
-          <template v-slot:after>
+        <div class="col-12">
+          <q-input filled label="Lever User Email" v-model="atsFormData.email">
+            <template v-slot:after>
+              <q-btn
+                label="Fill suggested email" color="primary"
+                class="h-100"
+                @click="atsFormData.email = suggestedEmployerEmail"
+              />
+              <CustomTooltip>
+                <p>
+                  A Lever user account is required to submit applications to Lever.
+                  JobVyne will create a Lever user with this email address.
+                  The user will have "Team Member" privileges.
+                  The email address must use one of your company's domains.
+                </p>
+                <p>
+                  Suggested email: <span class="text-bold">{{ suggestedEmployerEmail }}</span>
+                </p>
+              </CustomTooltip>
+            </template>
+          </q-input>
+        </div>
+        <div class="col-12">
+          <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id" :ats_name="ATS_CFGS.lever.key"/>
+        </div>
+        <div class="col-12">
+          <SelectYesNo v-model="atsFormData.is_webhook_enabled" label="Confirm webhooks enabled" :is-multi="false">
+            <template v-slot:after>
             <span class="text-small">
               <a href="#" @click.prevent="showLeverWebhookDialog">Show instructions</a>
             </span>
-          </template>
-        </SelectYesNo>
-      </div>
+            </template>
+          </SelectYesNo>
+        </div>
+      </template>
     </template>
   </div>
 </template>
@@ -176,30 +185,18 @@ export default {
   watch: {
     atsData () {
       this.resetAtsFormData()
-    },
-    atsFormData: {
-      handler () {
-        if (!this.atsData) {
-          return
-        }
-        if (this.atsFormData.name !== this.atsData.name) {
-          this.atsFormData = {}
-        } else {
-          this.atsFormData.id = this.atsData.id
-        }
-      },
-      deep: true
     }
   },
   methods: {
-    resetAtsFormData () {
-      this.atsFormData = (this.atsData) ? { ...this.atsData } : {}
+    resetAtsFormData (atsName = null, isClear = false) {
+      const isCurrentAts = this.atsData && (!atsName || (this.atsData.name === atsName))
+      this.atsFormData = (isCurrentAts && !isClear) ? { ...this.atsData } : { name: atsName }
     },
     async saveAts () {
       if (this?.atsData?.id && !this.atsFormData.id) {
         openConfirmDialog(
           this.q,
-          'Are you sure you want to delete the ATS configuration? The configuration will not be retrievable once deleted.',
+          'Are you sure you want to delete your current ATS configuration? The configuration will not be retrievable once deleted.',
           {
             okFn: async () => {
               await this.$api.delete(`employer/ats/${this.atsData.id}/`)
@@ -244,7 +241,7 @@ export default {
     },
     async connectLeverAccount () {
       // Refresh existing connection
-      if (this.atsData.has_access_token && !this.atsData.is_token_expired) {
+      if (this.atsData && this.atsData.has_access_token && !this.atsData.is_token_expired) {
         await this.$api.put('lever/oauth-token/', getAjaxFormData({
           name: this.ATS_CFGS.lever.key,
           employer_id: this.authStore.propUser.employer_id

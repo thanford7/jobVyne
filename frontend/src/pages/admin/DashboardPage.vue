@@ -6,15 +6,19 @@
         <div class="col-12 q-gutter-sm">
           <div class="text-h6">Support</div>
           <q-btn label="Product announcement email" color="primary" @click="openAnnouncementEmailDialog"/>
-          <template v-if="failedAtsApplications.length">
-            <q-btn label="Push failed ATS job applications" color="primary" @click="pushFailedAtsApps"/>
-            <q-btn label="Show failed ATS job applications" color="primary" @click="openFailedAtsAppsDialog"/>
-          </template>
         </div>
         <div class="col-12 q-gutter-sm">
           <div class="text-h6">Testing</div>
           <q-btn label="Test error message" color="primary" @click="getTestMsg"/>
           <q-btn label="Test email" color="primary" @click="sendTestEmail"/>
+        </div>
+        <div class="col-12 q-gutter-sm">
+          <div class="text-h6">ATS</div>
+          <q-btn label="Update jobs" color="primary" @click="updateAtsJobs"/>
+          <template v-if="failedAtsApplications.length">
+            <q-btn label="Push failed job applications" color="primary" @click="pushFailedAtsApps"/>
+            <q-btn label="Show failed job applications" color="primary" @click="openFailedAtsAppsDialog"/>
+          </template>
         </div>
       </div>
     </div>
@@ -48,7 +52,8 @@ export default {
       this.q.dialog({
         component: DialogShowDataTable,
         componentProps: {
-          data: this.failedAtsApplications
+          data: this.failedAtsApplications,
+          ignoreColumns: ['linkedin_url', 'resume_url']
         }
       })
     },
@@ -57,6 +62,9 @@ export default {
     },
     sendTestEmail () {
       this.$api.post('test/email/')
+    },
+    updateAtsJobs () {
+      this.$api.post('admin/ats-jobs/')
     }
   },
   preFetch () {

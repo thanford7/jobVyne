@@ -56,6 +56,10 @@ class MessagesUtil {
     this.addMsg(msg, msgTypes.SUCCESS)
   }
 
+  addWarningMsg (msg) {
+    this.addMsg(msg, msgTypes.WARNING)
+  }
+
   addMsg (msg, { color, textColor, icon, timeout }) {
     Notify.create({
       color,

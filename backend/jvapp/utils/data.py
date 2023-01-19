@@ -67,6 +67,5 @@ def coerce_int(val, default=None, is_raise_error=False):
         return default
     
 
-
 def round_to(num, round_num):
     return round(num / round_num) * round_num

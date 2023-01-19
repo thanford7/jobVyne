@@ -11,6 +11,7 @@ from jvapp.apis.ats import get_ats_api
 from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
 from jvapp.apis.job_seeker import ApplicationView
 from jvapp.apis.user import UserView
+from jvapp.management.commands.ats_data_pull import save_ats_data
 from jvapp.models import Employer, EmployerAts, EmployerAuthGroup, EmployerSubscription, JobVyneUser, \
     UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
@@ -37,6 +38,8 @@ class AdminAtsFailureView(JobVyneAPIView):
         }
         app_save_count = 0
         for app in failed_applications:
+            if not app.employer_job.ats_job_key:
+                continue
             ats_cfg = ats_cfgs.get(app.employer_job.employer_id)
             ats_api = get_ats_api(ats_cfg)
             try:
@@ -45,8 +48,11 @@ class AdminAtsFailureView(JobVyneAPIView):
                 applicant = None
             is_success = ApplicationView.save_application_to_ats(ats_api, applicant, app)
             
-            # Stop trying to push applications if the connection is still failing
-            if not is_success:
+            if is_success:
+                app.notification_ats_failure_dt = None
+                app.notification_ats_failure_msg = None
+                app.save()
+            else:  # Stop trying to push applications if the connection is still failing
                 break
             
             app_save_count += 1
@@ -57,7 +63,7 @@ class AdminAtsFailureView(JobVyneAPIView):
         
         app_unsave_count = len(failed_applications) - app_save_count
         if app_unsave_count:
-            data[ERROR_MESSAGES_KEY] = f'Failed to push {app_unsave_count} applications'
+            data[ERROR_MESSAGES_KEY] = [f'Failed to push {app_unsave_count} applications']
         
         return Response(status=status.HTTP_200_OK, data=data)
     
@@ -72,6 +78,16 @@ class AdminAtsFailureView(JobVyneAPIView):
         app_data['employer_id'] = application.employer_job.employer_id
         app_data['title'] = application.employer_job.job_title
         return app_data
+    
+    
+class AdminAtsJobsView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def post(self, request):
+        save_ats_data()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Updated all ATS jobs'
+        })
 
 
 class AdminEmployerView(JobVyneAPIView):

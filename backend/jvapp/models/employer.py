@@ -102,8 +102,8 @@ class EmployerAts(AuditFields, JobVynePermissionsMixin):
     api_key = models.CharField(max_length=50, null=True, blank=True)
     
     # Credentials used by Lever
-    access_token = models.CharField(max_length=1400, null=True, blank=True)
-    refresh_token = models.CharField(max_length=1400, null=True, blank=True)
+    access_token = models.CharField(max_length=1600, null=True, blank=True)
+    refresh_token = models.CharField(max_length=1600, null=True, blank=True)
     access_token_expire_dt = models.DateTimeField(null=True, blank=True)
     refresh_token_expire_dt = models.DateTimeField(null=True, blank=True)
     

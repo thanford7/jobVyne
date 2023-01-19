@@ -88,7 +88,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     application_status_dt = models.DateTimeField(null=True, blank=True)
     application_status = models.CharField(max_length=30, default=ApplicationStatus.APPLIED.value, blank=True)
     
-    ats_application_key = models.CharField(max_length=30, null=True, blank=True)
+    ats_application_key = models.CharField(max_length=40, null=True, blank=True)
     
     class Meta:
         unique_together = ('employer_job', 'email')
