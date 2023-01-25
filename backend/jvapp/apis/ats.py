@@ -620,14 +620,15 @@ class LeverAts(BaseAts):
             'postings[]': application.employer_job.ats_job_key,
             'stage': self.ats_cfg.job_stage_name,
             'emails[]': application.email,
-            'resumeFile': self.get_encoded_resume(application),
+            # 'resumeFile': self.get_encoded_resume(application),
+            'resumeFile': application.resume.open('rb').read(),
             'tags[]': self.JOBVYNE_TAG,
             'sources[]': self.JOBVYNE_TAG,
             'origin': 'referred',
             'createdAt': self.get_lever_unix_from_datetime(timezone.now())
         }
         if application.phone_number:
-            body_cfg['phones[]'] = application.phone_number
+            body_cfg['phones[]'] = json.dumps({'value': application.phone_number})
         if application.linkedin_url:
             body_cfg['links[]'] = application.linkedin_url
 
