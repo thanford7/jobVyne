@@ -332,7 +332,7 @@ def create_ancillary_data():
     
     
 def create_recurring_data():
-    employers = Employer.objects.filter(employer_name__in=('Google', 'Vandelay Industries'))
+    employers = Employer.objects.filter(employer_name__in=('Hospital IQ', 'Google', 'Vandelay Industries'))
     platforms = list(SocialPlatform.objects.all())
     for employer in employers:
         users = JobVyneUser.objects.filter(employer=employer)

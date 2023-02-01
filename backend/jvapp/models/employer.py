@@ -47,6 +47,11 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     country = models.CharField(max_length=50, null=True, blank=True)
     billing_email = models.EmailField(null=True, blank=True)
     
+    # Job scraping
+    has_job_scraper = models.BooleanField(default=False, blank=True)
+    last_job_scrape_success_dt = models.DateTimeField(null=True, blank=True)
+    has_job_scrape_failure = models.BooleanField(default=False, blank=True)
+    
     def __str__(self):
         return self.employer_name
     

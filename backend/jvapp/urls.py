@@ -10,6 +10,7 @@ urlpatterns = [
     path('admin/ats-failure/', admin.AdminAtsFailureView.as_view()),
     path('admin/ats-jobs/', admin.AdminAtsJobsView.as_view()),
     re_path('^admin/employer/(?P<employer_id>[0-9]+)?/?$', admin.AdminEmployerView.as_view()),
+    path('admin/job-scraper/', admin.AdminJobScrapersView.as_view()),
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
     path('email/notification/', notification.MessageView.as_view()),

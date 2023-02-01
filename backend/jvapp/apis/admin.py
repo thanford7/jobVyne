@@ -21,6 +21,8 @@ from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
+from scrape.scraper import run_job_scrapers
+from scraper.scraper.runSpiders import run_crawlers
 
 
 class AdminAtsFailureView(JobVyneAPIView):
@@ -87,6 +89,30 @@ class AdminAtsJobsView(JobVyneAPIView):
         save_ats_data()
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Updated all ATS jobs'
+        })
+
+
+class AdminJobScrapersView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def get(self, request):
+        employer_scrapers = Employer.objects.filter(has_job_scraper=True)
+        return Response(status=status.HTTP_200_OK, data=[{
+            'employer_id': employer.id,
+            'employer_name': employer.employer_name,
+            'last_job_scrape_success_dt': get_datetime_format_or_none(employer.last_job_scrape_success_dt),
+            'has_job_scrape_failure': employer.has_job_scrape_failure
+        } for employer in employer_scrapers])
+    
+    def post(self, request):
+        employer_names = self.data.get('employer_names')
+        is_run_all = self.data.get('is_run_all')
+        if not (employer_names or is_run_all):
+            return Response('You must provide a list of employer names', status=status.HTTP_400_BAD_REQUEST)
+
+        run_job_scrapers(employer_names=None if is_run_all else employer_names)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully kicked off job scraper'
         })
 
 

@@ -1,6 +1,7 @@
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import CrawlerProcess, CrawlerRunner
 from scrapy.settings import Settings
 from scrapy.utils.reactor import install_reactor
+from twisted.internet import defer, reactor
 
 from scraper.scraper.spiders.employers import *
 from scraper.scraper import settings
@@ -8,59 +9,53 @@ from scraper.scraper import settings
 # Can't use get_project_settings function because it relies on the crawler being run from the scraper working directory
 crawler_settings = Settings()
 crawler_settings.setmodule(settings)
-defaultRunner = CrawlerProcess(crawler_settings)
+# default_runner = CrawlerProcess(crawler_settings)
+default_runner = CrawlerRunner(crawler_settings)
+
+# def add_crawlers(runner, spiders):
+#     if not spiders:
+#         return
+#     for spider in spiders:
+#         runner.crawl(spider)
+
+# @defer.inlineCallbacks
+# def crawl_all(spiders):
+#     if not spiders:
+#         return
+#     for spider in spiders:
+#         yield default_runner.crawl(spider)
+#
+#     reactor.stop()
 
 
-def add_crawlers(runner, spiders):
+def crawl_all(spiders):
     if not spiders:
         return
+    install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
     for spider in spiders:
-        runner.crawl(spider)
+        default_runner.crawl(spider)
+    
+    d = default_runner.join()
+    d.addBoth(lambda _: reactor.stop())
 
 
-defaultSpiders = [
-    AttentiveSpider,
-    Barn2DoorSpider,
-    BounteousSpider,
-    BlockRenovationSpider,
-    ComplyAdvantageSpider,
-    ExabeamSpider,
-    GradleSpider,
-    HavenlySpider,
-    CoverGeniusSpider,
-    CurologySpider,
-    DISQOSpider,
-    FlorenceHealthcareSpider,
-    FLYRLabsSpider,
-    FountainSpider,
-    HiveSpider,
-    HospitalIQSpider,
-    IroncladSpider,
-    JerrySpider,
-    KandjiSpider,
-    KindbodySpider,
-    LeapSpider,
-    LiberisSpider,
-    LinkSquaresSpider,
-    MediaflySpider,
-    MolocoSpider,
-    NomadHealthSpider,
-    OnnaSpider,
-    OutschoolSpider,
-    PilotSpider,
-    ProdegeSpider,
-    QuartetHealthSpider,
-    QuipSpider,
-    ZoomoSpider
-]
+default_spiders = {
+    # employer_name: SpiderClass
+    BlueOriginSpider.employer_name: BlueOriginSpider
+}
 
 
-def run_crawlers():
-    print('Running job scraper')
-    # addCrawlers(defaultRunner, defaultSpiders)
-    # add_crawlers(defaultRunner, [HospitalIQSpider])
-    print('Added crawlers')
-    defaultRunner.start()
+def run_crawlers(employer_names=None):
+    print('Start crawling')
+    if not employer_names:
+        crawl_all(default_spiders.values())
+        # add_crawlers(default_runner, list(default_spiders.values()))
+    else:
+        spiders = (default_spiders[employer_name] for employer_name in employer_names)
+        crawl_all(spiders)
+        # add_crawlers(default_runner, spiders)
+    print('Finished crawling')
+    reactor.run()
 
 # if __name__ == '__main__':
 #     run_crawlers()

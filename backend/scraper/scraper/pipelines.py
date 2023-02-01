@@ -29,12 +29,15 @@ class ScraperPipeline:
     def close_spider(self, spider):
         # Set the close date of a job if it no longer exists on the employers job page
         for employer_data in self.employers.values():
-            if employer_data['employer'].employer_name not in self.scraped_employers:
+            employer = employer_data['employer']
+            if employer.employer_name not in self.scraped_employers:
                 continue
             for job_key, job in employer_data['jobs'].items():
                 if job_key not in employer_data['found_jobs'] and not job.close_date:
                     job.close_date = timezone.now().date()
                     job.save()
+            employer.last_job_scrape_success_dt = timezone.now()
+            employer.save()
 
         if driver := getattr(spider, 'driver', None):
             driver.close()

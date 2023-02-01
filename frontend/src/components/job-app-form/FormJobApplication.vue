@@ -155,7 +155,7 @@ const formDataTemplate = {
   first_name: null,
   last_name: null,
   email: null,
-  phone_number: null,
+  phone_number: '',
   linkedin_url: null,
   resume: null,
   resume_url: null

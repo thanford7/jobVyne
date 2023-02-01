@@ -19,11 +19,11 @@ MISSING_DOM_EL_ERRORS = (
 WEBDRIVER_WAIT_SECONDS = 3
 
 
-def getSelenium(isDebug=False):
-    chromeOptions = Options()
-    if not isDebug:
-        chromeOptions.add_argument('--headless')
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chromeOptions)
+def get_selenium(is_debug=False):
+    chrome_options = Options()
+    if not is_debug:
+        chrome_options.add_argument('--headless')
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     return driver
 
 
@@ -48,34 +48,34 @@ def scroll(driver, timeout):
         last_height = new_height
 
 
-def retryClick(parentEl, cssSelector, isAllowNotFound=False):
+def retry_click(parent_el, css_selector, is_allow_not_found=False):
     try:
-        el = parentEl.find_element(By.CSS_SELECTOR, cssSelector)
+        el = parent_el.find_element(By.CSS_SELECTOR, css_selector)
         el.click()
         return el
     except MISSING_DOM_EL_ERRORS:
         try:
-            el = parentEl.find_element(By.CSS_SELECTOR, cssSelector)
+            el = parent_el.find_element(By.CSS_SELECTOR, css_selector)
             el.click()
             return el
         except MISSING_DOM_EL_ERRORS as e:
-            if isAllowNotFound:
+            if is_allow_not_found:
                 return None
             else:
                 raise e
 
 
-def getDomElOrNone(driver, parentEl, cssSelector):
+def get_dom_el_or_none(driver, parent_el, css_selector):
     try:
-        return WebDriverWait(driver, WEBDRIVER_WAIT_SECONDS).until(lambda d: parentEl.find_element(By.CSS_SELECTOR, cssSelector))
+        return WebDriverWait(driver, WEBDRIVER_WAIT_SECONDS).until(lambda d: parent_el.find_element(By.CSS_SELECTOR, css_selector))
     except MISSING_DOM_EL_ERRORS:
         return None
 
 
-def getWebElementHtml(driver, webEl):
-    return driver.execute_script("return arguments[0].innerHTML;", webEl)
+def get_web_element_html(driver, web_el):
+    return driver.execute_script("return arguments[0].innerHTML;", web_el)
 
 
-def getWebElementWait(driver, cssSelector, parentEl=None):
+def get_web_element_wait(driver, css_selector, parent_el=None):
     return WebDriverWait(driver, WEBDRIVER_WAIT_SECONDS)\
-        .until(lambda d: (parentEl or d).find_element(By.CSS_SELECTOR, cssSelector))
+        .until(lambda d: (parent_el or d).find_element(By.CSS_SELECTOR, css_selector))

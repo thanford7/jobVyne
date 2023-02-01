@@ -47,6 +47,12 @@ class PagePermissionsUtil {
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           },
           {
+            icon: 'screenshot_monitor',
+            key: 'admin-scrapers',
+            label: 'Job Scrapers',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
+          },
+          {
             icon: 'people',
             key: 'admin-users',
             label: 'Users',

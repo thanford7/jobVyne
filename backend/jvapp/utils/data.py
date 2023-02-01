@@ -1,5 +1,6 @@
-from collections import Callable
+from collections.abc import Callable
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 
 @dataclass
@@ -69,3 +70,11 @@ def coerce_int(val, default=None, is_raise_error=False):
 
 def round_to(num, round_num):
     return round(num / round_num) * round_num
+
+
+def get_base_url(url):
+    if not url:
+        return url
+    
+    split_url = urlsplit(url)
+    return f'{split_url.scheme}://{split_url.netloc}'

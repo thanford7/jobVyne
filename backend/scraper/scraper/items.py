@@ -5,7 +5,8 @@
 
 from scrapy import Field, Item
 
-
+# TODO: Convert location to locations
+# TODO: Add a first posted date
 class JobItem(Item):
     employer_name = Field()
     application_url = Field()

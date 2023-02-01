@@ -1,13 +1,16 @@
+import re
+
 import scrapy
 from django.utils import timezone
 from scrapy.selector import Selector
+from scrapy_playwright.page import PageMethod
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
 from jvapp.utils.sanitize import sanitize_html
 from scraper.scraper.items import JobItem
-from scraper.scraper.utils.seleniumSetup import getDomElOrNone, getSelenium, getWebElementHtml, getWebElementWait,\
-    retryClick, WEBDRIVER_WAIT_SECONDS
+from scraper.scraper.utils.seleniumSetup import get_dom_el_or_none, get_selenium, get_web_element_html, get_web_element_wait,\
+    retry_click, WEBDRIVER_WAIT_SECONDS
 
 
 class BreezySpider(scrapy.Spider):
@@ -16,9 +19,9 @@ class BreezySpider(scrapy.Spider):
     start_urls = None
 
     def parse(self, response):
-        yield from response.follow_all(css='.positions-container li a', callback=self.parseJob)
+        yield from response.follow_all(css='.positions-container li a', callback=self.parse_job)
 
-    def parseJob(self, response):
+    def parse_job(self, response):
         summaryHtml = response.xpath('//div[@class="banner"]')
 
         yield JobItem(
@@ -41,14 +44,14 @@ class GreenhouseSpider(scrapy.Spider):
         for departmentSection in response.xpath('//section[@class="level-0"]'):
             department = departmentSection.xpath('.//h3/text()').get() or departmentSection.xpath('.//h2/text()').get()
             jobLinks = departmentSection.xpath('./div[@class="opening"]//a')
-            yield from response.follow_all(jobLinks, callback=self.parseJob, meta={'job_department': department})
+            yield from response.follow_all(jobLinks, callback=self.parse_job, meta={'job_department': department})
 
             for subDepartmentSection in departmentSection.xpath('.//section[@class="child level-1"]'):
                 department = subDepartmentSection.xpath('.//h4/text()').get()
                 jobLinks = subDepartmentSection.xpath('.//div[@class="opening"]//a')
-                yield from response.follow_all(jobLinks, callback=self.parseJob, meta={'job_department': department})
+                yield from response.follow_all(jobLinks, callback=self.parse_job, meta={'job_department': department})
 
-    def parseJob(self, response):
+    def parse_job(self, response):
         job_department = response.request.meta['job_department']
         location = response.xpath('//div[@id="header"]//div[@class="location"]/text()').get().strip()
 
@@ -70,9 +73,9 @@ class JazzHRSpider(scrapy.Spider):
 
     def parse(self, response):
         jobs = response.css('.jobs-list a')
-        yield from response.follow_all(jobs, callback=self.parseJob)
+        yield from response.follow_all(jobs, callback=self.parse_job)
 
-    def parseJob(self, response):
+    def parse_job(self, response):
         jobSummary = response.xpath('//div[@class="job-header"]')
 
         yield JobItem(
@@ -94,9 +97,9 @@ class LeverSpider(scrapy.Spider):
     start_urls = None
 
     def parse(self, response):
-        yield from response.follow_all(response.xpath('//div[@class="posting"]//a'), callback=self.parseJob)
+        yield from response.follow_all(response.xpath('//div[@class="posting"]//a'), callback=self.parse_job)
 
-    def parseJob(self, response):
+    def parse_job(self, response):
         jobSummary = response.xpath('//div[@class="posting-headline"]')
         location, job_department, positionType = jobSummary.xpath('.//div[@class="posting-categories"]/div/text()')
 
@@ -120,46 +123,198 @@ class LeverSpider(scrapy.Spider):
             job_description=sanitize_html(job_description),
             employment_type=positionType,
         )
+        
+        
+class WorkdaySpider2(scrapy.Spider):
+    name = None
+    employer_name = None
+    start_url = None
+
+    def start_requests(self):
+        yield scrapy.Request(self.start_url, meta={
+            'playwright': True,
+            'playwright_include_page': True,
+            'playwright_page_methods': [PageMethod('wait_for_selector', 'section[data-automation-id="jobResults"]')],
+            'errback': self.errback
+        })
+        
+    def get_html_dom(self, page):
+        html = page.locate('section[data-automation-id="jobResults"]').inner_html()
+        return Selector(text=html)
+
+    async def parse(self, response):
+        page = response.meta["playwright_page"]
+        html_dom = self.get_html_dom(page)
+
+        # Iterate through each job department
+        await page.locate('css=button[data-automation-id="jobFamilyGroup"]').click()
+        job_departments = html_dom.xpath('//div[@data-automation-id="jobFamilyGroupCheckboxGroup"]')
+        job_department_names = [
+            re.sub('\([0-9]+\)', '', jd).strip()
+            for jd in job_departments.xpath('.//label/text()').get()
+        ]
+        for selector_idx, job_department_name in enumerate(job_department_names):
+            # Note: Setting page filters does not result in a new page redirect
+            await page.locate('css=button[data-automation-id="jobFamilyGroup"]').click()  # Open department menu
+            await page.locate('css=button[data-automation-id="clearButton"]').click()  # Clear selected
+            await page.locate(f'css=div[data-automation-id="jobFamilyGroupCheckboxGroup"] [role="cell"]:nth-of-type({selector_idx + 1})').click()  # Select the department menu item
+            await page.locate('css=button[data-automation-id="viewAllJobsButton"]').click()  # Apply selection
+    
+            # Parse jobs for each page
+            is_started = False
+            next_page = None
+            while (not is_started) or next_page:
+                if next_page:
+                    retry_click('nav[aria-label="pagination"]', 'button[aria-label="next"]')
+                    html_dom = self.get_html_dom(page)
+                for job_link in html_dom.css('section[data-automation-id="jobResults"] a'):
+                    yield response.follow(job_link, callback=self.parse_job, meta={'job_department': job_department_name})
+
+                is_started = True
+                next_page = html_dom.css('nav[aria-label="pagination"] button[aria-label="next"]').get()
+        
+        await page.close()
+        
+    def parse_job(self, response):
+        job_department = response.request.meta['job_department']
+        job_data = response.xpath('//div[@data-automation-id="jobPostingPage"]')
+        # Note workday only shows the first 5 locations. JS automation would be necessary
+        # to click the button to show additional locations
+        locations = [l.get().strip() for l in job_data.xpath('.//div[@data-automation-id="locations"]/dl/dd/text()')]
+
+        job_description = ''
+        for content in response.xpath('//div[@class="section page-centered"]//div'):
+            if not content.xpath('.//text()').get():
+                continue
+            job_description += content.get()
+
+        yield JobItem(
+            employer_name=self.employer_name,
+            application_url=response.url,
+            job_title=job_data.xpath('.//[@data-automation-id="jobPostingHeader"]/text()').get().strip(),
+            location=locations[0],
+            job_department=job_department,
+            job_description=sanitize_html(job_description),
+            employment_type=job_data.xpath('.//[@data-automation-id="time"]/dl/dd/text()').get().strip(),
+        )
+
+    async def errback(self, failure):
+        page = failure.request.meta["playwright_page"]
+        await page.close()
+        
+        
+class WorkdaySpider(scrapy.Spider):
+    name = None
+    employer_name = None
+    start_urls = None
+    driver = None
+    
+    def __init__(self):
+        print(f'Starting {self.name} spider')
+        self.driver = get_selenium(is_debug=True)
+        self.driver.get(self.start_urls[0])
+        super().__init__()
+        
+    def get_html_dom(self):
+        html = get_web_element_html(
+            self.driver, get_web_element_wait(self.driver, 'section[data-automation-id="jobResults"]')
+        )
+        return Selector(text=html)
+
+    def parse(self, response):
+        print(f'Parsing for {self.name} spider')
+        html_dom = self.get_html_dom()
+        # Iterate through each job department
+        job_page_sel = 'div[data-automation-id="jobSearchPage"]'
+        retry_click(job_page_sel, 'button[data-automation-id="jobFamilyGroup"]')
+        job_departments = html_dom.xpath('//div[@data-automation-id="jobFamilyGroupCheckboxGroup"]')
+        job_department_names = [re.sub('\([0-9]+\)', '', jd).strip() for jd in job_departments.xpath('.//label/text()').get()]
+        job_department_dom_els = job_departments.xpath('.//div[role="row"]')
+        for job_department_name, job_department_el in zip(job_department_names, job_department_dom_els):
+            retry_click('div[data-automation-id="jobSearch"]', 'button[data-automation-id="jobFamilyGroup"]')  # Open department menu
+            retry_click('div[data-automation-id="toolbar"]', 'button[data-automation-id="clearButton"]')  # Clear selected
+            retry_click(job_department_el.get(), '[role="cell"]')  # Select the department menu item
+            retry_click('div[data-automation-id="toolbar"]', 'button[data-automation-id="viewAllJobsButton"]')  # Apply selection
+            
+            # Parse jobs for each page
+            is_started = False
+            next_page = None
+            while (not is_started) or next_page:
+                if next_page:
+                    retry_click('nav[aria-label="pagination"]', 'button[aria-label="next"]')
+                    html_dom = self.get_html_dom()
+                yield from response.follow_all(
+                    html_dom.xpath('//section[@data-automation-id="jobResults"]//a'),
+                    callback=self.parse_job,
+                    meta={'job_department': job_department_name}
+                )
+                is_started = True
+                next_page = response.css('nav[aria-label="pagination"] button[aria-label="next"]').get()
+
+    def parse_job(self, response):
+        job_department = response.request.meta['job_department']
+        job_data = response.xpath('//div[@data-automation-id="jobPostingPage"]')
+        # Note workday only shows the first 5 locations. JS automation would be necessary
+        # to click the button to show additional locations
+        locations = [l.get().strip() for l in job_data.xpath('.//div[@data-automation-id="locations"]/dl/dd/text()')]
+
+        job_description = ''
+        for content in response.xpath('//div[@class="section page-centered"]//div'):
+            if not content.xpath('.//text()').get():
+                continue
+            job_description += content.get()
+
+        yield JobItem(
+            employer_name=self.employer_name,
+            application_url=response.url,
+            job_title=job_data.xpath('.//[@data-automation-id="jobPostingHeader"]/text()').get().strip(),
+            location=locations[0],
+            job_department=job_department,
+            job_description=sanitize_html(job_description),
+            employment_type=job_data.xpath('.//[@data-automation-id="time"]/dl/dd/text()').get().strip(),
+        )
+
+
+class BlueOriginSpider(WorkdaySpider2):
+    employer_name = 'Blue Origin'
+    name = 'blueOrigin'
+    start_urls = ['https://blueorigin.wd5.myworkdayjobs.com/BlueOrigin']
 
 
 class Barn2DoorSpider(BreezySpider):
     employer_name = 'Barn2Door'
     name = "barn2Door"
-    start_urls = [
-        'https://barn2door-inc.breezy.hr/?',
-    ]
+    start_urls = ['https://barn2door-inc.breezy.hr/?']
 
 
 class ZoomoSpider(scrapy.Spider):
     name = "zoomo"
-    start_urls = [
-        'https://apply.workable.com/zoomo/',
-    ]
+    start_urls = ['https://apply.workable.com/zoomo/']
     html = None
     driver = None
 
     def __init__(self):
-        self.driver = getSelenium()
+        self.driver = get_selenium()
         self.driver.get('https://apply.workable.com/zoomo/')
-        jobsEl = getWebElementWait(self.driver, '#jobs')
+        jobsEl = get_web_element_wait(self.driver, '#jobs')
 
         # # Filter for full time positions only
-        retryClick(jobsEl, '#worktypes-filter_input')  # Open the filter
-        retryClick(jobsEl, '#worktypes-filter_listbox li[value="full"]')  # Select full time option
+        retry_click(jobsEl, '#worktypes-filter_input')  # Open the filter
+        retry_click(jobsEl, '#worktypes-filter_listbox li[value="full"]')  # Select full time option
 
         # Load all jobs
         def getRunSeconds(start):
             return (timezone.now() - start).seconds
 
         loadBtnSelector = 'button[data-ui="load-more-button"]'
-        loadJobsBtn = getDomElOrNone(self.driver, jobsEl, loadBtnSelector)
+        loadJobsBtn = get_dom_el_or_none(self.driver, jobsEl, loadBtnSelector)
         start = timezone.now()
         while loadJobsBtn and getRunSeconds(start) < 20:
-            retryClick(jobsEl, loadBtnSelector, isAllowNotFound=True)
-            loadJobsBtn = getDomElOrNone(self.driver, jobsEl, loadBtnSelector)
+            retry_click(jobsEl, loadBtnSelector, is_allow_not_found=True)
+            loadJobsBtn = get_dom_el_or_none(self.driver, jobsEl, loadBtnSelector)
 
         # Refetch the job HTML data
-        self.html = getWebElementHtml(self.driver, getWebElementWait(self.driver, '#jobs'))
+        self.html = get_web_element_html(self.driver, get_web_element_wait(self.driver, '#jobs'))
         super().__init__()
 
     def parse(self, response):
@@ -170,7 +325,7 @@ class ZoomoSpider(scrapy.Spider):
             self.driver.get(application_url)
             def getJobDetail():
                 body = WebDriverWait(self.driver, WEBDRIVER_WAIT_SECONDS).until(lambda d: d.find_element(By.TAG_NAME, 'main'))
-                jobDetail = Selector(text=getWebElementHtml(self.driver, body))
+                jobDetail = Selector(text=get_web_element_html(self.driver, body))
                 job_description = jobDetail.xpath('//div[@data-ui="job-description"]').get()
                 jobRequirements = jobDetail.xpath('//div[@data-ui="job-requirements"]').get()
                 jobBenefits = jobDetail.xpath('//div[@data-ui="job-benefits"]').get()
@@ -219,9 +374,9 @@ class ProdegeSpider(scrapy.Spider):
     def parse(self, response):
         allJobs = response.xpath('//div[@class="jv-wrapper"]')
         for department, jobTable in zip(allJobs.xpath('.//h3/text()'), allJobs.xpath('.//table[@class="jv-job-list"]')):
-            yield from response.follow_all(jobTable.xpath('.//a'), callback=self.parseJob, meta={'job_department': department.get().strip()})
+            yield from response.follow_all(jobTable.xpath('.//a'), callback=self.parse_job, meta={'job_department': department.get().strip()})
 
-    def parseJob(self, response):
+    def parse_job(self, response):
         job_department = response.request.meta['job_department']
         job_title = response.xpath('//h2[@class="jv-header"]/text()').get().strip()
         locations = response.xpath('//p[@class="jv-job-detail-meta"]/text()')[1:]  # The first text item is the job department
@@ -370,15 +525,15 @@ class AttentiveSpider(LeverSpider):
     driver = None
 
     def __init__(self):
-        self.driver = getSelenium()
+        self.driver = get_selenium()
         self.driver.get('https://www.attentivemobile.com/careers')
-        self.html = getWebElementHtml(self.driver, getWebElementWait(self.driver, '#lever-jobs-container'))
+        self.html = get_web_element_html(self.driver, get_web_element_wait(self.driver, '#lever-jobs-container'))
         super().__init__()
 
     def parse(self, response):
         resp = Selector(text=self.html)
         jobs = resp.xpath('//li[@class="lever-job"]//a')
-        yield from response.follow_all(jobs, callback=self.parseJob)
+        yield from response.follow_all(jobs, callback=self.parse_job)
 
 
 class CurologySpider(LeverSpider):
@@ -429,9 +584,9 @@ class HospitalIQSpider(scrapy.Spider):
     start_urls = ['https://www.hospiq.com/careers/']
     
     def parse(self, response):
-        yield from response.follow_all(response.xpath('//div[@id="grayback"]//a'), callback=self.parseJob)
+        yield from response.follow_all(response.xpath('//div[@id="grayback"]//a'), callback=self.parse_job)
     
-    def parseJob(self, response):
+    def parse_job(self, response):
         jobData = response.xpath('//div[@id="leftcol"]')
         job_description = '<p>' + jobData.xpath('./text()').get() + '</p>'
         for content in jobData.xpath('./*[not(self::p) and not(self::a) and not(self::br)]'):
