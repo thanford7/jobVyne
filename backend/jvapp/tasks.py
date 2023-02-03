@@ -1,8 +1,10 @@
 import logging
 
+from celery import shared_task
 from celery.schedules import crontab
 
-from .celery import app
+from jobVyne.celery import app
+from scrape.scraper import run_job_scrapers
 
 logger = logging.getLogger(__name__)
 
@@ -25,3 +27,14 @@ def setup_periodic_tasks(sender, **kwargs):
 @app.task
 def test(arg):
     logger.info(arg)
+    
+    
+@shared_task
+def task_run_job_scrapers(employer_names=None):
+    run_job_scrapers(employer_names=employer_names)
+
+
+@shared_task
+def add(x, y):
+    logger.info('Starting add task')
+    return x + y

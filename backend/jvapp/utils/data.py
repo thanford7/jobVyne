@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -66,6 +67,15 @@ def coerce_int(val, default=None, is_raise_error=False):
         if is_raise_error:
             raise e
         return default
+
+
+def coerce_float(val, default=None, is_raise_error=False):
+    try:
+        return float(val)
+    except ValueError as e:
+        if is_raise_error:
+            raise e
+        return default
     
 
 def round_to(num, round_num):
@@ -78,3 +88,19 @@ def get_base_url(url):
     
     split_url = urlsplit(url)
     return f'{split_url.scheme}://{split_url.netloc}'
+
+
+def capitalize(text, is_every_word=True):
+    if not text:
+        return text
+    
+    last_char = None
+    new_text = ''
+    for char in text:
+        if not last_char or (is_every_word and re.match('\s', last_char or '')):
+            new_text += char.upper()
+        else:
+            new_text += char.lower()
+        last_char = char
+    
+    return new_text

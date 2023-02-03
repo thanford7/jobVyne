@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'jvapp',
+    'django_celery_results',
     'django_extensions',
     'storages',
     'social_django',
@@ -423,4 +424,6 @@ else:
     LEVER_REDIRECT_BASE = 'https://auth.lever.co/authorize'
     LEVER_AUTH_TOKEN_URL = 'https://auth.lever.co/oauth/token'
 
-# CELERY_BROKER_URL = 'pyamqp://rabbitmq:5672'
+CELERY_BROKER_URL = 'pyamqp://rabbitmq:5672'
+CELERY_RESULT_BACKEND = 'django-db'
+# CELERY_RESULT_BACKEND = f'db+mysql://{db_config["USER"]}:{db_config["PASSWORD"]}@{db_config["HOST"]}:{db_config["PORT"]}/{db_config["NAME"]}'

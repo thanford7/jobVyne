@@ -9,17 +9,22 @@ from jvapp.models import Employer, EmployerJob, JobDepartment
 
 @dataclass
 class JobItem:
-    employer_name: str
-    application_url: Union[str, None]
-    job_title: str
-    locations: list
-    job_department: str
-    job_description: str
-    employment_type: Union[str, None]
-    first_posted_date: Union[datetime.date, None]
+    employer_name: str = None
+    application_url: Union[str, None] = None
+    job_title: str = None
+    locations: list = None
+    job_department: str = None
+    job_description: str = None
+    employment_type: Union[str, None] = None
+    first_posted_date: Union[datetime.date, None] = None
+    salary_currency: Union[str, None] = None
+    salary_floor: Union[float, None] = None
+    salary_ceiling: Union[float, None] = None
+    salary_interval: Union[str, None] = None
 
 
 class JobProcessor:
+    default_employment_type = 'Full Time'
     
     def __init__(self):
         self.employers = {employer.employer_name: {
@@ -64,10 +69,12 @@ class JobProcessor:
             employer = employer_data['employer']
         self.scraped_employers.add(employer_name)
         
-        if not job_item.employment_type:
-            return
+        job_item.employment_type = job_item.employment_type or self.default_employment_type
         
-        locations = [self.location_parser.get_location(loc) for loc in job_item.locations]
+        locations = [
+            self.location_parser.get_location(self.add_remote_to_location(loc, job_item.job_title))
+            for loc in job_item.locations
+        ]
         
         new_job = EmployerJob(
             job_title=job_item.job_title,
@@ -82,7 +89,10 @@ class JobProcessor:
             self.update_job(job, job_item)
         
         job_location_model = job.locations.through
-        job_location_model.objects.bulk_create(locations, ignore_conflicts=True)
+        job_location_model.objects.bulk_create(
+            [job_location_model(location=l, employerjob=job) for l in locations],
+            ignore_conflicts=True
+        )
         
         employer_data['found_jobs'].add(self.generate_job_key(job, locations=locations))
         
@@ -97,6 +107,9 @@ class JobProcessor:
             job.job_description != job_item.job_description,
             job.employment_type != job_item.employment_type,
             job.job_department != job_department,
+            job.salary_floor != job_item.salary_floor,
+            job.salary_ceiling != job_item.salary_ceiling,
+            job.salary_interval != job_item.salary_interval,
             not job.open_date,
             job.close_date
         ]):
@@ -104,7 +117,7 @@ class JobProcessor:
         
         return True
     
-    def update_job(self, job, job_item: JobItem):
+    def update_job(self, job: EmployerJob, job_item: JobItem):
         if self.is_same_job(job, job_item):
             return job
         
@@ -112,6 +125,10 @@ class JobProcessor:
         job.job_description = job_item.job_description
         job.employment_type = job_item.employment_type
         job.job_department = self.get_or_create_job_department(job_item)
+        job.salary_currency = job_item.salary_currency
+        job.salary_floor = job_item.salary_floor
+        job.salary_ceiling = job_item.salary_ceiling
+        job.salary_interval = job_item.salary_interval
         
         job.open_date = job.open_date or job_item.first_posted_date or timezone.now().date()
         job.close_date = None
@@ -135,3 +152,9 @@ class JobProcessor:
             job.job_title,
             tuple(l.id for l in job.locations.all()) if not locations else tuple(l.id for l in locations)
         )
+    
+    @staticmethod
+    def add_remote_to_location(location, job_title):
+        if 'remote' in job_title.lower() and not 'remote' in location.lower():
+            return f'{location} (remote)'
+        return location

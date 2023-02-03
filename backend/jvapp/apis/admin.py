@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.core.paginator import Paginator
 from django.db.models import F, Q
@@ -6,6 +7,7 @@ from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.response import Response
 
+from jobVyne.celery import app
 from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.ats import get_ats_api
 from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
@@ -18,11 +20,15 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.serializers.user import get_serialized_user
+from jvapp.tasks import add
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
 from scrape.scraper import run_job_scrapers
 from scraper.scraper.runSpiders import run_crawlers
+
+
+logger = logging.getLogger(__name__)
 
 
 class AdminAtsFailureView(JobVyneAPIView):
@@ -111,6 +117,8 @@ class AdminJobScrapersView(JobVyneAPIView):
             return Response('You must provide a list of employer names', status=status.HTTP_400_BAD_REQUEST)
 
         run_job_scrapers(employer_names=None if is_run_all else employer_names)
+        # res = add.delay(2, 2)
+        # logger.info(f'Sent add task: ID = {res.id}')
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully kicked off job scraper'
         })

@@ -4,7 +4,7 @@ FROM python:3.9
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
 RUN apt-get update && apt-get -y install cron vim
-WORKDIR /cron-jobs
+WORKDIR /jobvyne_worker
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
