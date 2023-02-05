@@ -20,7 +20,7 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.serializers.user import get_serialized_user
-from jvapp.tasks import add
+from jvapp.tasks import add, task_run_job_scrapers
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
@@ -115,10 +115,10 @@ class AdminJobScrapersView(JobVyneAPIView):
         is_run_all = self.data.get('is_run_all')
         if not (employer_names or is_run_all):
             return Response('You must provide a list of employer names', status=status.HTTP_400_BAD_REQUEST)
-
-        run_job_scrapers(employer_names=None if is_run_all else employer_names)
+        res = task_run_job_scrapers.delay(employer_names=employer_names)
+        # run_job_scrapers(employer_names=None if is_run_all else employer_names)
         # res = add.delay(2, 2)
-        # logger.info(f'Sent add task: ID = {res.id}')
+        logger.info(f'Sent add task: ID = {res.id}')
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully kicked off job scraper'
         })

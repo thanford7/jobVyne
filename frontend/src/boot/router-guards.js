@@ -28,7 +28,7 @@ export default boot(({ app, router }) => {
           getAjaxFormData({ code: to.query.code, state, userTypeBit, isLogin })
         )
       } catch (e) {
-        messagesUtil.addErrorMsg(e)
+        messagesUtil.parseAndAddErrorMsg(e)
         return { name: 'error' }
       }
 

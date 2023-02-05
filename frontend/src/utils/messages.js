@@ -30,7 +30,7 @@ const DEFAULT_ERROR_MSG = 'Something went wrong. The JobVyne team has been notif
 const isString = (val) => val && typeof val.valueOf() === 'string'
 
 class MessagesUtil {
-  addErrorMsg (error) {
+  parseAndAddErrorMsg (error) {
     let msg
     if (error.response) {
       const { data, status, statusText } = error.response
@@ -58,6 +58,10 @@ class MessagesUtil {
 
   addWarningMsg (msg) {
     this.addMsg(msg, msgTypes.WARNING)
+  }
+
+  addErrorMsg (msg) {
+    this.addMsg(msg, msgTypes.ERROR)
   }
 
   addMsg (msg, { color, textColor, icon, timeout }) {

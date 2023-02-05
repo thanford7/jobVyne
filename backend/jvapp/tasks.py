@@ -31,6 +31,7 @@ def test(arg):
     
 @shared_task
 def task_run_job_scrapers(employer_names=None):
+    logger.info('Starting job scraper task')
     run_job_scrapers(employer_names=employer_names)
 
 

@@ -30,7 +30,7 @@ class GuildEducationScraper(GreenhouseScraper):
         await page.goto(iframe_url)
 
 all_scrapers = {
-    # BlueOriginScraper.employer_name: BlueOriginScraper,
-    # InvenergyScraper.employer_name: InvenergyScraper,
+    BlueOriginScraper.employer_name: BlueOriginScraper,
+    InvenergyScraper.employer_name: InvenergyScraper,
     GuildEducationScraper.employer_name: GuildEducationScraper,
 }

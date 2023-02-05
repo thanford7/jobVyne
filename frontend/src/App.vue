@@ -16,8 +16,12 @@ export default defineComponent({
   },
   mounted () {
     if (!this.hasEventsLoaded) {
-      this.$global.$on(AJAX_EVENTS.ERROR, (error) => {
-        messagesUtil.addErrorMsg(error)
+      this.$global.$on(AJAX_EVENTS.ERROR, ({ error, message }) => {
+        if (error) {
+          messagesUtil.parseAndAddErrorMsg(error)
+        } else {
+          messagesUtil.addErrorMsg(message)
+        }
       })
       this.$global.$on(AJAX_EVENTS.WARNING, ({ message }) => {
         messagesUtil.addWarningMsg(message)

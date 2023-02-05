@@ -51,9 +51,8 @@ export default {
         async () => {
           await this.$api.post('sales/waitlist/', getAjaxFormData({ email: this.email }))
         },
-        () => messagesUtil.addMsg(
-          'Unable to complete waitlist sign up. reCAPTCHA authentication failed',
-          msgTypes.ERROR
+        () => messagesUtil.addErrorMsg(
+          'Unable to complete waitlist sign up. reCAPTCHA authentication failed'
         ),
         () => {
           this.isSavingWaitlist = false

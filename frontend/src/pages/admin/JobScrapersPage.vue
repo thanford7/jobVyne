@@ -13,7 +13,7 @@
             :rows-per-page-options="[15, 25, 50]"
           >
             <template v-slot:top>
-              <q-btn ripple color="primary" label="Run all" @click="runJobScrapers(true)"/>
+              <q-btn ripple color="primary" label="Run all" @click="runJobScrapers(true)" class="q-mr-sm"/>
               <q-btn
                 v-if="selectedScrapers.length"
                 ripple color="primary" :label="`Run selected (${selectedScrapers.length})`" @click="runJobScrapers()"
@@ -47,7 +47,7 @@ const scraperColumns = [
     sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil),
     format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
   },
-  { name: 'hasScrapeFailure', field: 'has_job_scrape_failure', align: 'left', label: 'Is Failing', sortable: true }
+  { name: 'hasScrapeFailure', field: 'has_job_scrape_failure', align: 'left', label: 'Is Failing', sortable: true, format: (val) => dataUtil.capitalize(String(val)) }
 ]
 
 export default {
@@ -64,7 +64,7 @@ export default {
     async runJobScrapers (isAll = false) {
       await this.$api.post('admin/job-scraper/', getAjaxFormData({
         is_run_all: isAll,
-        employer_names: this.selectedScrapers
+        employer_names: this.selectedScrapers.map((employerScraper) => employerScraper.employer_name)
       }))
       await this.adminStore.setJobScrapers(true)
       this.selectedScrapers = []

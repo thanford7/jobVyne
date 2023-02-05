@@ -69,7 +69,7 @@ export default boot(({ app, ssrContext, store, router }) => {
     const errorMessages = response?.data?.errorMessages
     const warningMessages = response?.data?.warningMessages
     if (successMessage) {
-      emitter.emit(AJAX_EVENTS.SUCCESS, successMessage)
+      emitter.emit(AJAX_EVENTS.SUCCESS, { message: successMessage })
     }
     if (warningMessages && warningMessages.length) {
       warningMessages.forEach((warningMsg) => {
@@ -83,7 +83,7 @@ export default boot(({ app, ssrContext, store, router }) => {
     }
     return response
   }, function (error) {
-    emitter.emit(AJAX_EVENTS.ERROR, error)
+    emitter.emit(AJAX_EVENTS.ERROR, { error })
     return Promise.reject(error)
   })
 

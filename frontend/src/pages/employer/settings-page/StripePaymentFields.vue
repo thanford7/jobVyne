@@ -69,7 +69,7 @@ export default {
       })
 
       if (error) {
-        messagesUtil.addErrorMsg(error)
+        messagesUtil.parseAndAddErrorMsg(error)
       }
       this.$emit('submitted')
     },

@@ -260,7 +260,7 @@ export default {
     // Handle redirect after user authenticates from Oauth
     const { code, state, error: errorType, error_description: errorDescription } = dataUtil.getQueryParams()
     if (errorType) {
-      messagesUtil.addMsg(`${errorType}: ${errorDescription}`, msgTypes.ERROR)
+      messagesUtil.addErrorMsg(`${errorType}: ${errorDescription}`)
     }
     if (code && state) {
       await this.$api.post('lever/oauth-token/', getAjaxFormData({
