@@ -12,6 +12,9 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
+$body-font-size   : 16px !default;
+$button-font-size : 16px !default;
+
 $primary   : #034C3C;
 $secondary : #D99255;
 $accent    : darken(#9BA2FF, 10%);
@@ -48,5 +51,7 @@ $brand-color-map: (
   'secondary': $secondary,
   'accent': $accent,
   'negative': $negative,
-  'positive': $positive
+  'warning': $warning,
+  'positive': $positive,
+  'info': $info
 );

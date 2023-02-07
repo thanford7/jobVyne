@@ -61,12 +61,10 @@
                       dataUtil.pluralize('user', activatedUserCount)
                     }}
                   </q-item-label>
-                  <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                  <Tooltip>
                     User(s) will no longer be able to create links for your company. Any current links will
-                    be
-                    re-directed
-                    to a general company page with all open jobs shown.
-                  </q-tooltip>
+                    be re-directed to a general company page with all open jobs shown.
+                  </Tooltip>
                 </q-item-section>
               </q-item>
               <q-item
@@ -109,11 +107,11 @@
                       dataUtil.pluralize('user', unapprovedUserCount)
                     }}
                   </q-item-label>
-                  <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                  <Tooltip>
                     If you don't want to approve all permissions for a specific user. Select the user, click
                     the "Modify user"
                     button and remove the permission from the list of permissions for that user.
-                  </q-tooltip>
+                  </Tooltip>
                 </q-item-section>
               </q-item>
               <q-item
@@ -140,9 +138,9 @@
         >
           <template v-slot:append>
             <q-icon name="search"/>
-            <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+            <Tooltip>
               Search by first name, last name, or email
-            </q-tooltip>
+            </Tooltip>
           </template>
         </q-input>
         <div class="q-ml-md-md" style="display: inline-block">
@@ -291,6 +289,7 @@ import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
 import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import TableFilter from 'components/tables/TableFilter.vue'
+import Tooltip from 'components/Tooltip.vue'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
@@ -331,7 +330,7 @@ const pagination = {
 
 export default {
   name: 'UserTable',
-  components: { SelectEmployer, CustomTooltip, TableFilter, SelectPermissionGroup, SelectUserType, SelectYesNo },
+  components: { Tooltip, SelectEmployer, CustomTooltip, TableFilter, SelectPermissionGroup, SelectUserType, SelectYesNo },
   props: {
     isAdminMode: {
       type: Boolean,

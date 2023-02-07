@@ -7,34 +7,22 @@
         :columns="jobColumns"
         :filter-method="jobDataFilter"
         filter="jobsFilter"
-        :selection="(isEmployer) ? 'multiple' : 'none'"
-        v-model:selected="selectedJobs"
         no-data-label="No jobs match the filter"
         :rows-per-page-options="[25, 50, 100]"
       >
         <template v-if="isEmployer" v-slot:top>
-          <CustomTooltip v-if="!selectedJobs.length" :is_include_icon="false" :is_include_space="true">
-            <template v-slot:content>
-              <q-btn
-                unelevated
-                :disable="true"
-                label="Edit referral bonus" icon="edit" color="primary"
-              />
-            </template>
-            Select at least one job to edit
-          </CustomTooltip>
-          <q-btn
-            v-else
-            unelevated
-            label="Edit referral bonus" icon="edit" color="primary"
-            @click="openEditJobBonusDialog"
-          />
-          <q-chip
-            v-if="$route.query.ruleId"
-            class="q-ml-md"
-            removable
-            @remove="removeRuleFilter"
-          >
+          <div class="q-gutter-x-sm">
+            <q-btn
+              v-if="employer.is_manual_job_entry"
+              unelevated label="Add job" icon="add" color="primary"
+              @click.prevent="openEditJobDialog()"
+            />
+            <q-chip
+              v-if="$route.query.ruleId"
+              class="q-ml-md"
+              removable
+              @remove="removeRuleFilter"
+            >
               <span v-if="parseInt($route.query.ruleId) > 0">
                 Jobs matching&nbsp;
                 <a
@@ -42,125 +30,176 @@
                   @click="openShowBonusRuleDialog($event,$route.query.ruleId)"
                 >referral bonus rule</a>
               </span>
-            <span v-else>Jobs without matching bonus rule</span>
-          </q-chip>
+              <span v-else>Jobs without matching bonus rule</span>
+            </q-chip>
+          </div>
         </template>
 
-        <!--        Employer table cfg-->
-        <template v-if="isEmployer" v-slot:header-cell-job_title="props">
-          <q-th :props="props">
-            <JobTitleHeader :col="props.col" :jobs-filter="jobsFilter"/>
-          </q-th>
-        </template>
-        <template v-if="isEmployer" v-slot:header-cell-job_department="props">
-          <q-th :props="props">
-            <JobDepartmentHeader :col="props.col" :jobs-filter="jobsFilter"/>
-          </q-th>
-        </template>
-        <template v-if="isEmployer" v-slot:header-cell-locations="props">
-          <q-th :props="props">
-            <LocationsHeader :col="props.col" :jobs-filter="jobsFilter"/>
-          </q-th>
-        </template>
-        <template v-if="isEmployer" v-slot:header-cell-open_date="props">
-          <q-th :props="props">
-            <OpenDateHeader :col="props.col" :jobs-filter="jobsFilter"/>
-          </q-th>
+        <template v-slot:header="props">
+          <template v-if="isEmployer">
+            <q-tr :props="props">
+              <q-th auto-width>
+                Actions
+              </q-th>
+              <q-th
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+              >
+                <template v-if="col.name === 'job_title'">
+                  <JobTitleHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <template v-else-if="col.name === 'job_source'">
+                  {{ col.label }}
+                  <TableFilter filter-name="Job source"
+                               :has-filter="jobsFilter.jobSources && jobsFilter.jobSources.length">
+                    <q-select
+                      v-model="jobsFilter.jobSources"
+                      filled multiple use-chips map-options emit-value
+                      label="Job sources"
+                      option-value="val" option-label="label"
+                      :options="[
+                        { val: 'ats', label: 'Ats' },
+                        { val: 'website', label: 'Website' },
+                        { val: 'manual', label: 'Manual' },
+                      ]"
+                    />
+                  </TableFilter>
+                </template>
+                <template v-else-if="col.name === 'job_department'">
+                  <JobDepartmentHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <template v-else-if="col.name === 'locations'">
+                  <LocationsHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <template v-else-if="col.name === 'open_date'">
+                  <OpenDateHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <span v-else>{{ col.label }}</span>
+              </q-th>
+            </q-tr>
+          </template>
+          <template v-else>
+            <q-tr :props="props">
+              <q-th auto-width class="text-left">
+                Share
+              </q-th>
+              <q-th
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+              >
+                <template v-if="col.name === 'job_title'">
+                  <JobTitleHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <template v-else-if="col.name === 'job_department'">
+                  <JobDepartmentHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <template v-else-if="col.name === 'locations'">
+                  <LocationsHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <template v-else-if="col.name === 'open_date'">
+                  <OpenDateHeader :col="col" :jobs-filter="jobsFilter"/>
+                </template>
+                <span v-else>{{ col.label }}</span>
+              </q-th>
+            </q-tr>
+          </template>
         </template>
 
-        <template v-if="isEmployer" v-slot:body-cell-locations="props">
-          <q-td :props="props">
-            <LocationsCell :props="props"/>
-          </q-td>
-        </template>
-        <template v-if="isEmployer" v-slot:body-cell-bonus="props">
-          <q-td :props="props">
-            <BonusCell :props="props"/>
-          </q-td>
-        </template>
-        <template v-if="isEmployer" v-slot:body-cell-bonus_rule="props">
-          <q-td :props="props">
-            <a
-              v-if="!dataUtil.isEmpty(props.row.bonus_rule)"
-              href="#" @click="openShowBonusRuleDialog($event, props.row.bonus_rule.id, props.row.bonus)"
-            >Bonus rule</a>
-            <span v-else-if="props.row.bonus.type === BONUS_TYPES.DEFAULT">Default</span>
-            <span v-else>None</span>
-          </q-td>
-        </template>
-
-        <!--        Employee table cfg-->
-        <template v-if="!isEmployer" v-slot:header="props">
+        <template v-slot:body="props">
           <q-tr :props="props">
-            <q-th auto-width class="text-left">
-              Share
-            </q-th>
-            <q-th
-              v-for="col in props.cols"
-              :key="col.name"
-              :props="props"
-            >
-              <template v-if="col.name === 'job_title'">
-                <JobTitleHeader :col="col" :jobs-filter="jobsFilter"/>
-              </template>
-              <template v-else-if="col.name === 'job_department'">
-                <JobDepartmentHeader :col="col" :jobs-filter="jobsFilter"/>
-              </template>
-              <template v-else-if="col.name === 'locations'">
-                <LocationsHeader :col="col" :jobs-filter="jobsFilter"/>
-              </template>
-              <template v-else-if="col.name === 'open_date'">
-                <OpenDateHeader :col="col" :jobs-filter="jobsFilter"/>
-              </template>
-              <span v-else>{{ col.label }}</span>
-            </q-th>
-          </q-tr>
-        </template>
-
-        <template v-if="!isEmployer" v-slot:body="props">
-          <q-tr :props="props">
-            <q-td auto-width>
-              <CustomTooltip :is_include_icon="false">
-                <template v-slot:content>
-                  <q-btn
-                    class="q-mr-xs" color="primary"
-                    outline round dense icon="email"
-                    @click="openShareJobDialog(props.row, jobsUtil.shareTypes.EMAIL)"/>
+            <template v-if="isEmployer">
+              <q-td auto-width>
+                <CustomTooltip :is_include_icon="false">
+                  <template v-slot:content>
+                    <q-btn
+                      outline round dense icon="attach_money" color="primary"
+                      class="q-mr-xs"
+                      @click="openEditJobBonusDialog(props.row)"
+                    />
+                  </template>
+                  Edit referral bonus
+                </CustomTooltip>
+                <CustomTooltip v-if="props.row.job_source === 'manual'" :is_include_icon="false">
+                  <template v-slot:content>
+                    <q-btn
+                      outline round dense icon="edit" color="primary"
+                      @click="openEditJobDialog(props.row)"
+                    />
+                  </template>
+                  Edit job
+                </CustomTooltip>
+              </q-td>
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+              >
+                <template v-if="col.name === 'locations'">
+                  <LocationsCell :props="props"/>
                 </template>
-                Send email
-              </CustomTooltip>
-              <CustomTooltip :is_include_icon="false">
-                <template v-slot:content>
-                  <q-btn class="q-mr-xs" color="primary" outline round dense @click="openShareJobDialog(props.row, jobsUtil.shareTypes.SMS)" icon="textsms"/>
+                <template v-else-if="col.name === 'bonus'">
+                  <BonusCell :props="props"/>
                 </template>
-                Send text message
-              </CustomTooltip>
-              <CustomTooltip :is_include_icon="false">
-                <template v-slot:content>
-                  <q-btn class="q-mr-xs" color="primary" outline round dense @click="openShareJobDialog(props.row, jobsUtil.shareTypes.QR)" icon="qr_code_2"/>
+                <template v-else-if="col.name === 'bonus_rule'">
+                  <a
+                    v-if="!dataUtil.isEmpty(props.row.bonus_rule)"
+                    href="#" @click="openShowBonusRuleDialog($event, props.row.bonus_rule.id, props.row.bonus)"
+                  >Bonus rule</a>
+                  <span v-else-if="props.row.bonus.type === BONUS_TYPES.DEFAULT">Default</span>
+                  <span v-else>None</span>
                 </template>
-                Open QR code
-              </CustomTooltip>
-              <CustomTooltip :is_include_icon="false">
-                <template v-slot:content>
-                  <q-btn color="primary" outline round dense @click="openShareJobDialog(props.row, jobsUtil.shareTypes.LINK)" icon="link"/>
+                <span v-else>{{ col.value }}</span>
+              </q-td>
+            </template>
+            <template v-else>
+              <q-td auto-width>
+                <CustomTooltip :is_include_icon="false">
+                  <template v-slot:content>
+                    <q-btn
+                      class="q-mr-xs" color="primary"
+                      outline round dense icon="email"
+                      @click="openShareJobDialog(props.row, jobsUtil.shareTypes.EMAIL)"/>
+                  </template>
+                  Send email
+                </CustomTooltip>
+                <CustomTooltip :is_include_icon="false">
+                  <template v-slot:content>
+                    <q-btn class="q-mr-xs" color="primary" outline round dense
+                           @click="openShareJobDialog(props.row, jobsUtil.shareTypes.SMS)" icon="textsms"/>
+                  </template>
+                  Send text message
+                </CustomTooltip>
+                <CustomTooltip :is_include_icon="false">
+                  <template v-slot:content>
+                    <q-btn class="q-mr-xs" color="primary" outline round dense
+                           @click="openShareJobDialog(props.row, jobsUtil.shareTypes.QR)" icon="qr_code_2"/>
+                  </template>
+                  Open QR code
+                </CustomTooltip>
+                <CustomTooltip :is_include_icon="false">
+                  <template v-slot:content>
+                    <q-btn color="primary" outline round dense
+                           @click="openShareJobDialog(props.row, jobsUtil.shareTypes.LINK)" icon="link"/>
+                  </template>
+                  Get shareable link
+                </CustomTooltip>
+              </q-td>
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+              >
+                <template v-if="col.name === 'locations'">
+                  <LocationsCell :props="props"/>
                 </template>
-                Get shareable link
-              </CustomTooltip>
-            </q-td>
-            <q-td
-              v-for="col in props.cols"
-              :key="col.name"
-              :props="props"
-            >
-              <template v-if="col.name === 'locations'">
-                <LocationsCell :props="props"/>
-              </template>
-              <template v-else-if="col.name === 'bonus'">
-                <BonusCell :props="props"/>
-              </template>
-              <span v-else>{{ col.value }}</span>
-            </q-td>
+                <template v-else-if="col.name === 'bonus'">
+                  <BonusCell :props="props"/>
+                </template>
+                <span v-else>{{ col.value }}</span>
+              </q-td>
+            </template>
           </q-tr>
         </template>
       </q-table>
@@ -170,9 +209,11 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogJob from 'components/dialogs/DialogJob.vue'
 import DialogJobBonus from 'components/dialogs/DialogJobBonus.vue'
 import DialogShareJob from 'components/dialogs/DialogShareJob.vue'
 import DialogShowBonusRule from 'components/dialogs/DialogShowBonusRule.vue'
+import TableFilter from 'components/tables/TableFilter.vue'
 import BonusCell from 'pages/employer/jobs-page/jobs-table/BonusCell.vue'
 import JobDepartmentHeader from 'pages/employer/jobs-page/jobs-table/JobDepartmentHeader.vue'
 import JobTitleHeader from 'pages/employer/jobs-page/jobs-table/JobTitleHeader.vue'
@@ -201,11 +242,15 @@ export default {
     LocationsHeader,
     JobDepartmentHeader,
     CustomTooltip,
-    JobTitleHeader
+    JobTitleHeader,
+    TableFilter
   },
   data () {
     return {
       isLoaded: false,
+      employer: null,
+      employerJobs: null,
+      employerBonusRules: null,
       dataUtil,
       BONUS_TYPES,
       jobsFilter: {
@@ -216,17 +261,10 @@ export default {
         countries: null,
         dateRange: null
       },
-      selectedJobs: [],
       jobsUtil
     }
   },
   computed: {
-    employerJobs () {
-      return this.employerStore.getEmployerJobs(this.user.employer_id)
-    },
-    employerBonusRules () {
-      return this.employerStore.getEmployerBonusRules(this.user.employer_id)
-    },
     jobColumns () {
       const columns = [
         { name: 'job_title', field: 'job_title', align: 'left', label: 'Title', sortable: true },
@@ -251,19 +289,42 @@ export default {
         }
       ]
       if (this.isEmployer) {
+        columns.splice(1, 0, {
+          name: 'job_source',
+          field: 'job_source',
+          align: 'left',
+          label: 'Source',
+          format: dataUtil.capitalize,
+          sortable: true
+        })
         columns.push({ name: 'bonus_rule', field: 'bonus_rule', align: 'left', label: 'Bonus rule' })
       }
       return columns
     }
   },
   methods: {
-    openEditJobBonusDialog () {
+    openEditJobDialog (job) {
+      if (!this.isEmployer) {
+        return
+      }
+      return this.q.dialog({
+        component: DialogJob,
+        componentProps: { employerId: this.employer.id, job }
+      }).onOk(async () => {
+        await this.employerStore.setEmployerJobs(this.user.employer_id, true)
+        this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
+      })
+    },
+    openEditJobBonusDialog (job) {
       if (!this.isEmployer) {
         return
       }
       return this.q.dialog({
         component: DialogJobBonus,
-        componentProps: { jobs: this.selectedJobs }
+        componentProps: { jobs: [job] }
+      }).onOk(async () => {
+        await this.employerStore.setEmployerJobs(this.user.employer_id, true)
+        this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
       })
     },
     openShowBonusRuleDialog (e, bonusRuleId, bonus) {
@@ -307,6 +368,9 @@ export default {
         if (this.jobsFilter.departments?.length && !departmentIds.includes(job.job_department_id)) {
           return false
         }
+        if (this.jobsFilter.jobSources?.length && !this.jobsFilter.jobSources.includes(job.job_source)) {
+          return false
+        }
         if (this.jobsFilter.cities?.length && !dataUtil.getArrayIntersection(cityIds, jobCityIds).length) {
           return false
         }
@@ -331,17 +395,17 @@ export default {
         }
         return true
       })
-    },
-    async updateData (isForceRefresh) {
-      await Promise.all([
-        this.employerStore.setEmployer(this.user.employer_id, isForceRefresh),
-        this.employerStore.setEmployerBonusRules(this.user.employer_id, isForceRefresh),
-        this.employerStore.setEmployerJobs(this.user.employer_id, isForceRefresh)
-      ])
     }
   },
   async mounted () {
-    await this.updateData(false)
+    await Promise.all([
+      this.employerStore.setEmployer(this.user.employer_id),
+      this.employerStore.setEmployerBonusRules(this.user.employer_id),
+      this.employerStore.setEmployerJobs(this.user.employer_id)
+    ])
+    this.employer = this.employerStore.getEmployer(this.user.employer_id)
+    this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
+    this.employerBonusRules = this.employerStore.getEmployerBonusRules(this.user.employer_id)
     this.isLoaded = true
   },
   setup () {

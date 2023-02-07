@@ -21,7 +21,7 @@ class DateTimeUtil {
     this.dateTimeFormat = 'MM/DD/YYYY HH:mm:ss'
     this.dateTimeFormatNoSeconds = 'MM/DD/YYYY HH:mm'
     this.serializeDateFormat = 'MM/DD/YYYY'
-    this.serializeDateTimeFormat = 'MM/DD/YYYY HH:mm:ssZZ'
+    this.serializeDateTimeFormat = 'MM/DD/YYYY HH:mm:ss'
 
     this.time12HRegex = /^(?<hour>1[0-2]|0?[1-9]):(?<minute>[0-5][0-9])(:(?<second>[0-5][0-9]))? ?(?<ampm>[AaPp][Mm])/
     this.time24HRegex = /^(?<hour>0[0-9]|1[0-9]|2[0-3]):(?<minute>[0-5][0-9])(:(?<second>[0-5][0-9]))?$/
@@ -34,6 +34,7 @@ class DateTimeUtil {
     } else {
       targetDate = date.adjustDate(targetDate, { hours: 0, minutes: 0, seconds: 0, millisecond: 0 })
     }
+    targetDate = targetDate.toUTCString()
     return date.formatDate(targetDate, format)
   }
 

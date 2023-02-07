@@ -24,6 +24,14 @@ class LocationUtil {
     return locations
   }
 
+  updateFullLocations (locations) {
+    return (locations || []).reduce((formattedLocations, location) => {
+      location.fullLocationText = this.getFullLocation(location)
+      formattedLocations.push(location)
+      return formattedLocations
+    }, [])
+  }
+
   getFullLocation ({ is_remote: isRemote, city, state, country, text }) {
     if (!city && !state && !country) {
       return text

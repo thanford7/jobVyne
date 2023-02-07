@@ -20,17 +20,19 @@ class DataUtil {
     return formatter.format(val)
   }
 
-  getSalaryRange (salaryFloor, salaryCeiling) {
+  getSalaryRange (salaryFloor, salaryCeiling, salaryInterval = 'year') {
     if (!salaryFloor && !salaryCeiling) {
       return null
     }
+    let salaryRange = ''
     if (salaryFloor && salaryCeiling) {
-      return `${this.formatCurrency(salaryFloor)}-${this.formatCurrency(salaryCeiling)}`
+      salaryRange = `${this.formatCurrency(salaryFloor)}-${this.formatCurrency(salaryCeiling)}`
+    } else if (salaryFloor) {
+      salaryRange = this.formatCurrency(salaryFloor)
+    } else {
+      salaryRange = this.formatCurrency(salaryCeiling)
     }
-    if (salaryFloor) {
-      return this.formatCurrency(salaryFloor)
-    }
-    return this.formatCurrency(salaryCeiling)
+    return `${salaryRange} per ${salaryInterval}`
   }
 
   getBitsFromList (bitList) {

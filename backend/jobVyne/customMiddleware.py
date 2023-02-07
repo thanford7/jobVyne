@@ -45,5 +45,5 @@ class ErrorHandlerMiddleware:
             message = exception.args[0]
         except:
             pass
-        logger.exception(message)
+        logger.exception(message, exc_info=exception)
         return None

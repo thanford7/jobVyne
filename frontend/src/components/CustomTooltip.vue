@@ -5,20 +5,18 @@
     <slot name="icon">
       <q-icon v-if="is_include_icon" :class="icon_color_class" tag="span" name="help_outline" :size="icon_size"/>
     </slot>
-    <q-tooltip class="border-1-gray-300" :class="color_class" style="font-size: 14px;" max-width="500px">
+    <Tooltip>
       <slot/>
-    </q-tooltip>
+    </Tooltip>
   </div>
 </template>
 
 <script>
+import Tooltip from 'components/Tooltip.vue'
 export default {
   name: 'CustomTooltip',
+  components: { Tooltip },
   props: {
-    color_class: {
-      type: String,
-      default: 'bg-info'
-    },
     icon_color_class: {
       type: String,
       default: 'text-gray-500'

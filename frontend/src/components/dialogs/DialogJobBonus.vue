@@ -54,11 +54,11 @@ export default {
   },
   methods: {
     async saveJobBonus () {
-      await this.$api.put('employer/job/', getAjaxFormData({
+      await this.$api.put('employer/job/bonus/', getAjaxFormData({
         job_ids: this.jobs.map((job) => job.id),
         ...this.formData
       }))
-      await this.employerStore.setEmployerJobs(this.authStore.propUser.employer_id, true)
+      this.$emit('ok')
     }
   },
   mounted () {

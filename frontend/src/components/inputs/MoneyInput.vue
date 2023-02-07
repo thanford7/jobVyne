@@ -1,12 +1,13 @@
 <template>
   <q-input
     v-if="isLoaded"
-    filled
-    :label="label"
-    :mask="mask"
-    unmasked-value
+    filled :label="label" :mask="mask" unmasked-value
     :model-value="modelValue"
     @update:model-value="updatePrice($event)"
+    lazy-rules
+    :rules="(isRequired) ? [
+      (val) => val || 'This field is required'
+    ] : null"
   >
     <template v-if="isIncludeCurrencySelection" v-slot:append>
       <q-btn-dropdown
@@ -49,6 +50,10 @@ export default {
     isIncludeCurrencySelection: {
       type: Boolean,
       default: true
+    },
+    isRequired: {
+      type: Boolean,
+      default: false
     },
     precision: {
       type: Number,

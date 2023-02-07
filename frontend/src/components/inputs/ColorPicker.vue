@@ -25,16 +25,17 @@
         </q-popup-proxy>
       </q-icon>
     </template>
-    <q-tooltip class="bg-info" style="font-size: 14px;" max-width="300px">
+    <Tooltip>
       Input a hex color (e.g. #ffffff) or click the
       <q-icon name="colorize" size="sm"/>
       icon to
       select from a color palette
-    </q-tooltip>
+    </Tooltip>
   </q-input>
 </template>
 
 <script>
+import Tooltip from 'components/Tooltip.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -45,6 +46,7 @@ const hexRegex = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/
 
 export default {
   name: 'ColorPicker',
+  components: { Tooltip },
   props: {
     modelValue: {
       type: [String, null]

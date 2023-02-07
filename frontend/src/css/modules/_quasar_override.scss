@@ -8,6 +8,15 @@
   }
 }
 
+.q-table {
+  th, td {
+    font-size: 14px;
+  }
+  tbody td {
+    font-size: 14px;
+  }
+}
+
 .q-page-sticky {
   z-index: 1000; // Make sure the floating content appears above all other content
 }

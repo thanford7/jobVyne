@@ -27,6 +27,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
     notification_email = models.CharField(max_length=50, null=True, blank=True)  # If present, an email will be sent to this address when a new application is created
     company_jobs_page_url = models.CharField(max_length=100, null=True, blank=True)  # Used to redirect users if employer's account is inactive
+    is_manual_job_entry = models.BooleanField(default=False, blank=True)  # Whether HR users can manually add jobs
     
     # Brand colors - saved in hex form (e.g. #32a852)
     color_primary = models.CharField(max_length=9, null=True, blank=True)
@@ -187,6 +188,16 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
                 and user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, user.employer_id)
             )
         )
+
+    def get_key(self):
+        return self.generate_job_key(self.job_title, tuple(l.id for l in self.locations.all()))
+    
+    @staticmethod
+    def generate_job_key(job_title, location_ids: tuple):
+        """Used to compare jobs that have not yet been saved to ones that have been saved.
+        This way, we don't have to save job locations before determining whether jobs are equivalent
+        """
+        return job_title, location_ids
 
 
 class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixin):

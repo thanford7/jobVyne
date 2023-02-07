@@ -110,7 +110,6 @@
 <script>
 import { BubbleMenu, Editor, EditorContent, mergeAttributes } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import Paragraph from '@tiptap/extension-paragraph'
 import Placeholder from '@tiptap/extension-placeholder'
 import TextAlign from '@tiptap/extension-text-align'
@@ -182,7 +181,6 @@ export default {
           paragraph: false
         }),
         CustomParagraph,
-        HorizontalRule,
         TextAlign.configure({
           types: ['heading', 'paragraph'],
           alignments: ['left', 'center', 'right']

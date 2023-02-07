@@ -62,10 +62,10 @@
                           <q-chip v-if="group.is_default" color="grey-7" text-color="white" size="sm"
                                   icon-right="help_outline">
                             Default
-                            <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                            <Tooltip>
                               When a new {{ userGroup.name }} user joins JobVyne, they will be added to this permission
                               group
-                            </q-tooltip>
+                            </Tooltip>
                           </q-chip>
                         </q-item>
                       </q-list>
@@ -101,12 +101,12 @@
                                   icon-right="help_outline">
                             Default
                           </q-chip>
-                          <q-tooltip class="info" style="font-size: 14px;" max-width="500px">
+                          <Tooltip>
                             When a new {{ userTypeUtil.getUserTypeNameFromBit(selectedGroup.user_type_bit) }} user joins
                             JobVyne, they
                             will be added to this permission
                             group
-                          </q-tooltip>
+                          </Tooltip>
                         </div>
                         <q-btn
                           v-if="!selectedGroup.is_default && !getIsGroupReadOnly(selectedGroup)"
@@ -162,6 +162,7 @@
 
 <script>
 import PageHeader from 'components/PageHeader.vue'
+import Tooltip from 'components/Tooltip.vue'
 import UserTable from 'pages/employer/user-management-page/UserTable.vue'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -182,6 +183,7 @@ import dataUtil from 'src/utils/data.js'
 export default {
   name: 'UserManagementPage',
   components: {
+    Tooltip,
     UserTable,
     CustomTooltip,
     PageHeader

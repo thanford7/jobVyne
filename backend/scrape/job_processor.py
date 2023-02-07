@@ -6,6 +6,8 @@ from django.utils import timezone
 
 from jvapp.apis.geocoding import LocationParser
 from jvapp.models import Employer, EmployerJob, JobDepartment
+from jvapp.utils.sanitize import sanitize_html
+
 
 @dataclass
 class JobItem:
@@ -29,7 +31,7 @@ class JobProcessor:
     def __init__(self):
         self.employers = {employer.employer_name: {
             'employer': employer,
-            'jobs': {self.generate_job_key(j): j for j in employer.employer_job.all() if j.is_scraped},
+            'jobs': {j.get_key(): j for j in employer.employer_job.all() if j.is_scraped},
             'found_jobs': set()
         } for employer in Employer.objects.prefetch_related('employer_job', 'employer_job__locations').all()}
         self.scraped_employers = set()
@@ -69,21 +71,23 @@ class JobProcessor:
             employer = employer_data['employer']
         self.scraped_employers.add(employer_name)
         
+        job_item.job_description = sanitize_html(job_item.job_description)
         job_item.employment_type = job_item.employment_type or self.default_employment_type
         
         locations = [
             self.location_parser.get_location(self.add_remote_to_location(loc, job_item.job_title))
             for loc in job_item.locations
         ]
+        location_ids = tuple(l.id for l in locations)
         
         new_job = EmployerJob(
             job_title=job_item.job_title,
             is_scraped=True
         )
-        if not (job := employer_data['jobs'].get(self.generate_job_key(new_job, locations=locations))):
+        if not (job := employer_data['jobs'].get(EmployerJob.generate_job_key(new_job.job_title, location_ids))):
             new_job.employer = employer
             self.update_job(new_job, job_item)
-            employer_data['jobs'][self.generate_job_key(new_job, locations=locations)] = new_job
+            employer_data['jobs'][EmployerJob.generate_job_key(new_job.job_title, location_ids)] = new_job
             job = new_job
         else:
             self.update_job(job, job_item)
@@ -94,7 +98,7 @@ class JobProcessor:
             ignore_conflicts=True
         )
         
-        employer_data['found_jobs'].add(self.generate_job_key(job, locations=locations))
+        employer_data['found_jobs'].add(EmployerJob.generate_job_key(job.job_title, location_ids))
         
         return job
     
@@ -145,13 +149,6 @@ class JobProcessor:
             self.job_departments[job_item.job_department.lower()] = job_department
         
         return job_department
-    
-    @staticmethod
-    def generate_job_key(job, locations=None):
-        return (
-            job.job_title,
-            tuple(l.id for l in job.locations.all()) if not locations else tuple(l.id for l in locations)
-        )
     
     @staticmethod
     def add_remote_to_location(location, job_title):

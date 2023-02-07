@@ -8,6 +8,7 @@ export const useEmployerStore = defineStore('employer', {
     employees: {}, // employerId: [<employee1>, <employee2>, ...]
     employerBilling: {}, // employerId: <billingData>
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
+    employerJobDepartments: {}, // employerId: [<jobDept1>, <jobDept2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
     employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
     employerSubscription: {}, // employerId: {subscription data}
@@ -66,6 +67,17 @@ export const useEmployerStore = defineStore('employer', {
           }
         )
         this.employerJobLocations[employerId] = locResp.data
+      }
+    },
+    async setEmployerJobDepartments (employerId, isForceRefresh = false) {
+      if (!this.employerJobDepartments[employerId] || isForceRefresh) {
+        const resp = await this.$api.get(
+          'employer/job/department/',
+          {
+            params: { employer_id: employerId }
+          }
+        )
+        this.employerJobDepartments[employerId] = resp.data
       }
     },
     async setEmployerBonusRules (employerId, isForceRefresh = false) {
@@ -184,15 +196,15 @@ export const useEmployerStore = defineStore('employer', {
     getEmployerPage (employerId) {
       return this.employerPage[employerId]
     },
-    getJobDepartments (employerId) {
-      if (!this.employerJobs[employerId]) {
+    getEmployerJobDepartments (employerId) {
+      const departments = this.employerJobDepartments[employerId]
+      return dataUtil.sortBy(departments || [], 'name')
+    },
+    getJobLocations (employerId) {
+      if (!this.employerJobLocations[employerId]) {
         return null
       }
-      const vals = dataUtil.uniqBy(
-        this.employerJobs[employerId].map((j) => ({ name: j.job_department, id: j.job_department_id })),
-        'name'
-      )
-      return dataUtil.sortBy(vals, 'name')
+      return this.employerJobLocations[employerId].locations
     },
     getJobCities (employerId) {
       if (!this.employerJobLocations[employerId]) {

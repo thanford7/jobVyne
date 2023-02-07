@@ -5,7 +5,7 @@
     width="700px"
     @ok="saveBonusRule"
   >
-    <div class="q-gutter-y-md">
+    <div class="q-gutter-y-md q-mt-sm">
       <div class="row">
         <div class="col-12 col-md-6 q-pr-md-sm">
           <MoneyInput

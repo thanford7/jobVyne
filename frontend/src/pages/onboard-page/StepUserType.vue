@@ -19,11 +19,11 @@
               </div>
               <h6 class="text-center">{{ userType.title }}</h6>
             </q-card-section>
-            <q-tooltip class="bg-info" style="font-size: 14px;" max-width="500px">
+            <Tooltip>
               <ul>
                 <li v-for="item in userType.descriptionItems">{{ item }}</li>
               </ul>
-            </q-tooltip>
+            </Tooltip>
           </q-card>
         </div>
       </div>
@@ -36,12 +36,13 @@
 </template>
 
 <script>
+import Tooltip from 'components/Tooltip.vue'
 import BaseStep from 'pages/onboard-page/BaseStep.vue'
 import colorUtil from 'src/utils/color.js'
 
 export default {
   name: 'StepUserType',
-  components: { BaseStep },
+  components: { Tooltip, BaseStep },
   props: {
     userTypesCfg: Object,
     formData: Object

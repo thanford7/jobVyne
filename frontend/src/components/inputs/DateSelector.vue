@@ -3,6 +3,7 @@
     :model-value="modelValue"
     @update:model-value="$emit('update:model-value', $event)"
     filled :label="formattedLabel" mask="##/##/####"
+    lazy-rules :rules="rules"
   >
     <template v-slot:append>
       <q-icon name="event" class="cursor-pointer">
@@ -32,6 +33,13 @@ export default {
     label: {
       type: String,
       default: 'Date'
+    },
+    isRequired: {
+      type: Boolean,
+      default: false
+    },
+    additionalRules: {
+      type: [Array, null]
     }
   },
   data () {
@@ -42,6 +50,13 @@ export default {
   computed: {
     formattedLabel () {
       return `${this.label} (${dateTimeUtil.serializeDateFormat})`
+    },
+    rules () {
+      const rules = []
+      if (this.isRequired) {
+        rules.push((val) => (val && val.length) || 'This field is required')
+      }
+      return [...rules, ...(this.additionalRules || [])]
     }
   }
 }

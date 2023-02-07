@@ -11,7 +11,6 @@ from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
 
 from jvapp.utils.data import capitalize, coerce_float, get_base_url
 from jvapp.utils.datetime import get_datetime_or_none
-from jvapp.utils.sanitize import sanitize_html
 from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
@@ -229,7 +228,7 @@ class GreenhouseScraper(Scraper):
             job_title=html.xpath('//div[@id="header"]//h1/text()').get(),
             locations=[location],
             job_department=job_department,
-            job_description=sanitize_html(html.xpath('//div[@id="content"]').get()),
+            job_description=html.xpath('//div[@id="content"]').get(),
             employment_type=standard_job_item.employment_type,
             first_posted_date=standard_job_item.first_posted_date,
             salary_currency=standard_job_item.salary_currency,
@@ -335,7 +334,7 @@ class WorkdayScraper(Scraper):
             job_title=self.strip_or_none(job_data.xpath('.//*[@data-automation-id="jobPostingHeader"]/text()').get()),
             locations=locations,
             job_department=job_department,
-            job_description=sanitize_html(html.xpath('//*[@data-automation-id="jobPostingDescription"]').get()),
+            job_description=html.xpath('//*[@data-automation-id="jobPostingDescription"]').get(),
             employment_type=standard_job_item.employment_type or self.strip_or_none(job_data.xpath('.//*[@data-automation-id="time"]/dl/dd/text()').get()),
             first_posted_date=standard_job_item.first_posted_date or posted_date,
             salary_currency=standard_job_item.salary_currency,

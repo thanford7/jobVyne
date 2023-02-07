@@ -1,5 +1,10 @@
 <template>
   <div v-if="isLoaded" class="row q-gutter-y-md" style="min-width: 500px;">
+    <div>
+      Only one bonus rule applies to each job, even if multiple rules match a specific job. If multiple rules can
+      apply to a job, the highest ranked rule applies. You can adjust the rank of the rules by dragging and dropping
+      a rule above or below other rules.
+    </div>
     <div class="col-12 col-md-5">
       <MoneyInput
         label="Default bonus amount"

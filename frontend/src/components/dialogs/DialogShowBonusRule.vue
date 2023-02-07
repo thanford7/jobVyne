@@ -9,7 +9,7 @@
         ({{ dataUtil.formatCurrency(bonus.amount, { currency: bonus.currency.name }) }})
       </q-chip>
     </template>
-    <div class="q-gutter-y-md">
+    <div class="q-gutter-y-md q-mt-sm">
       <table class="table q-table q-table--bordered q-table--horizontal-separator">
         <tbody>
         <tr>

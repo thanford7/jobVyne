@@ -142,7 +142,7 @@ import DialogLeverWebhook from 'pages/employer/settings-page/DialogLeverWebhook.
 import { useQuasar } from 'quasar'
 import { ATS_CFGS } from 'src/utils/ats.js'
 import dataUtil from 'src/utils/data.js'
-import messagesUtil, { msgTypes } from 'src/utils/messages.js'
+import messagesUtil from 'src/utils/messages.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'

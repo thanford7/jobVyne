@@ -31,7 +31,6 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         'logo_url': employer.logo.url if employer.logo else None,
         'size': employer.employer_size.size if employer.employer_size else None,
         'email_domains': employer.email_domains,
-        'notification_email': employer.notification_email,
         'company_jobs_page_url': employer.company_jobs_page_url,
         'color_primary': employer.color_primary,
         'color_secondary': employer.color_secondary,
@@ -70,6 +69,8 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
             and (reduce_user_type_bits(get_permission_groups(e)) & JobVyneUser.USER_TYPE_EMPLOYEE)
             and e.has_employee_seat
         ])
+        data['notification_email'] = employer.notification_email
+        data['is_manual_job_entry'] = employer.is_manual_job_entry
     
     return data
 
@@ -147,10 +148,12 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
         'salary_currency': get_serialized_currency(employer_job.salary_currency),
         'salary_floor': employer_job.salary_floor,
         'salary_ceiling': employer_job.salary_ceiling,
+        'salary_interval': employer_job.salary_interval,
         'referral_bonus': employer_job.referral_bonus,
         'referral_bonus_currency': get_serialized_currency(employer_job.referral_bonus_currency),
         'employment_type': employer_job.employment_type,
-        'locations': [get_serialized_location(l) for l in employer_job.locations.all()]
+        'locations': [get_serialized_location(l) for l in employer_job.locations.all()],
+        'job_source': 'website' if employer_job.is_scraped else ('ats' if employer_job.ats_job_key else 'manual')
     }
     
     if is_include_bonus and rules:

@@ -209,7 +209,7 @@
             <template v-slot:header>
               <div class="text-h6">
                 Quick links for
-                <CustomTooltip :is_include_icon="false" color_class="bg-white">
+                <CustomTooltip :is_include_icon="false">
                   <template v-slot:content>
                     <span style="text-decoration: underline">default referral</span>
                   </template>

@@ -82,20 +82,39 @@
                 </div>
               </div>
             </div>
-            <div class="col-12 col-md-6">
-              <EmailInput
-                v-model="employerData.notification_email"
-                label="Notification email"
-                :is-required="false"
-              >
-                <template v-slot:after>
-                  <CustomTooltip>
-                    If provided, a notification email will be sent to this address every time an application
-                    is submitted for any job or an employee provides feedback on an applicant. This is likely
-                    only necessary if your company doesn't use an applicant tracking system.
-                  </CustomTooltip>
-                </template>
-              </EmailInput>
+            <div class="col-12">
+              <div class="row">
+                <div class="col-12 col-md-6">
+                  <EmailInput
+                    v-model="employerData.notification_email"
+                    label="Notification email"
+                    :is-required="false"
+                  >
+                    <template v-slot:after>
+                      <CustomTooltip>
+                        If provided, a notification email will be sent to this address every time an application
+                        is submitted for any job or an employee provides feedback on an applicant. This is likely
+                        only necessary if your company doesn't use an applicant tracking system.
+                      </CustomTooltip>
+                    </template>
+                  </EmailInput>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="row">
+                <div class="col-12 col-md-6">
+                  <q-toggle
+                    v-model="employerData.is_manual_job_entry"
+                  >
+                    Allow manual job entry
+                    <CustomTooltip>
+                      If toggled on, HR users can manually add jobs to JobVyne. This should only
+                      be used if your company does not have an ATS integration or a company jobs webpage.
+                    </CustomTooltip>
+                  </q-toggle>
+                </div>
+              </div>
             </div>
           </div>
         </q-tab-panel>

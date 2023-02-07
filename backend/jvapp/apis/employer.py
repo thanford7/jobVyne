@@ -19,7 +19,9 @@ from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, Is
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
-from jvapp.utils.data import AttributeCfg, is_obfuscated_string, set_object_attributes
+from jvapp.serializers.location import get_serialized_location
+from jvapp.utils.data import AttributeCfg, coerce_int, is_obfuscated_string, set_object_attributes
+from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import get_domain_from_email
 from jvapp.utils.sanitize import sanitize_html
 
@@ -67,6 +69,7 @@ class EmployerView(JobVyneAPIView):
                 'color_primary': AttributeCfg(is_protect_existing=True),
                 'color_secondary': AttributeCfg(is_protect_existing=True),
                 'color_accent': AttributeCfg(is_protect_existing=True),
+                'is_manual_job_entry': AttributeCfg(is_protect_existing=True),
             }
         )
         
@@ -286,17 +289,91 @@ class EmployerJobView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data=data)
     
     def put(self, request):
-        jobs = EmployerJob.objects.filter(id__in=self.data['job_ids'])
-        jobs_to_update = []
-        for job in jobs:
-            job.referral_bonus = self.data['referral_bonus']
-            job.referral_bonus_currency_id = self.data['referral_bonus_currency']['name']
-            jobs_to_update.append(job)
-        
-        EmployerJob.objects.bulk_update(jobs_to_update, ['referral_bonus', 'referral_bonus_currency_id'], batch_size=1000)
+        if not (job_id := self.data.get('id')):
+            return Response('A job ID is required', status=status.HTTP_400_BAD_REQUEST)
+
+        employer_job = self.get_employer_jobs(employer_job_id=job_id)
+        employer_job = self.update_job(self.user, employer_job, self.data)
         return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: f'Updated referral bonus for {len(jobs)} {"jobs" if len(jobs) > 1 else "job"}'
+            SUCCESS_MESSAGE_KEY: f'Updated {employer_job.job_title} job'
         })
+    
+    def post(self, request):
+        if not (employer_id := self.data.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
+        employer_job = self.update_job(self.user, EmployerJob(employer_id=employer_id), self.data, is_check_duplicate=True)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Added {employer_job.job_title} job'
+        })
+
+    @staticmethod
+    @atomic
+    def update_job(user, employer_job, data, is_check_duplicate=False):
+        # Make sure user can edit jobs
+        permission_type = PermissionTypes.EDIT.value if employer_job.id else PermissionTypes.CREATE.value
+        employer_job.jv_check_permission(permission_type, user)
+        
+        # We need to get and create locations to determine whether the job is a duplicate
+        location_parser = LocationParser()
+        location_ids = tuple(
+            location if coerce_int(location) else location_parser.get_location(location).id
+            for location in data['locations']
+        )
+
+        # Make sure this isn't a duplicate before adding locations to job
+        if is_check_duplicate:
+            job_title = data['job_title']
+            potential_job_duplicates = {
+                job.get_key(): job for job in
+                EmployerJob.objects.prefetch_related('locations').filter(employer_id=employer_job.employer_id,
+                                                                         job_title=job_title)
+            }
+            employer_job = potential_job_duplicates.get(EmployerJob.generate_job_key(job_title, location_ids), employer_job)
+        
+        set_object_attributes(employer_job, data, {
+            'job_title': AttributeCfg(is_ignore_excluded=True),
+            'open_date': AttributeCfg(is_ignore_excluded=True, prop_func=lambda x: get_datetime_or_none(x, as_date=True)),
+            'close_date': AttributeCfg(is_ignore_excluded=True, prop_func=lambda x: get_datetime_or_none(x, as_date=True)),
+            'salary_interval': AttributeCfg(is_ignore_excluded=True),
+            'salary_floor': AttributeCfg(is_ignore_excluded=True),
+            'salary_ceiling': AttributeCfg(is_ignore_excluded=True),
+            'employment_type': AttributeCfg(is_ignore_excluded=True),
+        })
+        
+        employer_job.job_description = sanitize_html(data['job_description'])
+        if salary_currency := data.get('salary_currency'):
+            employer_job.salary_currency = salary_currency
+        
+        # Handle job department - if ID is a string, this is a new department for this employer
+        job_department = data['job_department']
+        try:
+            employer_job.job_department_id = int(job_department['id'])
+        except ValueError:
+            # Check whether job department has already been created by a different employer
+            job_departments = JobDepartment.objects.filter(name__iexact=job_department['id'])
+            if job_departments:
+                employer_job.job_department = job_departments[0]
+            else:
+                new_job_department = JobDepartment(name=job_department['id'])
+                new_job_department.save()
+                employer_job.job_department = new_job_department
+                
+        # Remove existing locations if this is an existing job
+        if employer_job.id:
+            employer_job.locations.remove()
+
+        employer_job.save()
+        
+        # Add locations
+        job_location_model = employer_job.locations.through
+        job_location_model.objects.bulk_create(
+            [job_location_model(location_id=l, employerjob=employer_job) for l in location_ids],
+            ignore_conflicts=True
+        )
+        
+        return employer_job
+        
     
     @staticmethod
     def get_employer_jobs(employer_job_id=None, employer_job_filter=None, order_by='-open_date', is_include_closed=False):
@@ -322,6 +399,24 @@ class EmployerJobView(JobVyneAPIView):
             return jobs[0]
         
         return jobs
+    
+    
+class EmployerJobBonusView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
+
+    def put(self, request):
+        jobs = EmployerJob.objects.filter(id__in=self.data['job_ids'])
+        jobs_to_update = []
+        for job in jobs:
+            job.referral_bonus = self.data['referral_bonus']
+            job.referral_bonus_currency_id = self.data['referral_bonus_currency']['name']
+            jobs_to_update.append(job)
+    
+        EmployerJob.objects.bulk_update(jobs_to_update, ['referral_bonus', 'referral_bonus_currency_id'],
+                                        batch_size=1000)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Updated referral bonus for {len(jobs)} {"jobs" if len(jobs) > 1 else "job"}'
+        })
     
     
 class EmployerBonusDefaultView(JobVyneAPIView):
@@ -986,21 +1081,41 @@ class EmployerFromDomainView(JobVyneAPIView):
             status=status.HTTP_200_OK,
             data=matched_employers
         )
-
-
-class EmployerJobLocationView(JobVyneAPIView):
     
+    
+class EmployerJobDepartmentView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
 
+        departments = EmployerJob.objects\
+            .select_related('job_department')\
+            .filter(employer_id=employer_id)\
+            .values('job_department_id', 'job_department__name') \
+            .distinct()
+        
+        return Response(status=status.HTTP_200_OK, data=[{
+            'id': dept['job_department_id'],
+            'name': dept['job_department__name']
+        } for dept in departments])
+
+
+class EmployerJobLocationView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+        
         job_filter = Q(employer_id=employer_id)
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_filter)
-        cities, states, countries = {}, {}, {}
+        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_filter, is_include_closed=True)
+        cities, states, countries, locations = {}, {}, {}, {}
         for job in jobs:
             for location in job.locations.all():
+                if not locations.get(location.id):
+                    locations[location.id] = get_serialized_location(location)
                 if location.city and not cities.get(location.city_id):
                     cities[location.city_id] = {'name': location.city.name, 'id': location.city.id}
                 if location.state and not states.get(location.state_id):
@@ -1009,6 +1124,7 @@ class EmployerJobLocationView(JobVyneAPIView):
                     countries[location.country_id] = {'name': location.country.name, 'id': location.country.id}
         
         return Response(status=status.HTTP_200_OK, data={
+            'locations': sorted(list(locations.values()), key=lambda x: (x['is_remote'], x['city'])),
             'cities': sorted(list(cities.values()), key=lambda x: x['name']),
             'states': sorted(list(states.values()), key=lambda x: x['name']),
             'countries': sorted(list(countries.values()), key=lambda x: x['name'])
