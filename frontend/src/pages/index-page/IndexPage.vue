@@ -97,6 +97,7 @@
               @mouseenter="autoplay = 7000"
               @mouseleave="autoplay = false"
               style="background-color: rgba(0,0,0,0);"
+              class="q-pt-md"
             >
               <q-carousel-slide :name="1">
                 <div class="flex h-100 items-center justify-center">
@@ -326,8 +327,6 @@ export default defineComponent({
 }
 
 #testimonials {
-  // Prevents headshots from being clipped
-  overflow: visible;
   .q-panel {
     overflow: visible;
   }
