@@ -1124,7 +1124,7 @@ class EmployerJobLocationView(JobVyneAPIView):
                     countries[location.country_id] = {'name': location.country.name, 'id': location.country.id}
         
         return Response(status=status.HTTP_200_OK, data={
-            'locations': sorted(list(locations.values()), key=lambda x: (x['is_remote'], x['city'])),
+            'locations': sorted(list(locations.values()), key=lambda x: (x['is_remote'] or 0, x['city'] or '')),
             'cities': sorted(list(cities.values()), key=lambda x: x['name']),
             'states': sorted(list(states.values()), key=lambda x: x['name']),
             'countries': sorted(list(countries.values()), key=lambda x: x['name'])
