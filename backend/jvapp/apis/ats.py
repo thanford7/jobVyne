@@ -27,6 +27,7 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none, get_unix_datetime
+from jvapp.utils.file import get_file_name, get_mime_from_file_path
 from jvapp.utils.response import is_good_response
 from jvapp.utils.sanitize import get_sanitizer, sanitize_html
 
@@ -47,12 +48,14 @@ def get_resp_error_message(resp):
     return f'({resp.status_code}) {resp.text}'
 
 
-def get_base64_encoded_str(text):
+def get_base64_encoded(text, as_string=True):
     # Must be in bytes to encode
     if not isinstance(text, bytes):
         text = text.encode()
     encoded_text = base64.b64encode(text)
-    return str(encoded_text, encoding='utf-8')  # Convert back to string val
+    if as_string:
+        return str(encoded_text, encoding='utf-8')
+    return encoded_text
 
 
 @dataclass
@@ -123,8 +126,8 @@ class BaseAts:
     def get_job_title_from_application(self, application):
         return application.employer_job.job_title
     
-    def get_encoded_resume(self, application):
-        return get_base64_encoded_str(application.resume.open('rb').read()) if application.resume else None
+    def get_encoded_resume(self, application, as_string=True):
+        return get_base64_encoded(application.resume.open('rb').read(), as_string=as_string) if application.resume else None
     
     def get_referral_note(self, application):
         return f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
@@ -360,7 +363,7 @@ class GreenhouseAts(BaseAts):
     def create_application(self, application):
         # Check whether candidate exists
         candidates = self.get_paginated_data(self.candidates_url, {'email': application.email})
-        resume = self.get_encoded_resume(application)
+        resume = self.get_encoded_resume(application, as_string=True)
         ats_job_key = application.employer_job.ats_job_key
         application_data = {
             'job_id': ats_job_key,
@@ -498,7 +501,7 @@ class GreenhouseAts(BaseAts):
         return str(self.get_resp_data(resp)['id'])
     
     def get_request_headers(self, is_user_id=False):
-        encoded_api_key = get_base64_encoded_str(f'{self.ats_cfg.api_key}:')
+        encoded_api_key = get_base64_encoded(f'{self.ats_cfg.api_key}:')
         return {
             'On-Behalf-Of': self.ats_user_id if is_user_id else self.ats_cfg.email,
             'Authorization': f'Basic {encoded_api_key}'
@@ -537,8 +540,8 @@ class LeverAts(BaseAts):
     
         return data
 
-    def get_data(self, request_method_fn, relative_url, next_key=None, body_cfg=None, is_JSON=False, is_multipart_form=False):
-        body = {}  # {'responseType': 'json'}
+    def get_data(self, request_method_fn, relative_url, next_key=None, body_cfg=None, files=None, is_JSON=False):
+        body = {}
         if body_cfg:
             body = {**body_cfg, **body}
         if next_key:
@@ -547,18 +550,17 @@ class LeverAts(BaseAts):
         
         if LeverOauthTokenView.has_access_token_expired(self.ats_cfg):
             LeverOauthTokenView.refresh_access_token(self.ats_cfg)
-    
-        headers = {'Authorization': f'Bearer {self.ats_cfg.access_token}'}
-        if is_JSON or is_multipart_form:
-            content_type = 'application/json' if is_JSON else 'multipart/form-data'
-            headers = {**headers, 'Content-Type': content_type}
-        request_kwargs = {'headers': headers}
+        
+        request_kwargs = {}
+        request_kwargs['headers'] = {'Authorization': f'Bearer {self.ats_cfg.access_token}'}
         if is_JSON:
+            request_kwargs['headers']['Content-Type'] = 'application/json'
             request_kwargs['json'] = body
         else:
-            if is_multipart_form:
-                body, header = encode_multipart_formdata(body)
             request_kwargs['data'] = body
+        
+        if files:
+            request_kwargs['files'] = files
     
         response = request_method_fn(url, **request_kwargs)
         if not is_good_response(response):
@@ -620,8 +622,6 @@ class LeverAts(BaseAts):
             'postings[]': application.employer_job.ats_job_key,
             'stage': self.ats_cfg.job_stage_name,
             'emails[]': application.email,
-            # 'resumeFile': self.get_encoded_resume(application),
-            'resumeFile': application.resume.open('rb').read(),
             'tags[]': self.JOBVYNE_TAG,
             'sources[]': self.JOBVYNE_TAG,
             'origin': 'referred',
@@ -631,29 +631,12 @@ class LeverAts(BaseAts):
             body_cfg['phones[]'] = json.dumps({'value': application.phone_number})
         if application.linkedin_url:
             body_cfg['links[]'] = application.linkedin_url
-
-        # body_cfg = {
-        #     'name': f'{application.first_name} {application.last_name}',
-        #     'postings': [application.employer_job.ats_job_key],
-        #     'stage': self.ats_cfg.job_stage_name,
-        #     'emails': [application.email],
-        #     'tags': [self.JOBVYNE_TAG],
-        #     'sources': [self.JOBVYNE_TAG],
-        #     'origin': 'referred',
-        #     'createdAt': self.get_lever_unix_from_datetime(timezone.now())
-        # }
-        # if application.phone_number:
-        #     body_cfg['phones'] = [{'value': application.phone_number}]
-        # if application.linkedin_url:
-        #     body_cfg['links'] = [application.linkedin_url]
-        
+            
         data = self.get_data(
             REQUEST_FN_POST,
-            # f'opportunities?perform_as={self.ats_cfg.api_key}&perform_as_posting_owner=true',
-            # is_JSON=True,
             f'opportunities?perform_as={self.ats_cfg.api_key}&parse=true&perform_as_posting_owner=true',
-            is_multipart_form=True,
-            body_cfg=body_cfg
+            body_cfg=body_cfg,
+            files={'resumeFile': (get_file_name(application.resume.path), application.resume.open('rb').read(), get_mime_from_file_path(application.resume.path))}
         )
 
         return data['data']['contact'], data['data']['id']
