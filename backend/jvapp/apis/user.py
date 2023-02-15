@@ -3,13 +3,14 @@ from string import Template
 
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
+from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
 from jvapp.apis.geocoding import LocationParser
 from jvapp.models import Employer, EmployerAuthGroup, SocialPost
 from jvapp.models.abstract import PermissionTypes
@@ -67,8 +68,13 @@ class UserView(JobVyneAPIView):
             prop_val = self.data.get(prop)
             if prop_val is not None:
                 extra_user_props[prop] = prop_val
-
-        user = JobVyneUser.objects.create_user(email, password=password, **extra_user_props)
+        
+        try:
+            user = JobVyneUser.objects.create_user(email, password=password, **extra_user_props)
+        except IntegrityError:
+            return Response(status=status.HTTP_200_OK, data={
+                WARNING_MESSAGES_KEY: [f'User with email address <{email}> already exists. Login or reset your password.']
+            })
 
         # User wasn't created through social auth so we need to verify their email
         self.send_email_verification_email(request, user, 'email')

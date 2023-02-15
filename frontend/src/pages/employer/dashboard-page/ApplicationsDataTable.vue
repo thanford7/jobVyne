@@ -141,7 +141,7 @@ export default {
         {
           name: 'applicationDT',
           field: 'date',
-          format: dateTimeUtil.getShortDate.bind(dateTimeUtil),
+          format: (val) => dateTimeUtil.getShortDate(val),
           label: 'Application Date',
           align: 'left',
           sortable: true

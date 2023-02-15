@@ -76,7 +76,7 @@ const applicationColumns = [
     field: 'created_dt',
     align: 'center',
     label: 'Application date',
-    format: dateTimeUtil.getShortDate.bind(dateTimeUtil),
+    format: (val) => dateTimeUtil.getShortDate(val),
     sortable: true
   },
   { name: 'jobStatus', field: (app) => app.employer_job.is_open, align: 'left', label: 'Job status', sortable: true }

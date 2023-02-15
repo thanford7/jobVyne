@@ -5,3 +5,4 @@ Dockerfile*
 **/secret
 **/secure
 e2e_db.sql
+**/media

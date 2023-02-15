@@ -4,6 +4,7 @@
     ref="select"
     :multiple="isMulti" :clearable="isMulti" :use-chips="isMulti"
     filled use-input
+    :map-options="isEmitId" :emit-value="isEmitId"
     :new-value-mode="(isAllowCreate) ? 'add-unique' : null"
     :options="departments"
     @filter="filter"
@@ -49,6 +50,10 @@ export default {
       default: false
     },
     isRequired: {
+      type: Boolean,
+      default: false
+    },
+    isEmitId: {
       type: Boolean,
       default: false
     }

@@ -32,7 +32,8 @@
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="getTabStyle()">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
-            <q-tab v-if="employerPage && employerPage.is_viewable" id="jv-tab-company" name="company" :label="`About ${employer?.name}`"/>
+            <q-tab v-if="employerPage && employerPage.is_viewable" id="jv-tab-company" name="company"
+                   :label="`About ${employer?.name}`"/>
             <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me" :label="`About ${profile?.first_name}`"/>
           </q-tabs>
         </ResponsiveWidth>
@@ -73,6 +74,42 @@
                 <q-page padding>
                   <div v-if="isActiveEmployer && isActiveEmployee" class="row">
                     <div class="col-12">
+                      <CollapsableCard title="Job filters" :is-dense="true">
+                        <template v-slot:body>
+                          <div class="col-12 q-pa-sm">
+                            <div class="row q-gutter-y-sm">
+                              <div class="col-12 col-md-6 q-pr-md-sm">
+                                <q-input
+                                  v-model="jobFilters.job_title"
+                                  filled label="Job title"
+                                />
+                              </div>
+                              <div class="col-12 col-md-6 q-pl-md-sm">
+                                <SelectJobDepartment v-model="jobFilters.department_ids" :is-emit-id="true"/>
+                              </div>
+                              <div class="col-12 col-md-4 q-pr-md-sm">
+                                <SelectJobCity v-model="jobFilters.city_ids" :is-emit-id="true"/>
+                              </div>
+                              <div class="col-12 col-md-4 q-px-md-sm">
+                                <SelectJobState v-model="jobFilters.state_ids" :is-emit-id="true"/>
+                              </div>
+                              <div class="col-12 col-md-4 q-pl-md-sm">
+                                <SelectJobCountry v-model="jobFilters.country_ids" :is-emit-id="true"/>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+                      </CollapsableCard>
+                    </div>
+                    <div v-if="jobFilters?.job_ids?.length && totalEmployerJobCount > jobFilters.job_ids.length"
+                         class="col-12 q-mt-md">
+                      <q-btn
+                        class="w-100" :label="`View all ${totalEmployerJobCount} jobs`"
+                        icon="visibility" :style="getButtonStyle()"
+                        @click="resetJobFilters"
+                      />
+                    </div>
+                    <div class="col-12 q-mt-lg">
                       <div v-if="!jobs.length" class="q-mb-md">
                         <q-card class="q-pa-lg">
                           <div class="text-h6 text-center">No current job openings</div>
@@ -252,9 +289,14 @@
 </template>
 
 <script>
+import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
+import SelectJobCity from 'components/inputs/SelectJobCity.vue'
+import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
+import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
+import SelectJobState from 'components/inputs/SelectJobState.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
@@ -274,11 +316,21 @@ import dateTimeUtil from 'src/utils/datetime'
 import { storeToRefs } from 'pinia/dist/pinia'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 
+const jobFiltersTemplate = {
+  department_ids: [],
+  city_ids: [],
+  state_ids: [],
+  country_ids: [],
+  job_ids: [],
+  job_title: ''
+}
+
 export default {
   data () {
     return {
       tab: this.$route?.params?.tab || 'jobs',
       jobDescriptionCharacterLimit: 1000,
+      totalEmployerJobCount: null,
       jobs: null,
       employer: null,
       employerPage: null,
@@ -289,6 +341,7 @@ export default {
       jobApplication: null,
       jobPagesCount: null,
       pageNumber: 1,
+      jobFilters: {},
       dataUtil,
       dateTimeUtil,
       formUtil,
@@ -296,7 +349,18 @@ export default {
       userUtil
     }
   },
-  components: { CustomTooltip, EmployerProfile, ResponsiveWidth, CustomFooter, FormJobApplication },
+  components: {
+    CustomTooltip,
+    EmployerProfile,
+    ResponsiveWidth,
+    CustomFooter,
+    FormJobApplication,
+    CollapsableCard,
+    SelectJobDepartment,
+    SelectJobCity,
+    SelectJobState,
+    SelectJobCountry
+  },
   computed: {
     employmentYears () {
       if (!this.profile.employment_start_date) {
@@ -313,11 +377,20 @@ export default {
       async handler () {
         await this.loadData()
       }
+    },
+    jobFilters: {
+      async handler () {
+        await this.loadData({ isShowLoading: false })
+      },
+      deep: true
     }
   },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
     getSalaryRange: dataUtil.getSalaryRange.bind(dataUtil),
+    resetJobFilters () {
+      this.jobFilters = Object.assign({}, jobFiltersTemplate)
+    },
     hasJobDescriptionOverflow (job) {
       const el = document.getElementById(`job-description-${job.id}`)
       if (!el) {
@@ -348,30 +421,60 @@ export default {
       await this.authStore.logout(false)
       await this.loadData()
     },
-    async loadData () {
-      Loading.show()
-      const resp = await this.$api.get(`social-link-jobs/${this.$route.params.filterId}`, {
-        params: { page_count: this.pageNumber }
-      })
+    async loadData ({ isShowLoading = true, isFirstLoad = false } = {}) {
+      if (isShowLoading) {
+        Loading.show()
+      }
+      let url = 'social-link-jobs/'
+      if (this.$route.params.filterId) {
+        url = `${url}${this.$route.params.filterId}`
+      }
+      const params = {
+        page_count: this.pageNumber,
+        employer_id: this.$route.params.employerId
+      }
+      // After the first page load, job filters are managed through the UI
+      if (!isFirstLoad) {
+        Object.assign(params, this.jobFilters)
+      }
+      const resp = await this.$api.get(url, { params })
       const {
         jobs,
         employer,
         total_page_count: totalPageCount,
         owner_id: ownerId,
-        is_active_employee: isActiveEmployee
+        is_active_employee: isActiveEmployee,
+        filter_values: filterValues,
+        total_employer_job_count: totalEmployerJobCount
       } = resp.data
-      await Promise.all([
-        this.employerStore.setEmployerSubscription(employer.id),
-        this.authStore.setApplications(this.user),
-        this.userStore.setUserProfile(ownerId)
-      ])
-      const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
-      this.isActiveEmployer = isActiveEmployer
-      this.isActiveEmployee = isActiveEmployee
-      this.jobs = (isActiveEmployer && isActiveEmployee) ? jobs : []
+
+      if (isFirstLoad) {
+        Object.assign(this.jobFilters, filterValues)
+      }
+      this.totalEmployerJobCount = totalEmployerJobCount
+      if (!this.$route.meta.isExample) {
+        await Promise.all([
+          this.employerStore.setEmployerSubscription(employer.id),
+          this.authStore.setApplications(this.user),
+          this.userStore.setUserProfile(ownerId)
+        ])
+        const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
+        this.isActiveEmployer = isActiveEmployer
+        this.isActiveEmployee = isActiveEmployee
+        this.profile = storeToRefs(this.userStore).userProfile
+      } else {
+        this.isActiveEmployer = true
+        this.isActiveEmployee = true
+        if (this.$route.params.ownerId) {
+          await this.userStore.setUserProfile(this.$route.params.ownerId)
+          this.profile = this.userStore.userProfile
+        } else {
+          this.profile = null
+        }
+      }
+      this.jobs = (this.isActiveEmployer && this.isActiveEmployee) ? jobs : []
       this.employer = employer
 
-      this.profile = storeToRefs(this.userStore).userProfile
       this.jobPagesCount = totalPageCount
       Loading.hide()
     },
@@ -422,22 +525,8 @@ export default {
     }
   },
   async mounted () {
-    if (!this.$route.meta.isExample) {
-      await this.loadData()
-    } else {
-      Loading.show()
-      await this.employerStore.setEmployer(this.$route.params.employerId)
-      this.jobs = []
-      this.employer = this.employerStore.getEmployer(this.$route.params.employerId)
-      if (this.$route.params.ownerId) {
-        await this.userStore.setUserProfile(this.$route.params.ownerId)
-        this.profile = this.userStore.userProfile
-      } else {
-        this.profile = null
-      }
-      Loading.hide()
-    }
-
+    this.resetJobFilters()
+    await this.loadData({ isFirstLoad: true })
     await this.employerStore.setEmployerPage(this.employer.id)
     this.employerPage = this.employerStore.getEmployerPage(this.employer.id)
 

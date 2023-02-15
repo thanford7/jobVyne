@@ -23,7 +23,7 @@ from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.data import AttributeCfg, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import get_domain_from_email
-from jvapp.utils.sanitize import sanitize_html
+from jvapp.utils.sanitize import job_description_sanitizer, sanitize_html
 
 
 __all__ = (
@@ -280,6 +280,18 @@ class EmployerJobView(JobVyneAPIView):
         elif employer_id := self.query_params.get('employer_id'):
             employer_id = employer_id[0] if isinstance(employer_id, list) else employer_id
             job_filter = Q(employer_id=employer_id)
+            if job_title_filter := self.query_params.get('job_title_filter'):
+                job_filter &= Q(job_title__iregex=f'^.*{job_title_filter}.*$')
+            if city_ids := self.query_params.getlist('city_ids[]'):
+                job_filter &= Q(locations__city_id__in=city_ids)
+            if state_ids := self.query_params.getlist('state_ids[]'):
+                job_filter &= Q(locations__state_id__in=state_ids)
+            if country_ids := self.query_params.getlist('country_ids[]'):
+                job_filter &= Q(locations__country_id__in=country_ids)
+            if department_ids := self.query_params.getlist('department_ids[]'):
+                job_filter &= Q(job_department_id__in=department_ids)
+            if job_ids := self.query_params.getlist('job_ids[]'):
+                job_filter &= Q(id__in=job_ids)
             jobs = self.get_employer_jobs(employer_job_filter=job_filter)
             rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=employer_id)
             data = [get_serialized_employer_job(j, rules=rules, is_include_bonus=True) for j in jobs]
@@ -341,7 +353,7 @@ class EmployerJobView(JobVyneAPIView):
             'employment_type': AttributeCfg(is_ignore_excluded=True),
         })
         
-        employer_job.job_description = sanitize_html(data['job_description'])
+        employer_job.job_description = sanitize_html(data['job_description'], sanitizer=job_description_sanitizer)
         if salary_currency := data.get('salary_currency'):
             employer_job.salary_currency = salary_currency
         
@@ -430,10 +442,9 @@ class EmployerBonusDefaultView(JobVyneAPIView):
         employer.jv_check_permission(PermissionTypes.EDIT.value, self.user)
         self.user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, self.user.employer_id)
         
-        self.data['default_bonus_currency_id'] = self.data['default_bonus_currency']['name']
         set_object_attributes(employer, self.data, {
             'default_bonus_amount': None,
-            'default_bonus_currency_id': None,
+            'default_bonus_currency_id': AttributeCfg(form_name='default_bonus_currency'),
         })
         employer.save()
         return Response(status=status.HTTP_200_OK, data={
@@ -522,7 +533,6 @@ class EmployerBonusRuleView(JobVyneAPIView):
     @staticmethod
     @atomic
     def update_bonus_rule(user, bonus_rule, data):
-        data['bonus_currency_id'] = data['bonus_currency']['name']
         data['include_job_titles_regex'] = data['inclusion_criteria'].get('job_titles_regex')
         data['exclude_job_titles_regex'] = data['exclusion_criteria'].get('job_titles_regex')
         set_object_attributes(bonus_rule, data, {
@@ -530,7 +540,7 @@ class EmployerBonusRuleView(JobVyneAPIView):
             'include_job_titles_regex': None,
             'exclude_job_titles_regex': None,
             'base_bonus_amount': None,
-            'bonus_currency_id': None,
+            'bonus_currency_id': AttributeCfg(form_name='bonus_currency'),
             'days_after_hire_payout': None
         })
         

@@ -3,7 +3,7 @@
     <q-icon
       :title="`Filter ${filterName}`"
       class="table-filter" :class="(hasFilter) ? 'table-filter-active' : ''"
-      name="filter_alt" color="grey-8" size="16px" @click="openDialog"
+      name="filter_alt" size="16px" @click="openDialog"
     />
     <DialogBase v-model="isOpen" :base-title-text="`${filterName} filter`" :is-include-buttons="false">
       <template v-slot:default>
@@ -41,14 +41,13 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .table-filter {
-  display: none;
-  &.table-filter-active {
-    display: inline;
-  }
-}
-th:hover .table-filter {
   display: inline;
+  color: $grey-8;
+
+  &.table-filter-active {
+    color: $positive;
+  }
 }
 </style>

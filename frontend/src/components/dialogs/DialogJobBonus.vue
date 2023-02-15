@@ -5,16 +5,17 @@
     @ok="saveJobBonus"
   >
     <template v-slot:subTitle>
-      {{ dataUtil.pluralize('job', jobs.length) }} selected. Adding a referral bonus directly to a job
+      <span v-if="jobs.length > 1">{{ dataUtil.pluralize('job', jobs.length) }} selected.</span>
+      Adding a referral bonus directly to a job
       will override all referral bonus rules that may apply, including time based modifiers
     </template>
     <div class="q-gutter-y-md q-mt-sm">
       <div class="row">
         <div class="col-12">
           <MoneyInput
-            v-model="formData.referral_bonus"
+            v-model:money-value="formData.referral_bonus"
+            v-model:currency-name="formData.referral_bonus_currency"
             label="Referral bonus"
-            @update-currency="formData.referral_bonus_currency = $event"
           />
         </div>
       </div>
@@ -43,7 +44,7 @@ export default {
       dataUtil,
       formData: {
         referral_bonus: null,
-        referral_bonus_currency: null
+        referral_bonus_currency: 'USD'
       }
     }
   },
@@ -64,6 +65,11 @@ export default {
   mounted () {
     this.employerStore = useEmployerStore()
     this.authStore = useAuthStore()
+    if (this.jobs.length === 1) {
+      const job = this.jobs[0]
+      this.formData.referral_bonus = job.referral_bonus
+      this.formData.referral_bonus_currency = job.referral_bonus_currency?.name
+    }
   }
 }
 </script>

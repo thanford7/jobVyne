@@ -407,7 +407,7 @@ class ShareSocialPostView(JobVyneAPIView):
         # Filter posts based on auto_weeks_between and add in jobs for each post
         # TODO: get_jobs_from_filter is very inefficient need to figure out better approach
         auto_posts = [
-            {'post': ap, 'jobs': SocialLinkJobsView.get_jobs_from_filter(ap.link_filter)}
+            {'post': ap, 'jobs': SocialLinkJobsView.get_jobs_from_filter(link_filter=ap.link_filter)}
             for ap in auto_posts if ShareSocialPostView.is_auto_post_week(ap, target_dt)
         ]
         

@@ -218,11 +218,11 @@ export default {
       const filterParams = {}
       const startDate = this.postFilter?.dateRange?.from
       if (startDate) {
-        filterParams.start_date = dateTimeUtil.serializeDate(startDate, true)
+        filterParams.start_date = dateTimeUtil.serializeDate(startDate, { isIncludeTime: true })
       }
       const endDate = this.postFilter?.dateRange?.to
       if (endDate) {
-        filterParams.end_date = dateTimeUtil.serializeDate(endDate, true, true)
+        filterParams.end_date = dateTimeUtil.serializeDate(endDate, { isIncludeTime: true, isEndOfDay: true })
       }
       if (this.postFilter?.platforms?.length) {
         filterParams.platform_ids = this.postFilter.platforms.map((p) => p.id)

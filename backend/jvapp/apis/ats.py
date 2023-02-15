@@ -11,25 +11,24 @@ from datetime import date, timedelta
 import requests
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
+from django.db.models import Q
 from django.utils import timezone
-from html_sanitizer.sanitizer import tag_replacer
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from urllib3 import encode_multipart_formdata
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.employer import EmployerAtsView
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import Employer, EmployerAts, EmployerJob, JobApplication, JobDepartment
+from jvapp.models import Employer, EmployerAts, EmployerJob, JobApplication, JobDepartment, PermissionName
 from jvapp.models.abstract import PermissionTypes
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none, get_unix_datetime
 from jvapp.utils.file import get_file_name, get_mime_from_file_path
 from jvapp.utils.response import is_good_response
-from jvapp.utils.sanitize import get_sanitizer, sanitize_html
+from jvapp.utils.sanitize import job_description_sanitizer, sanitize_html
 
 
 logger = logging.getLogger(__name__)
@@ -161,10 +160,6 @@ class BaseAts:
     def save_jobs(self, jobs):
         current_jobs = self.get_current_jobs()
         job_departments = self.get_job_departments()
-        sanitizer = get_sanitizer(
-            cfg_override={'separate': ('br', 'li', 'p')},
-            add_element_preprocessors=[tag_replacer('div', 'p')]
-        )
         process_count = 0
         jobs_count = len(jobs)
         JobLocationsModel = EmployerJob.locations.through
@@ -186,7 +181,7 @@ class BaseAts:
                 current_job.ats_job_key = job_data.ats_job_key
                 current_job.job_title = job_data.job_title
                 if job_data.job_description:
-                    current_job.job_description = sanitize_html(job_data.job_description, sanitizer=sanitizer)
+                    current_job.job_description = sanitize_html(job_data.job_description, sanitizer=job_description_sanitizer)
                 else:
                     current_job.job_description = None
                 current_job.open_date = job_data.open_date
@@ -641,12 +636,15 @@ class LeverAts(BaseAts):
 
         return data['data']['contact'], data['data']['id']
     
-    def add_application_note(self, note, opportunity_key=None, **kwargs):
-        if not opportunity_key:
+    def get_candidate_key(self, application_key):
+        return application_key
+    
+    def add_application_note(self, note, candidate_key=None, **kwargs):
+        if not candidate_key:
             raise AtsError('Could not save the note on candidate: An opportunity key is required')
         self.get_data(
             REQUEST_FN_POST,
-            f'opportunities/{opportunity_key}/notes?perform_as={self.ats_cfg.api_key}',
+            f'opportunities/{candidate_key}/notes?perform_as={self.ats_cfg.api_key}',
             is_JSON=True,
             body_cfg={
                 'value': note
@@ -784,23 +782,43 @@ class AtsBaseView(JobVyneAPIView):
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
         ats_id = self.data.get('ats_id') or self.query_params.get('ats_id')
-        if not ats_id:
-            raise ValueError('An ATS ID is required')
-
-        self.ats_cfg = EmployerAts.objects.get(id=ats_id)
-        self.check_permission()
-        self.ats_api = get_ats_api(self.ats_cfg)
+        self.employer_id = self.data.get('employer_id')
+        if not any([ats_id, self.employer_id]):
+            return Response(status=status.HTTP_200_OK, data={
+                ERROR_MESSAGES_KEY: ['An ATS ID or employer ID is required']
+            })
         
-    def check_permission(self):
-        self.ats_cfg.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        if ats_id:
+            ats_filter = Q(id=ats_id)
+        else:
+            ats_filter = Q(employer_id=self.employer_id)
+
+        try:
+            self.ats_cfg = EmployerAts.objects.select_related('employer').get(ats_filter)
+        except EmployerAts.DoesNotExist:
+            return Response(status=status.HTTP_200_OK, data={
+                ERROR_MESSAGES_KEY: ['An ATS connection does not exist']
+            })
+
+        self.ats_api = get_ats_api(self.ats_cfg)
 
 
 class AtsJobsView(AtsBaseView):
     
     def put(self, request):
+        if not any([
+            self.user.is_admin,
+            self.user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_JOBS.value, self.employer_id)
+        ]):
+            return Response(status=status.HTTP_200_OK, data={
+                ERROR_MESSAGES_KEY: ['You do not have the appropriate permissions to update jobs']
+            })
+
         jobs = self.ats_api.get_jobs()
         self.ats_api.save_jobs(jobs)
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully updated jobs'
+        })
     
     
 class AtsStagesView(AtsBaseView):

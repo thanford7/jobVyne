@@ -24,35 +24,31 @@
         <q-tab-panel name="post">
           <div class="row q-gutter-y-sm">
             <div class="col-12 q-gutter-x-sm q-gutter-y-md q-mb-sm">
-              <q-btn-dropdown color="primary">
-                <template v-slot:label>
-                  <CustomTooltip v-if="isEmployer" :is_include_icon="false" :is_include_space="true">
-                    <template v-slot:content>
-                      <q-icon name="add"/>
-                      Create post template
-                    </template>
-                    Post templates are used by employees to easily post to their
-                    social profiles
-                  </CustomTooltip>
-                  <template v-else>
+              <div>
+                <q-btn-dropdown color="primary" class="q-my-md">
+                  <template v-slot:label>
                     <q-icon name="add"/>
-                    Create post
+                    {{ (isEmployer) ? 'Create post template' : 'Create post' }}
                   </template>
-                </template>
-                <q-list>
-                  <q-item
-                    v-for="platform in availableSocialPlatforms"
-                    clickable v-close-popup @click="openEditContentDialog(null, false, platform)"
-                  >
-                    <q-item-section avatar>
-                      <img :src="platform.logo" alt="Logo" style="max-height: 20px">
-                    </q-item-section>
-                    <q-item-section>
-                      {{ platform.name }}
-                    </q-item-section>
-                  </q-item>
-                </q-list>
-              </q-btn-dropdown>
+                  <q-list>
+                    <q-item
+                      v-for="platform in availableSocialPlatforms"
+                      clickable v-close-popup @click="openEditContentDialog(null, false, platform)"
+                    >
+                      <q-item-section avatar>
+                        <img :src="platform.logo" alt="Logo" style="max-height: 20px">
+                      </q-item-section>
+                      <q-item-section>
+                        {{ platform.name }}
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-btn-dropdown>
+                <CustomTooltip v-if="isEmployer" :is_include_space="true">
+                  Post templates are used by employees to easily post to their
+                  social profiles
+                </CustomTooltip>
+              </div>
               <SocialPostsSection
                 ref="socialPosts"
                 :is-employer="isEmployer"
@@ -261,7 +257,9 @@
 import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogEmployerFile, { loadDialogEmployerFileDataFn } from 'components/dialogs/DialogEmployerFile.vue'
-import DialogSocialContent, { loadDialogSocialContentFn } from 'components/dialogs/dialog-social-content/DialogSocialContent.vue'
+import DialogSocialContent, {
+  loadDialogSocialContentFn
+} from 'components/dialogs/dialog-social-content/DialogSocialContent.vue'
 import DialogUserFile, { loadDialogUserFileDataFn } from 'components/dialogs/DialogUserFile.vue'
 import PageHeader from 'components/PageHeader.vue'
 import SocialPostsSection from 'pages/content-page/SocialPostsSection.vue'
@@ -378,11 +376,11 @@ export default {
       const filterParams = {}
       const startDate = this.postFilter?.dateRange?.from
       if (startDate) {
-        filterParams.start_date = dateTimeUtil.serializeDate(startDate, true)
+        filterParams.start_date = dateTimeUtil.serializeDate(startDate, { isIncludeTime: true })
       }
       const endDate = this.postFilter?.dateRange?.to
       if (endDate) {
-        filterParams.end_date = dateTimeUtil.serializeDate(endDate, true, true)
+        filterParams.end_date = dateTimeUtil.serializeDate(endDate, { isIncludeTime: true, isEndOfDay: true })
       }
       if (this.postFilter?.platforms?.length) {
         filterParams.platform_ids = this.postFilter.platforms.map((p) => p.id)

@@ -308,7 +308,7 @@ const jobColumns = [
     align: 'left',
     label: 'Posted Date',
     sortable: true,
-    format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
+    format: (val) => dateTimeUtil.getShortDate(val)
   },
   {
     name: 'bonus',

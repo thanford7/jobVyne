@@ -2,9 +2,6 @@
   <q-page padding>
     <div class="q-ml-sm">
       <PageHeader title="User management">
-        Users can be added to multiple permission groups. Permissions are additive. For example, if a user is part of
-        two groups and one has permission to add employees and the other does not, the user WILL have the ability to add
-        employees.
         <div>
           <q-icon name="info" size="24px"/>
           {{ dataUtil.pluralize('employee seat', subscription.active_employees) }}
@@ -32,8 +29,13 @@
           </div>
         </q-tab-panel>
         <q-tab-panel name="groups">
-          <div class="row">
-            <div class="col-12">
+          <div class="row q-gutter-y-md">
+            <div class="col-12 callout-card">
+              Users can be added to multiple permission groups. Permissions are additive. For example, if a user is part of
+              two groups and one has permission to add employees and the other does not, the user WILL have the ability to add
+              employees.
+            </div>
+            <div class="col-12 q-pt-md">
               <q-card class="q-mb-md">
                 <q-card-section>
                   <div class="q-mb-sm flex">

@@ -10,7 +10,7 @@
     )"
   >
     <div class="q-gutter-y-sm">
-      <SelectJobCity v-model="jobsFilter.cities"/>
+      <SelectJobCity v-model="jobsFilter.cities" autofocus/>
       <SelectJobState v-model="jobsFilter.states"/>
       <SelectJobCountry v-model="jobsFilter.countries"/>
     </div>

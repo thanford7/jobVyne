@@ -39,16 +39,16 @@
         <template v-if="isAddSalary">
           <div class="col-12 col-md-4 q-pr-md-sm">
             <MoneyInput
-              v-model="formData.salary_floor"
-              @updateCurrency="formData.salary_currency"
-              :default-currency="formData.salary_currency"
+              v-model:money-value="formData.salary_floor"
+              v-model:currency-name="formData.salary_currency"
               label="Min salary"
               :is-required="isAddSalary"
             />
           </div>
           <div class="col-12 col-md-4 q-px-md-sm">
             <MoneyInput
-              v-model="formData.salary_ceiling"
+              v-model:money-value="formData.salary_ceiling"
+              v-model:currency-name="formData.salary_currency"
               label="Max salary" :is-include-currency-selection="false"
               :is-required="isAddSalary"
             />
@@ -151,9 +151,9 @@ export default {
           (!this.isAddSalary) ? ['salary_floor', 'salary_ceiling', 'salary_interval', 'salary_currency'] : []
         )
       )
-      data.open_date = dateTimeUtil.serializeDate(data.open_date)
+      data.open_date = dateTimeUtil.serializeDate(data.open_date, { isUTC: false })
       if (data.close_date) {
-        data.close_date = dateTimeUtil.serializeDate(data.close_date)
+        data.close_date = dateTimeUtil.serializeDate(data.close_date, { isUTC: false })
       }
       const method = (this.job) ? this.$api.put : this.$api.post
       await method('employer/job/', getAjaxFormData(data))
@@ -170,9 +170,9 @@ export default {
     if (this.job) {
       this.formData = Object.assign(this.formData, this.job)
       this.formData.locations = (this.formData.locations || []).map((loc) => locationUtil.getFullLocation(loc))
-      this.formData.open_date = dateTimeUtil.serializeDate(this.formData.open_date)
+      this.formData.open_date = dateTimeUtil.getShortDate(this.formData.open_date, dateTimeUtil.serializeDateFormat)
       if (this.formData.close_date?.length) {
-        this.formData.close_date = dateTimeUtil.serializeDate(this.formData.close_date)
+        this.formData.close_date = dateTimeUtil.getShortDate(this.formData.close_date, dateTimeUtil.serializeDateFormat)
       }
       this.formData.job_department = {
         id: this.job.job_department_id,

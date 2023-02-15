@@ -45,7 +45,7 @@ const scraperColumns = [
     label: 'Last Success Date',
     sortable: true,
     sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil),
-    format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
+    format: (val) => dateTimeUtil.getShortDate(val)
   },
   { name: 'hasScrapeFailure', field: 'has_job_scrape_failure', align: 'left', label: 'Is Failing', sortable: true, format: (val) => dataUtil.capitalize(String(val)) }
 ]

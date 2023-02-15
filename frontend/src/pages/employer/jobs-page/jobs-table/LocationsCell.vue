@@ -1,5 +1,5 @@
 <template>
-  <template v-if="props.row.locations.length > 1">
+  <template v-if="locations.length > 1">
     <CustomTooltip>
       <template v-slot:icon>
         <q-chip
@@ -9,20 +9,20 @@
         </q-chip>
       </template>
       <ul>
-        <li v-for="location in props.row.locations">
+        <li v-for="location in locations">
           {{ locationUtil.getFullLocation(location) }}
         </li>
       </ul>
     </CustomTooltip>
   </template>
   <q-chip
-    v-else-if="props.row.locations.length"
+    v-else-if="locations.length"
     dense
     color="grey-7"
     text-color="white"
     size="13px"
   >
-    {{ locationUtil.getFullLocation(props.row.locations[0]) }}
+    {{ locationUtil.getFullLocation(locations[0]) }}
   </q-chip>
 </template>
 
@@ -34,7 +34,7 @@ export default {
   name: 'LocationsCell',
   components: { CustomTooltip },
   props: {
-    props: Object
+    locations: Object
   },
   data () {
     return {

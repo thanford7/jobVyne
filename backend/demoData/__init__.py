@@ -338,7 +338,7 @@ def create_recurring_data():
         users = JobVyneUser.objects.filter(employer=employer)
         social_link_filters = SocialLinkFilter.objects.filter(owner_id__in=[u.id for u in users])
         for social_link in social_link_filters:
-            jobs = SocialLinkJobsView.get_jobs_from_filter(social_link)
+            jobs = SocialLinkJobsView.get_jobs_from_filter(link_filter=social_link)
             if not jobs:
                 continue
             application_count = int(poisson(lam=3.0))

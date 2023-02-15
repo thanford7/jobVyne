@@ -1,8 +1,12 @@
 <template>
 <!--  eslint-disable vue/no-mutating-props-->
   {{ col.label }}
-  <TableFilter filter-name="Job title" :has-filter="jobsFilter.jobTitle && jobsFilter.jobTitle.length">
-    <q-input filled borderless debounce="300" v-model="jobsFilter.jobTitle" placeholder="Job title">
+  <TableFilter filter-name="Job title" :has-filter="hasFilter">
+    <q-input
+      v-model="jobsFilter.jobTitle"
+      filled borderless autofocus debounce="300"
+      placeholder="Job title"
+    >
       <template v-slot:append>
         <q-icon name="search"/>
       </template>
@@ -18,6 +22,11 @@ export default {
   props: {
     col: Object,
     jobsFilter: Object
+  },
+  computed: {
+    hasFilter () {
+      return Boolean(this.jobsFilter.jobTitle) && Boolean(this.jobsFilter.jobTitle.length)
+    }
   },
   components: { TableFilter }
 }

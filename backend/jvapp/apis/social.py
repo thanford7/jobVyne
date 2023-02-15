@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
 from jvapp.apis.employer import EmployerJobView, EmployerView
 from jvapp.models import JobApplication, Message, PageView
@@ -28,8 +27,8 @@ class SocialPlatformView(JobVyneAPIView):
     def get(self, request):
         data = [get_serialized_social_platform(sp) for sp in SocialPlatform.objects.all()]
         return Response(status=status.HTTP_200_OK, data=data)
-    
-    
+
+
 class SocialLinkFilterView(JobVyneAPIView):
     
     def get(self, request, link_filter_id=None):
@@ -49,7 +48,8 @@ class SocialLinkFilterView(JobVyneAPIView):
                 # Only fetch job count for specific user because a database call
                 # is required per link_filter and is not performant
                 if owner_id:
-                    serialized_link_filter['jobs_count'] = len(SocialLinkJobsView.get_jobs_from_filter(link_filter))
+                    serialized_link_filter['jobs_count'] = len(
+                        SocialLinkJobsView.get_jobs_from_filter(link_filter=link_filter))
                 data.append(serialized_link_filter)
         
         return Response(status=status.HTTP_200_OK, data=data)
@@ -84,7 +84,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             return Response('A link filter ID is required', status=status.HTTP_400_BAD_REQUEST)
         link = self.get_link_filters(self.user, link_filter_id=link_filter_id)
         self.create_or_update_link_filter(link, self.data, self.user)
-
+        
         # Need to refetch to get associated objects
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'The referral link was successfully updated'
@@ -105,7 +105,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             link.delete()
         
         return Response(status=status.HTTP_200_OK, data=deleted_link_ids)
-        
+    
     @staticmethod
     @atomic
     def create_or_update_link_filter(link_filter, data, user=None):
@@ -124,7 +124,7 @@ class SocialLinkFilterView(JobVyneAPIView):
                 'employer_id': None,
                 **cfg
             }
-            
+        
         set_object_attributes(link_filter, data, cfg)
         
         if user:
@@ -134,16 +134,16 @@ class SocialLinkFilterView(JobVyneAPIView):
         
         if department_ids := data.get('department_ids'):
             link_filter.departments.set(department_ids)
-            
+        
         if city_ids := data.get('city_ids'):
             link_filter.cities.set(city_ids)
-            
+        
         if state_ids := data.get('state_ids'):
             link_filter.states.set(state_ids)
-            
+        
         if country_ids := data.get('country_ids'):
             link_filter.countries.set(country_ids)
-            
+        
         if job_ids := data.get('job_ids'):
             link_filter.jobs.set(job_ids)
         
@@ -157,7 +157,7 @@ class SocialLinkFilterView(JobVyneAPIView):
                 if filter.is_default:
                     filter.is_default = False
                     filter.save()
-
+        
         # Make sure this isn't a duplicate filter
         existing_filter = existing_filters.get(link_filter.get_unique_key())
         if existing_filter:
@@ -182,14 +182,14 @@ class SocialLinkFilterView(JobVyneAPIView):
                 user, link_filter_filter=Q(owner_id=owner_id), is_use_permissions=False
             ) if (f.id != current_link_filter_id or not current_link_filter_id)
         }
-            
+    
     @staticmethod
     def get_link_filters(
             user, link_filter_id=None, link_filter_filter=None, start_dt=None, end_dt=None, is_use_permissions=True
     ):
         if link_filter_id:
             link_filter_filter = Q(id=link_filter_id)
-
+        
         app_filter = Q()
         view_filter = Q()
         if start_dt:
@@ -208,13 +208,13 @@ class SocialLinkFilterView(JobVyneAPIView):
             'page_view',
             queryset=PageView.objects.filter(view_filter)
         )
-            
-        links = SocialLinkFilter.objects\
-            .select_related('employer', 'owner')\
+        
+        links = SocialLinkFilter.objects \
+            .select_related('employer', 'owner') \
             .prefetch_related(
-                'departments', 'cities', 'states', 'countries', 'jobs',
-                app_prefetch, page_view_prefetch
-            )\
+            'departments', 'cities', 'states', 'countries', 'jobs',
+            app_prefetch, page_view_prefetch
+        ) \
             .filter(link_filter_filter)
         
         if is_use_permissions:
@@ -226,52 +226,103 @@ class SocialLinkFilterView(JobVyneAPIView):
             return links[0]
         
         return links
-    
-    
+
+
 class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
-    def get(self, request, link_filter_id):
+    def get(self, request, link_filter_id=None):
         page_count = self.query_params.get('page_count', 1)
+        employer_id = self.query_params.get('employer_id')
+        if not any([link_filter_id, employer_id]):
+            raise ValueError('A link filter ID or employer ID is required')
+        
         link_filter = SocialLinkFilterView.get_link_filters(
             self.user,
             link_filter_id=link_filter_id,
             is_use_permissions=False  # This is a public page
+        ) if link_filter_id else None
+        
+        employer_id = link_filter.employer_id if link_filter else employer_id
+        
+        jobs = self.get_jobs_from_filter(
+            link_filter=link_filter,
+            employer_id=employer_id,
+            filter_values=self.get_filter_values_from_query_params()
         )
-        jobs = self.get_jobs_from_filter(link_filter)
+        total_jobs = EmployerJobView.get_employer_jobs(employer_job_filter=Q(employer_id=employer_id)).count()
         paged_jobs = Paginator(jobs, per_page=5)
-        employer = EmployerView.get_employers(employer_id=link_filter.employer_id)
+        employer = EmployerView.get_employers(employer_id=employer_id or link_filter.employer_id)
         return Response(status=status.HTTP_200_OK, data={
             'total_page_count': paged_jobs.num_pages,
+            'total_employer_job_count': total_jobs,
             'jobs': [get_serialized_employer_job(j) for j in paged_jobs.get_page(page_count)],
             'employer': get_serialized_employer(employer),
-            'owner_id': link_filter.owner_id,
-            'is_active_employee': link_filter.owner.is_active_employee
+            'owner_id': link_filter.owner_id if link_filter else None,
+            'is_active_employee': link_filter.owner.is_active_employee if (link_filter and link_filter.owner) else True,
+            'filter_values': self.get_filter_values_from_filter(link_filter) if link_filter else self.get_filter_values_from_query_params()
         })
+    
+    def get_filter_values_from_query_params(self):
+        filter_values = {}
+        if job_title := self.query_params.get('job_title'):
+            filter_values['job_title'] = job_title
+        if city_ids := self.query_params.getlist('city_ids[]'):
+            filter_values['city_ids'] = city_ids
+        if state_ids := self.query_params.getlist('state_ids[]'):
+            filter_values['state_ids'] = state_ids
+        if country_ids := self.query_params.getlist('country_ids[]'):
+            filter_values['country_ids'] = country_ids
+        if department_ids := self.query_params.getlist('department_ids[]'):
+            filter_values['department_ids'] = department_ids
+        if job_ids := self.query_params.getlist('job_ids[]'):
+            filter_values['job_ids'] = job_ids
         
+        return filter_values
+    
     @staticmethod
-    def get_jobs_from_filter(link_filter):
-        jobs_filter = Q(employer_id=link_filter.employer_id)
+    def get_filter_values_from_filter(link_filter):
+        return {
+            'department_ids': [d.id for d in link_filter.departments.all()],
+            'city_ids': [c.id for c in link_filter.cities.all()],
+            'state_ids': [s.id for s in link_filter.states.all()],
+            'country_ids': [c.id for c in link_filter.countries.all()],
+            'job_ids': [j.id for j in link_filter.jobs.all()]
+        }
+    
+    @staticmethod
+    def get_jobs_from_filter(link_filter=None, employer_id=None, filter_values=None):
+        if not any([link_filter, employer_id]):
+            raise ValueError('A link filter or employer ID is required')
+        if filter_values is None and link_filter:
+            filter_values = SocialLinkJobsView.get_filter_values_from_filter(link_filter)
+        employer_id = employer_id or link_filter.employer_id
+        return SocialLinkJobsView.get_filtered_jobs(employer_id, **filter_values)
+    
+    @staticmethod
+    def get_filtered_jobs(
+        employer_id, department_ids=None, city_ids=None, state_ids=None, country_ids=None,
+        job_ids=None, job_title=None
+    ):
+        jobs_filter = Q(employer_id=employer_id)
         jobs_filter &= Q(open_date__lte=timezone.now().date())
         
-        if len(link_filter.departments.all()):
-            jobs_filter &= Q(job_department_id__in=[d.id for d in link_filter.departments.all()])
-            
-        if len(link_filter.cities.all()):
-            jobs_filter &= Q(locations__city_id__in=[c.id for c in link_filter.cities.all()])
-            
-        if len(link_filter.states.all()):
-            jobs_filter &= Q(locations__state_id__in=[s.id for s in link_filter.states.all()])
-            
-        if len(link_filter.countries.all()):
-            jobs_filter &= Q(locations__country_id__in=[c.id for c in link_filter.countries.all()])
-            
-        if len(link_filter.jobs.all()):
-            jobs_filter &= Q(id__in=[j.id for j in link_filter.jobs.all()])
-            
+        if department_ids:
+            jobs_filter &= Q(job_department_id__in=department_ids)
+        if city_ids:
+            jobs_filter &= Q(locations__city_id__in=city_ids)
+        if state_ids:
+            jobs_filter &= Q(locations__state_id__in=state_ids)
+        if country_ids:
+            jobs_filter &= Q(locations__country_id__in=country_ids)
+        if job_ids:
+            jobs_filter &= Q(id__in=job_ids)
+        if job_title:
+            jobs_filter &= Q(job_title__iregex=f'^.*{job_title}.*$')
+        
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
-    
-    
+
+
 class ShareSocialLinkView(JobVyneAPIView):
     
     def post(self, request):

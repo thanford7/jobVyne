@@ -1,8 +1,8 @@
 <template>
   <q-input
-    v-if="isLoaded"
+    v-if="isLoaded && selectedCurrency"
     filled :label="label" :mask="mask" unmasked-value
-    :model-value="modelValue"
+    :model-value="moneyValue"
     @update:model-value="updatePrice($event)"
     lazy-rules
     :rules="(isRequired) ? [
@@ -39,11 +39,11 @@ import { useGlobalStore } from 'stores/global-store.js'
 export default {
   name: 'MoneyInput',
   props: {
-    modelValue: {
+    moneyValue: {
       type: Number,
       default: 0
     },
-    defaultCurrency: {
+    currencyName: {
       type: String,
       default: 'USD'
     },
@@ -69,10 +69,7 @@ export default {
     }
   },
   watch: {
-    defaultCurrency () {
-      this.setCurrency()
-    },
-    modelValue () {
+    moneyValue () {
       this.placeCursorEnd()
     }
   },
@@ -80,10 +77,10 @@ export default {
     mask () {
       let mask = `${this.selectedCurrency.symbol}`
       let digitsStr = ''
-      if (dataUtil.isNil(this.modelValue)) {
+      if (dataUtil.isNil(this.moneyValue)) {
         digitsStr = '#'
       } else {
-        for (let x = 0; x <= this.modelValue.toString().length; x++) {
+        for (let x = 0; x <= this.moneyValue.toString().length; x++) {
           if ((x - 1) % 3 || x < 3) {
             digitsStr = '#' + digitsStr
           } else {
@@ -103,12 +100,11 @@ export default {
       if (!price || !price.toString().length) {
         price = 0
       }
-      this.$emit('update:modelValue', parseFloat(price))
+      this.$emit('update:moneyValue', parseFloat(price))
     },
     setCurrency (currency) {
-      currency = currency || this.currencies.find((c) => c.name === this.defaultCurrency)
       this.selectedCurrency = currency
-      this.$emit('update-currency', currency)
+      this.$emit('update:currencyName', currency.name)
     },
     placeCursorEnd () {
       const end = this.mask.length
@@ -121,7 +117,7 @@ export default {
     const globalStore = useGlobalStore()
     await globalStore.setCurrencies()
     this.currencies = globalStore.currencies
-    this.setCurrency()
+    this.selectedCurrency = this.currencies.find((c) => c.name === this.currencyName)
     this.isLoaded = true
   }
 }

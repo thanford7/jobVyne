@@ -130,3 +130,13 @@ def sanitize_html(html_text, is_email=False, sanitizer=default_sanitizer):
         # New lines are not honored in html interpreters like email
         html_text = html_text.replace('\n', '<br/>')
     return sanitizer.sanitize(html_text)
+
+
+job_description_sanitizer = get_sanitizer(
+    cfg_override={
+        'separate': {'br', 'li', 'p'},
+        'empty': {'p'},
+        'keep_typographic_whitespace': True
+    },
+    add_element_preprocessors=[tag_replacer('div', 'p')]
+)

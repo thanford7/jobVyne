@@ -2,6 +2,7 @@
   <q-select
     v-if="isLoaded"
     filled multiple clearable use-chips use-input
+    :map-options="isEmitId" :emit-value="isEmitId"
     :options="cities"
     @filter="filter"
     option-value="id"
@@ -16,6 +17,12 @@ import { useEmployerStore } from 'stores/employer-store.js'
 
 export default {
   name: 'SelectJobCity',
+  props: {
+    isEmitId: {
+      type: Boolean,
+      default: false
+    }
+  },
   data () {
     return {
       isLoaded: false,

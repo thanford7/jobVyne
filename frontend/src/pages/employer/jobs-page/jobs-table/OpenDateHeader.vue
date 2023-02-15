@@ -3,7 +3,7 @@
   {{ col.label }}
   <TableFilter filter-name="Date range"
                :has-filter="jobsFilter.dateRange">
-    <DateRangeSelector v-model="jobsFilter.dateRange" placeholder="Posted date"/>
+    <DateRangeSelector v-model="jobsFilter.dateRange" placeholder="Posted date" autofocus/>
   </TableFilter>
 </template>
 

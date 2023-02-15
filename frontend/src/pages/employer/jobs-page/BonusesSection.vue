@@ -8,9 +8,8 @@
     <div class="col-12 col-md-5">
       <MoneyInput
         label="Default bonus amount"
-        :default-currency="employerBonusDefaults?.default_bonus_currency?.name"
-        v-model="employerBonusDefaults.default_bonus_amount"
-        @update-currency="employerBonusDefaults.default_bonus_currency = $event"
+        v-model:money-value="employerBonusDefaults.default_bonus_amount"
+        v-model:currency-name="employerBonusDefaults.default_bonus_currency"
         @blur="saveBonusDefaults"
       >
         <template v-slot:after>
@@ -177,7 +176,7 @@ export default {
       bonusUtil,
       colorUtil,
       dataUtil,
-      employerBonusDefaults: this.getEmployerBonusDefaults()
+      employerBonusDefaults: {}
     }
   },
   computed: {
@@ -192,13 +191,11 @@ export default {
     hasCriteria: bonusUtil.hasCriteria.bind(bonusUtil),
     hasAnyCriteria: bonusUtil.hasAnyCriteria.bind(bonusUtil),
     getEmployerBonusDefaults () {
-      return dataUtil.pick(
-        this.employerStore.getEmployer(this.user.employer_id),
-        [
-          'default_bonus_amount',
-          'default_bonus_currency'
-        ]
-      )
+      const employer = this.employerStore.getEmployer(this.user.employer_id)
+      return {
+        default_bonus_amount: employer.default_bonus_amount,
+        default_bonus_currency: employer.default_bonus_currency?.name
+      }
     },
     showJobMatches (e, bonusRule) {
       e.preventDefault()
@@ -250,6 +247,7 @@ export default {
   },
   async mounted () {
     await this.updateData(false)
+    this.employerBonusDefaults = this.getEmployerBonusDefaults()
     this.isLoaded = true
   },
   setup () {

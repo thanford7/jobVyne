@@ -10,9 +10,8 @@
         <div class="col-12 col-md-6 q-pr-md-sm">
           <MoneyInput
             label="Base bonus amount"
-            :default-currency="formData?.bonus_currency?.name"
-            v-model="formData.base_bonus_amount"
-            @update-currency="formData.bonus_currency = $event"
+            v-model:money-value="formData.base_bonus_amount"
+            v-model:currency-name="formData.bonus_currency"
           />
         </div>
         <div class="col-12 col-md-6">
@@ -66,8 +65,8 @@
                   <MoneyInput
                     v-if="modifier.type === MODIFIER_TYPES.NOMINAL"
                     :is-include-currency-selection="false"
-                    :default-currency="formData?.bonus_currency?.name"
-                    v-model="modifier.amount"
+                    v-model:money-value="modifier.amount"
+                    v-model:currency-name="formData.bonus_currency"
                     label="Increase amount"
                   >
                     <template v-slot:after>
@@ -121,7 +120,7 @@
               <template v-else>
                 <q-item-section>
                   <div v-html="bonusUtil.getModifierSummaryHtml(
-                    modifier, formData.base_bonus_amount, formData?.bonus_currency?.name
+                    modifier, formData.base_bonus_amount, formData.bonus_currency
                     )"/>
                 </q-item-section>
                 <q-item-section avatar>
@@ -188,7 +187,7 @@ export default {
     return {
       formData: {
         days_after_hire_payout: 90,
-        bonus_currency: this.globalStore.currencies.find((c) => c.name === 'USD'),
+        bonus_currency: 'USD',
         inclusion_criteria: {},
         exclusion_criteria: {},
         modifiers: []
@@ -236,6 +235,7 @@ export default {
   },
   mounted () {
     Object.assign(this.formData, dataUtil.deepCopy(this.bonusRule))
+    this.formData.bonus_currency = this.formData.bonus_currency.name
   }
 }
 </script>

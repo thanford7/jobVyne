@@ -69,9 +69,9 @@
                              :ats_name="ATS_CFGS.greenhouse.key"/>
         </div>
         <div class="col-12">
-          <q-btn label="Test connection" color="primary" @click="updateJobs" :loading="isFetchingJobs"/>
+          <q-btn label="Update jobs" color="primary" @click="updateJobs" :loading="isFetchingJobs"/>
           <span v-if="isGoodConnection" class="text-positive">
-          &nbsp;<q-icon name="check_circle"/> Connection successful
+          &nbsp;<q-icon name="check_circle"/> Jobs updated successfully
         </span>
         </div>
       </template>
@@ -125,6 +125,9 @@
             </span>
             </template>
           </SelectYesNo>
+        </div>
+        <div class="col-12">
+          <q-btn label="Update jobs" color="primary" @click="updateJobs" :loading="isFetchingJobs"/>
         </div>
       </template>
     </template>

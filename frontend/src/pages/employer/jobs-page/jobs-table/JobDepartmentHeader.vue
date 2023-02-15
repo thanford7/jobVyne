@@ -3,7 +3,7 @@
   {{ col.label }}
   <TableFilter filter-name="Job department"
                :has-filter="jobsFilter.departments && jobsFilter.departments.length">
-    <SelectJobDepartment v-model="jobsFilter.departments"/>
+    <SelectJobDepartment v-model="jobsFilter.departments" autofocus/>
   </TableFilter>
 </template>
 

@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.db.models import Q
 
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
 
@@ -27,13 +28,17 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     is_primary = models.BooleanField(default=False, blank=True)
     # The default social link filter is used to auto-populate forms
     is_default = models.BooleanField(default=False, blank=True)
-    owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
+    # If no owner, this is an employer owned link
+    owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True)
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
     departments = models.ManyToManyField('JobDepartment')
     cities = models.ManyToManyField('City')
     states = models.ManyToManyField('State')
     countries = models.ManyToManyField('Country')
     jobs = models.ManyToManyField('EmployerJob')
+    # Employers can create links and ask employees to share them
+    # The employer will need to view these links with read access
+    shared_by_employer_dt = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         ordering = ('-is_default', '-modified_dt')
@@ -43,13 +48,11 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
         if user.is_admin:
             return query
         
-        if user.is_employee:
-            return query.filter(owner_id=user.id)
-        
+        link_filter = Q(owner_id=user.id)
         if user.is_employer:
-            return query.filter(employer_id=user.employer_id)
+            link_filter |= (Q(employer_id=user.employer_id) & Q(shared_by_employer_dt__isnull=False))
         
-        return []
+        return query.filter(link_filter)
     
     def _jv_can_create(self, user):
         return any((

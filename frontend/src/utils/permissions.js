@@ -169,6 +169,13 @@ class PagePermissionsUtil {
             }
           },
           {
+            icon: 'link',
+            key: 'employer-job-links',
+            label: 'Job Links',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+            isPermittedFn: isUserEmployerFn
+          },
+          {
             icon: 'contact_page',
             key: 'employer-applications',
             label: 'Job Applications',

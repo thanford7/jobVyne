@@ -11,11 +11,17 @@
         :rows-per-page-options="[25, 50, 100]"
       >
         <template v-if="isEmployer" v-slot:top>
-          <div class="q-gutter-x-sm">
+          <div class="q-gutter-sm">
             <q-btn
               v-if="employer.is_manual_job_entry"
               unelevated label="Add job" icon="add" color="primary"
               @click.prevent="openEditJobDialog()"
+            />
+            <q-btn
+              v-if="employer?.ats_cfg?.id"
+              unelevated label="Update jobs from ATS" icon="refresh" color="primary"
+              :loading="isFetchingJobs"
+              @click.prevent="updateAtsJobs()"
             />
             <q-chip
               v-if="$route.query.ruleId"
@@ -55,7 +61,7 @@
                                :has-filter="jobsFilter.jobSources && jobsFilter.jobSources.length">
                     <q-select
                       v-model="jobsFilter.jobSources"
-                      filled multiple use-chips map-options emit-value
+                      filled multiple use-chips map-options emit-value autofocus
                       label="Job sources"
                       option-value="val" option-label="label"
                       :options="[
@@ -137,7 +143,7 @@
                 :props="props"
               >
                 <template v-if="col.name === 'locations'">
-                  <LocationsCell :props="props"/>
+                  <LocationsCell :locations="props.row.locations"/>
                 </template>
                 <template v-else-if="col.name === 'bonus'">
                   <BonusCell :props="props"/>
@@ -148,6 +154,7 @@
                     href="#" @click="openShowBonusRuleDialog($event, props.row.bonus_rule.id, props.row.bonus)"
                   >Bonus rule</a>
                   <span v-else-if="props.row.bonus.type === BONUS_TYPES.DEFAULT">Default</span>
+                  <span v-else-if="props.row.bonus.type === BONUS_TYPES.DIRECT">Custom</span>
                   <span v-else>None</span>
                 </template>
                 <span v-else>{{ col.value }}</span>
@@ -192,7 +199,7 @@
                 :props="props"
               >
                 <template v-if="col.name === 'locations'">
-                  <LocationsCell :props="props"/>
+                  <LocationsCell :locations="props.row.locations"/>
                 </template>
                 <template v-else-if="col.name === 'bonus'">
                   <BonusCell :props="props"/>
@@ -226,6 +233,7 @@ import { BONUS_TYPES } from 'src/utils/bonus.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import jobsUtil from 'src/utils/jobs.js'
+import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
@@ -248,6 +256,7 @@ export default {
   data () {
     return {
       isLoaded: false,
+      isFetchingJobs: false,
       employer: null,
       employerJobs: null,
       employerBonusRules: null,
@@ -277,7 +286,7 @@ export default {
           label: 'Posted Date',
           sortable: true,
           sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil),
-          format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
+          format: (val) => dateTimeUtil.getShortDate(val)
         },
         {
           name: 'bonus',
@@ -395,6 +404,14 @@ export default {
         }
         return true
       })
+    },
+    async updateAtsJobs () {
+      this.isFetchingJobs = true
+      const resp = await this.$api.put('ats/jobs/', getAjaxFormData({ employer_id: this.user.employer_id }))
+      this.isFetchingJobs = false
+      if (resp.status === 200) {
+        this.isGoodConnection = true
+      }
     }
   },
   async mounted () {

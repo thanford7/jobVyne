@@ -160,7 +160,7 @@ export default {
       const user = Array.isArray(this.users) ? this.users[0] : this.users
       this.user_ids = [user.id]
       Object.assign(this.formDataSingle, dataUtil.pick(user, ['first_name', 'last_name', 'email', 'employer_id']))
-      this.formDataSingle.permission_group_ids = user.permission_groups_by_employer[user.employer_id].map((pg) => pg.id)
+      this.formDataSingle.permission_group_ids = (user.employer_id) ? user.permission_groups_by_employer[user.employer_id].map((pg) => pg.id) : []
       this.isSingle = true
     } else if (this.users && this.users.length) { // Multiple users
       this.user_ids = this.users.map((user) => user.id)

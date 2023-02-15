@@ -140,6 +140,27 @@ class EmployerAts(AuditFields, JobVynePermissionsMixin):
                 and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
             )
         )
+    
+    
+class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
+    is_approved = models.BooleanField(default=False)
+    # TODO: Add filter_department once department has been migrated to EmployerDepartment
+    # filter_department
+    filter_city = models.ManyToManyField('City')
+    filter_state = models.ManyToManyField('State')
+    filter_country = models.ManyToManyField('Country')
+    filter_job = models.ManyToManyField('EmployerJob')
+    
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            # TODO: Add new employer permission to manage job subscriptions
+            or (
+                user.employer_id == self.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
+            )
+        )
 
 
 class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):

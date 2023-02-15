@@ -27,25 +27,29 @@ class DateTimeUtil {
     this.time24HRegex = /^(?<hour>0[0-9]|1[0-9]|2[0-3]):(?<minute>[0-5][0-9])(:(?<second>[0-5][0-9]))?$/
   }
 
-  serializeDate (targetDate, isIncludeTime = false, isEndOfDay = false) {
+  serializeDate (targetDate, { isIncludeTime = false, isEndOfDay = false, isUTC = true }) {
     const format = (isIncludeTime) ? this.serializeDateTimeFormat : this.serializeDateFormat
-    if (isEndOfDay) {
-      targetDate = date.adjustDate(targetDate, { hours: 23, minutes: 59, seconds: 59, millisecond: 0 })
-    } else {
-      targetDate = date.adjustDate(targetDate, { hours: 0, minutes: 0, seconds: 0, millisecond: 0 })
+    if (isIncludeTime) {
+      if (isEndOfDay) {
+        targetDate = date.adjustDate(targetDate, { hours: 23, minutes: 59, seconds: 59, millisecond: 0 })
+      } else {
+        targetDate = date.adjustDate(targetDate, { hours: 0, minutes: 0, seconds: 0, millisecond: 0 })
+      }
     }
-    targetDate = targetDate.toUTCString()
+    if (isUTC) {
+      targetDate = targetDate.toUTCString()
+    }
     return date.formatDate(targetDate, format)
   }
 
-  getShortDate (dateStr) {
+  getShortDate (dateStr, format) {
     // Dates without a time component are converted to local time which can throw off the date by a day
     // UTC time will always cause the date to be the same
     if (dateStr && dataUtil.isString(dateStr) && dateStr.length <= 10) {
       dateStr = this.forceToDate(dateStr).toUTCString()
       dateStr = dateStr.slice(0, dateStr.length - 4) // Remove the timezone to assume it is local time
     }
-    return date.formatDate(dateStr, this.shortDateFormat)
+    return date.formatDate(dateStr, format || this.shortDateFormat)
   }
 
   getDateTime (dateTimeStr, { isIncludeSeconds = true } = {}) {
@@ -238,7 +242,11 @@ class DateTimeUtil {
     return normTargetDate > normReferenceDate
   }
 
-  isBetween (targetDate, startDate, endDate, { isStartInclusive = true, isEndInclusive = true, isIncludeTime = true } = {}) {
+  isBetween (targetDate, startDate, endDate, {
+    isStartInclusive = true,
+    isEndInclusive = true,
+    isIncludeTime = true
+  } = {}) {
     return (
       !this.isAfter(targetDate, endDate, { isIncludeTime, isInclusive: !isEndInclusive }) &&
       !this.isBefore(targetDate, startDate, { isIncludeTime, isInclusive: !isStartInclusive })
@@ -249,7 +257,7 @@ class DateTimeUtil {
 const dateTimeUtil = new DateTimeUtil()
 
 export const GROUPINGS = {
-  DATE: { key: 'date', formatter: dateTimeUtil.getShortDate.bind(dateTimeUtil) },
+  DATE: { key: 'date', formatter: (val) => dateTimeUtil.getShortDate(val) },
   WEEK: { key: 'week', formatter: dateTimeUtil.getStartOfWeekDate.bind(dateTimeUtil) },
   MONTH: { key: 'month', formatter: dateTimeUtil.getMonthYearFromDate.bind(dateTimeUtil) },
   YEAR: { key: 'year', formatter: dateTimeUtil.getYearFromDate.bind(dateTimeUtil) }

@@ -343,7 +343,7 @@ export default {
           field: 'created_dt',
           align: 'left',
           label: 'Submission Date',
-          format: dateTimeUtil.getShortDate.bind(dateTimeUtil),
+          format: (val) => dateTimeUtil.getShortDate(val),
           sortable: true
         }
       ]

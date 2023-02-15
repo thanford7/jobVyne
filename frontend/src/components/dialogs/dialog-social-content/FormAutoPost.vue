@@ -78,7 +78,7 @@ export default {
       formData: {
         is_auto_post: (!dataUtil.isNil(this.post.is_auto_post)) ? this.post.is_auto_post : true,
         auto_weeks_between: this.post.auto_weeks_between || 2,
-        auto_start_date: dateTimeUtil.serializeDate((this.post.auto_start_dt) ? this.post.auto_start_dt : new Date()),
+        auto_start_date: dateTimeUtil.serializeDate((this.post.auto_start_dt) ? this.post.auto_start_dt : new Date(), { isUTC: false }),
         auto_time: (this.post.auto_start_dt) ? dateTimeUtil.getTimeStrFromDate(this.post.auto_start_dt, { isIncludeSeconds: false }) : '07:45',
         // q-select expects a string value instead of a number
         auto_day_of_week: (!dataUtil.isNil(this.post.auto_day_of_week)) ? this.post.auto_day_of_week.toString() : '0'

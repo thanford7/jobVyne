@@ -421,7 +421,7 @@ export default {
           field: 'created_dt',
           align: 'left',
           label: 'Joined date',
-          format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
+          format: (val) => dateTimeUtil.getShortDate(val)
         }
       ]
 

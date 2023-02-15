@@ -74,7 +74,7 @@ const employerColumns = [
     label: 'Joined Date',
     sortable: true,
     sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil),
-    format: dateTimeUtil.getShortDate.bind(dateTimeUtil)
+    format: (val) => dateTimeUtil.getShortDate(val)
   },
   { name: 'employeeSeats', field: 'employee_seats', align: 'center', label: 'Employee Seats', sortable: true },
   { name: 'employeeCount', field: 'employee_count', align: 'center', label: 'Employee Count', sortable: true },
