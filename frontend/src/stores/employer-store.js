@@ -9,6 +9,7 @@ export const useEmployerStore = defineStore('employer', {
     employerBilling: {}, // employerId: <billingData>
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
     employerJobDepartments: {}, // employerId: [<jobDept1>, <jobDept2>, ...]
+    employerReferralRequests: {}, // employerId: [<request1>, <request2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
     employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
     employerSubscription: {}, // employerId: {subscription data}
@@ -78,6 +79,14 @@ export const useEmployerStore = defineStore('employer', {
           }
         )
         this.employerJobDepartments[employerId] = resp.data
+      }
+    },
+    async setEmployerReferralRequests (employerId, isForceRefresh = false) {
+      if (!this.employerReferralRequests[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('employer/referral/request/', {
+          params: { employer_id: employerId }
+        })
+        this.employerReferralRequests[employerId] = resp.data
       }
     },
     async setEmployerBonusRules (employerId, isForceRefresh = false) {
@@ -183,6 +192,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployerJobs (employerId) {
       return dataUtil.sortBy(this.employerJobs[employerId] || [], 'job_title')
+    },
+    getEmployerReferralRequests (employerId) {
+      return dataUtil.sortBy(this.employerReferralRequests[employerId] || [], { key: 'modified_dt', direction: -1 })
     },
     getEmployerBonusRules (employerId) {
       return dataUtil.sortBy(this.employerBonusRules[employerId] || [], 'order_idx')

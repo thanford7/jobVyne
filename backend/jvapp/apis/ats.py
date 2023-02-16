@@ -18,17 +18,16 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.employer import EmployerAtsView
 from jvapp.apis.geocoding import LocationParser
 from jvapp.models import Employer, EmployerAts, EmployerJob, JobApplication, JobDepartment, PermissionName
-from jvapp.models.abstract import PermissionTypes
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none, get_unix_datetime
-from jvapp.utils.file import get_file_name, get_mime_from_file_path
+from jvapp.utils.file import get_file_name, get_mime_from_file_path, get_safe_file_path
 from jvapp.utils.response import is_good_response
-from jvapp.utils.sanitize import job_description_sanitizer, sanitize_html
+from jvapp.utils.sanitize import sanitize_html
 
 
 logger = logging.getLogger(__name__)
@@ -181,7 +180,7 @@ class BaseAts:
                 current_job.ats_job_key = job_data.ats_job_key
                 current_job.job_title = job_data.job_title
                 if job_data.job_description:
-                    current_job.job_description = sanitize_html(job_data.job_description, sanitizer=job_description_sanitizer)
+                    current_job.job_description = sanitize_html(job_data.job_description)
                 else:
                     current_job.job_description = None
                 current_job.open_date = job_data.open_date
@@ -626,12 +625,13 @@ class LeverAts(BaseAts):
             body_cfg['phones[]'] = json.dumps({'value': application.phone_number})
         if application.linkedin_url:
             body_cfg['links[]'] = application.linkedin_url
-            
+        
+        resume_file_path = get_safe_file_path(application.resume)
         data = self.get_data(
             REQUEST_FN_POST,
             f'opportunities?perform_as={self.ats_cfg.api_key}&parse=true&perform_as_posting_owner=true',
             body_cfg=body_cfg,
-            files={'resumeFile': (get_file_name(application.resume.path), application.resume.open('rb').read(), get_mime_from_file_path(application.resume.path))}
+            files={'resumeFile': (get_file_name(resume_file_path), application.resume.open('rb').read(), get_mime_from_file_path(resume_file_path))}
         )
 
         return data['data']['contact'], data['data']['id']
@@ -784,9 +784,7 @@ class AtsBaseView(JobVyneAPIView):
         ats_id = self.data.get('ats_id') or self.query_params.get('ats_id')
         self.employer_id = self.data.get('employer_id')
         if not any([ats_id, self.employer_id]):
-            return Response(status=status.HTTP_200_OK, data={
-                ERROR_MESSAGES_KEY: ['An ATS ID or employer ID is required']
-            })
+            return get_error_response('An ATS ID or employer ID is required')
         
         if ats_id:
             ats_filter = Q(id=ats_id)
@@ -796,9 +794,7 @@ class AtsBaseView(JobVyneAPIView):
         try:
             self.ats_cfg = EmployerAts.objects.select_related('employer').get(ats_filter)
         except EmployerAts.DoesNotExist:
-            return Response(status=status.HTTP_200_OK, data={
-                ERROR_MESSAGES_KEY: ['An ATS connection does not exist']
-            })
+            return get_error_response('An ATS connection does not exist')
 
         self.ats_api = get_ats_api(self.ats_cfg)
 
@@ -810,9 +806,7 @@ class AtsJobsView(AtsBaseView):
             self.user.is_admin,
             self.user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_JOBS.value, self.employer_id)
         ]):
-            return Response(status=status.HTTP_200_OK, data={
-                ERROR_MESSAGES_KEY: ['You do not have the appropriate permissions to update jobs']
-            })
+            return get_error_response('You do not have the appropriate permissions to update jobs')
 
         jobs = self.ats_api.get_jobs()
         self.ats_api.save_jobs(jobs)

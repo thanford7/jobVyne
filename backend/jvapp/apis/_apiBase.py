@@ -3,12 +3,20 @@ import json
 from django.contrib.auth.models import AnonymousUser
 from django.core.files import File
 from django.http import QueryDict
+from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
 SUCCESS_MESSAGE_KEY = 'successMessage'
 WARNING_MESSAGES_KEY = 'warningMessages'
 ERROR_MESSAGES_KEY = 'errorMessages'
+
+
+def get_error_response(error_message):
+    return Response(status=status.HTTP_200_OK, data={
+        ERROR_MESSAGES_KEY: [error_message]
+    })
 
 
 def get_files(request):

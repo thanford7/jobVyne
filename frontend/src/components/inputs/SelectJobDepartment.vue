@@ -56,6 +56,9 @@ export default {
     isEmitId: {
       type: Boolean,
       default: false
+    },
+    employerId: {
+      type: [String, Number, null]
     }
   },
   data () {
@@ -69,7 +72,7 @@ export default {
       if (!this.isLoaded) {
         return
       }
-      const departments = this.employerStore.getEmployerJobDepartments(this.authStore.propUser.employer_id)
+      const departments = this.employerStore.getEmployerJobDepartments(this.employerId || this.authStore.propUser.employer_id)
       if (!this.filterTxt || this.filterTxt === '') {
         return departments
       }
@@ -95,9 +98,10 @@ export default {
     this.authStore = useAuthStore()
     this.employerStore = useEmployerStore()
     await this.authStore.setUser()
+    const employerId = this.employerId || this.authStore.propUser.employer_id
     await Promise.all([
-      this.employerStore.setEmployerJobs(this.authStore.propUser.employer_id),
-      this.employerStore.setEmployerJobDepartments(this.authStore.propUser.employer_id)
+      this.employerStore.setEmployerJobs(employerId),
+      this.employerStore.setEmployerJobDepartments(employerId)
     ])
     this.isLoaded = true
   },

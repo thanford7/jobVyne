@@ -117,6 +117,7 @@ class MessageThreadContext(models.Model):
     job_application = models.ForeignKey('JobApplication', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')
     job = models.ForeignKey('EmployerJob', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')
     applicant = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')
+    referral_request = models.ForeignKey('EmployerReferralRequest', on_delete=models.SET_NULL, null=True, blank=True, related_name='message_thread_context')
 
 
 class MessageGroup(AuditFields):

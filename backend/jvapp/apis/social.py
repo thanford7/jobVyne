@@ -7,7 +7,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
-from jvapp.apis.employer import EmployerJobView, EmployerView
 from jvapp.models import JobApplication, Message, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
@@ -232,6 +231,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
     def get(self, request, link_filter_id=None):
+        from jvapp.apis.employer import EmployerJobView, EmployerView  # Avoid circular import
         page_count = self.query_params.get('page_count', 1)
         employer_id = self.query_params.get('employer_id')
         if not any([link_filter_id, employer_id]):
@@ -304,6 +304,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         employer_id, department_ids=None, city_ids=None, state_ids=None, country_ids=None,
         job_ids=None, job_title=None
     ):
+        from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         jobs_filter = Q(employer_id=employer_id)
         jobs_filter &= Q(open_date__lte=timezone.now().date())
         

@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from jvapp.models.tracking import Message, MessageAttachment, MessageRecipient
-from jvapp.utils.file import get_file_name
+from jvapp.utils.file import get_file_name, get_safe_file_path
 
 IS_PRODUCTION = os.getenv('DB') == 'prod'
 MESSAGE_ID_KEY = 'jv_message_id'
@@ -135,11 +135,7 @@ def send_django_email(
         # Note: Need to use message_attachments instead of files since in-memory files
         # have already been read and will return b'' if attempted to read again
         for attachment in message_attachments:
-            # S3 file storage doesn't support an absolute path so we fall back to the URL location of the file
-            try:
-                file_path = attachment.file.path
-            except NotImplementedError:
-                file_path = attachment.file.url
+            file_path = get_safe_file_path(attachment.file)
             message.attach(get_file_name(file_path), get_file_from_path(file_path))
     else:
         for f in (files or []):

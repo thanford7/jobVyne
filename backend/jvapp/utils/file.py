@@ -11,6 +11,15 @@ def get_file_name(file_url):
     return file_url.split('/')[-1]
 
 
+def get_safe_file_path(file):
+    # S3 file storage doesn't support an absolute path so we fall back to the URL location of the file
+    try:
+        return file.path
+    except NotImplementedError:
+        # return file.name
+        return file.url
+
+
 def get_mime_from_file_path(file_path):
     mime = magic.from_file(file_path, mime=True)
     return mime

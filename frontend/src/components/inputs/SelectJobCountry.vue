@@ -21,6 +21,9 @@ export default {
     isEmitId: {
       type: Boolean,
       default: false
+    },
+    employerId: {
+      type: [String, Number, null]
     }
   },
   data () {
@@ -34,7 +37,7 @@ export default {
       if (!this.isLoaded) {
         return
       }
-      const countries = this.employerStore.getJobCountries(this.authStore.propUser.employer_id)
+      const countries = this.employerStore.getJobCountries(this.employerId || this.authStore.propUser.employer_id)
       if (!this.filterTxt || this.filterTxt === '') {
         return countries
       }
@@ -53,7 +56,8 @@ export default {
     this.authStore = useAuthStore()
     this.employerStore = useEmployerStore()
     await this.authStore.setUser()
-    await this.employerStore.setEmployerJobs(this.authStore.propUser.employer_id)
+    const employerId = this.employerId || this.authStore.propUser.employer_id
+    await this.employerStore.setEmployerJobs(employerId)
     this.isLoaded = true
   },
   beforeUnmount () {

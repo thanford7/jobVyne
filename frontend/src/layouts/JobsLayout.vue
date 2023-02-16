@@ -85,16 +85,36 @@
                                 />
                               </div>
                               <div class="col-12 col-md-6 q-pl-md-sm">
-                                <SelectJobDepartment v-model="jobFilters.department_ids" :is-emit-id="true"/>
+                                <SelectJobDepartment
+                                  v-if="employer?.id"
+                                  v-model="jobFilters.department_ids"
+                                  :employer-id="employer.id"
+                                  :is-emit-id="true"
+                                />
                               </div>
                               <div class="col-12 col-md-4 q-pr-md-sm">
-                                <SelectJobCity v-model="jobFilters.city_ids" :is-emit-id="true"/>
+                                <SelectJobCity
+                                  v-if="employer?.id"
+                                  v-model="jobFilters.city_ids"
+                                  :employer-id="employer.id"
+                                  :is-emit-id="true"
+                                />
                               </div>
                               <div class="col-12 col-md-4 q-px-md-sm">
-                                <SelectJobState v-model="jobFilters.state_ids" :is-emit-id="true"/>
+                                <SelectJobState
+                                  v-if="employer?.id"
+                                  v-model="jobFilters.state_ids"
+                                  :employer-id="employer.id"
+                                  :is-emit-id="true"
+                                />
                               </div>
                               <div class="col-12 col-md-4 q-pl-md-sm">
-                                <SelectJobCountry v-model="jobFilters.country_ids" :is-emit-id="true"/>
+                                <SelectJobCountry
+                                  v-if="employer?.id"
+                                  v-model="jobFilters.country_ids"
+                                  :employer-id="employer.id"
+                                  :is-emit-id="true"
+                                />
                               </div>
                             </div>
                           </div>

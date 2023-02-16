@@ -216,6 +216,22 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
     return data
 
 
+def get_serialized_employer_referral_request(referral_request: EmployerReferralRequest):
+    return {
+        'id': referral_request.id,
+        'created_dt': get_datetime_format_or_none(referral_request.created_dt),
+        'modified_dt': get_datetime_format_or_none(referral_request.modified_dt),
+        'employer_id': referral_request.employer_id,
+        'email_subject': referral_request.email_subject,
+        'email_body': referral_request.email_body,
+        'departments': [{'name': d.name, 'id': d.id} for d in referral_request.departments.all()],
+        'cities': [{'name': c.name, 'id': c.id} for c in referral_request.cities.all()],
+        'states': [{'name': s.name, 'id': s.id} for s in referral_request.states.all()],
+        'countries': [{'name': c.name, 'id': c.id} for c in referral_request.countries.all()],
+        'jobs': [{'title': j.job_title, 'id': j.id} for j in referral_request.jobs.all()]
+    }
+
+
 def get_serialized_employer_bonus_rule(bonus_rule: EmployerReferralBonusRule, is_ids_only=False):
     return {
         'id': bonus_rule.id,

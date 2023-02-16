@@ -175,7 +175,7 @@ export const loadDialogSocialContentFn = () => {
   })
 }
 
-// Keep in sync with ContentPlaceholders on backend
+// Keep in sync with ContentPlaceholders on SocialPost backend
 export const SOCIAL_CONTENT_PLACEHOLDERS = {
   EMPLOYER: '{{employer}}',
   JOB_LINK: '{{link}}',

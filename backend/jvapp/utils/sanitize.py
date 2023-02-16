@@ -114,7 +114,6 @@ default_sanitizer_cfg = {
         secure_link_sanitizer
     ],
 }
-default_sanitizer = Sanitizer(default_sanitizer_cfg)
 
 
 def get_sanitizer(cfg_override=None, add_element_preprocessors=None):
@@ -124,15 +123,7 @@ def get_sanitizer(cfg_override=None, add_element_preprocessors=None):
         sanitizer_cfg['element_preprocessors'] += add_element_preprocessors
     return Sanitizer(sanitizer_cfg)
 
-
-def sanitize_html(html_text, is_email=False, sanitizer=default_sanitizer):
-    if is_email:
-        # New lines are not honored in html interpreters like email
-        html_text = html_text.replace('\n', '<br/>')
-    return sanitizer.sanitize(html_text)
-
-
-job_description_sanitizer = get_sanitizer(
+default_sanitizer = get_sanitizer(
     cfg_override={
         'separate': {'br', 'li', 'p'},
         'empty': {'p'},
@@ -140,3 +131,10 @@ job_description_sanitizer = get_sanitizer(
     },
     add_element_preprocessors=[tag_replacer('div', 'p')]
 )
+
+
+def sanitize_html(html_text, is_email=False, sanitizer=default_sanitizer):
+    if is_email:
+        # New lines are not honored in html interpreters like email
+        html_text = html_text.replace('\n', '<br/>')
+    return sanitizer.sanitize(html_text)

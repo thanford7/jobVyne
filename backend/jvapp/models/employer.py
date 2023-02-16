@@ -11,7 +11,7 @@ __all__ = (
     'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
-    'EmployerSubscription'
+    'EmployerSubscription', 'EmployerReferralRequest'
 )
 
 
@@ -219,10 +219,37 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         This way, we don't have to save job locations before determining whether jobs are equivalent
         """
         return job_title, location_ids
+    
+    
+class EmployerReferralRequest(AuditFields, JobVynePermissionsMixin):
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='referral_request')
+    email_subject = models.CharField(max_length=255)
+    email_body = models.TextField()
+    departments = models.ManyToManyField('JobDepartment')
+    cities = models.ManyToManyField('City')
+    states = models.ManyToManyField('State')
+    countries = models.ManyToManyField('Country')
+    jobs = models.ManyToManyField('EmployerJob')
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+    
+        return query.filter(employer_id=user.employer_id)
+    
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+            )
+        )
 
 
 class EmployerReferralBonusRule(AuditFields, OwnerFields, JobVynePermissionsMixin):
-    employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='referral_bonus_rule')
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='referral_bonus_rule')
     order_idx = models.SmallIntegerField()
     include_departments = models.ManyToManyField('JobDepartment', related_name='include_bonus')
     exclude_departments = models.ManyToManyField('JobDepartment', related_name='exclude_bonus')

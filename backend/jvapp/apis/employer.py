@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import reduce
 
 from django.db.models import Count, F, Q, Sum
@@ -6,24 +7,29 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
+from jobVyne import settings
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.geocoding import LocationParser
+from jvapp.apis.notification import MessageGroupView
+from jvapp.apis.social import SocialLinkFilterView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
+from jvapp.models import MessageThread, MessageThreadContext, SocialLinkFilter
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
-from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule
+from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule, EmployerReferralRequest
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
-    get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page
+    get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page, \
+    get_serialized_employer_referral_request
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.data import AttributeCfg, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
-from jvapp.utils.email import get_domain_from_email
-from jvapp.utils.sanitize import job_description_sanitizer, sanitize_html
+from jvapp.utils.email import get_domain_from_email, send_django_email
+from jvapp.utils.sanitize import sanitize_html
 
 
 __all__ = (
@@ -227,6 +233,222 @@ class EmployerBillingView(JobVyneAPIView):
         })
     
     
+class EmployerReferralRequestView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+
+    # Keep in sync with REFERRAL_CONTENT_PLACEHOLDERS on frontend
+    class ContentPlaceholders(Enum):
+        JOB_LINK = '{{link}}'
+        JOBS_LIST = '{{jobs-list}}'
+        EMPLOYEE_FIRST_NAME = '{{first-name}}'
+        EMPLOYEE_LAST_NAME = '{{last-name}}'
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return get_error_response('An employer ID is required')
+        
+        referral_requests = EmployerReferralRequest.jv_filter_perm(
+            self.user,
+            EmployerReferralRequest.objects.filter(employer_id=employer_id)
+        )
+        return Response(status=status.HTTP_200_OK, data=[
+            get_serialized_employer_referral_request(rr) for rr in referral_requests
+        ])
+    
+    def post(self, request):
+        if not (employer_id := self.data.get('employer_id')):
+            return get_error_response('An employer ID is required')
+
+        referral_request = EmployerReferralRequest(employer_id=employer_id)
+        self.update_referral_request(self.user, referral_request, self.data)
+        error_msg = self.send_referral_requests(self.user, referral_request, self.data)
+        if error_msg:
+            return get_error_response(error_msg)
+        
+        return self.get_success_response(self.data)
+    
+    def put(self, request):
+        if not (request_id := self.data.get('request_id')):
+            return get_error_response('A request ID is required')
+    
+        referral_request = EmployerReferralRequest(id=request_id)
+        self.update_referral_request(self.user, referral_request, self.data)
+        error_msg = self.send_referral_requests(self.user, referral_request, self.data)
+        if error_msg:
+            return get_error_response(error_msg)
+    
+        return self.get_success_response(self.data)
+    
+    @staticmethod
+    def get_success_response(data):
+        recipient_count = len(data['user_ids'])
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Sent referral requests to {recipient_count} {"recipients" if recipient_count != 1 else "recipient"}'
+        })
+    
+    @staticmethod
+    def send_referral_requests(user, referral_request, data):
+        """
+        :return: Error message or None
+        """
+        referral_request.jv_check_permission(PermissionTypes.CREATE.value, user)
+        if not (user_ids := data.get('user_ids')):
+            return 'No users were specified'
+        
+        # TODO: Make this a background task since it can take a long time with lots of employees
+        recipients = JobVyneUser.objects.filter(id__in=user_ids)
+        jobs_list = None
+        referral_request_message_thread = EmployerReferralRequestView.get_or_create_referral_request_message_thread(
+            referral_request.employer_id,
+            referral_request
+        )
+        for idx, recipient in enumerate(recipients):
+            link_data = {'owner_id': recipient.id, **data}
+            link_filter, is_duplicate = SocialLinkFilterView.create_or_update_link_filter(
+                SocialLinkFilter(), link_data, user=user
+            )
+            
+            email_body = referral_request.email_body
+
+            job_link = f'{settings.BASE_URL}/jobs-link/{link_filter.id}/'
+            email_body = email_body.replace(
+                EmployerReferralRequestView.ContentPlaceholders.JOB_LINK.value,
+                job_link
+            )
+            
+            # Jobs are the same regardless of recipient so we only need to fetch them once
+            if idx == 0:
+                jobs = SocialLinkJobsView.get_jobs_from_filter(link_filter=link_filter)
+                if not jobs:
+                    return 'No jobs were provided'
+                job_titles = list({j.job_title for j in jobs})
+                job_titles.sort()
+                jobs_list = '<ul>'
+                jobs_list += ''.join([f'<li>{job_title}</li>' for job_title in job_titles[:5]])
+                if len(job_titles) > 5:
+                    jobs_list += '<li>And more jobs viewable on the website</li>'
+                jobs_list += '</ul>'
+            
+            email_body = email_body.replace(
+                EmployerReferralRequestView.ContentPlaceholders.JOBS_LIST.value,
+                jobs_list
+            )
+            
+            email_body = email_body.replace(
+                EmployerReferralRequestView.ContentPlaceholders.EMPLOYEE_FIRST_NAME.value,
+                recipient.first_name
+            )
+            email_body = email_body.replace(
+                EmployerReferralRequestView.ContentPlaceholders.EMPLOYEE_LAST_NAME.value,
+                recipient.last_name
+            )
+            
+            emails = [recipient.email]
+            if recipient.business_email:
+                emails.append(recipient.business_email)
+            
+            for email in emails:
+                send_django_email(
+                    data['email_subject'],
+                    'emails/base_general_email.html',
+                    to_email=email,
+                    django_context={
+                        'is_exclude_final_message': True
+                    },
+                    html_body_content=email_body,
+                    message_thread=referral_request_message_thread
+                )
+                
+        return None
+        
+    @staticmethod
+    @atomic
+    def update_referral_request(user, referral_request, data):
+        set_object_attributes(referral_request, data, {
+            'email_subject': None,
+            'email_body': AttributeCfg(prop_func=lambda val: sanitize_html(val, is_email=True))
+        })
+        
+        if referral_request.id:
+            referral_request.departments.remove()
+            referral_request.cities.remove()
+            referral_request.states.remove()
+            referral_request.countries.remove()
+            referral_request.jobs.remove()
+
+        permission_type = PermissionTypes.EDIT.value if referral_request.id else PermissionTypes.CREATE.value
+        referral_request.jv_check_permission(permission_type, user)
+        referral_request.save()
+        
+        if department_ids := data.get('department_ids'):
+            departments = []
+            department_model = referral_request.departments.through
+            for department_id in department_ids:
+                departments.append(department_model(
+                    employerreferralrequest_id=referral_request.id,
+                    jobdepartment_id=department_id
+                ))
+            department_model.objects.bulk_create(departments)
+            
+        if city_ids := data.get('city_ids'):
+            cities = []
+            city_model = referral_request.cities.through
+            for city_id in city_ids:
+                cities.append(city_model(
+                    employerreferralrequest_id=referral_request.id,
+                    city_id=city_id
+                ))
+            city_model.objects.bulk_create(cities)
+        
+        if state_ids := data.get('state_ids'):
+            states = []
+            state_model = referral_request.states.through
+            for state_id in state_ids:
+                states.append(state_model(
+                    employerreferralrequest_id=referral_request.id,
+                    state_id=state_id
+                ))
+            state_model.objects.bulk_create(states)
+            
+        if country_ids := data.get('country_ids'):
+            countries = []
+            country_model = referral_request.countries.through
+            for country_id in country_ids:
+                countries.append(country_model(
+                    employerreferralrequest_id=referral_request.id,
+                    country_id=country_id
+                ))
+            country_model.objects.bulk_create(countries)
+            
+        if job_ids := data.get('job_ids'):
+            jobs = []
+            job_model = referral_request.jobs.through
+            for job_id in job_ids:
+                jobs.append(job_model(
+                    employerreferralrequest_id=referral_request.id,
+                    employerjob_id=job_id
+                ))
+            job_model.objects.bulk_create(jobs)
+
+    @staticmethod
+    def get_or_create_referral_request_message_thread(employer_id, referral_request):
+        employer_message_group = MessageGroupView.get_or_create_employer_message_group(employer_id)
+        try:
+            return MessageThread.objects.get(
+                message_thread_context__referral_request=referral_request,
+                message_groups=employer_message_group
+            )
+        except MessageThread.DoesNotExist:
+            message_thread = MessageThread()
+            message_thread.save()
+            message_thread.message_groups.add(employer_message_group)
+            MessageThreadContext(
+                message_thread=message_thread,
+                referral_request=referral_request
+            ).save()
+            return message_thread
+            
+    
 class EmployerSubscriptionView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     INACTIVE_STATUSES = [
@@ -293,8 +515,8 @@ class EmployerJobView(JobVyneAPIView):
             if job_ids := self.query_params.getlist('job_ids[]'):
                 job_filter &= Q(id__in=job_ids)
             jobs = self.get_employer_jobs(employer_job_filter=job_filter)
-            rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=employer_id)
-            data = [get_serialized_employer_job(j, rules=rules, is_include_bonus=True) for j in jobs]
+            rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=employer_id) if self.user else None
+            data = [get_serialized_employer_job(j, rules=rules, is_include_bonus=bool(self.user)) for j in jobs]
         else:
             return Response('A job ID or employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
@@ -353,7 +575,7 @@ class EmployerJobView(JobVyneAPIView):
             'employment_type': AttributeCfg(is_ignore_excluded=True),
         })
         
-        employer_job.job_description = sanitize_html(data['job_description'], sanitizer=job_description_sanitizer)
+        employer_job.job_description = sanitize_html(data['job_description'])
         if salary_currency := data.get('salary_currency'):
             employer_job.salary_currency = salary_currency
         
