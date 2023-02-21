@@ -407,11 +407,10 @@ export default {
     },
     async updateAtsJobs () {
       this.isFetchingJobs = true
-      const resp = await this.$api.put('ats/jobs/', getAjaxFormData({ employer_id: this.user.employer_id }))
+      await this.$api.put('ats/jobs/', getAjaxFormData({ employer_id: this.user.employer_id }))
+      await this.employerStore.setEmployerJobs(this.user.employer_id, true)
+      this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
       this.isFetchingJobs = false
-      if (resp.status === 200) {
-        this.isGoodConnection = true
-      }
     }
   },
   async mounted () {

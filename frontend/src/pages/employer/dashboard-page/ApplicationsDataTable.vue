@@ -43,7 +43,8 @@
       <template v-slot:header-cell-ownerName="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <TableFilter filter-name="Employee" :has-filter="dataUtil.getBoolean(chartFilters.employees && chartFilters.employees.length)">
+          <TableFilter filter-name="Employee"
+                       :has-filter="dataUtil.getBoolean(chartFilters.employees && chartFilters.employees.length)">
             <q-select
               filled use-input use-chips multiple emit-value map-options
               label="Employee"
@@ -59,7 +60,8 @@
       <template v-slot:header-cell-platformName="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <TableFilter filter-name="Platform" :has-filter="dataUtil.getBoolean(chartFilters.platforms && chartFilters.platforms.length)">
+          <TableFilter filter-name="Platform"
+                       :has-filter="dataUtil.getBoolean(chartFilters.platforms && chartFilters.platforms.length)">
             <q-select
               filled use-input use-chips multiple emit-value map-options
               label="Platform"
@@ -74,7 +76,8 @@
       <template v-slot:header-cell-jobTitle="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <TableFilter filter-name="Job title" :has-filter="dataUtil.getBoolean(chartFilters.jobTitle && chartFilters.jobTitle.length)">
+          <TableFilter filter-name="Job title"
+                       :has-filter="dataUtil.getBoolean(chartFilters.jobTitle && chartFilters.jobTitle.length)">
             <q-input filled borderless debounce="300" v-model="chartFilters.jobTitle" placeholder="Job title">
               <template v-slot:append>
                 <q-icon name="search"/>
@@ -98,7 +101,7 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useDataStore } from 'stores/data-store.js'
 
 const GROUP_OPTIONS = [
-  { label: 'Employee', key: 'owner_name' },
+  { label: 'Source', key: 'owner_name' },
   { label: 'Platform', key: 'platform_name' },
   { label: 'Job Title', key: 'job_title' },
   { label: 'Date', key: 'date' }
@@ -134,8 +137,22 @@ export default {
   computed: {
     columns () {
       let columns = [
-        { name: 'ownerName', field: 'owner_name', label: 'Employee', align: 'left', sortable: true },
-        { name: 'platformName', field: 'platform_name', format: (val) => val || 'Unknown', label: 'Platform', align: 'left', sortable: true },
+        {
+          name: 'ownerName',
+          field: 'owner_name',
+          format: (val, row) => (row.owner_id) ? val : row.link_name,
+          label: 'Source',
+          align: 'left',
+          sortable: true
+        },
+        {
+          name: 'platformName',
+          field: 'platform_name',
+          format: (val) => val || 'Unknown',
+          label: 'Platform',
+          align: 'left',
+          sortable: true
+        },
         { name: 'jobTitle', field: 'job_title', label: 'Job Title', align: 'left', sortable: true },
         { name: 'applicantName', field: 'applicant_name', label: 'Applicant', align: 'left', sortable: true },
         {

@@ -36,10 +36,17 @@
             <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Job Title</td>
             <td style="border: 1px solid black; padding: 5px;">{{ job.job_title }}</td>
         </tr>
-        <tr>
-            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Referrer</td>
-            <td style="border: 1px solid black; padding: 5px;">{{ referrer.first_name }} {{ referrer.last_name }}</td>
-        </tr>
+        {% if referrer %}
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Referrer</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ referrer.first_name }} {{ referrer.last_name }}</td>
+            </tr>
+        {% elif is_employer %}
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Source</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ link_name }}</td>
+            </tr>
+        {% endif %}
         </tbody>
     </table>
     {% block bottomMessage %}{% endblock bottomMessage %}

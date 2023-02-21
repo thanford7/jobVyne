@@ -65,11 +65,13 @@ class ApplicationsView(BaseDataView):
                 return Response('You do not have access to this employer', status=status.HTTP_401_UNAUTHORIZED)
             if self.owner_id and self.user.id != self.owner_id:
                 return Response('You do not have access to this user', status=status.HTTP_401_UNAUTHORIZED)
+        is_exclude_job_board = self.query_params.get('is_exclude_job_board', False)
         applications = self.get_job_applications(
             self.user, self.start_dt, self.end_dt,
-            employer_id=self.employer_id, owner_id=self.owner_id, is_ignore_permission=True
+            employer_id=self.employer_id, owner_id=self.owner_id, is_ignore_permission=True,
+            is_exclude_job_board=is_exclude_job_board
         )
-
+        
         app_filter = Q()
         if self.filter_by:
             if employee_ids_filter := self.filter_by.get('employees'):
@@ -80,15 +82,15 @@ class ApplicationsView(BaseDataView):
                 app_filter &= Q(employer_job__job_title__iregex=f'^.*{job_title_search_filter}.*$')
             if name_filter := self.filter_by.get('applicantName'):
                 app_filter &= (
-                    Q(first_name__iregex=f'^.*{name_filter}.*$') |
-                    Q(last_name__iregex=f'^.*{name_filter}.*$')
+                        Q(first_name__iregex=f'^.*{name_filter}.*$') |
+                        Q(last_name__iregex=f'^.*{name_filter}.*$')
                 )
             if email_filter := self.filter_by.get('applicantEmail'):
                 app_filter &= Q(email__iregex=f'^.*{email_filter}.*$')
             if referrer_filter := self.filter_by.get('referrerName'):
                 app_filter &= (
-                    Q(social_link_filter__owner__first_name__iregex=f'^.*{referrer_filter}.*$') |
-                    Q(social_link_filter__owner__last_name__iregex=f'^.*{referrer_filter}.*$')
+                        Q(social_link_filter__owner__first_name__iregex=f'^.*{referrer_filter}.*$') |
+                        Q(social_link_filter__owner__last_name__iregex=f'^.*{referrer_filter}.*$')
                 )
             if locations_filter := self.filter_by.get('locations'):
                 app_filter &= Q(employer_job__locations__in=locations_filter)
@@ -104,21 +106,22 @@ class ApplicationsView(BaseDataView):
             if 'owner_name' in self.group_by:
                 self.group_by += ['owner_id', 'owner_first_name', 'owner_last_name']
             
-            applications = applications\
-                .annotate(date=TruncDate('created_dt', tzinfo=self.timezone))\
-                .annotate(week=TruncWeek('created_dt', tzinfo=self.timezone))\
-                .annotate(month=TruncMonth('created_dt', tzinfo=self.timezone))\
-                .annotate(year=TruncYear('created_dt', tzinfo=self.timezone))\
+            applications = applications \
+                .annotate(date=TruncDate('created_dt', tzinfo=self.timezone)) \
+                .annotate(week=TruncWeek('created_dt', tzinfo=self.timezone)) \
+                .annotate(month=TruncMonth('created_dt', tzinfo=self.timezone)) \
+                .annotate(year=TruncYear('created_dt', tzinfo=self.timezone)) \
                 .annotate(platform_name=F('platform__name')) \
+                .annotate(link_name=F('social_link_filter__name')) \
                 .annotate(owner_id=F('social_link_filter__owner_id')) \
                 .annotate(owner_first_name=F('social_link_filter__owner__first_name')) \
                 .annotate(owner_last_name=F('social_link_filter__owner__last_name')) \
                 .annotate(owner_name=Concat(
                     'social_link_filter__owner__first_name', Value(' '), 'social_link_filter__owner__last_name'
-                ))\
-                .annotate(applicant_name=Concat('first_name', Value(' '), 'last_name'))\
-                .annotate(job_title=F('employer_job__job_title'))\
-                .values(*self.group_by)\
+                )) \
+                .annotate(applicant_name=Concat('first_name', Value(' '), 'last_name')) \
+                .annotate(job_title=F('employer_job__job_title')) \
+                .values(*self.group_by) \
                 .annotate(count=Count('id'))
             
             if 'owner_name' in self.group_by:
@@ -173,23 +176,30 @@ class ApplicationsView(BaseDataView):
                 'feedback_recommend_this_job': application.feedback_recommend_this_job,
                 'feedback_note': application.feedback_note
             }
-            
+        
         if is_employer:
             application_data['notification_email_dt'] = get_datetime_format_or_none(application.notification_email_dt)
-            application_data['notification_email_failure_dt'] = get_datetime_format_or_none(application.notification_email_failure_dt)
+            application_data['notification_email_failure_dt'] = get_datetime_format_or_none(
+                application.notification_email_failure_dt)
             application_data['notification_ats_dt'] = get_datetime_format_or_none(application.notification_ats_dt)
-            application_data['notification_ats_failure_dt'] = get_datetime_format_or_none(application.notification_ats_failure_dt)
+            application_data['notification_ats_failure_dt'] = get_datetime_format_or_none(
+                application.notification_ats_failure_dt)
             application_data['notification_ats_failure_msg'] = application.notification_ats_failure_msg
         
         return {**application_data, **self.get_link_data(application.social_link_filter)}
     
     @staticmethod
-    def get_job_applications(user, start_date, end_date, employer_id=None, owner_id=None, is_ignore_permission=False):
+    def get_job_applications(
+        user, start_date, end_date, employer_id=None, owner_id=None, is_exclude_job_board=False,
+        is_ignore_permission=False
+    ):
         app_filter = Q(created_dt__lte=end_date) & Q(created_dt__gte=start_date)
         if employer_id:
             app_filter &= Q(social_link_filter__employer_id=employer_id)
         if owner_id:
             app_filter &= Q(social_link_filter__owner_id=owner_id)
+        if is_exclude_job_board:
+            app_filter &= Q(social_link_filter__owner_id__isnull=False)
         
         # Include the message thread if this is the employer
         message_thread_prefetch = Prefetch(
@@ -197,30 +207,30 @@ class ApplicationsView(BaseDataView):
             queryset=MessageThreadContext.objects
                 .select_related('message_thread')
                 .prefetch_related(
-                    'message_thread__message',
-                    'message_thread__message__recipient',
-                    'message_thread__message_groups'
-                )
+                'message_thread__message',
+                'message_thread__message__recipient',
+                'message_thread__message_groups'
+            )
                 .filter(
-                    message_thread__message_groups__employer_id__isnull=False,
-                    message_thread__message_groups__employer_id=employer_id
-                )
+                message_thread__message_groups__employer_id__isnull=False,
+                message_thread__message_groups__employer_id=employer_id
+            )
         )
         
         job_applications = JobApplication.objects \
             .select_related(
-                'platform',
-                'employer_job',
-                'social_link_filter',
-                'social_link_filter__owner',
-            ) \
+            'platform',
+            'employer_job',
+            'social_link_filter',
+            'social_link_filter__owner',
+        ) \
             .prefetch_related(
-                'employer_job__locations',
-                'employer_job__locations__city',
-                'employer_job__locations__state',
-                'employer_job__locations__country',
-                message_thread_prefetch
-            ) \
+            'employer_job__locations',
+            'employer_job__locations__city',
+            'employer_job__locations__state',
+            'employer_job__locations__country',
+            message_thread_prefetch
+        ) \
             .filter(app_filter)
         
         if is_ignore_permission:
@@ -236,7 +246,7 @@ class PageViewsView(BaseDataView):
             self.user, self.start_dt, self.end_dt,
             employer_id=self.employer_id, owner_id=self.owner_id
         )
-
+        
         if not self.is_raw_data:
             link_views = link_views \
                 .annotate(date=TruncDate('access_dt', tzinfo=self.timezone)) \
@@ -245,7 +255,7 @@ class PageViewsView(BaseDataView):
                 .annotate(year=TruncYear('access_dt', tzinfo=self.timezone)) \
                 .values(*self.group_by) \
                 .annotate(count=Count('id'))
-    
+            
             return Response(status=status.HTTP_200_OK, data=link_views)
         
         # TODO: Apply group by and then use paginator to return data
@@ -279,8 +289,8 @@ class PageViewsView(BaseDataView):
             view_filter &= Q(social_link_filter__owner_id=owner_id)
         views = PageView.objects \
             .select_related(
-                'social_link_filter',
-                'social_link_filter__owner'
-            )\
+            'social_link_filter',
+            'social_link_filter__owner'
+        ) \
             .filter(view_filter)
         return PageView.jv_filter_perm(user, views)

@@ -554,6 +554,8 @@ class LeverAts(BaseAts):
         if is_JSON:
             request_kwargs['headers']['Content-Type'] = 'application/json'
             request_kwargs['json'] = body
+        elif request_method_fn == REQUEST_FN_GET:
+            request_kwargs['params'] = body
         else:
             request_kwargs['data'] = body
         
@@ -572,16 +574,26 @@ class LeverAts(BaseAts):
         requisitions = self.get_requisitions()
         if requisitions:
             for job in jobs:
-                if not (requisition_codes := job['requisitionCodes']):
+                requisition_codes = job['requisitionCodes']
+                salary_range = job.get('salaryRange')
+                if not any([requisition_codes, salary_range]):
                     continue
-                requisition_code = requisition_codes[0]
-                requisition = requisitions.get(requisition_code)
-                if requisition and (compensation := requisition['compensationBand']):
-                    min_salary, max_salary, interval = self.get_normalized_salary(compensation)
-                    job['salary_floor'] = min_salary
-                    job['salary_ceiling'] = max_salary
-                    job['salary_interval'] = interval
-                    job['salary_currency'] = compensation['currency']
+                
+                # If no salary range is present on the job, fall back to requisition
+                if not salary_range:
+                    requisition_code = requisition_codes[0]
+                    requisition = requisitions.get(requisition_code)
+                    if not requisition:
+                        continue
+                    salary_range = requisition['compensationBand']
+                    if not salary_range:
+                        continue
+                
+                min_salary, max_salary, interval = self.get_normalized_salary(salary_range)
+                job['salary_floor'] = min_salary
+                job['salary_ceiling'] = max_salary
+                job['salary_interval'] = interval
+                job['salary_currency'] = salary_range['currency']
             
         return jobs
     

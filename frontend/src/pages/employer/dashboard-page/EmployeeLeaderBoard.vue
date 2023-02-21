@@ -196,7 +196,8 @@ export default {
         this.dateRange.to,
         {
           employer_id: this.authStore.propUser.employer_id,
-          group_by: JSON.stringify(['owner_name'])
+          group_by: JSON.stringify(['owner_name']),
+          is_exclude_job_board: true
         }
       )
       this.isLoading = false

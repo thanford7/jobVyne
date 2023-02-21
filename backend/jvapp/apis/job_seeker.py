@@ -113,6 +113,7 @@ class ApplicationView(JobVyneAPIView):
             'job': application.employer_job,
             'application': application,
             'referrer': application.social_link_filter.owner,
+            'link_name': application.social_link_filter.name,
             'employer': employer
         }
         files = [application.resume] if resume else None
@@ -127,8 +128,8 @@ class ApplicationView(JobVyneAPIView):
             files=files
         )
         
-        # Email the referrer
-        if UserNotificationPreferenceView.get_is_notification_enabled(
+        # Email the referrer (if there is one)
+        if application.social_link_filter.owner and UserNotificationPreferenceView.get_is_notification_enabled(
             application.social_link_filter.owner, NotificationPreferenceKey.NEW_APPLICATION.value
         ):
             send_django_email(
@@ -150,7 +151,10 @@ class ApplicationView(JobVyneAPIView):
                 'emails/application_submission_employer_email.html',
                 to_email=[employer.notification_email],
                 from_email=EMAIL_ADDRESS_SEND,
-                django_context=django_context,
+                django_context={
+                    **django_context,
+                    'is_employer': True
+                },
                 files=files,
                 message_thread=message_thread
             )
