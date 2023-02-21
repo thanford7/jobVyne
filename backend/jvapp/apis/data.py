@@ -44,19 +44,20 @@ class BaseDataView(JobVyneAPIView):
         return {
             'link_id': social_link.id,
             'owner_id': social_link.owner_id,
-            'owner_first_name': social_link.owner.first_name,
-            'owner_last_name': social_link.owner.last_name
+            'owner_first_name': social_link.owner.first_name if social_link.owner else None,
+            'owner_last_name': social_link.owner.last_name if social_link.owner else None,
+            'link_name': social_link.name
         }
 
 
 class ApplicationsView(BaseDataView):
     SORT_MAP = {
-        'applicant': 'first_name',
-        'job_title': 'employer_job__job_title',
-        'email': 'email',
-        'created_dt': 'created_dt',
-        'referrer': 'social_link_filter__owner__first_name',
-        'recommended': 'feedback_recommend_this_job'
+        'applicant': ('first_name',),
+        'job_title': ('employer_job__job_title',),
+        'email': ('email',),
+        'created_dt': ('created_dt',),
+        'source': ('social_link_filter__owner__first_name', 'social_link_filter__name'),
+        'recommended': ('feedback_recommend_this_job',)
     }
     
     def get(self, request):
@@ -87,10 +88,11 @@ class ApplicationsView(BaseDataView):
                 )
             if email_filter := self.filter_by.get('applicantEmail'):
                 app_filter &= Q(email__iregex=f'^.*{email_filter}.*$')
-            if referrer_filter := self.filter_by.get('referrerName'):
+            if source_filter := self.filter_by.get('sourceName'):
                 app_filter &= (
-                        Q(social_link_filter__owner__first_name__iregex=f'^.*{referrer_filter}.*$') |
-                        Q(social_link_filter__owner__last_name__iregex=f'^.*{referrer_filter}.*$')
+                        Q(social_link_filter__owner__first_name__iregex=f'^.*{source_filter}.*$') |
+                        Q(social_link_filter__owner__last_name__iregex=f'^.*{source_filter}.*$') |
+                        Q(social_link_filter__name__iregex=f'^.*{source_filter}.*$')
                 )
             if locations_filter := self.filter_by.get('locations'):
                 app_filter &= Q(employer_job__locations__in=locations_filter)
@@ -135,8 +137,16 @@ class ApplicationsView(BaseDataView):
             return Response(status=status.HTTP_200_OK, data=applications)
         
         is_employer = self.user.is_employer and self.employer_id and self.user.employer_id == self.employer_id
-        sort_order = f'{"-" if self.is_sort_descending else ""}{self.SORT_MAP[self.sort_order]}' if self.sort_order else '-created_dt'
-        paged_applications = Paginator(applications.order_by(sort_order), 25)
+        
+        if not self.sort_order:
+            sort_order = ('-created_dt',)
+        else:
+            sort_keys = self.SORT_MAP[self.sort_order]
+            sort_order = []
+            for key in sort_keys:
+                sort_order.append(f'{"-" if self.is_sort_descending else ""}{key}')
+                
+        paged_applications = Paginator(applications.order_by(*sort_order), 25)
         locations = set()
         for app in applications:
             for location in app.employer_job.locations.all():

@@ -82,12 +82,12 @@
               />
             </TableFilter>
           </template>
-          <template v-else-if="col.name === 'referrer'">
+          <template v-else-if="col.name === 'source'">
             {{ col.label }}
-            <TableFilter filter-name="Referrer"
-                         :has-filter="dataUtil.getBoolean(applicationFilter.referrerName && applicationFilter.referrerName.length)">
-              <q-input filled borderless debounce="300" v-model="applicationFilter.referrerName"
-                       placeholder="Referrer name">
+            <TableFilter filter-name="source"
+                         :has-filter="dataUtil.getBoolean(applicationFilter.sourceName && applicationFilter.sourceName.length)">
+              <q-input filled borderless debounce="300" v-model="applicationFilter.sourceName"
+                       placeholder="Source name">
                 <template v-slot:append>
                   <q-icon name="search"/>
                 </template>
@@ -128,8 +128,13 @@
             />
             {{ props.row.first_name }} {{ props.row.last_name }}
           </template>
-          <template v-else-if="col.name === 'referrer'">
-            {{ props.row.owner_first_name }} {{ props.row.owner_last_name }}
+          <template v-else-if="col.name === 'source'">
+            <span v-if="props.row.owner_id">
+              {{ props.row.owner_first_name }} {{ props.row.owner_last_name }}
+            </span>
+            <span v-else>
+              {{ props.row.link_name }}
+            </span>
           </template>
           <template v-else-if="col.name === 'locations'">
             <template v-if="props.row.locations.length > 1">
@@ -265,7 +270,7 @@ import { useEmployerStore } from 'stores/employer-store.js'
 const applicationFilterTemplate = {
   applicantName: null,
   applicantEmail: null,
-  referrerName: null,
+  sourceName: null,
   locations: null,
   jobTitle: null
 }
@@ -348,7 +353,7 @@ export default {
         }
       ]
       if (this.isEmployer) {
-        fields.push({ name: 'referrer', field: 'owner_first_name', align: 'left', label: 'Referrer', sortable: true })
+        fields.push({ name: 'source', field: 'owner_first_name', align: 'left', label: 'Source', sortable: true })
       }
       return fields
     }
