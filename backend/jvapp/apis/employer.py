@@ -141,8 +141,11 @@ class EmployerAtsView(JobVyneAPIView):
     
     @atomic
     def delete(self, request, ats_id):
+        from jvapp.apis.ats import get_ats_api  # Avoid circular import
         ats = EmployerAts.objects.get(id=ats_id)
         ats.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+        ats_api = get_ats_api(ats)
+        ats_api.delete_webhooks()
         ats.delete()
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully deleted ATS configuration'

@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 REQUEST_FN_GET = requests.get
 REQUEST_FN_POST = requests.post
 REQUEST_FN_PUT = requests.put
+REQUEST_FN_DELETE = requests.delete
 
 
 class AtsError(Exception):
@@ -134,6 +135,9 @@ class BaseAts:
     
     def get_ats_user_id(self):
         return None
+    
+    def delete_webhooks(self):
+        pass  # Noop - Override as needed
     
     def get_custom_fields(self):
         raise NotImplementedError()
@@ -559,7 +563,9 @@ class LeverAts(BaseAts):
         response = request_method_fn(url, **request_kwargs)
         if not is_good_response(response):
             raise AtsError(f'Could not complete request for {relative_url} endpoint: {get_resp_error_message(response)}')
-        return response.json()
+        
+        # Delete requests don't return any content
+        return response.json() if response.content else None
 
     def get_jobs(self):
         jobs = self.get_paginated_data('postings', body_cfg={'state': 'published'})
@@ -578,6 +584,10 @@ class LeverAts(BaseAts):
                     job['salary_currency'] = compensation['currency']
             
         return jobs
+    
+    def get_posting_owner_key(self, job_key):
+        job = self.get_data(REQUEST_FN_GET, f'postings/{job_key}')
+        return job['data']['owner']
     
     def get_requisitions(self):
         requisitions = self.get_paginated_data('requisitions', body_cfg={'status': 'open'}) or []
@@ -626,10 +636,11 @@ class LeverAts(BaseAts):
         if application.linkedin_url:
             body_cfg['links[]'] = application.linkedin_url
         
+        posting_owner_key = self.get_posting_owner_key(application.employer_job.ats_job_key)
         resume_file_path = get_safe_file_path(application.resume)
         data = self.get_data(
             REQUEST_FN_POST,
-            f'opportunities?perform_as={self.ats_cfg.api_key}&parse=true&perform_as_posting_owner=true',
+            f'opportunities?perform_as={posting_owner_key}&parse=true&perform_as_posting_owner=true',
             body_cfg=body_cfg,
             files={'resumeFile': (get_file_name(resume_file_path), application.resume.open('rb').read(), get_mime_from_file_path(resume_file_path))}
         )
@@ -644,7 +655,7 @@ class LeverAts(BaseAts):
             raise AtsError('Could not save the note on candidate: An opportunity key is required')
         self.get_data(
             REQUEST_FN_POST,
-            f'opportunities/{candidate_key}/notes?perform_as={self.ats_cfg.api_key}',
+            f'opportunities/{candidate_key}/notes',
             is_JSON=True,
             body_cfg={
                 'value': note
@@ -712,6 +723,11 @@ class LeverAts(BaseAts):
             user = resp['data']
         
         return user
+    
+    def delete_webhooks(self):
+        for webhook_key in ('webhook_stage_change_key', 'webhook_archive_key', 'webhook_hire_key', 'webhook_delete_key'):
+            if key := getattr(self.ats_cfg, webhook_key):
+                self.get_data(REQUEST_FN_DELETE, f'webhooks/{key}')
     
     @staticmethod
     def get_formatted_job_description(description_content):

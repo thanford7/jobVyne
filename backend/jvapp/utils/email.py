@@ -58,7 +58,10 @@ def send_django_email(
     plain_content = strip_tags(html_content)
     
     # Make sure emails aren't sent to actual people when not in production
-    if not IS_PRODUCTION:
+    if not any([
+        IS_PRODUCTION,
+        to_email in settings.DEV_EMAILS
+    ]):
         subject = '(Test) ' + subject
         logger.info(
             f'Sending email to test address. This email would have been sent to {to_email}, cced to {cc_email}, and bcced to {bcc_email}')

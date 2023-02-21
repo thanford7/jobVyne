@@ -80,8 +80,7 @@
                   label="Job link"
                 >
                   <template v-slot:after>
-                    <q-btn flat stretch icon="content_copy" @click="dataUtil.copyText($event)"/>
-                    <span class="copy-target hidden">{{ socialLinkUrl }}</span>
+                    <q-btn flat stretch icon="content_copy" @click="dataUtil.copyText(socialLinkUrl)"/>
                   </template>
                 </q-input>
               </div>
@@ -93,8 +92,7 @@
                 type="textarea"
               >
                 <template v-slot:after>
-                  <q-btn flat stretch icon="content_copy" @click="dataUtil.copyText($event)"/>
-                  <span class="copy-target hidden">{{ shortMessage }}</span>
+                  <q-btn flat stretch icon="content_copy" @click="dataUtil.copyText(shortMessage)"/>
                 </template>
               </q-input>
             </div>
@@ -193,7 +191,7 @@ export default {
       job_ids: [this.job.id],
       is_get_or_create: true
     })
-    this.socialLinkUrl = socialUtil.getSocialLink(this.shareType, this.socialLink)
+    this.socialLinkUrl = socialUtil.getJobLinkUrl(this.socialLink, { platform: this.shareType })
     this.employer = this.employerStore.getEmployer(this.job.employer_id)
     this.user = authStore.propUser
     this.shortMessage = `My company, ${this.employer.name}, is hiring for a ${this.job.job_title} position and I think you would be a great fit. If you're interested, you can use this link to view more details and apply:

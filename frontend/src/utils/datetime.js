@@ -27,7 +27,7 @@ class DateTimeUtil {
     this.time24HRegex = /^(?<hour>0[0-9]|1[0-9]|2[0-3]):(?<minute>[0-5][0-9])(:(?<second>[0-5][0-9]))?$/
   }
 
-  serializeDate (targetDate, { isIncludeTime = false, isEndOfDay = false, isUTC = true }) {
+  serializeDate (targetDate, { isIncludeTime = false, isEndOfDay = false, isUTC = true } = {}) {
     const format = (isIncludeTime) ? this.serializeDateTimeFormat : this.serializeDateFormat
     if (isIncludeTime) {
       if (isEndOfDay) {

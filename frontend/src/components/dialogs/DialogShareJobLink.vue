@@ -17,6 +17,7 @@
             ]"
           />
           <WysiwygEditor2 v-model="emailBody"/>
+          <ErrorCallout ref="emailBodyError" :error-text="emailBodyErrorText"/>
           <BaseExpansionItem
             title="Placeholder content" class="content-expansion q-mt-md"
             :is-include-separator="false"
@@ -55,9 +56,13 @@
                 If you want to send to all employees, leave the filter empty.
               </CustomTooltip>
             </template>
+            <div>
+              <q-icon name="info" color="gray-300" size="16px"/>
+              Send to {{ dataUtil.pluralize('employee', sendEmployeeCount) }}
+            </div>
             <SelectEmployee
               v-model="userFilters.user_ids"
-              class="q-mb-md"
+              class="q-mb-md q-mt-sm"
               :employer-id="employerId" :is-multi="true"
             />
           </BaseExpansionItem>
@@ -71,6 +76,7 @@
                 If you wish to include all jobs, leave the filters blank.
               </CustomTooltip>
             </template>
+            <ErrorCallout ref="filteredJobsError" :error-text="filteredJobsErrorText"/>
             <div>
               <a :href="jobsExampleUrl" target="_blank" class="no-decoration">
                 <span class="text-gray-3">
@@ -79,7 +85,7 @@
                 View {{ dataUtil.pluralize('job', filteredJobs.length) }}
               </a>
             </div>
-            <div class="q-gutter-y-sm q-mt-md">
+            <div class="q-gutter-y-sm q-mt-sm">
               <SelectJobDepartment v-model="jobFilters.department_ids" :is-emit-id="true"/>
               <SelectJobCity v-model="jobFilters.city_ids" :is-emit-id="true"/>
               <SelectJobState v-model="jobFilters.state_ids" :is-emit-id="true"/>
@@ -96,6 +102,7 @@
 <script>
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
+import ErrorCallout from 'components/ErrorCallout.vue'
 import dataUtil from 'src/utils/data.js'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import SelectEmployee from 'components/inputs/SelectEmployee.vue'
@@ -106,6 +113,7 @@ import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
 import WysiwygEditor2 from 'components/inputs/WysiwygEditor2.vue'
 import { getAjaxFormData } from 'src/utils/requests.js'
+import socialUtil from 'src/utils/social.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
 // Keep in sync with ContentPlaceholders on SocialPost backend
@@ -143,6 +151,7 @@ export default {
   inheritAttrs: false,
   components: {
     BaseExpansionItem,
+    ErrorCallout,
     SelectJob,
     SelectJobCountry,
     SelectJobState,
@@ -161,7 +170,9 @@ export default {
       employer: null,
       emailSubject: '',
       emailBody: '',
+      emailBodyErrorText: null,
       filteredJobs: [],
+      filteredJobsErrorText: null,
       filteredJobsCache: {},
       userFilters: {
         user_ids: null
@@ -181,25 +192,38 @@ export default {
   },
   computed: {
     jobsExampleUrl () {
-      return dataUtil.getUrlWithParams({
-        path: `/jobs-link/example/${this.employerId}`,
-        isExcludeExistingParams: true,
-        addParams: Object.entries(this.jobFilters).reduce((addParams, [filterKey, filterVal]) => {
-          if (!filterVal || !filterVal.length) {
-            return addParams
-          }
-          addParams.push({ key: filterKey, val: filterVal })
-          return addParams
-        }, [])
-      })
+      return socialUtil.getJobLinkUrl(
+        null, { filters: this.jobFilters, employerId: this.employerId }
+      )
+    },
+    sendEmployeeCount () {
+      if (this.userFilters.user_ids) {
+        return this.userFilters.user_ids.length
+      }
+      const employees = this.employerStore.getEmployees(this.employerId)
+      return employees.length
     }
   },
   watch: {
     jobFilters: {
       async handler () {
         await this.getFilteredJobs()
+        if (!this.filteredJobs.length) {
+          this.filteredJobsErrorText = 'Update or remove filters to make sure at least one job is available'
+        } else {
+          this.filteredJobsErrorText = null
+        }
       },
       deep: true
+    },
+    emailBody () {
+      if (!this.emailBody.includes(REFERRAL_CONTENT_PLACEHOLDERS.JOB_LINK)) {
+        this.emailBodyErrorText = 'The email message must include the jobs page link placeholder'
+      } else if (!this.emailBody?.length) {
+        this.emailBodyErrorText = 'An email message is required'
+      } else {
+        this.emailBodyErrorText = null
+      }
     }
   },
   methods: {
@@ -222,7 +246,19 @@ export default {
       }
     },
     async isValidForm () {
-      return await this.$refs.form.validate()
+      const isValid = await this.$refs.form.validate()
+      if (!isValid) {
+        return false
+      }
+      if (this.emailBodyErrorText) {
+        this.$refs.emailBodyError.shake()
+        return false
+      }
+      if (this.filteredJobsErrorText) {
+        this.$refs.filteredJobsError.shake()
+        return false
+      }
+      return true
     },
     async sendRequest () {
       const formData = {
@@ -241,7 +277,8 @@ export default {
     this.employerStore = useEmployerStore()
     await Promise.all([
       this.getFilteredJobs(),
-      this.employerStore.setEmployer(this.employerId)
+      this.employerStore.setEmployer(this.employerId),
+      this.employerStore.setEmployees(this.employerId)
     ])
     this.employer = this.employerStore.getEmployer(this.employerId)
     this.emailSubject = `Help us hire at ${this.employer.name}! Share your personal referral link`

@@ -43,6 +43,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import { SOCIAL_CONTENT_PLACEHOLDERS } from 'components/dialogs/dialog-social-content/DialogSocialContent.vue'
 import dataUtil from 'src/utils/data.js'
 import fileUtil from 'src/utils/file.js'
+import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useSocialStore } from 'stores/social-store.js'
@@ -91,14 +92,7 @@ export default {
       let formattedContent = this.content
         .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, this.employer.name)
       if (this.jobLink) {
-        let jobLinkUrl = `${window.location.origin}/jobs-link/${this.jobLink.id}`
-        if (this.jobLink.platformName) {
-          jobLinkUrl = dataUtil.getUrlWithParams({
-            isExcludeExistingParams: true,
-            path: jobLinkUrl,
-            addParams: [{ key: 'platform', val: this.jobLink.platformName }]
-          })
-        }
+        const jobLinkUrl = socialUtil.getJobLinkUrl(this.jobLink, { platform: this.jobLink.platformName })
 
         let formattedJobTitles = this.jobTitles.slice(0, 5).map((j) => `- ${j}`).join('\n')
         if (this.jobTitles.length > 5) {

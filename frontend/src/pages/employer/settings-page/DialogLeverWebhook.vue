@@ -10,11 +10,12 @@
       </p>
       <p class="text-bold">Note: You will need "Super admin" priveleges to complete the actions below.</p>
       <ol>
-        <li>Navigate to your Lever admin website</li>
-        <li>Click on your profile button (likely your initials) at the top right of the page</li>
-        <li>Click the "Settings" navigation link</li>
-        <li>Click the "Integrations and API" navigations link in the left navigation bar</li>
-        <li>Click the "Webhooks" tab</li>
+        <li>
+          Navigate to your
+          <a href="https://hire.lever.co/settings/integrations?tab=webhooks" target="_blank">
+            Lever admin website
+          </a>
+        </li>
         <li>If not already enabled, turn on webhooks for:</li>
         <ul>
           <li>Candidate stage change</li>
@@ -34,7 +35,7 @@
 import DialogBase from 'components/dialogs/DialogBase.vue'
 
 export default {
-  name: 'DialogGreenhouseUser',
+  name: 'DialogLeverWebhook',
   components: { DialogBase }
 }
 </script>

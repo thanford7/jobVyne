@@ -6,12 +6,13 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.models import JobApplication, Message, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
 from jvapp.serializers.social import *
+from jvapp.serializers.social import get_serialized_link_tag
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 __all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView', 'ShareSocialLinkView')
@@ -37,7 +38,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             if owner_id := self.query_params.get('owner_id'):
                 q_filter = Q(owner_id=owner_id)
             elif employer_id := self.query_params.get('employer_id'):
-                q_filter = Q(employer_id=employer_id)
+                q_filter = Q(employer_id=employer_id, owner_id__isnull=True)
             else:
                 return Response('You must provide an ID, owner ID, or employer ID', status=status.HTTP_400_BAD_REQUEST)
             
@@ -70,7 +71,7 @@ class SocialLinkFilterView(JobVyneAPIView):
                 }
             else:
                 data = {
-                    SUCCESS_MESSAGE_KEY: 'Created a new referral link'
+                    SUCCESS_MESSAGE_KEY: 'Created a new job link'
                 }
         if is_get_or_create:
             data['link_filter'] = get_serialized_social_link_filter(new_link)
@@ -86,7 +87,7 @@ class SocialLinkFilterView(JobVyneAPIView):
         
         # Need to refetch to get associated objects
         return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: 'The referral link was successfully updated'
+            SUCCESS_MESSAGE_KEY: 'The job link was successfully updated'
         })
     
     @atomic
@@ -97,13 +98,14 @@ class SocialLinkFilterView(JobVyneAPIView):
             return Response('A link filter ID is required', status=status.HTTP_400_BAD_REQUEST)
         
         links = self.get_link_filters(self.user, link_filter_filter=Q(id__in=link_filter_ids))
-        deleted_link_ids = []
         for link in links:
             link.jv_check_permission(PermissionTypes.DELETE.value, self.user)
-            deleted_link_ids.append(link.id)
-            link.delete()
+            link.is_archived = True
+        SocialLinkFilter.objects.bulk_update(links, ['is_archived'])
         
-        return Response(status=status.HTTP_200_OK, data=deleted_link_ids)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Successfully archived job link'
+        })
     
     @staticmethod
     @atomic
@@ -111,12 +113,14 @@ class SocialLinkFilterView(JobVyneAPIView):
         """ Create or update a link filter.
         :return {bool}: If True, the link filter is a duplicate
         """
-        # Add owner and employer for new link
         cfg = {
-            'is_default': AttributeCfg(is_ignore_excluded=True)
+            'is_default': AttributeCfg(is_ignore_excluded=True),
+            'name': AttributeCfg(form_name='link_name', is_ignore_excluded=True)
         }
         is_new = not link_filter.created_dt
         is_duplicate = False
+
+        # Add owner and employer for new link
         if is_new:
             cfg = {
                 'owner_id': None,
@@ -145,6 +149,14 @@ class SocialLinkFilterView(JobVyneAPIView):
         
         if job_ids := data.get('job_ids'):
             link_filter.jobs.set(job_ids)
+            
+        if link_tags := data.get('link_tags'):
+            normalized_link_tags = []
+            for link_tag in link_tags:
+                normalized_link_tags.append(
+                    SocialLinkTagView.get_or_create_link_tag(user, link_tag, link_filter.employer_id, link_filter.owner_id)
+                )
+            link_filter.tags.set(normalized_link_tags)
         
         existing_filters = SocialLinkFilterView.get_user_existing_filters(
             user, link_filter.owner_id, current_link_filter_id=link_filter.id
@@ -188,6 +200,8 @@ class SocialLinkFilterView(JobVyneAPIView):
     ):
         if link_filter_id:
             link_filter_filter = Q(id=link_filter_id)
+        elif (not link_filter_id) and link_filter_filter:
+            link_filter_filter &= Q(is_archived=False)
         
         app_filter = Q()
         view_filter = Q()
@@ -211,9 +225,9 @@ class SocialLinkFilterView(JobVyneAPIView):
         links = SocialLinkFilter.objects \
             .select_related('employer', 'owner') \
             .prefetch_related(
-            'departments', 'cities', 'states', 'countries', 'jobs',
-            app_prefetch, page_view_prefetch
-        ) \
+                'departments', 'cities', 'states', 'countries', 'jobs', 'tags',
+                app_prefetch, page_view_prefetch
+            ) \
             .filter(link_filter_filter)
         
         if is_use_permissions:
@@ -268,15 +282,15 @@ class SocialLinkJobsView(JobVyneAPIView):
         if job_title := self.query_params.get('job_title'):
             filter_values['job_title'] = job_title
         if city_ids := self.query_params.getlist('city_ids[]'):
-            filter_values['city_ids'] = city_ids
+            filter_values['city_ids'] = [int(city_id) for city_id in city_ids]
         if state_ids := self.query_params.getlist('state_ids[]'):
-            filter_values['state_ids'] = state_ids
+            filter_values['state_ids'] = [int(state_id) for state_id in state_ids]
         if country_ids := self.query_params.getlist('country_ids[]'):
-            filter_values['country_ids'] = country_ids
+            filter_values['country_ids'] = [int(country_id) for country_id in country_ids]
         if department_ids := self.query_params.getlist('department_ids[]'):
-            filter_values['department_ids'] = department_ids
+            filter_values['department_ids'] = [int(department_id) for department_id in department_ids]
         if job_ids := self.query_params.getlist('job_ids[]'):
-            filter_values['job_ids'] = job_ids
+            filter_values['job_ids'] = [int(job_id) for job_id in job_ids]
         
         return filter_values
     
@@ -349,3 +363,40 @@ class ShareSocialLinkView(JobVyneAPIView):
             return Response(status=status.HTTP_200_OK, data={
                 SUCCESS_MESSAGE_KEY: f'Message sent to {self.data["phoneNumber"]}'
             })
+        
+
+class SocialLinkTagView(JobVyneAPIView):
+    
+    def get(self, request):
+        employer_id = self.query_params.get('employer_id')
+        owner_id = self.query_params.get('owner_id')
+        if not any([employer_id, owner_id]):
+            return get_error_response('An employer ID or owner ID is required')
+        
+        link_tags = self.get_link_tags(self.user, employer_id=employer_id, owner_id=owner_id)
+        return Response(status=status.HTTP_200_OK, data=[get_serialized_link_tag(lt) for lt in link_tags])
+    
+    @staticmethod
+    def get_link_tags(user, employer_id=None, owner_id=None):
+        assert any([employer_id, owner_id])
+        link_tag_filter = Q()
+        if employer_id:
+            link_tag_filter = Q(employer_id=employer_id)
+        if owner_id:
+            link_tag_filter = Q(owner_id=owner_id)
+        link_tag_filters = SocialLinkTag.objects.filter(link_tag_filter)
+        return SocialLinkTag.jv_filter_perm(user, link_tag_filters)
+    
+    @staticmethod
+    def get_or_create_link_tag(user, tag_name, employer_id, owner_id):
+        link_tag = SocialLinkTag.objects.filter(tag_name=tag_name, employer_id=employer_id, owner_id=owner_id)
+        if link_tag:
+            link_tag = SocialLinkTag.jv_filter_perm(user, link_tag)
+            return link_tag[0]
+        
+        link_tag = SocialLinkTag(tag_name=tag_name, employer_id=employer_id, owner_id=owner_id)
+        link_tag.jv_check_permission(PermissionTypes.CREATE.value, user)
+        link_tag.save()
+        return link_tag
+        
+        

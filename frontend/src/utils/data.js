@@ -87,10 +87,7 @@ class DataUtil {
     return Math.ceil(number / roundNumber) * roundNumber
   }
 
-  copyText (e) {
-    const targetEl = e.currentTarget
-    const copyTargetEl = targetEl.closest('div').querySelector('.copy-target')
-    const text = copyTargetEl.innerText || copyTargetEl.value
+  copyText (text) {
     navigator.clipboard.writeText(text).then(
       () => {
         messagesUtil.addMsg(
@@ -289,6 +286,8 @@ class DataUtil {
   getForceArray (val) {
     if (Array.isArray(val)) {
       return val
+    } else if (val) {
+      return [val]
     }
     return []
   }

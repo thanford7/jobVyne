@@ -445,6 +445,7 @@ export default {
       if (isShowLoading) {
         Loading.show()
       }
+      const isExample = this.$route.meta.isExample
       let url = 'social-link-jobs/'
       if (this.$route.params.filterId) {
         url = `${url}${this.$route.params.filterId}`
@@ -454,7 +455,7 @@ export default {
         employer_id: this.$route.params.employerId
       }
       // After the first page load, job filters are managed through the UI
-      if (!isFirstLoad) {
+      if (!isFirstLoad || isExample) {
         Object.assign(params, this.jobFilters)
       }
       const resp = await this.$api.get(url, { params })
@@ -472,12 +473,14 @@ export default {
         Object.assign(this.jobFilters, filterValues)
       }
       this.totalEmployerJobCount = totalEmployerJobCount
-      if (!this.$route.meta.isExample) {
+      if (!isExample) {
         await Promise.all([
           this.employerStore.setEmployerSubscription(employer.id),
-          this.authStore.setApplications(this.user),
-          this.userStore.setUserProfile(ownerId)
+          this.authStore.setApplications(this.user)
         ])
+        if (ownerId) {
+          await this.userStore.setUserProfile(ownerId)
+        }
         const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
         this.isActiveEmployer = isActiveEmployer
         this.isActiveEmployee = isActiveEmployee
@@ -546,6 +549,11 @@ export default {
   },
   async mounted () {
     this.resetJobFilters()
+    const params = Object.entries(dataUtil.getQueryParams()).reduce((params, [key, val]) => {
+      params[key] = dataUtil.getForceArray(parseInt(val))
+      return params
+    }, {})
+    Object.assign(this.jobFilters, params)
     await this.loadData({ isFirstLoad: true })
     await this.employerStore.setEmployerPage(this.employer.id)
     this.employerPage = this.employerStore.getEmployerPage(this.employer.id)

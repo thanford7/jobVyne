@@ -22,12 +22,14 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         'owner_id': link_filter.owner_id,
         'employer_name': link_filter.employer.employer_name,
         'employer_id': link_filter.employer_id,
+        'link_name': link_filter.name,
         'is_default': link_filter.is_default,
         'departments': [{'name': d.name, 'id': d.id} for d in link_filter.departments.all()],
         'cities': [{'name': c.name, 'id': c.id} for c in link_filter.cities.all()],
         'states': [{'name': s.name, 'id': s.id} for s in link_filter.states.all()],
         'countries': [{'name': c.name, 'id': c.id} for c in link_filter.countries.all()],
-        'jobs': [{'title': j.job_title, 'id': j.id} for j in link_filter.jobs.all()]
+        'jobs': [{'title': j.job_title, 'id': j.id} for j in link_filter.jobs.all()],
+        'tags': [{'name': tag.tag_name, 'id': tag.id} for tag in link_filter.tags.all()]
     }
     
     if is_include_performance:
@@ -48,6 +50,13 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         }
     
     return data
+
+
+def get_serialized_link_tag(link_tag: SocialLinkTag):
+    return {
+        'id': link_tag.id,
+        'tag_name': link_tag.tag_name
+    }
 
 
 def get_serialized_message(message: Message, is_include_recipients=True):

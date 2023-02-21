@@ -34,6 +34,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import dataUtil from 'src/utils/data.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
@@ -58,7 +59,7 @@ export default {
       default: false
     },
     employerId: {
-      type: [String, Number, null]
+      type: [Number, String, null]
     }
   },
   data () {
@@ -87,10 +88,14 @@ export default {
       })
     },
     createDepartment (departmentName) {
-      const newDept = { id: departmentName, name: departmentName }
+      const newDept = (this.isEmitId) ? departmentName : { id: departmentName, name: departmentName }
       this.filterTxt = null
       this.$refs.select.updateInputValue('')
-      this.$refs.select.$emit('update:modelValue', newDept)
+      let emitValue = newDept
+      if (this.isMulti) {
+        emitValue = [...dataUtil.getForceArray(this.$refs.select.modelValue), newDept]
+      }
+      this.$refs.select.$emit('update:modelValue', emitValue)
       this.$refs.select.blur()
     }
   },

@@ -93,28 +93,6 @@
           </div>
         </div>
         <div class="col-12">
-          <q-input filled label="Lever User Email" v-model="atsFormData.email">
-            <template v-slot:after>
-              <q-btn
-                label="Fill suggested email" color="primary"
-                class="h-100"
-                @click="atsFormData.email = suggestedEmployerEmail"
-              />
-              <CustomTooltip>
-                <p>
-                  A Lever user account is required to submit applications to Lever.
-                  JobVyne will create a Lever user with this email address.
-                  The user will have "Team Member" privileges.
-                  The email address must use one of your company's domains.
-                </p>
-                <p>
-                  Suggested email: <span class="text-bold">{{ suggestedEmployerEmail }}</span>
-                </p>
-              </CustomTooltip>
-            </template>
-          </q-input>
-        </div>
-        <div class="col-12">
           <SelectAtsJobStage v-model="atsFormData.job_stage_name" :ats_id="atsData.id" :ats_name="ATS_CFGS.lever.key"/>
         </div>
         <div class="col-12">
@@ -175,14 +153,6 @@ export default {
     },
     hasChanged () {
       return (!this.atsData && !dataUtil.isEmpty(this.atsFormData)) || !dataUtil.isDeepEqual(this.atsData, this.atsFormData)
-    },
-    suggestedEmployerEmail () {
-      const employer = this.employerStore.getEmployer(this.authStore.propUser.employer_id)
-      const email = 'jobvyne_referral@'
-      if (employer.email_domains && employer.email_domains.length) {
-        return email + employer.email_domains.split(',')[0]
-      }
-      return email + '{your email domain}'
     }
   },
   watch: {

@@ -51,22 +51,20 @@
               <div class="q-mb-xs border-bottom-1-gray-100">
                 <div class="q-pa-sm">
                   <div style="display: inline-block;">
-                    <span class="copy-target" style="display: none">{{ post.formatted_content }}</span>
                     <q-btn
                       v-if="!isEmployer"
                       dense ripple unelevated icon="content_copy"
                       size="sm"
-                      @click="dataUtil.copyText"
+                      @click="dataUtil.copyText(post.formatted_content)"
                     >
                       Copy post text
                     </q-btn>
                   </div>
                   <div class="q-ml-sm" style="display: inline-block;">
-                    <span class="copy-target" style="display: none">{{ post.content }}</span>
                     <q-btn
                       dense ripple unelevated icon="content_copy"
                       size="sm"
-                      @click="dataUtil.copyText"
+                      @click="dataUtil.copyText(post.content)"
                     >
                       Copy post template text
                     </q-btn>

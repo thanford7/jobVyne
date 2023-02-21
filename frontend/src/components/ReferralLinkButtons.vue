@@ -5,10 +5,9 @@
       <template v-if="socialLink.is_displayed">
         <CustomTooltip :is_include_icon="false">
           <template v-slot:content>
-            <q-chip clickable outline color="primary" @click="dataUtil.copyText">
+            <q-chip clickable outline color="primary" @click="dataUtil.copyText(socialLink.socialLink)">
               <div class="flex items-center">
                 <img :src="socialLink.logo" :alt="socialLink.name" style="height: 16px;">
-                <span class="copy-target" style="display: none;">{{ socialLink.socialLink }}</span>
               </div>
             </q-chip>
           </template>
