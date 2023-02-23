@@ -48,6 +48,7 @@ class JobProcessor:
                 if job_key not in employer_data['found_jobs'] and not job.close_date:
                     job.close_date = timezone.now().date()
                     job.save()
+            employer.has_job_scraper = True
             employer.last_job_scrape_success_dt = timezone.now()
             employer.save()
     

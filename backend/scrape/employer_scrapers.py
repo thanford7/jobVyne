@@ -28,9 +28,22 @@ class GuildEducationScraper(GreenhouseScraper):
         html_dom = await self.get_page_html(page)
         iframe_url = html_dom.xpath('//*[@id="grnhse_iframe"]/@src').get()
         await page.goto(iframe_url)
+        
+        
+class TransactionNetworkServicesScraper(WorkdayScraper):
+    employer_name = 'Transaction Network Services'
+    start_url = 'https://tnsi.wd1.myworkdayjobs.com/Search'
+    
+    
+class WaystarScraper(WorkdayScraper):
+    employer_name = 'Waystar'
+    start_url = 'https://waystar.wd1.myworkdayjobs.com/Waystar'
+    
 
 all_scrapers = {
-    BlueOriginScraper.employer_name: BlueOriginScraper,
-    InvenergyScraper.employer_name: InvenergyScraper,
-    GuildEducationScraper.employer_name: GuildEducationScraper,
+    # BlueOriginScraper.employer_name: BlueOriginScraper,
+    # InvenergyScraper.employer_name: InvenergyScraper,
+    # GuildEducationScraper.employer_name: GuildEducationScraper,
+    TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper
+    # WaystarScraper.employer_name: WaystarScraper
 }

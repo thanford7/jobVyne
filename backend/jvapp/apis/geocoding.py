@@ -69,14 +69,16 @@ class LocationParser:
                     country__name=data.get('country')
                 )
             except Location.DoesNotExist:
+                latitude = data.get('latitude')
+                longitude = data.get('longitude')
                 location = Location(
                     text=location_text,
                     is_remote=is_remote,
                     city=get_or_create_city(data.get('city')),
                     state=get_or_create_state(data.get('state')),
                     country=get_or_create_country(data.get('country')),
-                    latitude=data.get('latitude'),
-                    longitude=data.get('longitude')
+                    latitude=str(latitude)[:15] if latitude else None,
+                    longitude=str(longitude)[:15] if longitude else None
                 )
                 location.save()
             

@@ -3,17 +3,31 @@ import json
 import logging
 import re
 from datetime import timedelta
+from json import JSONDecodeError
+from random import choice, randint
 
 from aiohttp import ClientSession
 from django.utils import timezone
 from parsel import Selector
-from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
+from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 
 from jvapp.utils.data import capitalize, coerce_float, get_base_url
 from jvapp.utils.datetime import get_datetime_or_none
 from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
+JS_LOAD_WAIT_MS = 30000
+
+
+async def get_browser(playwright, proxy):
+    logger.info('Getting new browser')
+    browser = await playwright.chromium.launch(headless=True, proxy={
+        'server': proxy
+    })
+    browser_context = await browser.new_context()
+    browser_context.set_default_timeout(JS_LOAD_WAIT_MS)
+    logger.info('Finished getting browser')
+    return browser_context
 
 
 class Scraper:
@@ -23,10 +37,13 @@ class Scraper:
     employer_name = None
     job_item_page_wait_sel = None
     
-    def __init__(self, browser):
+    def __init__(self, browsers, playwright, proxy_getter):
+        self.job_page_count = 0
         self.job_items = []
         self.queue = asyncio.Queue()
-        self.browser = browser
+        self.browsers = browsers
+        self.playwright = playwright
+        self.proxy_getter = proxy_getter
         self.session = ClientSession(headers={
             'Referer': get_base_url(self.start_url),
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
@@ -36,16 +53,47 @@ class Scraper:
                                range(self.MAX_CONCURRENT_PAGES)]
     
     async def get_page(self):
-        return await self.browser.new_page()
+        # Randomly select browser to avoid IP ban
+        browser = choice(self.browsers)
+        return await browser.new_page()
     
+    async def get_new_browser(self):
+        proxy = self.proxy_getter.get_proxies()[0]
+        browser = await get_browser(self.playwright, proxy)
+        self.browsers.append(browser)
+        return browser
+    
+    async def visit_page_with_retry(self, url, max_retries=2):
+        # Some browser IPs may not work. If they don't we'll remove the browser and try another
+        retries = 0
+        error = None
+        
+        logger.info(f'Attempting to visit: {url}')
+        while retries < (max_retries + 1):
+            browser_idx = randint(0, len(self.browsers) - 1)
+            browser = self.browsers[browser_idx]
+            page = await browser.new_page()
+            try:
+                await page.goto(url)
+                if page.url != url:
+                    logger.error('Page was redirected. Trying to reload page')
+                    await page.close()
+                    await asyncio.sleep(1)
+                else:
+                    return page
+            except (PlaywrightTimeoutError, PlaywrightError) as e:
+                error = e
+                await page.close()
+                await asyncio.sleep(1)
+        
+        raise error or ValueError(f'Exceeded max tries while trying to visit: {url}')
+        
     async def scrape_jobs(self):
         raise NotImplementedError()
     
     async def get_starting_page(self):
         logger.info(f'Scraping jobs for {self.employer_name}')
-        page = await self.get_page()
-        await page.goto(self.start_url)
-        return page
+        return await self.visit_page_with_retry(self.start_url)
     
     async def get_page_html(self, page):
         html = await page.locator('css=html').inner_html()
@@ -62,12 +110,12 @@ class Scraper:
         """
         while True:
             url, meta_data = await self.queue.get()
-            logger.info(f'Fetching new job page ({len(self.job_items) + 1}): {url}')
+            self.job_page_count += 1
+            logger.info(f'Fetching new job page ({self.job_page_count}): {url}')
             if self.IS_JS_REQUIRED:
-                page = await self.get_page()
-                await page.goto(url)
+                page = await self.visit_page_with_retry(url)
                 if self.job_item_page_wait_sel:
-                    await self.wait_for_el(page, self.job_item_page_wait_sel)
+                    page = await self.wait_for_el(page, self.job_item_page_wait_sel, max_retries=2)
                 await self.do_job_page_js(page)
                 page_html = await self.get_page_html(page)
                 await page.close()
@@ -76,6 +124,7 @@ class Scraper:
             meta_data = meta_data or {}
             job_item = self.get_job_data_from_html(page_html, job_url=url, **meta_data)
             self.job_items.append(job_item)
+            logger.info(f'Job page scraped ({self.job_page_count})')
             self.queue.task_done()
     
     async def get_html_from_url(self, url):
@@ -87,10 +136,22 @@ class Scraper:
             html = await resp.text()
             return Selector(text=html)
     
-    async def wait_for_el(self, page, selector):
-        el = await page.wait_for_selector(selector)
-        if not el:
-            raise ValueError(f'DOM element matching "{selector}" not found')
+    async def wait_for_el(self, page, selector, max_retries=0):
+        retries = 0
+        while True:
+            try:
+                await page.wait_for_selector(selector)
+                return page
+            except PlaywrightTimeoutError as e:
+                retries += 1
+                logger.error(f'Could not find selector {selector} in: {page.url}')
+                if retries > max_retries:
+                    logger.error(f'Retries ({retries}) exceeded max retries ({max_retries})')
+                    page_content = await page.content()
+                    logger.error(page_content)
+                    raise e
+                logger.info('Retrying visiting page')
+                page = await self.visit_page_with_retry(page.url)
     
     async def add_job_links_to_queue(self, job_links, meta_data=None):
         if not isinstance(job_links, list):
@@ -104,7 +165,12 @@ class Scraper:
     async def close(self, page=None):
         if not self.queue.empty():
             logger.info(f'Waiting for job queue to finish - Currently {self.queue.qsize()}')
-            await self.queue.join()  # Wait for queue to finish
+            # wait for either `queue.join()` to complete or a consumer to raise
+            done, _ = await asyncio.wait([self.queue.join(), *self.job_processors],
+                                         return_when=asyncio.FIRST_COMPLETED)
+            consumers_raised = set(done) & set(self.job_processors)
+            if consumers_raised:
+                await consumers_raised.pop()  # propagate the exception
         await self.session.close()
         if page:
             await page.close()
@@ -142,7 +208,10 @@ class Scraper:
         
         job_item = JobItem()
         for job_data in standard_job_data:
-            job_data = json.loads(job_data)
+            try:
+                job_data = json.loads(job_data)
+            except JSONDecodeError:
+                continue
             if job_data.get('@type') == 'JobPosting':
                 job_item.job_title = self.strip_or_none(job_data.get('title'))
                 job_item.job_description = job_data.get('description')
@@ -249,7 +318,11 @@ class WorkdayScraper(Scraper):
     async def scrape_jobs(self):
         page = await self.get_starting_page()
         # Make sure page data has loaded
-        await self.wait_for_el(page, 'section[data-automation-id="jobResults"]')
+        try:
+            await self.wait_for_el(page, 'section[data-automation-id="jobResults"]')
+        except PlaywrightTimeoutError:
+            page = await self.get_starting_page()
+            await self.wait_for_el(page, 'section[data-automation-id="jobResults"]')
         
         job_departments = await self.get_job_departments(page)
         
@@ -369,7 +442,10 @@ class WorkdayScraper(Scraper):
     
     async def open_job_department_menu(self, page):
         await page.locator(f'css=button[data-automation-id="{self.job_department_data_automation_id}"]').click()
-        await self.wait_for_el(page, f'div[data-automation-id="{self.job_department_form_data_automation_id}"] label')
+        await self.wait_for_el(
+            page,
+            f'div[data-automation-id="{self.job_department_form_data_automation_id}"] label'
+        )
     
     async def get_job_departments(self, page):
         await self.open_job_department_menu(page)
@@ -402,7 +478,10 @@ class WorkdayScraper(Scraper):
         has_more_locations = await page.locator(f'css={more_locations_sel}').is_visible()
         if has_more_locations:
             page.locator(f'css={more_locations_sel}').click()
-        await self.wait_for_el(page, '[data-automation-id="additionalLocations"]')
+            try:
+                await self.wait_for_el(page, '[data-automation-id="additionalLocations"]')
+            except PlaywrightTimeoutError:
+                pass
     
     def is_job_quantity_match(self, html_dom, expected_job_quantity):
         job_quantity_string = html_dom.xpath('//*[@data-automation-id="jobOutOfText"]/text()').get()
