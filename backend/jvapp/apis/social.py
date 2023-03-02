@@ -8,14 +8,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
-from jvapp.apis.job_subscription import EmployerJobSubscriptionView
-from jvapp.models import JobApplication, Message, PageView
+from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
+from jvapp.models import JobApplication, Message, PageView, REMOTE_TYPES
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
 from jvapp.serializers.social import *
 from jvapp.serializers.social import get_serialized_link_tag
-from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.data import AttributeCfg, coerce_int, set_object_attributes
 
 __all__ = ('SocialPlatformView', 'SocialLinkFilterView', 'SocialLinkJobsView', 'ShareSocialLinkView')
 
@@ -247,7 +247,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
     def get(self, request, link_filter_id=None):
-        from jvapp.apis.employer import EmployerJobView, EmployerView  # Avoid circular import
+        from jvapp.apis.employer import EmployerView  # Avoid circular import
         page_count = self.query_params.get('page_count', 1)
         employer_id = self.query_params.get('employer_id')
         if not any([link_filter_id, employer_id]):
@@ -295,6 +295,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             filter_values['department_ids'] = [int(department_id) for department_id in department_ids]
         if job_ids := self.query_params.getlist('job_ids[]'):
             filter_values['job_ids'] = [int(job_id) for job_id in job_ids]
+        if remote_type_bit := self.query_params.get('remote_type_bit'):
+            filter_values['remote_type_bit'] = coerce_int(remote_type_bit)
         
         return filter_values
     
@@ -310,15 +312,14 @@ class SocialLinkJobsView(JobVyneAPIView):
     @staticmethod
     def get_filtered_jobs(
         employer_id, department_ids=None, city_ids=None, state_ids=None, country_ids=None,
-        job_ids=None, job_title=None
+        job_ids=None, job_title=None, remote_type_bit=None
     ):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         
         job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
         if job_subscriptions:
-            subscription_filters = reduce(
-                lambda total, jf: total | jf,
-                [js.get_job_filter() for js in job_subscriptions]
+            subscription_filters = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(
+                job_subscriptions
             )
             jobs_filter = (Q(employer_id=employer_id) | subscription_filters)
         else:
@@ -336,6 +337,11 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs_filter &= Q(id__in=job_ids)
         if job_title:
             jobs_filter &= Q(job_title__iregex=f'^.*{job_title}.*$')
+        if remote_type_bit:
+            if remote_type_bit == REMOTE_TYPES.YES:
+                jobs_filter &= Q(locations__is_remote=True)
+            elif remote_type_bit == REMOTE_TYPES.NO:
+                jobs_filter &= Q(locations__is_remote=False)
         
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
 

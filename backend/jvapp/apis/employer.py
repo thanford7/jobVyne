@@ -11,6 +11,7 @@ from jobVyne import settings
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.geocoding import LocationParser
 from jvapp.apis.job import LocationView
+from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
 from jvapp.apis.notification import MessageGroupView
 from jvapp.apis.social import SocialLinkFilterView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
@@ -1338,12 +1339,18 @@ class EmployerJobDepartmentView(JobVyneAPIView):
     def get(self, request):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
-        departments = EmployerJob.objects \
-            .select_related('job_department') \
-            .filter(employer_id=employer_id) \
+
+        job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+        job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
+        # Include both subscribed jobs and those owned by the employer
+        job_subscription_filter |= Q(employer_id=employer_id)
+        departments = EmployerJobView\
+            .get_employer_jobs(employer_job_filter=job_subscription_filter) \
             .values('job_department_id', 'job_department__name') \
-            .distinct()
+            .distinct()  # This will only get distinct jobs. Adding distinct value criteria is not supported by MySQL
+        
+        # Get unique departments
+        departments = {(d['job_department_id'], d['job_department__name']): d for d in departments}.values()
         
         return Response(status=status.HTTP_200_OK, data=[{
             'id': dept['job_department_id'],
@@ -1357,9 +1364,12 @@ class EmployerJobLocationView(JobVyneAPIView):
     def get(self, request):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
-        job_filter = Q(employer_id=employer_id)
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_filter, is_include_closed=True)
+
+        job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+        job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
+        # Include both subscribed jobs and those owned by the employer
+        job_subscription_filter |= Q(employer_id=employer_id)
+        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_subscription_filter, is_include_closed=True).distinct()
         locations = []
         for job in jobs:
             for location in job.locations.all():

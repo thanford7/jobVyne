@@ -34,7 +34,7 @@
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
             <q-tab v-if="employerPage && employerPage.is_viewable" id="jv-tab-company" name="company"
                    :label="`About ${employer?.name}`"/>
-            <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me" :label="`About ${profile?.first_name}`"/>
+            <q-tab v-if="isActiveEmployee &&  isShowEmployeeProfile" id="jv-tab-me" name="me" :label="`About ${profile?.first_name}`"/>
           </q-tabs>
         </ResponsiveWidth>
       </div>
@@ -72,7 +72,16 @@
             <div class="row justify-center">
               <ResponsiveWidth>
                 <q-page padding>
-                  <div v-if="isActiveEmployer && isActiveEmployee" class="row">
+                  <div v-if="isActiveEmployer" class="row">
+                    <div v-if="!user || dataUtil.isEmpty(user)" class="col-12 q-mb-md">
+                      <q-card flat class="border-4-info">
+                        <q-card-section class="text-center text-bold">
+                          Want to auto-fill and track all your job applications?
+                          <a href="#" @click.prevent="openLoginModal(false)">Login</a>
+                          or <a href="#" @click.prevent="openLoginModal(true)">create an account</a>
+                        </q-card-section>
+                      </q-card>
+                    </div>
                     <div class="col-12">
                       <CollapsableCard title="Job filters" :is-dense="true">
                         <template v-slot:body>
@@ -82,6 +91,7 @@
                                 <q-input
                                   v-model="jobFilters.job_title"
                                   filled label="Job title"
+                                  debounce="500"
                                 />
                               </div>
                               <div class="col-12 col-md-6 q-pl-md-sm">
@@ -115,6 +125,9 @@
                                   :employer-id="employer.id"
                                   :is-emit-id="true"
                                 />
+                              </div>
+                              <div class="col-12 col-md-4 q-pr-md-sm">
+                                <SelectRemote v-model="jobFilters.remote_type_bit"/>
                               </div>
                             </div>
                           </div>
@@ -266,16 +279,8 @@
                         </q-card-section>
                         <q-card-section>
                           <div class="text-h6 text-center">
-                            <span v-if="!isActiveEmployer">
-                              {{ employer.name }} no longer has an active JobVyne account. If you wish to
-                              view and apply for jobs, please visit their
-                            </span>
-                            <span v-else>
-                              {{ profile.first_name }} {{
-                                profile.last_name
-                              }} does not have an active account with {{ employer.name }}. If
-                              you wish to view and apply for jobs, please visit {{ employer.name }}'s
-                            </span>
+                            {{ employer.name }} no longer has an active JobVyne account. If you wish to
+                            view and apply for jobs, please visit their
                             <a v-if="employer.company_jobs_page_url" :href="employer.company_jobs_page_url"
                                target="_blank" class="text-white">
                               jobs page
@@ -301,7 +306,7 @@
               </div>
             </div>
           </q-tab-panel>
-          <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
+          <q-tab-panel name="me" v-if="isActiveEmployee && isShowEmployeeProfile" class="q-pa-none">
             <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
               <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
                 <div class="flex items-center">
@@ -343,15 +348,18 @@ import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
+import DialogLogin from 'components/dialogs/DialogLogin.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
+import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form.js'
 import scrollUtil from 'src/utils/scroll.js'
+import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useUserStore } from 'stores/user-store.js'
@@ -373,7 +381,8 @@ const jobFiltersTemplate = {
   state_ids: [],
   country_ids: [],
   job_ids: [],
-  job_title: ''
+  job_title: '',
+  remote_type_bit: null
 }
 
 export default {
@@ -411,7 +420,8 @@ export default {
     SelectJobDepartment,
     SelectJobCity,
     SelectJobState,
-    SelectJobCountry
+    SelectJobCountry,
+    SelectRemote
   },
   computed: {
     employmentYears () {
@@ -432,7 +442,7 @@ export default {
     },
     jobFilters: {
       async handler () {
-        await this.loadData({ isShowLoading: false })
+        await this.loadData()
       },
       deep: true
     }
@@ -473,11 +483,9 @@ export default {
       await this.authStore.logout(false)
       await this.loadData()
     },
-    async loadData ({ isShowLoading = true, isFirstLoad = false } = {}) {
+    async loadData ({ isFirstLoad = false } = {}) {
       this.isLoaded = false
-      if (isShowLoading) {
-        Loading.show()
-      }
+      Loading.show()
       const isExample = this.$route.meta.isExample
       let url = 'social-link-jobs/'
       if (this.$route.params.filterId) {
@@ -580,6 +588,18 @@ export default {
     openFeedbackModal () {
       return this.q.dialog({
         component: DialogFeedback
+      })
+    },
+    openLoginModal (isCreate) {
+      return this.q.dialog({
+        component: DialogLogin,
+        componentProps: {
+          isCreate,
+          redirectPageUrl: window.location.pathname,
+          redirectParams: dataUtil.getQueryParams(),
+          userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE],
+          styleOverride: this.getButtonStyle()
+        }
       })
     }
   },

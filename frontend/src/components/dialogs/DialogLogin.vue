@@ -3,7 +3,13 @@
     base-title-text="Login"
     :is-include-buttons="false"
   >
-    <AuthAll :redirect-page-url="redirectPageUrl" :redirect-params="redirectParams"/>
+    <AuthAll
+      :is-create="isCreate"
+      :redirect-page-url="redirectPageUrl"
+      :redirect-params="redirectParams"
+      :user-type-bit="userTypeBit"
+      :style-override="styleOverride"
+    />
   </DialogBase>
 </template>
 
@@ -17,10 +23,20 @@ export default {
   inheritAttrs: false,
   components: { AuthAll, DialogBase },
   props: {
+    isCreate: {
+      type: Boolean,
+      default: false
+    },
     redirectPageUrl: {
       type: [String, null]
     },
     redirectParams: {
+      type: [Object, null]
+    },
+    userTypeBit: {
+      type: [Number, null]
+    },
+    styleOverride: {
       type: [Object, null]
     }
   },

@@ -39,6 +39,7 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     states = models.ManyToManyField('State')
     countries = models.ManyToManyField('Country')
     jobs = models.ManyToManyField('EmployerJob')
+    remote_type_bit = models.SmallIntegerField(null=True, blank=True)  # See REMOTE_TYPES
     tags = models.ManyToManyField('SocialLinkTag')
     
     class Meta:
@@ -77,7 +78,8 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
             'city_ids': [c.id for c in self.cities.all()],
             'state_ids': [s.id for s in self.states.all()],
             'country_ids': [c.id for c in self.countries.all()],
-            'job_ids': [j.id for j in self.jobs.all()]
+            'job_ids': [j.id for j in self.jobs.all()],
+            'remote_type_bit': self.remote_type_bit
         }
     
     

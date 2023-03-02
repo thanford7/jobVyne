@@ -184,13 +184,18 @@ class EmployerJobSubscriptionJobView(JobVyneAPIView):
     @staticmethod
     def get_jobs_from_subscriptions(job_subscriptions: iter, is_combined: bool):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
-        job_filters = [js.get_job_filter() for js in job_subscriptions]
         if is_combined:
             # Combine all filters into one
-            job_filter = reduce(lambda total, jf: total | jf, job_filters)
+            job_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
             return EmployerJobView.get_employer_jobs(employer_job_filter=job_filter)
         else:
+            job_filters = [js.get_job_filter() for js in job_subscriptions]
             return [
                 EmployerJobView.get_employer_jobs(employer_job_filter=jf)
                 for jf in job_filters
             ]
+    
+    @staticmethod
+    def get_combined_job_subscription_filter(job_subscriptions):
+        job_filters = [js.get_job_filter() for js in job_subscriptions]
+        return reduce(lambda total, jf: total | jf, job_filters)
