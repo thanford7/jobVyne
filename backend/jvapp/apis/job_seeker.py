@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.notification import MessageGroupView, NotificationPreferenceKey, UserNotificationPreferenceView
@@ -106,7 +106,7 @@ class ApplicationView(JobVyneAPIView):
             resume = resume[0]
         elif application_template:
             resume = application_template.resume
-        self.create_application(user, application, self.data, resume)
+        self.create_application(user, application, self.data, resume=resume)
         
         ## Send notification emails
         employer = application.employer_job.employer
@@ -248,7 +248,7 @@ class ApplicationView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_application(user, application, data, resume):
+    def create_application(user, application, data, resume=None):
         application.user = user
         platform_name = data.get('platform_name')
         platform = None
@@ -268,6 +268,7 @@ class ApplicationView(JobVyneAPIView):
         
         ApplicationView.add_application_referral_bonus(application)
         application.save()
+        return application
         
     @staticmethod
     def save_application_to_ats(ats_api, applicant, application):
@@ -394,4 +395,23 @@ class ApplicationExternalView(JobVyneAPIView):
     """
     
     def post(self, request):
-        pass
+        if not (job_id := self.data.get('job_id')):
+            return get_error_response('A job ID is required')
+        application = self.get_existing_application(self.user, job_id) or JobApplication(is_external_application=True)
+        if self.user:
+            self.data['email'] = self.user.email
+        ApplicationView.create_application(self.user, application, self.data)
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Application saved'
+        })
+    
+    @staticmethod
+    def get_existing_application(user, job_id):
+        if not user:
+            return False
+
+        # Check if this person has already applied
+        applications = JobApplication.objects.filter(user=user, employer_job_id=job_id)
+        return applications[0] if applications else None
+        

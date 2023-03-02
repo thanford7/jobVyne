@@ -22,6 +22,7 @@ def get_serialized_job_application(job_application: JobApplication):
     return {
         **base_application_serializer(job_application),
         'social_link_filter_id': job_application.social_link_filter_id,
+        'is_external_application': job_application.is_external_application,
         'employer_job': {
             'id': job_application.employer_job_id,
             'employer_name': job_application.employer_job.employer.employer_name,

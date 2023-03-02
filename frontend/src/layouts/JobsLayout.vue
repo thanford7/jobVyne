@@ -151,7 +151,13 @@
                       <div v-for="job in jobs" :key="job.id" class="q-mb-md">
                         <q-card :style="getSelectedCardStyle(job)" :id="`job-${job.id}`" class="jv-job-card">
                           <div v-if="getJobApplication(job.id)" class="application-date" :style="getHeaderStyle()">
-                            Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
+                            <span v-if="getJobApplication(job.id).is_external_application">
+                              You may have applied on
+                            </span>
+                            <span v-else>
+                              Applied on
+                            </span>
+                            {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
                           </div>
                           <q-card-section class="q-pb-none">
                             <template v-if="hasJobSubscription && job.employer_logo">
@@ -242,7 +248,7 @@
                             </template>
                           </q-card-section>
                           <q-separator dark/>
-                          <q-card-actions v-if="!getJobApplication(job.id)">
+                          <q-card-actions v-if="!getJobApplication(job.id) || getJobApplication(job.id).is_external_application">
                             <q-btn
                               v-if="!job.is_use_job_url"
                               ripple unelevated
@@ -256,7 +262,7 @@
                                 ripple unelevated
                                 class="jv-apply-btn" icon="launch" label="Apply on employer site"
                                 :style="getButtonStyle()"
-                                :href="job.application_url" target="_blank"
+                                @click="saveExternalApplication(job)"
                               />
                             </template>
                           </q-card-actions>
@@ -358,6 +364,7 @@ import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form.js'
+import { getAjaxFormData } from 'src/utils/requests.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
@@ -460,6 +467,13 @@ export default {
       }
       job.hasDescriptionOverflow = scrollUtil.getHasOverflow(el)
       return job.hasDescriptionOverflow
+    },
+    async saveExternalApplication (job) {
+      window.open(job.application_url, '_blank')
+      await this.$api.post('job-application/external/', getAjaxFormData({
+        job_id: job.id
+      }))
+      await this.loadData()
     },
     async closeApplication () {
       this.isRightDrawerOpen = false

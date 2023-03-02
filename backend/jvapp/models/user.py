@@ -224,6 +224,13 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         return groups
     
     @property
+    def emails(self):
+        emails = [self.email]
+        if self.business_email:
+            emails.append(self.business_email)
+        return emails
+    
+    @property
     def is_admin(self):
         return bool(self.user_type_bits & self.USER_TYPE_ADMIN)
     
