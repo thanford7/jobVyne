@@ -1,8 +1,8 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, email, employer, job_seeker, message,
-    notification, sales, social, stripe, test, tracking, user
+    admin, ats, auth, content, currency, data, email, employer, job_seeker, job, job_subscription,
+    message, notification, sales, social, stripe, test, tracking, user
 )
 
 urlpatterns = [
@@ -28,6 +28,7 @@ urlpatterns = [
     path('employer/job/bonus/', employer.EmployerJobBonusView.as_view()),
     path('employer/job/department/', employer.EmployerJobDepartmentView.as_view()),
     path('employer/job/location/', employer.EmployerJobLocationView.as_view()),
+    re_path('^employer/job-subscription/(?P<subscription_id>[0-9]+)?/?$', job_subscription.EmployerJobSubscriptionView.as_view()),
     path('employer/page/', employer.EmployerPageView.as_view()),
     re_path('^employer/permission/(?P<auth_group_id>[0-9]+)?/?$', employer.EmployerAuthGroupView.as_view()),
     path('employer/referral/request/', employer.EmployerReferralRequestView.as_view()),
@@ -37,6 +38,9 @@ urlpatterns = [
     path('employer/user/activate/', employer.EmployerUserActivateView.as_view()),
     path('feedback/', user.FeedbackView.as_view()),
     re_path('^job-application/(?P<application_id>[0-9]+)?/?$', job_seeker.ApplicationView.as_view()),
+    path('job-application/external/', job_seeker.ApplicationExternalView.as_view()),
+    path('job/department/', job.JobDepartmentView.as_view()),
+    path('job/location/', job.LocationView.as_view()),
     path('notification-preference/', notification.UserNotificationPreferenceView.as_view()),
     path('page-view/', tracking.PageTrackView.as_view()),
     re_path('^social-content-item/(?P<item_id>[0-9]+)?/?$', content.SocialContentItemView.as_view()),

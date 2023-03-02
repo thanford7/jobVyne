@@ -66,6 +66,10 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     employer_job = models.ForeignKey(
         'EmployerJob', on_delete=models.CASCADE, related_name='job_application'
     )
+    # If job is from an employer without a relationship to JobVyne, the candidate was
+    # directed to their job page to apply. We don't know if they went through with the
+    # application, but we do know that they intended to
+    is_external_application = models.BooleanField(default=False, blank=True)
     
     # Delivery notifications
     notification_email_dt = models.DateTimeField(null=True, blank=True)

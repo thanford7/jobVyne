@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
@@ -381,3 +382,16 @@ class ApplicationTemplateView(JobVyneAPIView):
             return JobApplicationTemplate.objects.get(owner_id=owner_id)
         except JobApplicationTemplate.DoesNotExist:
             return None
+        
+        
+class ApplicationExternalView(JobVyneAPIView):
+    permission_classes = [AllowAny]
+    
+    """
+    Some employers will not have a direct connection with JobVyne, but we still want to track submitted
+    applications. We will only have a limited amount of information so this will be different than
+    saving a direct job application
+    """
+    
+    def post(self, request):
+        pass

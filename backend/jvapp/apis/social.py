@@ -1,12 +1,14 @@
+from functools import reduce
+
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
+from jvapp.apis.job_subscription import EmployerJobSubscriptionView
 from jvapp.models import JobApplication, Message, PageView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
@@ -264,17 +266,19 @@ class SocialLinkJobsView(JobVyneAPIView):
             employer_id=employer_id,
             filter_values=self.get_filter_values_from_query_params()
         )
-        total_jobs = EmployerJobView.get_employer_jobs(employer_job_filter=Q(employer_id=employer_id)).count()
+        total_jobs = self.get_jobs_from_filter(employer_id=employer_id, filter_values={}).count()
         paged_jobs = Paginator(jobs, per_page=5)
-        employer = EmployerView.get_employers(employer_id=employer_id or link_filter.employer_id)
+        employer = EmployerView.get_employers(employer_id=employer_id)
+        has_job_subscription = bool(EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id).count())
         return Response(status=status.HTTP_200_OK, data={
             'total_page_count': paged_jobs.num_pages,
             'total_employer_job_count': total_jobs,
+            'has_job_subscription': has_job_subscription,
             'jobs': [get_serialized_employer_job(j) for j in paged_jobs.get_page(page_count)],
             'employer': get_serialized_employer(employer),
             'owner_id': link_filter.owner_id if link_filter else None,
             'is_active_employee': link_filter.owner.is_active_employee if (link_filter and link_filter.owner) else True,
-            'filter_values': self.get_filter_values_from_filter(link_filter) if link_filter else self.get_filter_values_from_query_params()
+            'filter_values': link_filter.get_filter_values() if link_filter else self.get_filter_values_from_query_params()
         })
     
     def get_filter_values_from_query_params(self):
@@ -295,21 +299,11 @@ class SocialLinkJobsView(JobVyneAPIView):
         return filter_values
     
     @staticmethod
-    def get_filter_values_from_filter(link_filter):
-        return {
-            'department_ids': [d.id for d in link_filter.departments.all()],
-            'city_ids': [c.id for c in link_filter.cities.all()],
-            'state_ids': [s.id for s in link_filter.states.all()],
-            'country_ids': [c.id for c in link_filter.countries.all()],
-            'job_ids': [j.id for j in link_filter.jobs.all()]
-        }
-    
-    @staticmethod
     def get_jobs_from_filter(link_filter=None, employer_id=None, filter_values=None):
         if not any([link_filter, employer_id]):
             raise ValueError('A link filter or employer ID is required')
         if filter_values is None and link_filter:
-            filter_values = SocialLinkJobsView.get_filter_values_from_filter(link_filter)
+            filter_values = link_filter.get_filter_values()
         employer_id = employer_id or link_filter.employer_id
         return SocialLinkJobsView.get_filtered_jobs(employer_id, **filter_values)
     
@@ -319,8 +313,16 @@ class SocialLinkJobsView(JobVyneAPIView):
         job_ids=None, job_title=None
     ):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
-        jobs_filter = Q(employer_id=employer_id)
-        jobs_filter &= Q(open_date__lte=timezone.now().date())
+        
+        job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+        if job_subscriptions:
+            subscription_filters = reduce(
+                lambda total, jf: total | jf,
+                [js.get_job_filter() for js in job_subscriptions]
+            )
+            jobs_filter = (Q(employer_id=employer_id) | subscription_filters)
+        else:
+            jobs_filter = Q(employer_id=employer_id)
         
         if department_ids:
             jobs_filter &= Q(job_department_id__in=department_ids)

@@ -13,6 +13,7 @@
         lazy-rules
         :rules="[ val => val && val.length > 0 || 'Employer name is required']"
       />
+      <SelectOrganizationType v-model="formData.organization_type"/>
       <FileDisplayOrUpload
         ref="logoUpload"
         label="logo"
@@ -44,6 +45,15 @@
         </template>
       </FileDisplayOrUpload>
       <InputPermittedEmailDomains :employer-data="formData"/>
+      <SelectYesNo v-model="formData.is_use_job_url" label="Use job url" :is-multi="false">
+        <template v-slot:after>
+          <CustomTooltip>
+            If this employer doesn't have a direct account with JobVyne, set this to "Yes". This
+            allows job seekers to apply to jobs that have been scraped, but the employer doesn't
+            have a JobVyne account or integration.
+          </CustomTooltip>
+        </template>
+      </SelectYesNo>
       <div class="text-bold">
         Account owner
         <CustomTooltip>
@@ -118,8 +128,11 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import SelectEmployee from 'components/inputs/SelectEmployee.vue'
+import SelectOrganizationType from 'components/inputs/SelectOrganizationType.vue'
+import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import InputPermittedEmailDomains from 'pages/employer/settings-page/InputPermittedEmailDomains.vue'
 import dataUtil from 'src/utils/data.js'
+import employerTypeUtil from 'src/utils/employer-types.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import formUtil from 'src/utils/form.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
@@ -129,7 +142,7 @@ export default {
   name: 'DialogAdminEmployer',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { SelectEmployee, CustomTooltip, InputPermittedEmailDomains, DialogBase, FileDisplayOrUpload },
+  components: { SelectOrganizationType, SelectYesNo, SelectEmployee, CustomTooltip, InputPermittedEmailDomains, DialogBase, FileDisplayOrUpload },
   props: {
     employer: [Object, null]
   },
@@ -137,6 +150,7 @@ export default {
     return {
       formData: {},
       newLogoKey: 'logo',
+      employerTypeUtil,
       formUtil,
       SUBSCRIPTION_STATUS
     }

@@ -13,6 +13,7 @@ export const useEmployerStore = defineStore('employer', {
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
     employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
     employerSubscription: {}, // employerId: {subscription data}
+    employerJobSubscription: {}, // employerId: [<subscription1>, <subscription2>, ...]
     employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
@@ -111,6 +112,14 @@ export const useEmployerStore = defineStore('employer', {
         this.employerSubscription[employerId] = resp.data
       }
     },
+    async setEmployerJobSubscription (employerId, isForceRefresh = false) {
+      if (!this.employerJobSubscription[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('employer/job-subscription/', {
+          params: { employer_id: employerId }
+        })
+        this.employerJobSubscription[employerId] = resp.data
+      }
+    },
     async setEmployerPermissions (isForceRefresh = false) {
       if (!this.permissionGroups.length || isForceRefresh) {
         const resp = await this.$api.get('employer/permission/')
@@ -204,6 +213,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployerSubscription (employerId) {
       return this.employerSubscription[employerId]
+    },
+    getEmployerJobSubscription (employerId) {
+      return this.employerJobSubscription[employerId]
     },
     getEmployerPage (employerId) {
       return this.employerPage[employerId]

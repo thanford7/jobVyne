@@ -1,6 +1,12 @@
 import dataUtil from 'src/utils/data.js'
 
 class LocationUtil {
+  constructor () {
+    // Keep in sync with backend REMOTE_TYPES
+    this.REMOTE_TYPE_FALSE = 1
+    this.REMOTE_TYPE_TRUE = 2
+  }
+
   getFormattedLocations (record) {
     const locations = []
     dataUtil.getForceArray(record.cities).forEach((city) => {

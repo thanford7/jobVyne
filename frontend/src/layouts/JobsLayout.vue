@@ -141,10 +141,29 @@
                             Applied on {{ dateTimeUtil.getShortDate(getJobApplication(job.id).created_dt) }}
                           </div>
                           <q-card-section class="q-pb-none">
-                            <h6 class="q-mb-none">{{ job.job_title }}</h6>
-                            <div class="text-grey-7 q-mb-sm">
-                              Posted on: {{ dateTimeUtil.getShortDate(job.open_date) }}
-                            </div>
+                            <template v-if="hasJobSubscription && job.employer_logo">
+                              <div class="row">
+                                <div class="col-2">
+                                  <div class="h-100 flex items-start align-center q-my-sm q-mr-md">
+                                    <q-img :src="job.employer_logo" fit="contain" style="max-height: 80px;"/>
+                                  </div>
+                                </div>
+                                <div class="col-10">
+                                  <h6 class="q-mb-none">{{ job.job_title }}</h6>
+                                  <div class="q-mb-sm">{{ job.employer_name }}</div>
+                                  <div class="text-grey-7 q-mb-sm">
+                                    Posted on: {{ dateTimeUtil.getShortDate(job.open_date) }}
+                                  </div>
+                                </div>
+                              </div>
+                            </template>
+                            <template v-else>
+                              <h6 class="q-mb-none">{{ job.job_title }}</h6>
+                              <div class="q-mb-sm">{{ job.employer_name }}</div>
+                              <div class="text-grey-7 q-mb-sm">
+                                Posted on: {{ dateTimeUtil.getShortDate(job.open_date) }}
+                              </div>
+                            </template>
                             <div>
                               <q-chip color="grey-7" text-color="white" size="md" icon="domain">
                                 {{ job.job_department }}
@@ -155,7 +174,9 @@
                                     <q-chip
                                       color="grey-7" text-color="white" size="md" icon="place"
                                     >
-                                      Multiple locations
+                                      Multiple locations&nbsp;
+                                      <span v-if="utilStore.isMobile">(press to view)</span>
+                                      <span v-else>(hover to view)</span>
                                     </q-chip>
                                   </template>
                                   <ul>
@@ -210,12 +231,21 @@
                           <q-separator dark/>
                           <q-card-actions v-if="!getJobApplication(job.id)">
                             <q-btn
+                              v-if="!job.is_use_job_url"
                               ripple unelevated
                               class="jv-apply-btn"
                               label="Apply"
                               :style="getButtonStyle()"
                               @click="openApplication($event, job.id)"
                             />
+                            <template v-else>
+                              <q-btn
+                                ripple unelevated
+                                class="jv-apply-btn" icon="launch" label="Apply on employer site"
+                                :style="getButtonStyle()"
+                                :href="job.application_url" target="_blank"
+                              />
+                            </template>
                           </q-card-actions>
                         </q-card>
                       </div>
@@ -325,6 +355,7 @@ import scrollUtil from 'src/utils/scroll.js'
 import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useUserStore } from 'stores/user-store.js'
+import { useUtilStore } from 'stores/utility-store.js'
 import { ref } from 'vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import locationUtil from 'src/utils/location'
@@ -356,6 +387,7 @@ export default {
       employerPage: null,
       profile: null,
       isLoaded: false,
+      hasJobSubscription: false,
       isActiveEmployer: null,
       isActiveEmployee: null,
       jobApplication: null,
@@ -442,6 +474,7 @@ export default {
       await this.loadData()
     },
     async loadData ({ isShowLoading = true, isFirstLoad = false } = {}) {
+      this.isLoaded = false
       if (isShowLoading) {
         Loading.show()
       }
@@ -466,12 +499,14 @@ export default {
         owner_id: ownerId,
         is_active_employee: isActiveEmployee,
         filter_values: filterValues,
-        total_employer_job_count: totalEmployerJobCount
+        total_employer_job_count: totalEmployerJobCount,
+        has_job_subscription: hasJobSubscription
       } = resp.data
 
       if (isFirstLoad) {
         Object.assign(this.jobFilters, filterValues)
       }
+      this.hasJobSubscription = hasJobSubscription
       this.totalEmployerJobCount = totalEmployerJobCount
       if (!isExample) {
         await Promise.all([
@@ -499,6 +534,7 @@ export default {
       this.employer = employer
 
       this.jobPagesCount = totalPageCount
+      this.isLoaded = true
       Loading.hide()
     },
     getJobApplication (jobId) {
@@ -591,6 +627,7 @@ export default {
       authStore,
       employerStore: useEmployerStore(),
       userStore: useUserStore(),
+      utilStore: useUtilStore(),
       q: useQuasar()
     }
   }

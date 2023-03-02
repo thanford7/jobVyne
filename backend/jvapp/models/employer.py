@@ -21,6 +21,11 @@ def get_employer_upload_location(instance, filename):
 
 
 class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
+    ORG_TYPE_EMPLOYER = 0x1
+    ORG_TYPE_GROUP = 0x2
+    ORG_TYPE_AGENCY = 0x4
+    
+    organization_type = models.SmallIntegerField(default=ORG_TYPE_EMPLOYER)
     employer_name = models.CharField(max_length=150, unique=True)
     logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
@@ -28,6 +33,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     notification_email = models.CharField(max_length=50, null=True, blank=True)  # If present, an email will be sent to this address when a new application is created
     company_jobs_page_url = models.CharField(max_length=100, null=True, blank=True)  # Used to redirect users if employer's account is inactive
     is_manual_job_entry = models.BooleanField(default=False, blank=True)  # Whether HR users can manually add jobs
+    is_use_job_url = models.BooleanField(default=False, blank=True)  # For employers with no relationship to JobVyne we need to redirect users to the job page
     
     # Brand colors - saved in hex form (e.g. #32a852)
     color_primary = models.CharField(max_length=9, null=True, blank=True)
@@ -140,27 +146,6 @@ class EmployerAts(AuditFields, JobVynePermissionsMixin):
                 and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
             )
         )
-    
-    
-class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
-    employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
-    is_approved = models.BooleanField(default=False)
-    # TODO: Add filter_department once department has been migrated to EmployerDepartment
-    # filter_department
-    filter_city = models.ManyToManyField('City')
-    filter_state = models.ManyToManyField('State')
-    filter_country = models.ManyToManyField('Country')
-    filter_job = models.ManyToManyField('EmployerJob')
-    
-    def _jv_can_create(self, user):
-        return (
-            user.is_admin
-            # TODO: Add new employer permission to manage job subscriptions
-            or (
-                user.employer_id == self.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
-            )
-        )
 
 
 class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
@@ -180,7 +165,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
     job_title = models.CharField(max_length=100)
-    job_description = models.TextField()
+    job_description = models.TextField(null=True, blank=True)
     job_department = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
     open_date = models.DateField(null=True, blank=True)
     close_date = models.DateField(null=True, blank=True)

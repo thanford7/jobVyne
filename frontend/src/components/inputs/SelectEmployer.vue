@@ -2,7 +2,8 @@
   <q-select
     v-if="isLoaded"
     :multiple="isMulti"
-    filled emit-value map-options use-chips
+    :use-chips="isMulti"
+    filled emit-value map-options
     :options="this.employerStore.allEmployers"
     option-value="id"
     option-label="name"

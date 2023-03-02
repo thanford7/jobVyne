@@ -27,10 +27,12 @@ def get_serialized_currency(currency: Currency, is_allow_none=True):
 def get_serialized_employer(employer: Employer, is_employer: bool = False):
     data = {
         'id': employer.id,
+        'organization_type': employer.organization_type,
         'name': employer.employer_name,
         'logo_url': employer.logo.url if employer.logo else None,
         'size': employer.employer_size.size if employer.employer_size else None,
         'email_domains': employer.email_domains,
+        'is_use_job_url': employer.is_use_job_url,
         'company_jobs_page_url': employer.company_jobs_page_url,
         'color_primary': employer.color_primary,
         'color_secondary': employer.color_secondary,
@@ -139,6 +141,10 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
         'id': employer_job.id,
         'ats_job_key': employer_job.ats_job_key,
         'employer_id': employer_job.employer_id,
+        'employer_name': employer_job.employer.employer_name,
+        'employer_logo': employer_job.employer.logo.url if employer_job.employer.logo else None,
+        'is_use_job_url': employer_job.employer.is_use_job_url,
+        'application_url': employer_job.application_url,
         'job_title': employer_job.job_title,
         'job_description': employer_job.job_description,
         'job_department': employer_job.job_department.name if employer_job.job_department else None,

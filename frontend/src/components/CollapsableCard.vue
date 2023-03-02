@@ -17,7 +17,7 @@
       />
     </div>
     <q-slide-transition>
-      <div v-show="isExpanded" class="row">
+      <div v-show="isExpanded" class="row q-pa-md q-gutter-y-sm">
         <slot name="body"/>
       </div>
     </q-slide-transition>

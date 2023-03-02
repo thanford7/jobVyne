@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from jobVyne import settings
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.geocoding import LocationParser
+from jvapp.apis.job import LocationView
 from jvapp.apis.notification import MessageGroupView
 from jvapp.apis.social import SocialLinkFilterView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
@@ -18,19 +19,18 @@ from jvapp.models import MessageThread, MessageThreadContext, SocialLinkFilter
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
-from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule, EmployerReferralRequest
+from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule, \
+    EmployerReferralRequest
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page, \
     get_serialized_employer_referral_request
-from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.data import AttributeCfg, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import get_domain_from_email, send_django_email
 from jvapp.utils.sanitize import sanitize_html
-
 
 __all__ = (
     'EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView',
@@ -50,8 +50,8 @@ class EmployerView(JobVyneAPIView):
             data = get_serialized_employer(
                 employer,
                 is_employer=self.user and (
-                    self.user.is_admin
-                    or (self.user.employer_id == employer_id and self.user.is_employer)
+                        self.user.is_admin
+                        or (self.user.employer_id == employer_id and self.user.is_employer)
                 )
             )
         else:
@@ -93,13 +93,13 @@ class EmployerView(JobVyneAPIView):
         employers = Employer.objects \
             .select_related('employer_size', 'default_bonus_currency') \
             .prefetch_related(
-                'subscription',
-                'employee',
-                'employee__employer_permission_group',
-                'employee__employer_permission_group__permission_group',
-                'employee__employer_permission_group__permission_group__permissions',
-                'ats_cfg'
-            ) \
+            'subscription',
+            'employee',
+            'employee__employer_permission_group',
+            'employee__employer_permission_group__permission_group',
+            'employee__employer_permission_group__permission_group__permissions',
+            'ats_cfg'
+        ) \
             .filter(employer_filter) \
             .annotate(employee_count=Count('employee'))
         
@@ -113,8 +113,8 @@ class EmployerView(JobVyneAPIView):
     @staticmethod
     def get_employer_account_owner(employer):
         return next((employee for employee in employer.employee.all() if employee.is_employer_owner), None)
-    
-    
+
+
 class EmployerAtsView(JobVyneAPIView):
     
     @atomic
@@ -127,7 +127,7 @@ class EmployerAtsView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully created ATS configuration'
         })
-
+    
     @atomic
     def put(self, request):
         if not (ats_id := self.data.get('id')):
@@ -166,7 +166,7 @@ class EmployerAtsView(JobVyneAPIView):
                 for delete_ats in existing_ats:
                     delete_ats.jv_check_permission(PermissionTypes.DELETE.value, user)
                 existing_ats.delete()
-    
+        
         return EmployerAts(employer_id=employer_id)
     
     @staticmethod
@@ -196,8 +196,8 @@ class EmployerAtsView(JobVyneAPIView):
         permission_type = PermissionTypes.EDIT.value if ats.id else PermissionTypes.CREATE.value
         ats.jv_check_permission(permission_type, user)
         ats.save()
-        
-        
+
+
 class EmployerBillingView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
     
@@ -229,16 +229,16 @@ class EmployerBillingView(JobVyneAPIView):
         employer.postal_code = raw_location.get('postal_code')
         employer.billing_email = self.data['billing_email']
         employer.save()
-
+        
         StripeCustomerView.create_or_update_customer(employer)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Billing information updated successfully'
         })
-    
-    
+
+
 class EmployerReferralRequestView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
-
+    
     # Keep in sync with REFERRAL_CONTENT_PLACEHOLDERS on frontend
     class ContentPlaceholders(Enum):
         JOB_LINK = '{{link}}'
@@ -261,7 +261,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
     def post(self, request):
         if not (employer_id := self.data.get('employer_id')):
             return get_error_response('An employer ID is required')
-
+        
         referral_request = EmployerReferralRequest(employer_id=employer_id)
         self.update_referral_request(self.user, referral_request, self.data)
         error_msg = self.send_referral_requests(self.user, referral_request, self.data)
@@ -273,13 +273,13 @@ class EmployerReferralRequestView(JobVyneAPIView):
     def put(self, request):
         if not (request_id := self.data.get('request_id')):
             return get_error_response('A request ID is required')
-    
+        
         referral_request = EmployerReferralRequest(id=request_id)
         self.update_referral_request(self.user, referral_request, self.data)
         error_msg = self.send_referral_requests(self.user, referral_request, self.data)
         if error_msg:
             return get_error_response(error_msg)
-    
+        
         return self.get_success_response(self.data)
     
     @staticmethod
@@ -312,7 +312,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
             )
             
             email_body = referral_request.email_body
-
+            
             job_link = f'{settings.BASE_URL}/jobs-link/{link_filter.id}/'
             email_body = email_body.replace(
                 EmployerReferralRequestView.ContentPlaceholders.JOB_LINK.value,
@@ -361,9 +361,9 @@ class EmployerReferralRequestView(JobVyneAPIView):
                     html_body_content=email_body,
                     message_thread=referral_request_message_thread
                 )
-                
-        return None
         
+        return None
+    
     @staticmethod
     @atomic
     def update_referral_request(user, referral_request, data):
@@ -378,7 +378,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
             referral_request.states.remove()
             referral_request.countries.remove()
             referral_request.jobs.remove()
-
+        
         permission_type = PermissionTypes.EDIT.value if referral_request.id else PermissionTypes.CREATE.value
         referral_request.jv_check_permission(permission_type, user)
         referral_request.save()
@@ -392,7 +392,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
                     jobdepartment_id=department_id
                 ))
             department_model.objects.bulk_create(departments)
-            
+        
         if city_ids := data.get('city_ids'):
             cities = []
             city_model = referral_request.cities.through
@@ -412,7 +412,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
                     state_id=state_id
                 ))
             state_model.objects.bulk_create(states)
-            
+        
         if country_ids := data.get('country_ids'):
             countries = []
             country_model = referral_request.countries.through
@@ -422,7 +422,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
                     country_id=country_id
                 ))
             country_model.objects.bulk_create(countries)
-            
+        
         if job_ids := data.get('job_ids'):
             jobs = []
             job_model = referral_request.jobs.through
@@ -432,7 +432,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
                     employerjob_id=job_id
                 ))
             job_model.objects.bulk_create(jobs)
-
+    
     @staticmethod
     def get_or_create_referral_request_message_thread(employer_id, referral_request):
         employer_message_group = MessageGroupView.get_or_create_employer_message_group(employer_id)
@@ -450,8 +450,8 @@ class EmployerReferralRequestView(JobVyneAPIView):
                 referral_request=referral_request
             ).save()
             return message_thread
-            
-    
+
+
 class EmployerSubscriptionView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     INACTIVE_STATUSES = [
@@ -485,12 +485,14 @@ class EmployerSubscriptionView(JobVyneAPIView):
     @staticmethod
     def get_active_employees(employer):
         return employer.employee \
-            .annotate(employer_user_type_bits=Sum('employer_permission_group__permission_group__user_type_bit', distinct=True)) \
+            .annotate(
+            employer_user_type_bits=Sum('employer_permission_group__permission_group__user_type_bit', distinct=True)) \
             .filter(
-                is_employer_deactivated=False,
-                has_employee_seat=True,
-                employer_user_type_bits__lt=F('employer_user_type_bits') + (1 * F('employer_user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE))
-            ) \
+            is_employer_deactivated=False,
+            has_employee_seat=True,
+            employer_user_type_bits__lt=F('employer_user_type_bits') + (
+                        1 * F('employer_user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE))
+        ) \
             .count()
 
 
@@ -518,7 +520,8 @@ class EmployerJobView(JobVyneAPIView):
             if job_ids := self.query_params.getlist('job_ids[]'):
                 job_filter &= Q(id__in=job_ids)
             jobs = self.get_employer_jobs(employer_job_filter=job_filter)
-            rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user, employer_id=employer_id) if self.user else None
+            rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user,
+                                                                   employer_id=employer_id) if self.user else None
             data = [get_serialized_employer_job(j, rules=rules, is_include_bonus=bool(self.user)) for j in jobs]
         else:
             return Response('A job ID or employer ID is required', status=status.HTTP_400_BAD_REQUEST)
@@ -528,7 +531,7 @@ class EmployerJobView(JobVyneAPIView):
     def put(self, request):
         if not (job_id := self.data.get('id')):
             return Response('A job ID is required', status=status.HTTP_400_BAD_REQUEST)
-
+        
         employer_job = self.get_employer_jobs(employer_job_id=job_id)
         employer_job = self.update_job(self.user, employer_job, self.data)
         return Response(status=status.HTTP_200_OK, data={
@@ -539,11 +542,12 @@ class EmployerJobView(JobVyneAPIView):
         if not (employer_id := self.data.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        employer_job = self.update_job(self.user, EmployerJob(employer_id=employer_id), self.data, is_check_duplicate=True)
+        employer_job = self.update_job(self.user, EmployerJob(employer_id=employer_id), self.data,
+                                       is_check_duplicate=True)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'Added {employer_job.job_title} job'
         })
-
+    
     @staticmethod
     @atomic
     def update_job(user, employer_job, data, is_check_duplicate=False):
@@ -557,7 +561,7 @@ class EmployerJobView(JobVyneAPIView):
             location if coerce_int(location) else location_parser.get_location(location).id
             for location in data['locations']
         )
-
+        
         # Make sure this isn't a duplicate before adding locations to job
         if is_check_duplicate:
             job_title = data['job_title']
@@ -566,12 +570,15 @@ class EmployerJobView(JobVyneAPIView):
                 EmployerJob.objects.prefetch_related('locations').filter(employer_id=employer_job.employer_id,
                                                                          job_title=job_title)
             }
-            employer_job = potential_job_duplicates.get(EmployerJob.generate_job_key(job_title, location_ids), employer_job)
+            employer_job = potential_job_duplicates.get(EmployerJob.generate_job_key(job_title, location_ids),
+                                                        employer_job)
         
         set_object_attributes(employer_job, data, {
             'job_title': AttributeCfg(is_ignore_excluded=True),
-            'open_date': AttributeCfg(is_ignore_excluded=True, prop_func=lambda x: get_datetime_or_none(x, as_date=True)),
-            'close_date': AttributeCfg(is_ignore_excluded=True, prop_func=lambda x: get_datetime_or_none(x, as_date=True)),
+            'open_date': AttributeCfg(is_ignore_excluded=True,
+                                      prop_func=lambda x: get_datetime_or_none(x, as_date=True)),
+            'close_date': AttributeCfg(is_ignore_excluded=True,
+                                       prop_func=lambda x: get_datetime_or_none(x, as_date=True)),
             'salary_interval': AttributeCfg(is_ignore_excluded=True),
             'salary_floor': AttributeCfg(is_ignore_excluded=True),
             'salary_ceiling': AttributeCfg(is_ignore_excluded=True),
@@ -595,11 +602,11 @@ class EmployerJobView(JobVyneAPIView):
                 new_job_department = JobDepartment(name=job_department['id'])
                 new_job_department.save()
                 employer_job.job_department = new_job_department
-                
+        
         # Remove existing locations if this is an existing job
         if employer_job.id:
             employer_job.locations.remove()
-
+        
         employer_job.save()
         
         # Add locations
@@ -610,24 +617,30 @@ class EmployerJobView(JobVyneAPIView):
         )
         
         return employer_job
-        
     
     @staticmethod
-    def get_employer_jobs(employer_job_id=None, employer_job_filter=None, order_by='-open_date', is_include_closed=False):
+    def get_employer_jobs(
+        employer_job_id=None, employer_job_filter=None, order_by='-open_date',
+        is_include_closed=False, is_include_future=False
+    ):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
-        elif not is_include_closed:
-            employer_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+        else:
+            if not is_include_closed:
+                employer_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+            if not is_include_future:
+                employer_job_filter &= Q(open_date__lte=timezone.now().date())
         
-        jobs = EmployerJob.objects\
-            .select_related('job_department', 'employer', 'referral_bonus_currency')\
+        jobs = EmployerJob.objects \
+            .select_related('job_department', 'employer', 'referral_bonus_currency') \
             .prefetch_related(
-                'locations',
-                'locations__city',
-                'locations__state',
-                'locations__country'
-            )\
-            .filter(employer_job_filter)\
+            'locations',
+            'locations__city',
+            'locations__state',
+            'locations__country'
+        ) \
+            .filter(employer_job_filter) \
+            .distinct() \
             .order_by(order_by)
         
         if employer_job_id:
@@ -636,11 +649,11 @@ class EmployerJobView(JobVyneAPIView):
             return jobs[0]
         
         return jobs
-    
-    
+
+
 class EmployerJobBonusView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
-
+    
     def put(self, request):
         jobs = EmployerJob.objects.filter(id__in=self.data['job_ids'])
         jobs_to_update = []
@@ -648,14 +661,14 @@ class EmployerJobBonusView(JobVyneAPIView):
             job.referral_bonus = self.data['referral_bonus']
             job.referral_bonus_currency_id = self.data['referral_bonus_currency']['name']
             jobs_to_update.append(job)
-    
+        
         EmployerJob.objects.bulk_update(jobs_to_update, ['referral_bonus', 'referral_bonus_currency_id'],
                                         batch_size=1000)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'Updated referral bonus for {len(jobs)} {"jobs" if len(jobs) > 1 else "job"}'
         })
-    
-    
+
+
 class EmployerBonusDefaultView(JobVyneAPIView):
     
     @atomic
@@ -675,8 +688,8 @@ class EmployerBonusDefaultView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Bonus rule defaults updated'
         })
-        
-    
+
+
 class EmployerBonusRuleView(JobVyneAPIView):
     
     def get(self, request):
@@ -729,20 +742,20 @@ class EmployerBonusRuleView(JobVyneAPIView):
             filter &= Q(id=rule_id)
         elif employer_id:
             filter &= Q(employer_id=employer_id)
-            
-        rules = EmployerReferralBonusRule.objects\
-            .select_related('bonus_currency')\
+        
+        rules = EmployerReferralBonusRule.objects \
+            .select_related('bonus_currency') \
             .prefetch_related(
-                'include_departments',
-                'exclude_departments',
-                'include_cities',
-                'exclude_cities',
-                'include_states',
-                'exclude_states',
-                'include_countries',
-                'exclude_countries',
-                'modifier'
-            )\
+            'include_departments',
+            'exclude_departments',
+            'include_cities',
+            'exclude_cities',
+            'include_states',
+            'exclude_states',
+            'include_countries',
+            'exclude_countries',
+            'modifier'
+        ) \
             .filter(filter)
         
         if is_use_permissions:
@@ -791,7 +804,7 @@ class EmployerBonusRuleView(JobVyneAPIView):
                 bonus_rule_field = getattr(bonus_rule, rule_key)
                 for val in criteriaVals:
                     bonus_rule_field.add(val['id'])
-                    
+        
         bonus_rule.modifier.all().delete()
         modifiers_to_save = []
         for modifier in data.get('modifiers'):
@@ -804,8 +817,8 @@ class EmployerBonusRuleView(JobVyneAPIView):
         
         if modifiers_to_save:
             EmployerReferralBonusRuleModifier.objects.bulk_create(modifiers_to_save)
-                    
-                    
+
+
 class EmployerBonusRuleOrderView(JobVyneAPIView):
     
     @atomic
@@ -826,7 +839,7 @@ class EmployerBonusRuleOrderView(JobVyneAPIView):
         
         for order_idx, rule_id in enumerate(rule_ids):
             if not (rule := rules.get(rule_id)):
-                return Response (
+                return Response(
                     f'Rule with ID = {rule_id} does not exist for this employer'
                 )
             
@@ -834,7 +847,7 @@ class EmployerBonusRuleOrderView(JobVyneAPIView):
                 rule.jv_check_permission(PermissionTypes.EDIT.value, self.user)
             
             rule.order_idx = order_idx
-            
+        
         EmployerReferralBonusRule.objects.bulk_update(list(rules.values()), ['order_idx'])
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Referral bonus rules order updated'
@@ -939,7 +952,7 @@ class EmployerUserView(JobVyneAPIView):
                 )
             )
         UserEmployerPermissionGroup.objects.bulk_create(new_user_groups)
-
+        
         user_type_bits = reduce(
             lambda a, b: a | b,
             EmployerAuthGroup.objects.filter(id__in=permission_group_ids).values_list('user_type_bit', flat=True),
@@ -1115,10 +1128,11 @@ class EmployerUserActivateView(JobVyneAPIView):
             msg += f' {"deactivated" if is_deactivate else "activated"}'
         else:
             msg += f' {"assigned" if is_assign_seat else "un-assigned"} a seat'
-            
+        
         data = {SUCCESS_MESSAGE_KEY: msg}
         if unassigned_users:
-            data[WARNING_MESSAGES_KEY] = [f'{unassigned_users} {"user" if unassigned_users == 1 else "users"} was unable to be assigned a seat because you have reached the number of seats allowed by your subscription']
+            data[WARNING_MESSAGES_KEY] = [
+                f'{unassigned_users} {"user" if unassigned_users == 1 else "users"} was unable to be assigned a seat because you have reached the number of seats allowed by your subscription']
         
         return Response(status=status.HTTP_200_OK, data=data)
 
@@ -1316,18 +1330,18 @@ class EmployerFromDomainView(JobVyneAPIView):
             status=status.HTTP_200_OK,
             data=matched_employers
         )
-    
-    
+
+
 class EmployerJobDepartmentView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-
-        departments = EmployerJob.objects\
-            .select_related('job_department')\
-            .filter(employer_id=employer_id)\
+        
+        departments = EmployerJob.objects \
+            .select_related('job_department') \
+            .filter(employer_id=employer_id) \
             .values('job_department_id', 'job_department__name') \
             .distinct()
         
@@ -1346,21 +1360,9 @@ class EmployerJobLocationView(JobVyneAPIView):
         
         job_filter = Q(employer_id=employer_id)
         jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_filter, is_include_closed=True)
-        cities, states, countries, locations = {}, {}, {}, {}
+        locations = []
         for job in jobs:
             for location in job.locations.all():
-                if not locations.get(location.id):
-                    locations[location.id] = get_serialized_location(location)
-                if location.city and not cities.get(location.city_id):
-                    cities[location.city_id] = {'name': location.city.name, 'id': location.city.id}
-                if location.state and not states.get(location.state_id):
-                    states[location.state_id] = {'name': location.state.name, 'id': location.state.id}
-                if location.country and not countries.get(location.country_id):
-                    countries[location.country_id] = {'name': location.country.name, 'id': location.country.id}
+                locations.append(location)
         
-        return Response(status=status.HTTP_200_OK, data={
-            'locations': sorted(list(locations.values()), key=lambda x: (x['is_remote'] or 0, x['city'] or '')),
-            'cities': sorted(list(cities.values()), key=lambda x: x['name']),
-            'states': sorted(list(states.values()), key=lambda x: x['name']),
-            'countries': sorted(list(countries.values()), key=lambda x: x['name'])
-        })
+        return Response(status=status.HTTP_200_OK, data=LocationView.get_serialized_locations(locations))

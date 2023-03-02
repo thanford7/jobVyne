@@ -348,9 +348,9 @@ class GreenhouseAts(BaseAts):
             close_date=self.parse_datetime_str(job['closed_at'], as_date=True),
             department_name=job['departments'][0]['name'] if job['departments'] else None,
             employment_type=custom_fields.get(employment_type_key),
-            salary_floor=salary_range.get('min_value') if salary_range else None,
-            salary_ceiling=salary_range.get('max_value') if salary_range else None,
-            salary_currency_type=salary_range.get('unit') if salary_range else None,
+            salary_floor=salary_range.get('min_value') if isinstance(salary_range, dict) else None,
+            salary_ceiling=salary_range.get('max_value') if isinstance(salary_range, dict) else None,
+            salary_currency_type=salary_range.get('unit') if isinstance(salary_range, dict) else None,
             locations=[l for l in locations if l]
         )
         return data

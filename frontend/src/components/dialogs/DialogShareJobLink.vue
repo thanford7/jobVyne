@@ -201,7 +201,7 @@ export default {
         return this.userFilters.user_ids.length
       }
       const employees = this.employerStore.getEmployees(this.employerId)
-      return employees.length
+      return employees?.length
     }
   },
   watch: {

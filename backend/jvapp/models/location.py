@@ -1,7 +1,14 @@
+from enum import IntEnum
+
 from django.db import models
 
 
-__all__ = ('Country', 'State', 'City', 'Location')
+__all__ = ('REMOTE_TYPES', 'Country', 'State', 'City', 'Location')
+
+
+class REMOTE_TYPES(IntEnum):
+    NO = 1
+    YES = 2
 
 
 class Country(models.Model):

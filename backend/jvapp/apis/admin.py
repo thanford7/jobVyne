@@ -227,10 +227,10 @@ class AdminEmployerView(JobVyneAPIView):
         
         account_owner = EmployerView.get_employer_account_owner(employer)
         owner_data = {
-            'account_owner_id': None,
-            'account_owner_first_name': None,
-            'account_owner_last_name': None,
-            'account_owner_email': None
+            'owner_id': None,
+            'owner_first_name': None,
+            'owner_last_name': None,
+            'owner_email': None
         }
         if account_owner:
             owner_data = {
@@ -243,10 +243,12 @@ class AdminEmployerView(JobVyneAPIView):
         return {
             'id': employer.id,
             'name': employer.employer_name,
+            'organization_type': employer.organization_type,
             'logo_url': employer.logo.url if employer.logo else None,
             'joined_date': get_datetime_format_or_none(employer.created_dt),
             'employee_count': employer.employee_count,
             'email_domains': employer.email_domains,
+            'is_use_job_url': employer.is_use_job_url,
             **subscription_data,
             **owner_data
         }
@@ -255,7 +257,9 @@ class AdminEmployerView(JobVyneAPIView):
     def update_employer(employer, data, files):
         set_object_attributes(employer, data, {
             'employer_name': AttributeCfg(form_name='name'),
-            'email_domains': None
+            'email_domains': None,
+            'is_use_job_url': None,
+            'organization_type': None
         })
         
         if 'logo' in files:

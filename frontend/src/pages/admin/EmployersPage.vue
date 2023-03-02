@@ -76,6 +76,14 @@ const employerColumns = [
     sort: dateTimeUtil.sortDatesFn.bind(dateTimeUtil),
     format: (val) => dateTimeUtil.getShortDate(val)
   },
+  {
+    name: 'useJobUrl',
+    field: 'is_use_job_url',
+    align: 'left',
+    label: 'Use Job URL',
+    sortable: true,
+    format: (val) => dataUtil.capitalize(val.toString())
+  },
   { name: 'employeeSeats', field: 'employee_seats', align: 'center', label: 'Employee Seats', sortable: true },
   { name: 'employeeCount', field: 'employee_count', align: 'center', label: 'Employee Count', sortable: true },
   { name: 'subscriptionStatus', field: 'subscription_status', align: 'left', label: 'Account Status', sortable: true },

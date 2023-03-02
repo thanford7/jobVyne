@@ -37,6 +37,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import dataUtil from 'src/utils/data.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
+import { useJobStore } from 'stores/job-store.js'
 
 export default {
   name: 'SelectJobDepartment',
@@ -60,12 +61,19 @@ export default {
     },
     employerId: {
       type: [Number, String, null]
+    },
+    isAll: { // Ignore employer and get all job departments
+      type: Boolean,
+      default: false
     }
   },
   data () {
     return {
       isLoaded: false,
-      filterTxt: null
+      filterTxt: null,
+      authStore: null,
+      employerStore: null,
+      jobStore: null
     }
   },
   computed: {
@@ -73,7 +81,12 @@ export default {
       if (!this.isLoaded) {
         return
       }
-      const departments = this.employerStore.getEmployerJobDepartments(this.employerId || this.authStore.propUser.employer_id)
+      let departments = []
+      if (this.isAll) {
+        departments = this.jobStore.getJobDepartments()
+      } else {
+        departments = this.employerStore.getEmployerJobDepartments(this.employerId || this.authStore.propUser.employer_id)
+      }
       if (!this.filterTxt || this.filterTxt === '') {
         return departments
       }
@@ -102,12 +115,14 @@ export default {
   async mounted () {
     this.authStore = useAuthStore()
     this.employerStore = useEmployerStore()
+    this.jobStore = useJobStore()
     await this.authStore.setUser()
     const employerId = this.employerId || this.authStore.propUser.employer_id
-    await Promise.all([
-      this.employerStore.setEmployerJobs(employerId),
-      this.employerStore.setEmployerJobDepartments(employerId)
-    ])
+    if (this.isAll) {
+      await this.jobStore.setJobDepartments()
+    } else {
+      await this.employerStore.setEmployerJobDepartments(employerId)
+    }
     this.isLoaded = true
   },
   beforeUnmount () {
