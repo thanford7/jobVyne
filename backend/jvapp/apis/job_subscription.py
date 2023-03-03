@@ -187,7 +187,7 @@ class EmployerJobSubscriptionJobView(JobVyneAPIView):
         if is_combined:
             # Combine all filters into one
             job_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
-            return EmployerJobView.get_employer_jobs(employer_job_filter=job_filter)
+            return EmployerJobView.get_employer_jobs(employer_job_filter=job_filter) if job_filter else []
         else:
             job_filters = [js.get_job_filter() for js in job_subscriptions]
             return [
@@ -198,4 +198,4 @@ class EmployerJobSubscriptionJobView(JobVyneAPIView):
     @staticmethod
     def get_combined_job_subscription_filter(job_subscriptions):
         job_filters = [js.get_job_filter() for js in job_subscriptions]
-        return reduce(lambda total, jf: total | jf, job_filters)
+        return reduce(lambda total, jf: total | jf, job_filters, None)

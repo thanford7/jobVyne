@@ -1371,7 +1371,10 @@ class EmployerJobDepartmentView(JobVyneAPIView):
         job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
         job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
         # Include both subscribed jobs and those owned by the employer
-        job_subscription_filter |= Q(employer_id=employer_id)
+        if job_subscription_filter:
+            job_subscription_filter |= Q(employer_id=employer_id)
+        else:
+            job_subscription_filter = Q(employer_id=employer_id)
         departments = EmployerJobView\
             .get_employer_jobs(employer_job_filter=job_subscription_filter) \
             .values('job_department_id', 'job_department__name') \
@@ -1396,7 +1399,10 @@ class EmployerJobLocationView(JobVyneAPIView):
         job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
         job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
         # Include both subscribed jobs and those owned by the employer
-        job_subscription_filter |= Q(employer_id=employer_id)
+        if job_subscription_filter:
+            job_subscription_filter |= Q(employer_id=employer_id)
+        else:
+            job_subscription_filter = Q(employer_id=employer_id)
         jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_subscription_filter, is_include_closed=True).distinct()
         locations = []
         for job in jobs:
