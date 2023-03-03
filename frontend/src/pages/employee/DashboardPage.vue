@@ -262,16 +262,14 @@ export default {
       return referralLinks.find((link) => link.is_default)
     },
     hasCompletedChecklist () {
-      return false
-      // TODO: For testing only reset when done
-      // return [
-      //   this.userEmployeeChecklist.is_email_verified,
-      //   this.userEmployeeChecklist.is_email_employer_permitted || this.userEmployeeChecklist.has_secondary_email,
-      //   !this.userEmployeeChecklist.has_secondary_email || this.userEmployeeChecklist.is_business_email_verified,
-      //   this.userEmployeeChecklist.has_updated_profile,
-      //   this.userEmployeeChecklist.has_connected_linkedin,
-      //   this.userEmployeeChecklist.has_scheduled_auto_post
-      // ].every((val) => val)
+      return [
+        this.userEmployeeChecklist.is_email_verified,
+        this.userEmployeeChecklist.is_email_employer_permitted || this.userEmployeeChecklist.has_secondary_email,
+        !this.userEmployeeChecklist.has_secondary_email || this.userEmployeeChecklist.is_business_email_verified,
+        this.userEmployeeChecklist.has_updated_profile,
+        this.userEmployeeChecklist.has_connected_linkedin,
+        this.userEmployeeChecklist.has_scheduled_auto_post
+      ].every((val) => val)
     }
   },
   watch: {
