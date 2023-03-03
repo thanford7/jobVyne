@@ -1,6 +1,7 @@
 from enum import Enum
 from functools import reduce
 
+from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Count, F, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -37,6 +38,8 @@ __all__ = (
     'EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView',
     'EmployerSubscriptionView'
 )
+
+from jvapp.utils.security import generate_user_token, get_uid_from_user
 
 BATCH_UPDATE_SIZE = 100
 
@@ -941,7 +944,7 @@ class EmployerUserView(JobVyneAPIView):
             user.employer_id = employer_id
             user.save()
         elif user.employer_id != employer_id:
-            return Response('This user already exists and is associated with a different employer')
+            return get_error_response('This user already exists and cannot be created')
         
         new_user_groups = []
         permission_group_ids = self.data['permission_group_ids']
@@ -963,11 +966,33 @@ class EmployerUserView(JobVyneAPIView):
         )
         user.user_type_bits = user_type_bits
         user.save()
-        # TODO: Send an onboarding welcome email to user
-        UserView.send_email_verification_email(request, user, 'email')
+        user_primary_referral_link = SocialLinkFilter.objects.filter(owner=user, is_primary=True)
+        if not user_primary_referral_link:
+            raise Exception('An error occurred while creating a new employer user. No primary referral link was created.')
+        user_primary_referral_link = user_primary_referral_link[0]
         
-        user_full_name = f'{user.first_name} {user.last_name}'
-        success_message = f'Account created for {user_full_name}' if is_new else f'Account already exists for {user_full_name}. Permissions were updated.'
+        uid = get_uid_from_user(user)
+        token = generate_user_token(user, 'email')
+        reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
+        job_referral_url = f'{settings.BASE_URL}/jobs-link/{user_primary_referral_link.id}/'
+        employer = user.employer
+        send_django_email(
+            'Welcome to JobVyne!',
+            'emails/employer_user_welcome_email.html',
+            to_email=user.email,
+            django_context={
+                'user': user,
+                'employer': employer,
+                'admin_user': self.user,
+                'job_referral_url': job_referral_url,
+                'reset_password_url': reset_password_url,
+                'is_exclude_final_message': False
+            },
+            employer=employer,
+            is_tracked=False
+        )
+        
+        success_message = f'Account created for {user.full_name}' if is_new else f'Account already exists for {user.full_name}. Permissions were updated.'
         
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: success_message

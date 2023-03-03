@@ -36,13 +36,13 @@ def get_user_key_from_token(token):
     return token.split('-')[1]
 
 
-def check_user_token(user, user_key, token):
+def check_user_token(user, token):
 
     if not (user and token):
         return False
     # Parse the token
     try:
-        ts_b36, _, _ = token.split("-")
+        ts_b36, user_key, _ = token.split("-")
     except ValueError:
         return False
     

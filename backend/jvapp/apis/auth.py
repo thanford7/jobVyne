@@ -29,7 +29,7 @@ from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
 
 __all__ = ('LoginView', 'LoginSetCookieView', 'LogoutView', 'CheckAuthView', 'SocialAuthCredentialsView')
 
-from jvapp.utils.security import get_user_id_from_uid
+from jvapp.utils.security import check_user_token, get_user_id_from_uid
 
 logger = logging.getLogger(__name__)
 
@@ -301,7 +301,6 @@ class PasswordResetGenerateView(APIView):
 
 class PasswordResetFromEmailView(APIView):
     permission_classes = [AllowAny]
-    token_generator = PasswordResetTokenGenerator()
     
     def put(self, request):
         data = request.data
@@ -313,7 +312,7 @@ class PasswordResetFromEmailView(APIView):
         
         user_id = get_user_id_from_uid(uid)
         user = JobVyneUser.objects.get(id=user_id)
-        is_valid = self.token_generator.check_token(user, token)
+        is_valid = check_user_token(user, token)
         if not is_valid:
             return Response(
                 'This reset link has expired or is invalid. Go to the login page to request a new reset email.',

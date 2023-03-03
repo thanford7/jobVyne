@@ -224,6 +224,10 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         return groups
     
     @property
+    def full_name(self):
+        return ' '.join([n for n in [self.first_name, self.last_name] if n])
+    
+    @property
     def emails(self):
         emails = [self.email]
         if self.business_email:

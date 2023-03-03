@@ -44,7 +44,7 @@ def get_serialized_expiring_social_credential(social_credential):
         'user_email': social_credential.user.email,
         'social_email': social_credential.email,
         'platform_name': OAUTH_CFGS[social_credential.provider]['name'],
-        'user_full_name': f'{social_credential.user.first_name} {social_credential.user.last_name}',
+        'user_full_name': social_credential.user.full_name,
         'expiration_date': social_credential.expiration_dt.date(),
         'expiration_days': social_credential.expiration_days.days
     }

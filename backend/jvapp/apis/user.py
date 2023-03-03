@@ -331,7 +331,7 @@ class UserEmailVerificationView(JobVyneAPIView):
         user_id = get_user_id_from_uid(uid)
         email_key = get_user_key_from_token(token)
         user = UserView.get_user(self.user, user_id=user_id, is_check_permission=False)
-        is_valid_token = check_user_token(user, email_key, token)
+        is_valid_token = check_user_token(user, token)
         if not is_valid_token:
             return Response('This email verification link is no longer valid', status=status.HTTP_400_BAD_REQUEST)
         
@@ -415,7 +415,7 @@ class FeedbackView(JobVyneAPIView):
         # Send email to JobVyne support team
         if self.user:
             user = {
-                'name': f'{self.user.first_name} {self.user.last_name}',
+                'name': self.user.full_name,
                 'email': self.user.email
             }
         else:
