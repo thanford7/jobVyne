@@ -5,7 +5,7 @@ from django.db.models import F, Q
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.models import Employer, JobVyneUser, MessageThread, UserNotificationPreference
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.tracking import Message, MessageGroup
@@ -155,12 +155,12 @@ class MessageView(JobVyneAPIView):
             return Response('An email body is required', status=status.HTTP_400_BAD_REQUEST)
         email_body = sanitize_html(email_body)
         
-        if not self.user.is_admin or employer_id:
+        if (not self.user.is_admin) or employer_id:
             if not employer_id:
-                return Response('You must include an employer ID', status=status.HTTP_400_BAD_REQUEST)
+                return get_error_response('You must include an employer ID')
             employer_id = int(employer_id)
             if employer_id != self.user.employer_id:
-                return Response('You do not have permission to post for this employer', status=status.HTTP_400_BAD_REQUEST)
+                return get_error_response('You do not have permission to post for this employer')
             
             employer = Employer.objects.get(id=employer_id)
             
@@ -211,6 +211,7 @@ class MessageView(JobVyneAPIView):
                 'is_exclude_final_message': True,
                 'is_unsubscribe': True
             },
+            employer=employer,
             html_body_content=email_body,
             message_thread=message_thread
         )

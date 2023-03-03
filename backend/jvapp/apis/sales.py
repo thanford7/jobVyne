@@ -33,7 +33,8 @@ class SalesInquiryView(APIView):
                 'inquiry': inquiry,
                 'is_exclude_final_message': True
             },
-            is_tracked=False
+            is_tracked=False,
+            is_include_jobvyne_subject=False
         )
         return Response(status=status.HTTP_200_OK)
 

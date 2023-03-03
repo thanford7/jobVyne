@@ -401,7 +401,8 @@ class StripeSubscriptionView(StripeBaseView):
             html_body_content=f'''
                 <div>{employer.employer_name} (ID={employer.id}) cancelled their subscription</div>
             ''',
-            is_tracked=False
+            is_tracked=False,
+            is_include_jobvyne_subject=False
         )
 
         subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)

@@ -351,7 +351,7 @@ class ShareSocialLinkView(JobVyneAPIView):
     def post(self, request):
         job_link = SocialLinkFilterView.get_link_filters(self.user, link_filter_id=self.data['socialLinkId'])
         if self.user.id != job_link.owner_id:
-            return Response('You do not have access to this job link', status=status.HTTP_401_UNAUTHORIZED)
+            return get_error_response('You do not have access to this job link')
         share_type = self.data['shareType']
         if share_type == Message.MessageType.EMAIL.value:
             send_django_email(

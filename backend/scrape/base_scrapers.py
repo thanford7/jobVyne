@@ -17,6 +17,13 @@ from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
 JS_LOAD_WAIT_MS = 30000
+currency_characters = u'[$¢£¤¥֏؋৲৳৻૱௹฿៛\u20a0-\u20bd\ua838\ufdfc\ufe69\uff04\uffe0\uffe1\uffe5\uffe6]'
+compensation_data_template = {
+    'salary_currency': None,
+    'salary_floor': None,
+    'salary_ceiling': None,
+    'salary_interval': None
+}
 
 
 async def get_browser(playwright, proxy):
@@ -33,6 +40,8 @@ async def get_browser(playwright, proxy):
 class Scraper:
     MAX_CONCURRENT_PAGES = 30
     IS_JS_REQUIRED = False
+    DEFAULT_JOB_DEPARTMENT = 'General'
+    DEFAULT_EMPLOYMENT_TYPE = 'Full Time'
     start_url = None
     employer_name = None
     job_item_page_wait_sel = None
@@ -265,6 +274,55 @@ class Scraper:
             #             logo_url = logo.get('url') if logo else None
         
         return job_item
+    
+    def parse_compensation_text(self, text):
+        # TODO: Finish this
+        if not text:
+            return {**compensation_data_template}
+        compensation_pattern = f'.*?{currency_characters}[0-9]+'
+        return {**compensation_data_template}
+    
+    
+class BambooHrScraper(Scraper):
+    IS_JS_REQUIRED = True
+    job_item_page_wait_sel = '#js-careers-root'
+    
+    async def scrape_jobs(self):
+        page = await self.get_starting_page()
+        html_dom = await self.get_page_html(page)
+        # html_dom = await self.get_html_from_url(self.start_url)
+        await self.add_job_links_to_queue(html_dom.xpath('//div[@class="jss-e8"]//ul//a/@href').getall())
+
+    def get_job_data_from_html(self, html, job_url=None, **kwargs):
+        job_data = html.xpath('//div[@class="jss-e8"]')
+        job_details = html.xpath('//div[@class="jss-e73"]//p/text()').getall()
+        job_detail_data = {}
+        content_key = None
+        for content_item in job_details:
+            if not content_item:
+                continue
+            if not content_key:
+                content_key = content_item.lower()
+            else:
+                job_detail_data[content_key] = content_item
+                content_key = None
+        
+        standard_job_item = self.get_google_standard_job_item(html)
+        compensation_data = {**compensation_data_template}
+        if compensation_text := job_detail_data.get('compensation'):
+            compensation_data = self.parse_compensation_text(compensation_text)
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data.xpath('//h2[@class="jss-e18"]/text()').get(),
+            locations=[job_data.xpath('//span[@class="jss-e19"]/text()').get()],
+            job_department=job_detail_data.get('department', self.DEFAULT_JOB_DEPARTMENT),
+            job_description=job_data.xpath('//div[@class="jss-e21"]'),
+            employment_type=job_detail_data.get('employment type', self.DEFAULT_EMPLOYMENT_TYPE),
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
 
 
 class GreenhouseScraper(Scraper):

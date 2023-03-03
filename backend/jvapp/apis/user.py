@@ -429,7 +429,8 @@ class FeedbackView(JobVyneAPIView):
                 'user': user,
                 'message': self.data['message']
             },
-            files=self.files.get('files')
+            files=self.files.get('files'),
+            is_include_jobvyne_subject=False
         )
         
         return Response(status=status.HTTP_200_OK, data={

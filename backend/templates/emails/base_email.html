@@ -379,12 +379,17 @@
                                             <tr>
                                                 <td align="left"
                                                     style="padding:0;line-height:100%;font-size:0;margin:0 auto;">
-                                                    <a href="jobvyne.com"
-                                                       target="_blank"
-                                                       style="text-decoration:none;border-style:none;border:0;padding:0;margin:0">
-                                                        <img src="cid:logo" alt="JobVyne" width="120"
+                                                    {% if is_employer %}
+                                                        <img src="cid:employer_logo" alt="{{ employer_name }}" width="120"
                                                              style="margin:0;padding:0;display:inline-block;border:none;outline:none;">
-                                                    </a>
+                                                    {% else %}
+                                                        <a href="jobvyne.com"
+                                                           target="_blank"
+                                                           style="text-decoration:none;border-style:none;border:0;padding:0;margin:0">
+                                                                <img src="cid:jobvyne_logo" alt="JobVyne" width="120"
+                                                                     style="margin:0;padding:0;display:inline-block;border:none;outline:none;">
+                                                        </a>
+                                                    {% endif %}
                                                 </td>
                                             </tr>
                                             </tbody>
@@ -420,6 +425,19 @@
                                 {% endif %}
                                 <p>Questions or need help? Email us at {{ support_email }}</p>
                                 {% block footer %}{% endblock footer %}
+                                {% if is_employer %}
+                                    <p style="font-weight: bold;">
+                                        Powered By
+                                    </p>
+                                    <p>
+                                        <a href="jobvyne.com"
+                                           target="_blank"
+                                           style="text-decoration:none;border-style:none;border:0;padding:0;margin:0">
+                                            <img src="cid:jobvyne_logo" alt="JobVyne" width="100"
+                                                 style="margin:0;padding:0;display:inline-block;border:none;outline:none;">
+                                        </a>
+                                    </p>
+                                {% endif %}
                             </td>
                         </tr>
                     </table>

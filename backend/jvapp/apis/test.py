@@ -26,7 +26,8 @@ class TestEmailView(APIView):
                 'is_exclude_final_message': True
             },
             html_body_content='<p>This is a test email</p>',
-            is_tracked=False
+            is_tracked=False,
+            is_include_jobvyne_subject=False
         )
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Test email sent'

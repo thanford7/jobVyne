@@ -37,7 +37,7 @@ def get_file_from_path(file_path):
 def send_django_email(
     subject_text, django_email_body_template,
     to_email=None, cc_email=None, bcc_email=None, from_email=EMAIL_ADDRESS_SEND,
-    django_context=None, html_body_content=None,
+    django_context=None, html_body_content=None, employer=None, is_include_jobvyne_subject=True,
     files=None, message_thread=None, is_tracked=True
 ):
     if not settings.IS_SEND_EMAILS:
@@ -48,12 +48,15 @@ def send_django_email(
         return
     
     subject = ''.join(subject_text.splitlines())  # Email subject *must not* contain newlines
-    subject = f'JobVyne | {subject}'
+    if is_include_jobvyne_subject:
+        subject = f'🍇 JobVyne | {subject}'
     django_context = django_context or {}
     django_context['support_email'] = EMAIL_ADDRESS_SUPPORT
     django_context['base_url'] = settings.BASE_URL
     django_context['protocol'] = 'https'  # Overwrite protocol to always use https
     django_context['html_body_content'] = html_body_content
+    django_context['is_employer'] = bool(employer)
+    django_context['employer_name'] = employer.employer_name if employer else None
     html_content = loader.render_to_string(django_email_body_template, django_context)
     plain_content = strip_tags(html_content)
     
@@ -131,9 +134,14 @@ def send_django_email(
     message.attach_alternative(html_content, "text/html")
 
     logo = MIMEImage(get_file_from_path(static('jobVyneLogo.png')))
-    logo.add_header('Content-ID', '<logo>')
+    logo.add_header('Content-ID', '<jobvyne_logo>')
     message.attach(logo)
     
+    if employer and employer.logo:
+        employer_logo = MIMEImage(get_file_from_path(get_safe_file_path(employer.logo)))
+        employer_logo.add_header('Content-ID', '<employer_logo>')
+        message.attach(employer_logo)
+        
     if is_tracked:
         # Note: Need to use message_attachments instead of files since in-memory files
         # have already been read and will return b'' if attempted to read again

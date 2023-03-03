@@ -126,7 +126,8 @@ class ApplicationView(JobVyneAPIView):
             to_email=[email],
             from_email=EMAIL_ADDRESS_SEND,
             django_context=django_context,
-            files=files
+            files=files,
+            employer=employer
         )
         
         # Email the referrer (if there is one)
@@ -141,7 +142,8 @@ class ApplicationView(JobVyneAPIView):
                 django_context={
                     'is_unsubscribe': True,
                     **django_context
-                }
+                },
+                employer=employer
             )
         
         # Send a notification to the employer if they have it configured
@@ -157,6 +159,7 @@ class ApplicationView(JobVyneAPIView):
                     'is_employer': True
                 },
                 files=files,
+                employer=employer,
                 message_thread=message_thread
             )
         
@@ -225,7 +228,8 @@ class ApplicationView(JobVyneAPIView):
                     'recommend_job': application.get_recommend_applicant_label(application.feedback_recommend_this_job),
                     'recommend_any': application.get_recommend_applicant_label(application.feedback_recommend_any_job)
                 },
-                message_thread=message_thread
+                message_thread=message_thread,
+                employer=employer
             )
         
         if application.ats_application_key and application.employer_job.ats_job_key:

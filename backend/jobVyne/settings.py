@@ -199,6 +199,9 @@ db_config = {
     'NAME': env('MYSQL_DATABASE', default='jobvyne'),
     'HOST': env('MYSQL_DATABASE_HOST', default='db'),
     'PORT': env('MYSQL_DATABASE_PORT', default=3306),
+    'OPTIONS': {
+        'charset': 'utf8mb4'
+    }
 }
 if IS_LOCAL:
     db_config['USER'] = 'root'

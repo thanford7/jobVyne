@@ -360,6 +360,8 @@ class EmployerReferralRequestView(JobVyneAPIView):
                         'is_exclude_final_message': True
                     },
                     html_body_content=email_body,
+                    employer=referral_request.employer,
+                    is_include_jobvyne_subject=False,
                     message_thread=referral_request_message_thread
                 )
         
@@ -961,6 +963,7 @@ class EmployerUserView(JobVyneAPIView):
         )
         user.user_type_bits = user_type_bits
         user.save()
+        # TODO: Send an onboarding welcome email to user
         UserView.send_email_verification_email(request, user, 'email')
         
         user_full_name = f'{user.first_name} {user.last_name}'
