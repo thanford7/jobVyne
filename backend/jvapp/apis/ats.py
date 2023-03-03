@@ -317,13 +317,16 @@ class GreenhouseAts(BaseAts):
         jobs = self.get_paginated_data(self.jobs_url, {
             'status': 'open'
         })
+        filtered_jobs = []
         for job in jobs:
-            post = posts.get(job['id'])
-            if not post:
+            if job['confidential']:
+                continue
+            if not (post := posts.get(job['id'])):
                 continue
             job['content'] = post['content']
             job['questions'] = post['questions']
-        return [job for job in jobs if not job['confidential']]
+            filtered_jobs.append(job)
+        return filtered_jobs
     
     def get_job_posts(self):
         return self.get_paginated_data(
