@@ -85,57 +85,6 @@
               <q-item class="bg-hover-gray-100">
                 <q-item-section>
                   <div class="text-bold">
-                    <q-icon name="assignment" color="grey-7"/>
-                    Add your personal link to your LinkedIn profile
-                  </div>
-                  <ul class="q-mb-none">
-                    <li>Click the LinkedIn image in the "Quick links" section below to copy your unique link</li>
-                    <li>Navigate to your profile on <a href="https://www.linkedin.com" target="_blank">LinkedIn</a></li>
-                    <li>Add your unique link in one or more of the following places:</li>
-                    <ul>
-                      <li>
-                        Website link at the top of profile |
-                        <a href="#" @click.prevent="openImageExplainer([
-                          '/images/employee-get-started/websiteLink1.png',
-                          '/images/employee-get-started/websiteLink2.png'
-                        ])"
-                        >
-                          show how to
-                        </a>
-                      </li>
-                      <li>
-                        Link in Experience section |
-                        <a href="#" @click.prevent="openImageExplainer([
-                          '/images/employee-get-started/Experience1.png',
-                          '/images/employee-get-started/Experience2.png',
-                          '/images/employee-get-started/Experience3.png',
-                          '/images/employee-get-started/Experience4.png',
-                          '/images/employee-get-started/Experience5.png',
-                          '/images/employee-get-started/Experience6.png'
-                        ])"
-                        >
-                          show how to
-                        </a>
-                      </li>
-                      <li>
-                        Link in your Featured section |
-                        <a href="#" @click.prevent="openImageExplainer([
-                          '/images/employee-get-started/Featured1.png',
-                          '/images/employee-get-started/Featured2.png',
-                          '/images/employee-get-started/Featured3.png',
-                          '/images/employee-get-started/Featured4.png'
-                        ])"
-                        >
-                          show how to
-                        </a>
-                      </li>
-                    </ul>
-                  </ul>
-                </q-item-section>
-              </q-item>
-              <q-item class="bg-hover-gray-100">
-                <q-item-section>
-                  <div class="text-bold">
                     <q-icon v-if="userEmployeeChecklist.has_connected_linkedin" name="check_circle" color="positive"/>
                     <q-icon v-else name="assignment" color="negative"/>
                     Connect your LinkedIn account
@@ -313,14 +262,16 @@ export default {
       return referralLinks.find((link) => link.is_default)
     },
     hasCompletedChecklist () {
-      return [
-        this.userEmployeeChecklist.is_email_verified,
-        this.userEmployeeChecklist.is_email_employer_permitted || this.userEmployeeChecklist.has_secondary_email,
-        !this.userEmployeeChecklist.has_secondary_email || this.userEmployeeChecklist.is_business_email_verified,
-        this.userEmployeeChecklist.has_updated_profile,
-        this.userEmployeeChecklist.has_connected_linkedin,
-        this.userEmployeeChecklist.has_scheduled_auto_post
-      ].every((val) => val)
+      return false
+      // TODO: For testing only reset when done
+      // return [
+      //   this.userEmployeeChecklist.is_email_verified,
+      //   this.userEmployeeChecklist.is_email_employer_permitted || this.userEmployeeChecklist.has_secondary_email,
+      //   !this.userEmployeeChecklist.has_secondary_email || this.userEmployeeChecklist.is_business_email_verified,
+      //   this.userEmployeeChecklist.has_updated_profile,
+      //   this.userEmployeeChecklist.has_connected_linkedin,
+      //   this.userEmployeeChecklist.has_scheduled_auto_post
+      // ].every((val) => val)
     }
   },
   watch: {
