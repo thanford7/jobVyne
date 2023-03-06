@@ -197,5 +197,7 @@ class EmployerJobSubscriptionJobView(JobVyneAPIView):
     
     @staticmethod
     def get_combined_job_subscription_filter(job_subscriptions):
+        if not job_subscriptions:
+            return None
         job_filters = [js.get_job_filter() for js in job_subscriptions]
-        return reduce(lambda total, jf: total | jf, job_filters, None)
+        return reduce(lambda total, jf: total | jf, job_filters)
