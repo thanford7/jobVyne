@@ -20,7 +20,7 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.serializers.user import get_serialized_user
-from jvapp.tasks import add, task_run_job_scrapers
+from jvapp.tasks import task_run_job_scrapers
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT

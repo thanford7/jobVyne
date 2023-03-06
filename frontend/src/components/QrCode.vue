@@ -26,7 +26,6 @@ export default {
       const canvas = this.$refs.canvas
       QRCode.toCanvas(canvas, this.qrValue, function (error) {
         if (error) console.error(error)
-        console.log('success!')
       })
     }
   },

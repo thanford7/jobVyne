@@ -11,10 +11,7 @@ app.conf.update(
     result_expires=3600,
 )
 
+# app.conf.task_routes = {'jvapp.tasks.*': {'queue': 'feeds'}}
+
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
-
-
-@app.task(bind=True, ignore_result=True)
-def debug_task(self):
-    print(f'Request: {self.request!r}')
