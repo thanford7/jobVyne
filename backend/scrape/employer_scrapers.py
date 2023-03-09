@@ -1,4 +1,4 @@
-from scrape.base_scrapers import BambooHrScraper, GreenhouseScraper, WorkdayScraper
+from scrape.base_scrapers import BambooHrScraper, GreenhouseIframeScraper, GreenhouseScraper, WorkdayScraper
 
 
 class BlueOriginScraper(WorkdayScraper):
@@ -28,16 +28,9 @@ class InvenergyScraper(WorkdayScraper):
         await self.wait_for_el(page, 'div[data-automation-id="Department / Area-checkboxgroup"] label')
         
 
-class GuildEducationScraper(GreenhouseScraper):
-    IS_JS_REQUIRED = True
+class GuildEducationScraper(GreenhouseIframeScraper):
     employer_name = 'Guild Education'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=guildeducation&b=https%3A%2F%2Fwww.guildeducation.com%2Fabout-us%2Fcareers%2Fopen-positions%2F'
-    job_item_page_wait_sel = None
-    
-    async def do_job_page_js(self, page):
-        html_dom = await self.get_page_html(page)
-        iframe_url = html_dom.xpath('//*[@id="grnhse_iframe"]/@src').get()
-        await page.goto(iframe_url)
         
         
 class TechcyteScraper(BambooHrScraper):
@@ -45,10 +38,10 @@ class TechcyteScraper(BambooHrScraper):
     start_url = 'https://techcyte.bamboohr.com/careers'
     
     
-class TheMxGroupScraper(GreenhouseScraper):
+class TheMxGroupScraper(GreenhouseIframeScraper):
     employer_name = 'The MX Group'
-    start_url = 'https://www.themxgroup.com/careers/job-openings/'
-        
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=themxgroup&b=https%3A%2F%2Fwww.themxgroup.com%2Fcareers%2Fjob-openings%2F'
+
         
 class TransactionNetworkServicesScraper(WorkdayScraper):
     employer_name = 'Transaction Network Services'
@@ -69,17 +62,16 @@ class ZelisScraper(WorkdayScraper):
     employer_name = 'Zelis'
     start_url = 'https://zelis.wd1.myworkdayjobs.com/ZelisCareers'
     
-
+# BlueOriginScraper.employer_name: BlueOriginScraper,
 all_scrapers = {
-    # BlueOriginScraper.employer_name: BlueOriginScraper,
-    # ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
-    # EverCommerceScraper.employer_name: EverCommerceScraper,
-    # InvenergyScraper.employer_name: InvenergyScraper,
-    # GuildEducationScraper.employer_name: GuildEducationScraper,
-    # TechcyteScraper.employer_name: TechcyteScraper,
-    # TheMxGroupScraper.employer_name: TheMxGroupScraper, # NOT WORKING
-    # TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
-    # WaystarScraper.employer_name: WaystarScraper,
-    # YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper
+    ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
+    EverCommerceScraper.employer_name: EverCommerceScraper,
+    InvenergyScraper.employer_name: InvenergyScraper,
+    GuildEducationScraper.employer_name: GuildEducationScraper,
+    TechcyteScraper.employer_name: TechcyteScraper,
+    TheMxGroupScraper.employer_name: TheMxGroupScraper,
+    TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
+    WaystarScraper.employer_name: WaystarScraper,
+    YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper,
     ZelisScraper.employer_name: ZelisScraper
 }

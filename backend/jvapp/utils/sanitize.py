@@ -55,9 +55,13 @@ def font_weight_sanitizer(element):
     font_weight = _get_style_value(element, 'font-weight')
     if font_weight is None:
         return element
-    font_weight = int(font_weight)
-    if font_weight >= 400:
-        element.tag = 'strong'
+    try:
+        font_weight = int(font_weight)
+        if font_weight >= 400:
+            element.tag = 'strong'
+    except ValueError:
+        if font_weight in ('bold', 'bolder'):
+            element.tag = 'strong'
     
     return element
 

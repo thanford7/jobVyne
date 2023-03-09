@@ -50,6 +50,7 @@ class JobProcessor:
                     job.save()
             employer.has_job_scraper = True
             employer.last_job_scrape_success_dt = timezone.now()
+            employer.has_job_scrape_failure = False
             employer.save()
     
     def process_jobs(self, job_items):

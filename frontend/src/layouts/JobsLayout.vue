@@ -226,7 +226,7 @@
                             <div
                               :id="`job-description-${job.id}`"
                               class="q-px-sm q-pt-sm"
-                              :style="(job.isShowFullDescription) ? '' : 'max-height: 300px; overflow: hidden;'"
+                              :style="(job.isShowFullDescription) ? '' : 'max-height: 100px; overflow: hidden;'"
                               v-html="formUtil.sanitizeHtml(job.job_description)"
                             ></div>
                             <template

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 import requests
+from celery import shared_task
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
@@ -158,6 +159,9 @@ class BaseAts:
         raise NotImplementedError()
     
     def get_candidate_key(self, application_key):
+        raise NotImplementedError()
+
+    def refresh_ats_credentials(self):
         raise NotImplementedError()
     
     def save_jobs(self, jobs):
@@ -518,6 +522,11 @@ class GreenhouseAts(BaseAts):
     
     def parse_datetime_str(self, dt, as_date=False):
         return get_datetime_or_none(dt, format=self.datetime_format, as_date=as_date)
+    
+    def refresh_ats_credentials(self):
+        # Greenhouse authentication is managed by API key so there is
+        # no need to refresh credentials
+        return True
 
 
 class LeverAts(BaseAts):
@@ -743,6 +752,10 @@ class LeverAts(BaseAts):
         for webhook_key in ('webhook_stage_change_key', 'webhook_archive_key', 'webhook_hire_key', 'webhook_delete_key'):
             if key := getattr(self.ats_cfg, webhook_key):
                 self.get_data(REQUEST_FN_DELETE, f'webhooks/{key}')
+
+    def refresh_ats_credentials(self):
+        LeverOauthTokenView.refresh_access_token(self.ats_cfg)
+        return True
     
     @staticmethod
     def get_formatted_job_description(description_content):
@@ -828,7 +841,7 @@ class AtsBaseView(JobVyneAPIView):
             return get_error_response('An ATS connection does not exist')
 
         self.ats_api = get_ats_api(self.ats_cfg)
-
+        
 
 class AtsJobsView(AtsBaseView):
     
