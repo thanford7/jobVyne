@@ -640,14 +640,14 @@ class EmployerJobView(JobVyneAPIView):
         jobs = EmployerJob.objects \
             .select_related('job_department', 'employer', 'referral_bonus_currency') \
             .prefetch_related(
-            'locations',
-            'locations__city',
-            'locations__state',
-            'locations__country'
-        ) \
+                'locations',
+                'locations__city',
+                'locations__state',
+                'locations__country'
+            ) \
             .filter(employer_job_filter) \
             .distinct() \
-            .order_by(order_by)
+            .order_by(order_by, 'id')
         
         if employer_job_id:
             if not jobs:

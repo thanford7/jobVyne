@@ -317,7 +317,7 @@ else:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Logging
-LOG_LEVEL = env('LOG_LEVEL', default=None) or 'DEBUG' if DEBUG else 'WARNING'
+LOG_LEVEL = env('LOG_LEVEL', default='DEBUG' if DEBUG else 'WARNING')
 print(f'Log level: {LOG_LEVEL}')
 LOGGING = {
     'version': 1,

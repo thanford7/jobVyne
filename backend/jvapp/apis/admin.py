@@ -113,9 +113,9 @@ class AdminJobScrapersView(JobVyneAPIView):
         is_run_all = self.data.get('is_run_all')
         if not (employer_names or is_run_all):
             return Response('You must provide a list of employer names', status=status.HTTP_400_BAD_REQUEST)
-        # run_job_scrapers(employer_names=None if is_run_all else employer_names)
-        res = task_run_job_scrapers.delay(employer_names=employer_names)
-        logger.info(f'Sent add task: ID = {res.id}')
+        run_job_scrapers(employer_names=None if is_run_all else employer_names)
+        # res = task_run_job_scrapers.delay(employer_names=employer_names)
+        # logger.info(f'Sent add task: ID = {res.id}')
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully kicked off job scraper'
         })

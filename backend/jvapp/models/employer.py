@@ -164,7 +164,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         ONCE = 'once'
     
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
-    job_title = models.CharField(max_length=100)
+    job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True, blank=True)
     job_department = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
     open_date = models.DateField(null=True, blank=True)

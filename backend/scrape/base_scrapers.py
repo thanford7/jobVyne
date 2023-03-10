@@ -30,10 +30,11 @@ def normalize_url(url):
 
 
 class Scraper:
-    MAX_CONCURRENT_PAGES = 30
+    MAX_CONCURRENT_PAGES = 10
     IS_JS_REQUIRED = False
     DEFAULT_JOB_DEPARTMENT = 'General'
     DEFAULT_EMPLOYMENT_TYPE = 'Full Time'
+    TEST_REDIRECT = True
     start_url = None
     employer_name = None
     job_item_page_wait_sel = None
@@ -61,12 +62,13 @@ class Scraper:
         error = None
         
         logger.info(f'Attempting to visit: {url}')
+        logger.info(f'Number of open pages: {len(self.browser.pages)}')
         while retries < (max_retries + 1):
             page = await self.browser.new_page()
             try:
                 await page.goto(url)
-                if normalize_url(page.url) != normalize_url(url):
-                    logger.error('Page was redirected. Trying to reload page')
+                if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
+                    logger.info('Page was redirected. Trying to reload page')
                     retries += 1
                     await page.close()
                     await asyncio.sleep(1)
@@ -136,11 +138,11 @@ class Scraper:
                 return page
             except PlaywrightTimeoutError as e:
                 retries += 1
-                logger.error(f'Could not find selector {selector} in: {page.url}')
+                logger.info(f'Could not find selector {selector} in: {page.url}')
                 if retries > max_retries:
-                    logger.error(f'Retries ({retries}) exceeded max retries ({max_retries})')
+                    logger.info(f'Retries ({retries}) exceeded max retries ({max_retries})')
                     page_content = await page.content()
-                    logger.error(page_content)
+                    logger.info(page_content)
                     raise e
                 logger.info('Retrying visiting page')
                 page = await self.visit_page_with_retry(page.url)
@@ -318,6 +320,7 @@ class BambooHrScraper(Scraper):
 
 
 class GreenhouseScraper(Scraper):
+    TEST_REDIRECT = False
     job_item_page_wait_sel = '#header'
     
     async def scrape_jobs(self):
@@ -358,6 +361,7 @@ class GreenhouseScraper(Scraper):
     
     
 class GreenhouseIframeScraper(GreenhouseScraper):
+    TEST_REDIRECT = False
     IS_JS_REQUIRED = True
     job_item_page_wait_sel = None
     
@@ -557,3 +561,44 @@ class WorkdayScraper(Scraper):
         if not job_hrefs:
             return None
         return job_hrefs[0]
+
+
+class LeverScraper(Scraper):
+    TEST_REDIRECT = False
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html_from_url(self.start_url)
+        
+        for department_section in html_dom.xpath('//div[@class="postings-wrapper"]//div[@class="postings-group"]'):
+            department = department_section.xpath('.//div[contains(@class, "posting-category-title")]/text()').get()
+            job_links = department_section.xpath('.//div[@class="posting"]//a/@href').getall()
+            await self.add_job_links_to_queue(job_links, meta_data={'job_department': department})
+        
+        await self.close()
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        headline = html.xpath('//div[@class="posting-headline"]')
+        location = html.xpath('//div[contains(@class, "location")]/text()').get().replace('/', '').strip()
+        employment_type = html.xpath('//div[contains(@class, "commitment")]/text()').get()
+        employment_type = employment_type.replace('/', '').strip() if employment_type else None
+        description_wrapper = html.xpath('//div[@class="content"]//div[contains(@class, "section-wrapper")][2]')
+        description_sections = description_wrapper.xpath('.//div[contains(@class, "section") and not(contains(@class, "last-section-apply"))]').getall()
+        description = ''
+        for section in description_sections:
+            description += section
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=headline.xpath('//h2/text()').get(),
+            locations=[location],
+            job_department=job_department,
+            job_description=description,
+            employment_type=employment_type,
+            first_posted_date=standard_job_item.first_posted_date,
+            salary_currency=standard_job_item.salary_currency,
+            salary_floor=standard_job_item.salary_floor,
+            salary_ceiling=standard_job_item.salary_ceiling,
+            salary_interval=standard_job_item.salary_interval
+        )

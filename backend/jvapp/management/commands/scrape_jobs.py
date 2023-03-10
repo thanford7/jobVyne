@@ -2,7 +2,7 @@ from time import sleep
 
 from django.core.management import BaseCommand
 
-from scraper.scraper.runSpiders import run_crawlers
+from scrape.scraper import run_job_scrapers
 
 
 class Command(BaseCommand):
@@ -21,9 +21,9 @@ class Command(BaseCommand):
         if schedule_minutes:
             while True:
                 writer('Running job scraping')
-                run_crawlers()
+                run_job_scrapers(employer_names=None)
                 writer(f'Waiting {schedule_minutes} minutes for next run')
                 sleep(schedule_minutes * 60)
         else:
-            run_crawlers()
-            self.stdout.write(self.style.SUCCESS('Completed scrapy job data'))
+            run_job_scrapers(employer_names=None)
+            self.stdout.write(self.style.SUCCESS('Completed scraping job data'))
