@@ -25,11 +25,15 @@ def generate_user_token(user, user_key, timestamp=None):
     ).hexdigest()[
                   ::2
                   ]  # Limit to shorten the URL.
-    return f'{ts_b36}-{user_key}-{hash_string}'
+    if user_key:
+        return f'{ts_b36}-{user_key}-{hash_string}'
+    return f'{ts_b36}-{hash_string}'
 
 
 def make_hash_value(user, user_key, timestamp):
-    return f'{user.pk}{timestamp}{getattr(user, user_key)}'
+    if user_key:
+        return f'{user.pk}{timestamp}{getattr(user, user_key)}'
+    return f'{user.pk}{timestamp}'
 
 
 def get_user_key_from_token(token):
@@ -40,10 +44,15 @@ def check_user_token(user, token):
 
     if not (user and token):
         return False
+
     # Parse the token
-    try:
-        ts_b36, user_key, _ = token.split("-")
-    except ValueError:
+    token_bits = token.split("-")
+    if len(token_bits) == 2:
+        ts_b36 = token_bits[0]
+        user_key = None
+    elif len(token_bits) == 3:
+        ts_b36, user_key, _ = token_bits
+    else:
         return False
     
     try:

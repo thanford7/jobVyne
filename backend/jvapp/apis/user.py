@@ -1,6 +1,7 @@
 from collections import defaultdict
 from string import Template
 
+from django.conf import settings
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import IntegrityError
@@ -39,7 +40,7 @@ class UserView(JobVyneAPIView):
         if user_id:
             user = self.get_user(self.user, user_id=user_id)
             return Response(status=status.HTTP_200_OK, data=get_serialized_user(user))
-
+        
         employer_id = self.query_params.get('employer_id')
         search_text = self.query_params.get('search')
         if any([employer_id, search_text]):
@@ -51,7 +52,7 @@ class UserView(JobVyneAPIView):
                 user_filter |= Q(lastName__iregex=f'^.*{search_text}.*$')
                 user_filter |= Q(email__iregex=f'^.*{search_text}.*$')
                 users = self.get_user(self.user, user_filter=user_filter)
-                
+            
             return Response(status=status.HTTP_200_OK, data=[get_serialized_user(u) for u in users])
         
         return Response('Please provide a user ID or search text', status=status.HTTP_400_BAD_REQUEST)
@@ -73,9 +74,10 @@ class UserView(JobVyneAPIView):
             user = JobVyneUser.objects.create_user(email, password=password, **extra_user_props)
         except IntegrityError:
             return Response(status=status.HTTP_200_OK, data={
-                WARNING_MESSAGES_KEY: [f'User with email address <{email}> already exists. Login or reset your password.']
+                WARNING_MESSAGES_KEY: [
+                    f'User with email address <{email}> already exists. Login or reset your password.']
             })
-
+        
         # User wasn't created through social auth so we need to verify their email
         self.send_email_verification_email(request, user, 'email')
         return Response(status=status.HTTP_200_OK, data={
@@ -90,7 +92,8 @@ class UserView(JobVyneAPIView):
         # Make sure business email is not a duplicate
         new_business_email = self.data.get('business_email')
         if new_business_email and new_business_email == user.email:
-            return Response('Business email cannot be the same as your personal email', status=status.HTTP_400_BAD_REQUEST)
+            return Response('Business email cannot be the same as your personal email',
+                            status=status.HTTP_400_BAD_REQUEST)
         
         # Reset email verification if this is a new email
         if new_business_email != user.business_email:
@@ -112,12 +115,12 @@ class UserView(JobVyneAPIView):
         
         if profile_picture := self.files.get('profile_picture'):
             user.profile_picture = profile_picture[0]
-            
+        
         if home_location_text := self.data.get('home_location_text'):
             location_parser = LocationParser()
             location = location_parser.get_location(home_location_text)
             user.home_location = location
-
+        
         user.save()
         
         if responses := self.data.get('profile_questions'):
@@ -150,20 +153,20 @@ class UserView(JobVyneAPIView):
         users = JobVyneUser.objects \
             .select_related('employer') \
             .prefetch_related(
-                'application_template',
-                'employer_permission_group',
-                'employer_permission_group__employer',
-                'employer_permission_group__permission_group',
-                'employer_permission_group__permission_group__permissions',
-                'profile_response',
-                'profile_response__question'
-            ) \
+            'application_template',
+            'employer_permission_group',
+            'employer_permission_group__employer',
+            'employer_permission_group__permission_group',
+            'employer_permission_group__permission_group__permissions',
+            'profile_response',
+            'profile_response__question'
+        ) \
             .annotate(is_approval_required=Count(
-                'employer_permission_group',
-                # Note this does not differentiate between different employers
-                # It's possible that a user needs permission from one employer, but not another
-                filter=Q(employer_permission_group__is_employer_approved=False)
-            )) \
+            'employer_permission_group',
+            # Note this does not differentiate between different employers
+            # It's possible that a user needs permission from one employer, but not another
+            filter=Q(employer_permission_group__is_employer_approved=False)
+        )) \
             .filter(user_filter)
         
         if is_check_permission:
@@ -190,16 +193,25 @@ class UserView(JobVyneAPIView):
                 last_name=data['last_name'],
                 employer_id=data['employer_id'],
             ), True
-
+    
     @staticmethod
-    def send_password_reset_email(request, email, email_cfg):
-        reset_form = JobVynePasswordResetForm({'email': email})
-        assert reset_form.is_valid()
-        reset_form.save(
-            request=request,
-            **email_cfg
-        )
+    def send_password_reset_email(user, is_new=False):
         
+        uid = get_uid_from_user(user)
+        token = generate_user_token(user, 'email')
+        reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
+        send_django_email(
+            'Reset Password',
+            'emails/base_reset_password_email.html',
+            to_email=user.email,
+            django_context={
+                'supportEmail': EMAIL_ADDRESS_SUPPORT,
+                'reset_password_url': reset_password_url,
+                'is_new': is_new
+            },
+            is_tracked=False
+        )
+
     @staticmethod
     def send_email_verification_email(request, user, email_key):
         current_site = get_current_site(request)
@@ -216,16 +228,16 @@ class UserView(JobVyneAPIView):
             },
             is_tracked=False
         )
-        
-        
+
+
 class UserProfileView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
     def get(self, request, user_id):
         user = UserView.get_user(self.user, user_id=user_id, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data=get_serialized_user_profile(user))
-        
-        
+
+
 class UserFileView(JobVyneAPIView):
     
     def get(self, request):
@@ -275,7 +287,7 @@ class UserFileView(JobVyneAPIView):
     @staticmethod
     def get_user_files(user_id):
         return UserFile.objects.filter(user_id=user_id)
-
+    
     @staticmethod
     @atomic
     def update_user_file(user_file, data, user, file=None):
@@ -283,21 +295,21 @@ class UserFileView(JobVyneAPIView):
             'user_id': None,
             'title': None
         })
-    
+        
         if file:
             user_file.file = file
-    
+        
         user_file.title = (
                 user_file.title
                 or getattr(file, 'name', None)
                 or user_file.file.name.split('/')[-1]
         )
-    
+        
         permission_type = PermissionTypes.EDIT.value if user_file.id else PermissionTypes.CREATE.value
         user_file.jv_check_permission(permission_type, user)
         user_file.save()
-        
-        
+
+
 class UserEmailVerificationGenerateView(JobVyneAPIView):
     
     @atomic
@@ -316,8 +328,8 @@ class UserEmailVerificationGenerateView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'Verification email sent to {email}'
         })
-        
-        
+
+
 class UserEmailVerificationView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
@@ -346,8 +358,8 @@ class UserEmailVerificationView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{getattr(user, email_key)} successfully verified'
         })
-    
-    
+
+
 class UserSocialCredentialsView(JobVyneAPIView):
     
     def get(self, request):
@@ -366,8 +378,8 @@ class UserSocialCredentialsView(JobVyneAPIView):
                 'expiration_dt': get_datetime_format_or_none(cred.expiration_dt)
             })
         return Response(status=status.HTTP_200_OK, data=data)
-    
-    
+
+
 class UserEmployeeProfileQuestionsView(JobVyneAPIView):
     
     def get(self, request):
@@ -387,8 +399,8 @@ class UserEmployeeProfileQuestionsView(JobVyneAPIView):
                 'response': user_responses.get(question.id)
             })
         return Response(status=status.HTTP_200_OK, data=formatted_questions)
-    
-    
+
+
 class UserEmployeeChecklistView(JobVyneAPIView):
     
     def get(self, request, user_id):
@@ -406,8 +418,8 @@ class UserEmployeeChecklistView(JobVyneAPIView):
         social_credentials = UserSocialCredential.objects.filter(user_id=user_id).values_list('provider', flat=True)
         data['has_connected_linkedin'] = OauthProviders.linkedin.value in social_credentials
         return Response(status=status.HTTP_200_OK, data=data)
-    
-    
+
+
 class FeedbackView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
@@ -436,18 +448,3 @@ class FeedbackView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Thanks for your message. An email has been sent to our support team and we will follow up with you if necessary.'
         })
-
-
-class JobVynePasswordResetForm(PasswordResetForm):
-
-    def send_mail(self, subject_template_name, email_template_name,
-                  context, from_email, to_email, html_email_template_name=None):
-        subject = context.get('subject', 'Reset Password')
-        subject = ''.join(subject.splitlines())
-        send_django_email(
-            subject,
-            'emails/base_reset_password_email.html',
-            to_email=to_email,
-            django_context=context,
-            is_tracked=False
-        )

@@ -160,12 +160,7 @@ class AdminEmployerView(JobVyneAPIView):
         self.assign_employer_admin_permission(user, employer)
         
         # Send welcome email to owner
-        UserView.send_password_reset_email(request, user.email, {
-            'extra_email_context': {
-                'supportEmail': EMAIL_ADDRESS_SUPPORT,
-                'isNew': True
-            }
-        })
+        UserView.send_password_reset_email(user, is_new=True)
         
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Employer successfully created'

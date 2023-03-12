@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from social_django.utils import load_strategy, psa
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.user import UserView
 from jvapp.models import JobVyneUser
 from jvapp.models.user import UserSocialCredential
@@ -289,11 +289,11 @@ class PasswordResetGenerateView(APIView):
     
     def post(self, request):
         email = request.data['email']
-        UserView.send_password_reset_email(request, email, {
-            'extra_email_context': {
-                'supportEmail': EMAIL_ADDRESS_SUPPORT,
-            }
-        })
+        try:
+            user = JobVyneUser.objects.get(email=email)
+        except JobVyneUser.DoesNotExist:
+            return get_error_response('No user with this email exists')
+        UserView.send_password_reset_email(user)
         return Response(status=HTTPStatus.OK, data={
             SUCCESS_MESSAGE_KEY: f'Password reset email sent to {email}'
         })

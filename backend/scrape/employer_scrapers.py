@@ -12,9 +12,21 @@ class BlueOriginScraper(WorkdayScraper):
     start_url = 'https://blueorigin.wd5.myworkdayjobs.com/BlueOrigin'
     
     
+class CHGHealthcareScraper(WorkdayScraper):
+    employer_name = 'CHG Healthcare'
+    start_url = 'https://chghealthcare.wd1.myworkdayjobs.com/External'
+    job_department_data_automation_id = 'jobFamily'
+    job_department_form_data_automation_id = 'jobFamilyCheckboxGroup'
+    
+    
 class ClipboardHealthScraper(GreenhouseScraper):
     employer_name = 'Clipboard Health'
     start_url = 'https://boards.greenhouse.io/clipboardhealth'
+    
+    
+class ClozdScraper(LeverScraper):
+    employer_name = 'Clozd'
+    start_url = 'https://jobs.lever.co/Clozd'
     
     
 class DevotedHealthScraper(WorkdayScraper):
@@ -25,6 +37,11 @@ class DevotedHealthScraper(WorkdayScraper):
 class EverCommerceScraper(WorkdayScraper):
     employer_name = 'EverCommerce'
     start_url = 'https://evercommerce.wd1.myworkdayjobs.com/EverCommerce_Careers'
+    
+    
+class FICOScraper(WorkdayScraper):
+    employer_name = 'FICO'
+    start_url = 'https://fico.wd1.myworkdayjobs.com/External'
     
     
 class HealthGorillaScraper(GreenhouseIframeScraper):
@@ -49,6 +66,16 @@ class GuildEducationScraper(GreenhouseIframeScraper):
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=guildeducation&b=https%3A%2F%2Fwww.guildeducation.com%2Fabout-us%2Fcareers%2Fopen-positions%2F'
 
 
+class LiveViewTechnologiesScraper(BambooHrScraper):
+    employer_name = 'LiveView Technologies'
+    start_url = 'https://lvt.bamboohr.com/careers'
+
+
+class LucidSoftwareScraper(GreenhouseScraper):
+    employer_name = 'Lucid Software'
+    start_url = 'https://boards.greenhouse.io/lucidsoftware'
+
+
 class NylasScraper(GreenhouseScraper):
     employer_name = 'Nylas'
     start_url = 'https://boards.greenhouse.io/nylas'
@@ -67,11 +94,21 @@ class RecursionScraper(GreenhouseIframeScraper):
 class RegrowScraper(LeverScraper):
     employer_name = 'Regrow'
     start_url = 'https://jobs.lever.co/regrow.ag'
+    
+    
+class RoScraper(LeverScraper):
+    employer_name = 'Ro'
+    start_url = 'https://jobs.lever.co/ro'
 
         
 class TechcyteScraper(BambooHrScraper):
     employer_name = 'Techcyte'
     start_url = 'https://techcyte.bamboohr.com/careers'
+    
+    
+class TendoScraper(LeverScraper):
+    employer_name = 'Tendo'
+    start_url = 'https://jobs.lever.co/tendo'
     
     
 class TheMxGroupScraper(GreenhouseIframeScraper):
@@ -84,9 +121,19 @@ class TransactionNetworkServicesScraper(WorkdayScraper):
     start_url = 'https://tnsi.wd1.myworkdayjobs.com/Search'
     
     
+class VasionScraper(BambooHrScraper):
+    employer_name = 'Vasion'
+    start_url = 'https://printerlogic.bamboohr.com/jobs/'
+    
+    
 class VerkadaScraper(LeverScraper):
     employer_name = 'Verkada'
     start_url = 'https://jobs.lever.co/verkada/'
+    
+    
+class VivianHealthScraper(GreenhouseScraper):
+    employer_name = 'Vivian Health'
+    start_url = 'https://boards.greenhouse.io/vivian'
     
     
 class WaystarScraper(WorkdayScraper):
@@ -105,22 +152,31 @@ class ZelisScraper(WorkdayScraper):
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 all_scrapers = {
-    BenevityScraper.employer_name: BenevityScraper,
-    ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
-    DevotedHealthScraper.employer_name: DevotedHealthScraper,
-    EverCommerceScraper.employer_name: EverCommerceScraper,
-    InvenergyScraper.employer_name: InvenergyScraper,
-    HealthGorillaScraper.employer_name: HealthGorillaScraper,
-    GuildEducationScraper.employer_name: GuildEducationScraper,
-    NylasScraper.employer_name: NylasScraper,
-    ProofpointScraper.employer_name: ProofpointScraper,
-    RecursionScraper.employer_name: RecursionScraper,
-    RegrowScraper.employer_name: RegrowScraper,
-    TechcyteScraper.employer_name: TechcyteScraper,
-    TheMxGroupScraper.employer_name: TheMxGroupScraper,
-    TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
-    VerkadaScraper.employer_name: VerkadaScraper,
-    WaystarScraper.employer_name: WaystarScraper,
-    YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper,
-    ZelisScraper.employer_name: ZelisScraper
+    # BenevityScraper.employer_name: BenevityScraper,
+    # CHGHealthcareScraper.employer_name: CHGHealthcareScraper,
+    # ClozdScraper.employer_name: ClozdScraper,
+    # ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
+    # DevotedHealthScraper.employer_name: DevotedHealthScraper,
+    # EverCommerceScraper.employer_name: EverCommerceScraper,
+    # FICOScraper.employer_name: FICOScraper,
+    # InvenergyScraper.employer_name: InvenergyScraper,
+    # HealthGorillaScraper.employer_name: HealthGorillaScraper,
+    # GuildEducationScraper.employer_name: GuildEducationScraper,
+    # LiveViewTechnologiesScraper.employer_name: LiveViewTechnologiesScraper,
+    # LucidSoftwareScraper.employer_name: LucidSoftwareScraper,
+    # NylasScraper.employer_name: NylasScraper,
+    # ProofpointScraper.employer_name: ProofpointScraper,
+    # RecursionScraper.employer_name: RecursionScraper,
+    # RegrowScraper.employer_name: RegrowScraper,
+    # RoScraper.employer_name: RoScraper,
+    # TechcyteScraper.employer_name: TechcyteScraper,
+    # TendoScraper.employer_name: TendoScraper,
+    # TheMxGroupScraper.employer_name: TheMxGroupScraper,
+    # TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
+    VasionScraper.employer_name: VasionScraper,
+    # VerkadaScraper.employer_name: VerkadaScraper,
+    # VivianHealthScraper.employer_name: VivianHealthScraper,
+    # WaystarScraper.employer_name: WaystarScraper,
+    # YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper,
+    # ZelisScraper.employer_name: ZelisScraper
 }

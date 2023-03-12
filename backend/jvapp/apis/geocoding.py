@@ -50,8 +50,11 @@ class LocationParser:
             'key': settings.GOOGLE_MAPS_KEY
         })
         raw_data = json.loads(resp.content)
-        data = self.parse_location_resp(raw_data)
-        if not data:
+        data = self.parse_location_resp(raw_data) or {}
+        city_name = data.get('city')
+        state_name = data.get('state')
+        country_name = data.get('country')
+        if not any([city_name, state_name, country_name]):
             try:
                 location = Location.objects.get(text=location_text)
             except Location.DoesNotExist:
@@ -64,9 +67,9 @@ class LocationParser:
             try:
                 location = Location.objects.get(
                     is_remote=is_remote,
-                    city__name=data.get('city'),
-                    state__name=data.get('state'),
-                    country__name=data.get('country')
+                    city__name=city_name,
+                    state__name=state_name,
+                    country__name=country_name
                 )
             except Location.DoesNotExist:
                 latitude = data.get('latitude')
