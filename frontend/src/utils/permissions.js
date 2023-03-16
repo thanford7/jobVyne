@@ -168,6 +168,15 @@ class PagePermissionsUtil {
               return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_REFERRAL_BONUSES)
             }
           },
+          // TODO: Still in development
+          // {
+          //   icon: 'add_business',
+          //   key: 'employer-job-adds',
+          //   label: 'Job Adds',
+          //   emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+          //   // isPermittedViewFn: isUserEmployerFn, TODO: Need to check org type of employer. If group, don't show this tab
+          //   isPermittedFn: isUserEmployerFn
+          // },
           {
             icon: 'link',
             key: 'employer-job-links',

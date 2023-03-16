@@ -205,6 +205,14 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         """
         return job_title, location_ids
     
+    @property
+    def is_remote(self):
+        for location in self.locations.all():
+            if location.is_remote:
+                return True
+            
+        return False
+    
     
 class EmployerReferralRequest(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='referral_request')

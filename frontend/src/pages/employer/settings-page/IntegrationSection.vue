@@ -70,9 +70,6 @@
         </div>
         <div class="col-12">
           <q-btn label="Update jobs" color="primary" @click="updateJobs" :loading="isFetchingJobs"/>
-          <span v-if="isGoodConnection" class="text-positive">
-          &nbsp;<q-icon name="check_circle"/> Jobs updated successfully
-        </span>
         </div>
       </template>
     </template>
@@ -143,7 +140,6 @@ export default {
       employerStore: useEmployerStore(),
       globalStore: useGlobalStore(),
       q: useQuasar(),
-      isGoodConnection: false,
       isFetchingJobs: false
     }
   },
@@ -188,11 +184,8 @@ export default {
     },
     async updateJobs () {
       this.isFetchingJobs = true
-      const resp = await this.$api.put('ats/jobs/', getAjaxFormData({ ats_id: this.atsData.id }))
+      await this.$api.put('ats/jobs/', getAjaxFormData({ ats_id: this.atsData.id }))
       this.isFetchingJobs = false
-      if (resp.status === 200) {
-        this.isGoodConnection = true
-      }
     },
     // Greenhouse
     showGreenhouseUserDialog () {

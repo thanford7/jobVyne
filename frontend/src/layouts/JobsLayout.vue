@@ -187,30 +187,7 @@
                               <q-chip color="grey-7" text-color="white" size="md" icon="domain">
                                 {{ job.job_department }}
                               </q-chip>
-                              <template v-if="job.locations.length > 1">
-                                <CustomTooltip>
-                                  <template v-slot:icon>
-                                    <q-chip
-                                      color="grey-7" text-color="white" size="md" icon="place"
-                                    >
-                                      Multiple locations&nbsp;
-                                      <span v-if="utilStore.isMobile">(press to view)</span>
-                                      <span v-else>(hover to view)</span>
-                                    </q-chip>
-                                  </template>
-                                  <ul>
-                                    <li v-for="location in job.locations">
-                                      {{ getFullLocation(location) }}
-                                    </li>
-                                  </ul>
-                                </CustomTooltip>
-                              </template>
-                              <q-chip
-                                v-else-if="job.locations.length"
-                                color="grey-7" text-color="white" size="md" icon="place"
-                              >
-                                {{ getFullLocation(job.locations[0]) }}
-                              </q-chip>
+                              <LocationChip :locations="job.locations" icon="place"/>
                               <q-chip v-if="job.is_remote" color="grey-7" text-color="white" size="md" icon="laptop">
                                 Remote
                               </q-chip>
@@ -351,7 +328,6 @@
 
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
-import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import DialogLogin from 'components/dialogs/DialogLogin.vue'
@@ -361,6 +337,7 @@ import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
+import LocationChip from 'components/LocationChip.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form.js'
@@ -418,7 +395,7 @@ export default {
     }
   },
   components: {
-    CustomTooltip,
+    LocationChip,
     EmployerProfile,
     ResponsiveWidth,
     CustomFooter,

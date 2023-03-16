@@ -149,6 +149,7 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
         'job_description': employer_job.job_description,
         'job_department': employer_job.job_department.name if employer_job.job_department else None,
         'job_department_id': employer_job.job_department_id,
+        'is_remote': employer_job.is_remote,
         'open_date': get_datetime_format_or_none(employer_job.open_date),
         'close_date': get_datetime_format_or_none(employer_job.close_date),
         'salary_currency': get_serialized_currency(employer_job.salary_currency),

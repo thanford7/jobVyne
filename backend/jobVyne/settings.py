@@ -48,7 +48,7 @@ else:
     CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com']
 
 SUBDOMAIN = env('SUBDOMAIN', default=None)
-BASE_URL = 'https://localhost' if IS_LOCAL else (f'https://{SUBDOMAIN}.jobvyne.com' if SUBDOMAIN else 'https://jobvyne.com')
+BASE_URL = 'https://localhost' if IS_LOCAL else (f'https://{SUBDOMAIN}.jobvyne.com' if SUBDOMAIN else 'https://app.jobvyne.com')
 API_PATH = 'api/v1/'
 API_URL = f'{BASE_URL}/{API_PATH}'
 
@@ -171,7 +171,7 @@ if frontend_url_override := env('FRONTEND_URL_OVERRIDE', default=None):
 elif IS_LOCAL:
     FRONTEND_URL = 'https://localhost/'
 else:
-    FRONTEND_URL = 'https://jobvyne.com/'
+    FRONTEND_URL = 'https://app.jobvyne.com/'
 
 TEMPLATES = [
     {

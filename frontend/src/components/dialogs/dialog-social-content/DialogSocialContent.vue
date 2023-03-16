@@ -270,7 +270,7 @@ export default {
         {
           name: 'Jobs page link',
           placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK,
-          example: 'www.jobvyne.com/jobs-link/ad8audafdi'
+          example: 'www.app.jobvyne.com/jobs-link/ad8audafdi'
         },
         {
           name: 'Open jobs list',
