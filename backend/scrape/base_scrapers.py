@@ -2,16 +2,20 @@ import asyncio
 import json
 import logging
 import re
+import tempfile
 from datetime import timedelta
 from json import JSONDecodeError
 
 from aiohttp import ClientSession
+from django.conf import settings
 from django.utils import timezone
 from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
+from storages.backends.s3boto3 import S3Boto3Storage
 
 from jvapp.utils.data import capitalize, coerce_float, get_base_url
 from jvapp.utils.datetime import get_datetime_or_none
+from jvapp.utils.file import get_file_storage_engine
 from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
@@ -26,7 +30,7 @@ compensation_data_template = {
 
 def normalize_url(url):
     url_parts = re.split('[/\?]', url)
-    return tuple(part for part in url_parts if part)
+    return tuple(part for part in url_parts if part and ('http' not in part))
 
 
 class Scraper:
@@ -35,6 +39,7 @@ class Scraper:
     DEFAULT_JOB_DEPARTMENT = 'General'
     DEFAULT_EMPLOYMENT_TYPE = 'Full Time'
     TEST_REDIRECT = True
+    PAGE_LOAD_WAIT_EVENT = 'load'
     start_url = None
     employer_name = None
     job_item_page_wait_sel = None
@@ -56,6 +61,23 @@ class Scraper:
     async def get_page(self):
         return await self.browser.new_page()
     
+    async def save_page_info(self, page):
+        logger.info('Saving page info')
+        storage = get_file_storage_engine()
+        employer_name = '_'.join(self.employer_name.split(' '))
+        
+        screenshot_file_path = f'scraper_error/{employer_name}_screenshot_{timezone.now()}.png'
+        screenshot = await page.screenshot(full_page=True)
+        screenshot_file = tempfile.TemporaryFile()
+        screenshot_file.write(screenshot)
+        storage.save(screenshot_file_path, screenshot_file)
+        
+        html_file_path = f'scraper_error/{employer_name}_page_{timezone.now()}.html'
+        page_content = await page.content()
+        html_file = tempfile.TemporaryFile()
+        html_file.write(bytes(page_content, 'utf-8'))
+        storage.save(html_file_path, html_file)
+    
     async def visit_page_with_retry(self, url, max_retries=4):
         # Some browser IPs may not work. If they don't we'll remove the browser and try another
         retries = 0
@@ -63,10 +85,11 @@ class Scraper:
         
         logger.info(f'Attempting to visit: {url}')
         logger.info(f'Number of open pages: {len(self.browser.pages)}')
+        page = None
         while retries < (max_retries + 1):
             page = await self.browser.new_page()
             try:
-                await page.goto(url)
+                await page.goto(url, wait_until=self.PAGE_LOAD_WAIT_EVENT)
                 if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
                     logger.info('Page was redirected. Trying to reload page')
                     retries += 1
@@ -79,7 +102,9 @@ class Scraper:
                 retries += 1
                 await page.close()
                 await asyncio.sleep(1)
-        
+
+        if page:
+            await self.save_page_info(page)
         raise error or ValueError(f'Exceeded max tries while trying to visit: {url}')
         
     async def scrape_jobs(self):
@@ -141,8 +166,7 @@ class Scraper:
                 logger.info(f'Could not find selector {selector} in: {page.url}')
                 if retries > max_retries:
                     logger.info(f'Retries ({retries}) exceeded max retries ({max_retries})')
-                    page_content = await page.content()
-                    logger.info(page_content)
+                    await self.save_page_info(page)
                     raise e
                 logger.info('Retrying visiting page')
                 page = await self.visit_page_with_retry(page.url)
@@ -155,6 +179,14 @@ class Scraper:
             if not job_url:
                 continue
             await self.queue.put((job_url, meta_data))
+            
+    async def close_connections(self, page=None):
+        await self.session.close()
+        if page:
+            await page.close()
+        logger.info('Cancelling job processors')
+        for job_processor in self.job_processors:
+            job_processor.cancel()
     
     async def close(self, page=None):
         if not self.queue.empty():
@@ -165,12 +197,7 @@ class Scraper:
             consumers_raised = set(done) & set(self.job_processors)
             if consumers_raised:
                 await consumers_raised.pop()  # propagate the exception
-        await self.session.close()
-        if page:
-            await page.close()
-        logger.info('Cancelling job processors')
-        for job_processor in self.job_processors:
-            job_processor.cancel()
+        await self.close_connections(page=page)
     
     def get_absolute_url(self, url):
         if not url:
@@ -269,6 +296,8 @@ class Scraper:
     
     
 class BambooHrScraper(Scraper):
+    """ There are two entirely different HTML structures on different BambooHR Sites
+    """
     IS_JS_REQUIRED = True
     job_item_page_wait_sel = '.jss-e8'
     
@@ -313,6 +342,59 @@ class BambooHrScraper(Scraper):
             locations=[job_data.xpath('//span[contains(@class, "jss-e19")]/text()').get()],
             job_department=job_detail_data.get('department', self.DEFAULT_JOB_DEPARTMENT),
             job_description=job_data.xpath('//div[contains(@class, "jss-e21")]').get(),
+            employment_type=job_detail_data.get('employment type', self.DEFAULT_EMPLOYMENT_TYPE),
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
+
+
+class BambooHrScraper2(Scraper):
+    """ There are two entirely different HTML structures on different BambooHR Sites
+    """
+    IS_JS_REQUIRED = True
+    job_item_page_wait_sel = '.ResAts__card'
+    
+    async def scrape_jobs(self):
+        page = await self.get_starting_page()
+        
+        # Make sure page data has loaded
+        try:
+            await self.wait_for_el(page, '#resultDiv')
+        except PlaywrightTimeoutError:
+            page = await self.get_starting_page()
+            await self.wait_for_el(page, '#resultDiv')
+        
+        html_dom = await self.get_page_html(page)
+        # html_dom = await self.get_html_from_url(self.start_url)
+        await self.add_job_links_to_queue(html_dom.xpath('//div[@id="resultDiv"]//ul//meta/@content').getall())
+        await self.close(page=page)
+    
+    def get_job_data_from_html(self, html, job_url=None, **kwargs):
+        job_data = html.xpath('//div[contains(@class, "ResAts__card")]')
+        job_details = html.xpath('//ul[contains(@class, "posInfoList")]//div/text()').getall()
+        job_detail_data = {}
+        content_key = None
+        for content_item in job_details:
+            if not content_item:
+                continue
+            if not content_key:
+                content_key = content_item.lower()
+            else:
+                job_detail_data[content_key] = content_item
+                content_key = None
+        
+        standard_job_item = self.get_google_standard_job_item(html)
+        compensation_data = {**compensation_data_template}
+        if compensation_text := job_detail_data.get('compensation'):
+            compensation_data = self.parse_compensation_text(compensation_text)
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data.xpath('//h2/text()').get(),
+            locations=[job_detail_data.get('location')],
+            job_department=job_detail_data.get('department', self.DEFAULT_JOB_DEPARTMENT),
+            job_description=job_data.xpath('//div[contains(@class, "ResAts__card-content")]').get(),
             employment_type=job_detail_data.get('employment type', self.DEFAULT_EMPLOYMENT_TYPE),
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
@@ -368,7 +450,11 @@ class GreenhouseIframeScraper(GreenhouseScraper):
     async def do_job_page_js(self, page):
         html_dom = await self.get_page_html(page)
         iframe_url = html_dom.xpath('//*[@id="grnhse_iframe"]/@src').get()
-        await page.goto(iframe_url)
+        try:
+            await page.goto(iframe_url)
+        except PlaywrightError as e:
+            await self.save_page_info(page)
+            raise e
 
 
 class WorkdayScraper(Scraper):

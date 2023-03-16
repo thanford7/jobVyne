@@ -40,6 +40,7 @@ def run_job_scrapers(employer_names=None):
     for scraper_class in scraper_classes:
         # Allow scrapers to fail so it doesn't impact other scrapers
         employer = None
+        scrapers = []
         try:
             logger.info(f'Starting scraper for {scraper_class.employer_name}')
             try:
@@ -64,6 +65,8 @@ def run_job_scrapers(employer_names=None):
             job_processor.finalize_data()
             logger.info(f'Scraping complete for {scraper_class.employer_name}')
         except Exception as e:
+            for scraper in scrapers:
+                scraper.close_connections()
             if employer:
                 employer.has_job_scrape_failure = True
                 employer.save()

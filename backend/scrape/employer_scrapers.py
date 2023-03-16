@@ -1,4 +1,5 @@
-from scrape.base_scrapers import BambooHrScraper, GreenhouseIframeScraper, GreenhouseScraper, LeverScraper, \
+from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, GreenhouseIframeScraper, GreenhouseScraper, \
+    LeverScraper, \
     WorkdayScraper
 
 
@@ -45,6 +46,7 @@ class FICOScraper(WorkdayScraper):
     
     
 class HealthGorillaScraper(GreenhouseIframeScraper):
+    PAGE_LOAD_WAIT_EVENT = 'networkidle'
     employer_name = 'Health Gorilla'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=healthgorilla&b=https%3A%2F%2Fwww.healthgorilla.com%2Fhome%2Fcompany%2Fcareers%2Fjob-openings'
 
@@ -121,7 +123,7 @@ class TransactionNetworkServicesScraper(WorkdayScraper):
     start_url = 'https://tnsi.wd1.myworkdayjobs.com/Search'
     
     
-class VasionScraper(BambooHrScraper):
+class VasionScraper(BambooHrScraper2):
     employer_name = 'Vasion'
     start_url = 'https://printerlogic.bamboohr.com/jobs/'
     
@@ -152,7 +154,8 @@ class ZelisScraper(WorkdayScraper):
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 all_scrapers = {
-    # BenevityScraper.employer_name: BenevityScraper,  # Not working
+    BenevityScraper.employer_name: BenevityScraper,  # Potentially not working
+    RecursionScraper.employer_name: RecursionScraper,  # Potentially Not working
     CHGHealthcareScraper.employer_name: CHGHealthcareScraper,
     ClozdScraper.employer_name: ClozdScraper,
     ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
@@ -166,14 +169,13 @@ all_scrapers = {
     LucidSoftwareScraper.employer_name: LucidSoftwareScraper,
     NylasScraper.employer_name: NylasScraper,
     ProofpointScraper.employer_name: ProofpointScraper,
-    # RecursionScraper.employer_name: RecursionScraper,  # Not working
     RegrowScraper.employer_name: RegrowScraper,
     RoScraper.employer_name: RoScraper,
     TechcyteScraper.employer_name: TechcyteScraper,
     TendoScraper.employer_name: TendoScraper,
     TheMxGroupScraper.employer_name: TheMxGroupScraper,
     TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
-    # VasionScraper.employer_name: VasionScraper,  # Not working
+    VasionScraper.employer_name: VasionScraper,
     VerkadaScraper.employer_name: VerkadaScraper,
     VivianHealthScraper.employer_name: VivianHealthScraper,
     WaystarScraper.employer_name: WaystarScraper,

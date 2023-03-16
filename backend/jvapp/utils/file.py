@@ -1,6 +1,14 @@
 import mimetypes
 
+from django.conf import settings
+from storages.backends.s3boto3 import S3Boto3Storage
+
+from jobVyne.customStorage import OverwriteStorage
 from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO
+
+
+def get_file_storage_engine():
+    return OverwriteStorage() if settings.IS_LOCAL else S3Boto3Storage()
 
 
 def get_file_extension(file_url):
