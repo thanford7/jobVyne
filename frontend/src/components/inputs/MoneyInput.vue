@@ -1,14 +1,19 @@
 <template>
-  <q-input
+  <q-field
     v-if="isLoaded && selectedCurrency"
-    filled :label="label" :mask="mask" unmasked-value
+    filled
     :model-value="moneyValue"
-    @update:model-value="updatePrice($event)"
-    lazy-rules
-    :rules="(isRequired) ? [
-      (val) => val || 'This field is required'
-    ] : null"
+    :label="label"
   >
+    <template v-slot:control="{ id, modelValue, floatingLabel }">
+      <CurrencyInput
+        :id="id" class="q-field__input"
+        :model-value="modelValue"
+        @change="emitMoneyVal($event)"
+        :options="moneyFormat"
+        v-show="floatingLabel"
+      />
+    </template>
     <template v-if="isIncludeCurrencySelection" v-slot:append>
       <q-btn-dropdown
         :label="`${selectedCurrency.symbol} ${selectedCurrency.name}`"
@@ -29,20 +34,18 @@
     <template v-slot:after>
       <slot name="after"/>
     </template>
-  </q-input>
+  </q-field>
 </template>
 
 <script>
-import dataUtil from 'src/utils/data.js'
+
+import CurrencyInput from 'components/inputs/CurrencyInput.vue'
 import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
-  name: 'MoneyInput',
+  name: 'MoneyInput2',
   props: {
-    moneyValue: {
-      type: Number,
-      default: 0
-    },
+    moneyValue: [Number, null],
     currencyName: {
       type: String,
       default: 'USD'
@@ -61,56 +64,29 @@ export default {
     },
     label: String
   },
+  components: { CurrencyInput },
   data () {
     return {
       isLoaded: false,
       selectedCurrency: null,
-      currencies: null
-    }
-  },
-  watch: {
-    moneyValue () {
-      this.placeCursorEnd()
-    }
-  },
-  computed: {
-    mask () {
-      let mask = `${this.selectedCurrency.symbol}`
-      let digitsStr = ''
-      if (dataUtil.isNil(this.moneyValue)) {
-        digitsStr = '#'
-      } else {
-        for (let x = 0; x <= this.moneyValue.toString().length; x++) {
-          if ((x - 1) % 3 || x < 3) {
-            digitsStr = '#' + digitsStr
-          } else {
-            digitsStr = '#,' + digitsStr
-          }
-        }
+      currencies: null,
+      moneyFormat: {
+        currency: this.currencyName,
+        precision: this.precision
       }
-      mask += digitsStr
-      if (this.precision > 0) {
-        mask += '.' + '#'.repeat(this.precision)
-      }
-      return mask
     }
   },
   methods: {
-    updatePrice (price) {
-      if (!price || !price.toString().length) {
-        price = 0
+    emitMoneyVal (val) {
+      if (isNaN(val)) {
+        return
       }
-      this.$emit('update:moneyValue', parseFloat(price))
+      this.$emit('update:moneyValue', val)
     },
     setCurrency (currency) {
       this.selectedCurrency = currency
+      this.moneyFormat = { currency: currency.name }
       this.$emit('update:currencyName', currency.name)
-    },
-    placeCursorEnd () {
-      const end = this.mask.length
-      const input = this.$el.querySelector('input')
-      input.setSelectionRange(end, end)
-      input.focus()
     }
   },
   async mounted () {

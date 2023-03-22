@@ -291,7 +291,7 @@ class Scraper:
     def parse_compensation_text(self, text):
         if not text:
             return {**compensation_data_template}
-        compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+),?(?P<second_numbers>[0-9]*?)?\s?(?P<thousand_marker>[kK])?'
+        compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+),?(?P<second_numbers>[0-9]+)?\s?(?P<thousand_marker>[kK])?'
         compensation_matches = list(re.finditer(compensation_pattern, text))
         currency_pattern = reduce(lambda full_pattern, currency: f'{full_pattern}{"|" if full_pattern else ""}{currency}', currencies, '')
         currency_match = re.search(f'({currency_pattern})\s', text)
@@ -313,10 +313,15 @@ class Scraper:
                 compensation_data['salary_ceiling'] = self.get_salary_from_match(compensation_match)
                 return compensation_data
         
+        # If there is only a salary floor, it means there is not a range, only a single value
+        if salary_floor := compensation_data.get('salary_floor'):
+            compensation_data['salary_ceiling'] = salary_floor
+            return compensation_data
+        
         return {**compensation_data_template}
     
     def get_salary_from_match(self, match):
-        salary = int(match.group('first_numbers') + match.group('second_numbers'))
+        salary = int(match.group('first_numbers') + (match.group('second_numbers') or ''))
         if match.group('thousand_marker'):
             salary *= 1000
         return salary

@@ -129,6 +129,13 @@
                               <div class="col-12 col-md-4 q-pr-md-sm">
                                 <SelectRemote v-model="jobFilters.remote_type_bit"/>
                               </div>
+                              <div class="col-12 col-md-4 q-px-md-sm">
+                                <MoneyInput
+                                  v-model:money-value="jobFilters.minimum_salary"
+                                  v-model:currency-name="jobFilters.currency"
+                                  label="Minimum salary"
+                                />
+                              </div>
                             </div>
                           </div>
                         </template>
@@ -331,6 +338,7 @@ import CollapsableCard from 'components/CollapsableCard.vue'
 import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import DialogLogin from 'components/dialogs/DialogLogin.vue'
+import MoneyInput from 'components/inputs/MoneyInput.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
@@ -366,7 +374,8 @@ const jobFiltersTemplate = {
   country_ids: [],
   job_ids: [],
   job_title: '',
-  remote_type_bit: null
+  remote_type_bit: null,
+  minimum_salary: null
 }
 
 export default {
@@ -395,6 +404,7 @@ export default {
     }
   },
   components: {
+    MoneyInput,
     LocationChip,
     EmployerProfile,
     ResponsiveWidth,

@@ -297,6 +297,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             filter_values['job_ids'] = [int(job_id) for job_id in job_ids]
         if remote_type_bit := self.query_params.get('remote_type_bit'):
             filter_values['remote_type_bit'] = coerce_int(remote_type_bit)
+        if minimum_salary := self.query_params.get('minimum_salary'):
+            filter_values['minimum_salary'] = coerce_int(minimum_salary)
         
         return filter_values
     
@@ -312,7 +314,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     @staticmethod
     def get_filtered_jobs(
         employer_id, department_ids=None, city_ids=None, state_ids=None, country_ids=None,
-        job_ids=None, job_title=None, remote_type_bit=None
+        job_ids=None, job_title=None, remote_type_bit=None, minimum_salary=None
     ):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         
@@ -342,6 +344,9 @@ class SocialLinkJobsView(JobVyneAPIView):
                 jobs_filter &= Q(locations__is_remote=True)
             elif remote_type_bit == REMOTE_TYPES.NO:
                 jobs_filter &= Q(locations__is_remote=False)
+        if minimum_salary:
+            # Some jobs have a salary floor but no ceiling so we check for both
+            jobs_filter &= (Q(salary_ceiling__gte=minimum_salary) | Q(salary_floor__gte=minimum_salary))
         
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
 
