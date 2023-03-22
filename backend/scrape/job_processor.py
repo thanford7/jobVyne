@@ -23,6 +23,14 @@ class JobItem:
     salary_floor: Union[float, None] = None
     salary_ceiling: Union[float, None] = None
     salary_interval: Union[str, None] = None
+    
+    def get_compensation_dict(self):
+        return {
+            'salary_currency': self.salary_currency,
+            'salary_floor': self.salary_floor,
+            'salary_ceiling': self.salary_ceiling,
+            'salary_interval': self.salary_interval
+        }
 
 
 class JobProcessor:
@@ -80,7 +88,9 @@ class JobProcessor:
             self.location_parser.get_location(self.add_remote_to_location(loc, job_item.job_title))
             for loc in job_item.locations
         ]
-        location_ids = tuple(l.id for l in locations)
+        location_ids = [l.id for l in locations]
+        location_ids.sort()
+        location_ids = tuple(location_ids)
         
         new_job = EmployerJob(
             job_title=job_item.job_title,
@@ -131,7 +141,7 @@ class JobProcessor:
         job.job_description = job_item.job_description
         job.employment_type = job_item.employment_type
         job.job_department = self.get_or_create_job_department(job_item)
-        job.salary_currency = job_item.salary_currency
+        job.salary_currency_name = job_item.salary_currency
         job.salary_floor = job_item.salary_floor
         job.salary_ceiling = job_item.salary_ceiling
         job.salary_interval = job_item.salary_interval

@@ -196,7 +196,9 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         )
 
     def get_key(self):
-        return self.generate_job_key(self.job_title, tuple(l.id for l in self.locations.all()))
+        location_ids = [l.id for l in self.locations.all()]
+        location_ids.sort()
+        return self.generate_job_key(self.job_title, tuple(location_ids))
     
     @staticmethod
     def generate_job_key(job_title, location_ids: tuple):
