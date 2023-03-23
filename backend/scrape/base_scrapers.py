@@ -291,6 +291,7 @@ class Scraper:
     def parse_compensation_text(self, text):
         if not text:
             return {**compensation_data_template}
+        text = sanitize_html(text)
         compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+),?(?P<second_numbers>[0-9]+)?\s?(?P<thousand_marker>[kK])?'
         compensation_matches = list(re.finditer(compensation_pattern, text))
         currency_pattern = reduce(lambda full_pattern, currency: f'{full_pattern}{"|" if full_pattern else ""}{currency}', currencies, '')
@@ -302,15 +303,20 @@ class Scraper:
             currency_symbol = currency_symbol.strip()
             if not (currency_symbol or first_match):
                 continue
+            salary = self.get_salary_from_match(compensation_match)
+            # Some monetary matches may be for things like company valuations. Avoid using
+            # erroneous values for salary
+            if salary < 1000 or salary < 500000:
+                continue
             if not first_match:
-                compensation_data['salary_floor'] = self.get_salary_from_match(compensation_match)
+                compensation_data['salary_floor'] = salary
                 if currency_match:
                     compensation_data['salary_currency'] = currency_match.group(0).strip()
                 elif currency_symbol:
                     compensation_data['salary_currency'] = currency_lookup.get(currency_symbol, None)
                 first_match = True
             else:
-                compensation_data['salary_ceiling'] = self.get_salary_from_match(compensation_match)
+                compensation_data['salary_ceiling'] = salary
                 return compensation_data
         
         # If there is only a salary floor, it means there is not a range, only a single value
@@ -614,8 +620,6 @@ class WorkdayScraper(Scraper):
         job_title = self.strip_or_none(job_data.xpath('.//*[@data-automation-id="jobPostingHeader"]/text()').get())
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = html.xpath('//*[@data-automation-id="jobPostingDescription"]').get()
-        if job_description:
-            job_description = sanitize_html(job_description)
         description_compensation_data = self.parse_compensation_text(job_description)
         
         compensation_data = self.merge_compensation_data(
