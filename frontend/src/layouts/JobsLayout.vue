@@ -458,7 +458,9 @@ export default {
     async saveExternalApplication (job) {
       window.open(job.application_url, '_blank')
       await this.$api.post('job-application/external/', getAjaxFormData({
-        job_id: job.id
+        job_id: job.id,
+        filter_id: this.$route.params.filterId,
+        platform_name: this.$route?.query?.platform
       }))
       await this.loadData()
     },

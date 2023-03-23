@@ -404,6 +404,8 @@ class ApplicationExternalView(JobVyneAPIView):
         application = self.get_existing_application(self.user, job_id) or JobApplication(is_external_application=True)
         if self.user:
             self.data['email'] = self.user.email
+            self.data['first_name'] = self.user.first_name
+            self.data['last_name'] = self.user.last_name
         ApplicationView.create_application(self.user, application, self.data)
         
         return Response(status=status.HTTP_200_OK, data={
