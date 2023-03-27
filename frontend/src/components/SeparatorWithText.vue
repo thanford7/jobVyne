@@ -1,7 +1,10 @@
 <template>
   <div class="separator q-my-md">
     <q-separator/>
-    <div class="separator__text">
+    <div
+      class="separator__text"
+      :class="(textPosition === 'center') ? 'separator__text-center' : 'separator__text-left'"
+    >
       <slot/>
     </div>
   </div>
@@ -9,7 +12,13 @@
 
 <script>
 export default {
-  name: 'SeparatorWithText'
+  name: 'SeparatorWithText',
+  props: {
+    textPosition: {
+      type: [String, null],
+      default: 'center'
+    }
+  }
 }
 </script>
 
@@ -22,9 +31,15 @@ export default {
     padding: 0 1em;
     position: absolute;
     top: 0;
-    left: 50%;
     background-color: $white;
-    transform: translate(-50%, -50%);
+    &-center {
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    &-left {
+      left: 0;
+      transform: translateY(-50%);
+    }
   }
 }
 </style>

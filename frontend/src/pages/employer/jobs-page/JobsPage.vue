@@ -14,6 +14,7 @@
       >
         <template v-if="employerType === employerTypeUtil.ORG_TYPE_EMPLOYER">
           <q-tab name="job" label="Jobs"/>
+          <q-tab name="application" label="Application Questions"/>
           <q-tab name="bonus" label="Bonuses"/>
         </template>
         <q-tab v-else name="subscription" label="Job Subscriptions"/>
@@ -22,6 +23,9 @@
         <template v-if="employerType === employerTypeUtil.ORG_TYPE_EMPLOYER">
           <q-tab-panel name="job">
             <JobsSection :is-employer="true"/>
+          </q-tab-panel>
+          <q-tab-panel name="application">
+            <ApplicationQuestionsSection/>
           </q-tab-panel>
           <q-tab-panel name="bonus">
             <BonusesSection/>
@@ -37,6 +41,7 @@
 
 <script>
 import PageHeader from 'components/PageHeader.vue'
+import ApplicationQuestionsSection from 'pages/employer/jobs-page/ApplicationQuestionsSection.vue'
 import BonusesSection from 'pages/employer/jobs-page/BonusesSection.vue'
 import JobsSection from 'pages/employer/jobs-page/jobs-table/JobsSection.vue'
 import JobSubscriptionsSection from 'pages/employer/jobs-page/JobSubscriptionsSection.vue'
@@ -49,7 +54,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'JobsPage',
-  components: { JobSubscriptionsSection, BonusesSection, JobsSection, PageHeader },
+  components: { ApplicationQuestionsSection, JobSubscriptionsSection, BonusesSection, JobsSection, PageHeader },
   data () {
     const employerType = employerTypeUtil.getEmployerTypeByBit(this.employer.organization_type)
     return {

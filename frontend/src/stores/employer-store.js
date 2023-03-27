@@ -8,6 +8,7 @@ export const useEmployerStore = defineStore('employer', {
     employees: {}, // employerId: [<employee1>, <employee2>, ...]
     employerBilling: {}, // employerId: <billingData>
     employerJobs: {}, // employerId: [<job1>, <job2>, ...]
+    employerJobApplicationRequirements: {},
     employerJobDepartments: {}, // employerId: [<jobDept1>, <jobDept2>, ...]
     employerReferralRequests: {}, // employerId: [<request1>, <request2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
@@ -69,6 +70,17 @@ export const useEmployerStore = defineStore('employer', {
           }
         )
         this.employerJobLocations[employerId] = locResp.data
+      }
+    },
+    async setEmployerJobApplicationRequirements (employerId, isForceRefresh = false) {
+      if (!this.employerJobApplicationRequirements[employerId] || isForceRefresh) {
+        const resp = await this.$api.get(
+          'employer/job-application-requirement/',
+          {
+            params: { employer_id: employerId }
+          }
+        )
+        this.employerJobApplicationRequirements[employerId] = resp.data
       }
     },
     async setEmployerJobDepartments (employerId, isForceRefresh = false) {
@@ -201,6 +213,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployerJobs (employerId) {
       return dataUtil.sortBy(this.employerJobs[employerId] || [], 'job_title')
+    },
+    getEmployerJobApplicationRequirements (employerId) {
+      return this.employerJobApplicationRequirements[employerId] || []
     },
     getEmployerReferralRequests (employerId) {
       return dataUtil.sortBy(this.employerReferralRequests[employerId] || [], { key: 'modified_dt', direction: -1 })

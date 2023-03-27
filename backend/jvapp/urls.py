@@ -25,6 +25,7 @@ urlpatterns = [
     re_path('^employer/file/(?P<file_id>[0-9]+)?/?$', employer.EmployerFileView.as_view()),
     re_path('^employer/file-tag/(?P<tag_id>[0-9]+)?/?$', employer.EmployerFileTagView.as_view()),
     re_path('^employer/job/(?P<employer_job_id>[0-9]+)?/?$', employer.EmployerJobView.as_view()),
+    path('employer/job-application-requirement/', employer.EmployerJobApplicationRequirementView.as_view()),
     path('employer/job/bonus/', employer.EmployerJobBonusView.as_view()),
     path('employer/job/department/', employer.EmployerJobDepartmentView.as_view()),
     path('employer/job/location/', employer.EmployerJobLocationView.as_view()),

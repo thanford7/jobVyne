@@ -1,3 +1,4 @@
+from collections import defaultdict
 from enum import Enum
 from functools import reduce
 
@@ -497,7 +498,7 @@ class EmployerSubscriptionView(JobVyneAPIView):
             is_employer_deactivated=False,
             has_employee_seat=True,
             employer_user_type_bits__lt=F('employer_user_type_bits') + (
-                        1 * F('employer_user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE))
+                    1 * F('employer_user_type_bits').bitand(JobVyneUser.USER_TYPE_EMPLOYEE))
         ) \
             .count()
 
@@ -593,7 +594,7 @@ class EmployerJobView(JobVyneAPIView):
         
         employer_job.job_description = sanitize_html(data['job_description'])
         if salary_currency := data.get('salary_currency'):
-            employer_job.salary_currency = salary_currency
+            employer_job.salary_currency_name = salary_currency
         
         # Handle job department - if ID is a string, this is a new department for this employer
         job_department = data['job_department']
@@ -626,8 +627,8 @@ class EmployerJobView(JobVyneAPIView):
     
     @staticmethod
     def get_employer_jobs(
-        employer_job_id=None, employer_job_filter=None, order_by='-open_date',
-        is_include_closed=False, is_include_future=False
+            employer_job_id=None, employer_job_filter=None, order_by='-open_date',
+            is_include_closed=False, is_include_future=False
     ):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
@@ -640,11 +641,11 @@ class EmployerJobView(JobVyneAPIView):
         jobs = EmployerJob.objects \
             .select_related('job_department', 'employer', 'referral_bonus_currency') \
             .prefetch_related(
-                'locations',
-                'locations__city',
-                'locations__state',
-                'locations__country'
-            ) \
+            'locations',
+            'locations__city',
+            'locations__state',
+            'locations__country'
+        ) \
             .filter(employer_job_filter) \
             .distinct() \
             .order_by(order_by, 'id')
@@ -655,6 +656,109 @@ class EmployerJobView(JobVyneAPIView):
             return jobs[0]
         
         return jobs
+
+
+class EmployerJobApplicationRequirementView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
+    
+    def get(self, request):
+        if not (employer_id := self.query_params.get('employer_id')):
+            return get_error_response('An employer ID is required')
+        
+        application_requirements = self.get_application_requirements(employer_id=employer_id)
+        return Response(
+            status=status.HTTP_200_OK,
+            data=self.get_consolidated_application_requirements(application_requirements)
+        )
+    
+    @atomic
+    def put(self, request):
+        if not (employer_id := self.data.get('employer_id')):
+            return get_error_response('An employer ID is required')
+        
+        application_field = self.data.get('application_field')
+        application_requirements = EmployerJobApplicationRequirement.objects.filter(
+            employer_id=employer_id,
+            application_field=application_field
+        )
+        
+        for app_requirement_key, requirement_attr in (('required', 'is_required'), ('optional', 'is_optional'), ('hidden', 'is_hidden')):
+            filters = self.data.get(app_requirement_key)
+            is_default = self.data['default'].get(requirement_attr)
+            requirement = next((r for r in application_requirements if getattr(r, requirement_attr)), None)
+            if any((filters['departments'], filters['jobs'])) or is_default:
+                if requirement:
+                    requirement.filter_departments.clear()
+                    requirement.filter_jobs.clear()
+                else:
+                    requirement = EmployerJobApplicationRequirement(
+                        employer_id=employer_id, application_field=application_field,
+                        is_required=False, is_optional=False, is_hidden=False, is_locked=False
+                    )
+                    setattr(requirement, requirement_attr, True)
+                    requirement.save()
+                if not is_default:
+                    if filters['departments']:
+                        requirement.filter_departments.add(*[d['id'] for d in filters['departments']])
+                    if filters['jobs']:
+                        requirement.filter_jobs.add(*filters['jobs'])
+            elif requirement:
+                # If there is an old default value, we need to get rid of it
+                requirement.delete()
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'Updated application requirements for {application_field} field'
+        })
+        
+    @staticmethod
+    def get_application_requirements(employer_id=None, job=None):
+        assert employer_id or job
+        application_requirement_filter = Q(employer_id=employer_id or job.employer_id)
+        if job:
+            application_requirement_filter &= (
+                    Q(filter_jobs__id=job.id) | Q(filter_departments__id=job.job_department_id)
+                    | (Q(filter_jobs__isnull=True) & Q(filter_departments__isnull=True))
+            )
+        
+        return EmployerJobApplicationRequirement.objects \
+            .prefetch_related('filter_departments', 'filter_jobs') \
+            .filter(application_requirement_filter)
+    
+    @staticmethod
+    def get_consolidated_application_requirements(application_requirements):
+        requirement_template = {
+            'application_field': None,
+            'default': None,
+            'is_locked': None,
+            'required': None,
+            'optional': None,
+            'hidden': None
+        }
+        consolidated_requirements = defaultdict(lambda: {**requirement_template})
+        for requirement in application_requirements:
+            consolidated_requirement = consolidated_requirements[requirement.application_field]
+            consolidated_requirement['application_field'] = requirement.application_field
+            filter_jobs = requirement.filter_jobs.all()
+            filter_departments = requirement.filter_departments.all()
+            if not all([filter_jobs, filter_departments]):
+                consolidated_requirement['default'] = {
+                    'is_required': requirement.is_required,
+                    'is_optional': requirement.is_optional and (not requirement.is_required),
+                    'is_hidden': requirement.is_hidden and (not any([requirement.is_required, requirement.is_optional]))
+                }
+                consolidated_requirement['is_locked'] = requirement.is_locked
+            else:
+                key = 'required' if requirement.is_required else ('optional' if requirement.is_optional else 'hidden')
+                consolidated_requirement[key] = {
+                    'departments': [{'id': f.id, 'name': f.name} for f in
+                                    filter_departments] if filter_departments else None,
+                    'jobs': [{'id': j.id, 'job_title': j.job_title} for j in filter_jobs] if filter_jobs else None
+                }
+        
+        consolidated_requirements = list(consolidated_requirements.values())
+        consolidated_requirements.sort(key=lambda x: (x['is_locked'], x['default']['is_required']), reverse=True)
+        
+        return consolidated_requirements
 
 
 class EmployerJobBonusView(JobVyneAPIView):
@@ -968,7 +1072,8 @@ class EmployerUserView(JobVyneAPIView):
         user.save()
         user_primary_referral_link = SocialLinkFilter.objects.filter(owner=user, is_primary=True)
         if not user_primary_referral_link:
-            raise Exception('An error occurred while creating a new employer user. No primary referral link was created.')
+            raise Exception(
+                'An error occurred while creating a new employer user. No primary referral link was created.')
         user_primary_referral_link = user_primary_referral_link[0]
         
         uid = get_uid_from_user(user)
@@ -1367,7 +1472,7 @@ class EmployerJobDepartmentView(JobVyneAPIView):
     def get(self, request):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-
+        
         job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
         job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
         # Include both subscribed jobs and those owned by the employer
@@ -1375,7 +1480,7 @@ class EmployerJobDepartmentView(JobVyneAPIView):
             job_subscription_filter |= Q(employer_id=employer_id)
         else:
             job_subscription_filter = Q(employer_id=employer_id)
-        departments = EmployerJobView\
+        departments = EmployerJobView \
             .get_employer_jobs(employer_job_filter=job_subscription_filter) \
             .values('job_department_id', 'job_department__name') \
             .distinct()  # This will only get distinct jobs. Adding distinct value criteria is not supported by MySQL
@@ -1395,7 +1500,7 @@ class EmployerJobLocationView(JobVyneAPIView):
     def get(self, request):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-
+        
         job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
         job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
         # Include both subscribed jobs and those owned by the employer
@@ -1403,7 +1508,8 @@ class EmployerJobLocationView(JobVyneAPIView):
             job_subscription_filter |= Q(employer_id=employer_id)
         else:
             job_subscription_filter = Q(employer_id=employer_id)
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_subscription_filter, is_include_closed=True).distinct()
+        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_subscription_filter,
+                                                 is_include_closed=True).distinct()
         locations = []
         for job in jobs:
             for location in job.locations.all():

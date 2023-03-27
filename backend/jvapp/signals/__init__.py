@@ -7,7 +7,7 @@ from jvapp.apis.job_seeker import ApplicationTemplateView
 from jvapp.apis.social import SocialLinkFilterView
 from jvapp.models import EmployerAuthGroup, JobApplication, JobApplicationTemplate, JobVyneUser, SocialLinkFilter, \
     UserEmployerPermissionGroup
-from jvapp.models.employer import is_default_auth_group
+from jvapp.models.employer import Employer, EmployerJobApplicationRequirement, is_default_auth_group
 
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
 
@@ -118,4 +118,46 @@ def link_job_applications(sender, instance, *args, **kwargs):
             linkedin_url=app_defaults.linkedin_url,
             resume=app_defaults.resume
         ).save()
+        
+        
+@receiver(post_save, sender=Employer)
+def add_job_application_requirements(sender, instance, created, *args, **kwargs):
+    # Only add requirements if this is a new employer
+    if not created:
+        return
+    
+    requirements = [
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='first_name', is_required=True, is_optional=False, is_hidden=False, is_locked=True
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='last_name', is_required=True, is_optional=False, is_hidden=False, is_locked=True
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='email', is_required=True, is_optional=False, is_hidden=False, is_locked=True
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='phone_number', is_required=False, is_optional=True, is_hidden=False, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='linkedin_url', is_required=False, is_optional=True, is_hidden=False, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='resume', is_required=True, is_optional=False, is_hidden=False, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='academic_transcript', is_required=False, is_optional=False, is_hidden=True, is_locked=False
+        )
+    ]
+    for application_requirement in requirements:
+        application_requirement.employer = instance
+        
+    EmployerJobApplicationRequirement.objects.bulk_create(requirements)
     

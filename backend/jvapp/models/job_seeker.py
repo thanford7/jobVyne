@@ -10,6 +10,7 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePerm
 __all__ = ('JobApplication', 'JobApplicationTemplate')
 
 
+# NOTE: Keep field names in sync with EmployerJobApplicationRequirement.application_field
 class JobApplicationFields(AuditFields):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
@@ -20,6 +21,11 @@ class JobApplicationFields(AuditFields):
     resume = models.FileField(
         upload_to=get_user_upload_location,
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_FILE)]
+    )
+    academic_transcript = models.FileField(
+        upload_to=get_user_upload_location,
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_FILE)],
+        null=True, blank=True
     )
 
     class Meta:

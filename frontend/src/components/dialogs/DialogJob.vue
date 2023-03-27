@@ -41,6 +41,7 @@
             <MoneyInput
               v-model:money-value="formData.salary_floor"
               v-model:currency-name="formData.salary_currency"
+              :precision="2"
               label="Min salary"
               :is-required="isAddSalary"
             />
@@ -49,6 +50,7 @@
             <MoneyInput
               v-model:money-value="formData.salary_ceiling"
               v-model:currency-name="formData.salary_currency"
+              :precision="2"
               label="Max salary" :is-include-currency-selection="false"
               :is-required="isAddSalary"
             />
@@ -62,6 +64,7 @@
                 { val: 'year', label: 'Yearly' },
                 { val: 'month', label: 'Monthly' },
                 { val: 'week', label: 'Weekly' },
+                { val: 'hour', label: 'Hourly' },
                 { val: 'once', label: 'One time'}
               ]"
               lazy-rules
@@ -170,6 +173,7 @@ export default {
     if (this.job) {
       this.formData = Object.assign(this.formData, this.job)
       this.formData.locations = (this.formData.locations || []).map((loc) => locationUtil.getFullLocation(loc))
+      this.formData.salary_currency = this.job?.salary_currency?.name
       this.formData.open_date = dateTimeUtil.getShortDate(this.formData.open_date, dateTimeUtil.serializeDateFormat)
       if (this.formData.close_date?.length) {
         this.formData.close_date = dateTimeUtil.getShortDate(this.formData.close_date, dateTimeUtil.serializeDateFormat)

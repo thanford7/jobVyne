@@ -11,7 +11,7 @@ __all__ = (
     'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
-    'EmployerSubscription', 'EmployerReferralRequest'
+    'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement'
 )
 
 
@@ -216,6 +216,29 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         return False
     
     
+class EmployerJobApplicationRequirement(AuditFields, JobVynePermissionsMixin):
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='job_application_requirement')
+    application_field = models.CharField(max_length=25)  # based on JobApplicationFields model
+    is_required = models.BooleanField()
+    is_optional = models.BooleanField()
+    is_hidden = models.BooleanField()
+    is_locked = models.BooleanField()  # If true, user cannot update
+    filter_departments = models.ManyToManyField('JobDepartment')
+    filter_jobs = models.ManyToManyField('EmployerJob')
+    
+    class Meta:
+        unique_together = ('employer', 'application_field', 'is_required', 'is_optional', 'is_hidden')
+    
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                self.employer_id == user.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
+            )
+        )
+
+
 class EmployerReferralRequest(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='referral_request')
     email_subject = models.CharField(max_length=255)
