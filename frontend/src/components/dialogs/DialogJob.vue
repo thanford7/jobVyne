@@ -182,6 +182,9 @@ export default {
         id: this.job.job_department_id,
         name: this.job.job_department
       }
+      if (this.formData.salary_floor) {
+        this.isAddSalary = true
+      }
     }
   }
 }

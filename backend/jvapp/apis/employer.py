@@ -740,7 +740,7 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
             consolidated_requirement['application_field'] = requirement.application_field
             filter_jobs = requirement.filter_jobs.all()
             filter_departments = requirement.filter_departments.all()
-            if not all([filter_jobs, filter_departments]):
+            if not any([filter_jobs, filter_departments]):
                 consolidated_requirement['default'] = {
                     'is_required': requirement.is_required,
                     'is_optional': requirement.is_optional and (not requirement.is_required),
@@ -759,6 +759,28 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
         consolidated_requirements.sort(key=lambda x: (x['is_locked'], x['default']['is_required']), reverse=True)
         
         return consolidated_requirements
+    
+    @staticmethod
+    def get_job_application_fields(job: EmployerJob, consolidated_requirements: dict):
+        application_fields = {}
+        for requirement in consolidated_requirements:
+            field_key = requirement['application_field']
+            if (required := requirement['required']) and EmployerJobApplicationRequirementView.is_job_filter_match(job, required):
+                application_fields[field_key] = {'is_required': True}
+            elif (optional := requirement['optional']) and EmployerJobApplicationRequirementView.is_job_filter_match(job, optional):
+                application_fields[field_key] = {'is_optional': True}
+            elif (hidden := requirement['hidden']) and EmployerJobApplicationRequirementView.is_job_filter_match(job, hidden):
+                pass
+            else:
+                application_fields[field_key] = {**requirement['default']}
+        return application_fields
+        
+    @staticmethod
+    def is_job_filter_match(job: EmployerJob, requirement_filter: dict):
+        return any([
+            requirement_filter['jobs'] and next((j for j in requirement_filter['jobs'] if j['id'] == job.id), None),
+            requirement_filter['departments'] and next((d for d in requirement_filter['departments'] if d['id'] == job.job_department_id), None)
+        ])
 
 
 class EmployerJobBonusView(JobVyneAPIView):

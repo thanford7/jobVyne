@@ -55,7 +55,7 @@ def send_django_email(
     django_context['base_url'] = settings.BASE_URL
     django_context['protocol'] = 'https'  # Overwrite protocol to always use https
     django_context['html_body_content'] = html_body_content
-    django_context['is_employer'] = bool(employer)
+    django_context['is_employer_logo'] = bool(employer)
     django_context['employer_name'] = employer.employer_name if employer else None
     html_content = loader.render_to_string(django_email_body_template, django_context)
     plain_content = strip_tags(html_content)

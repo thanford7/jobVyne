@@ -1,5 +1,3 @@
-from functools import reduce
-
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
@@ -247,7 +245,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
     def get(self, request, link_filter_id=None):
-        from jvapp.apis.employer import EmployerView  # Avoid circular import
+        from jvapp.apis.employer import EmployerJobApplicationRequirementView, EmployerView  # Avoid circular import
         page_count = self.query_params.get('page_count', 1)
         employer_id = self.query_params.get('employer_id')
         if not any([link_filter_id, employer_id]):
@@ -266,15 +264,27 @@ class SocialLinkJobsView(JobVyneAPIView):
             employer_id=employer_id,
             filter_values=self.get_filter_values_from_query_params()
         )
+        application_requirements = EmployerJobApplicationRequirementView.get_consolidated_application_requirements(
+            EmployerJobApplicationRequirementView.get_application_requirements(employer_id=employer_id)
+        )
         total_jobs = self.get_jobs_from_filter(employer_id=employer_id, filter_values={}).count()
         paged_jobs = Paginator(jobs, per_page=5)
         employer = EmployerView.get_employers(employer_id=employer_id)
         has_job_subscription = bool(EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id).count())
+        
+        serialized_jobs = []
+        for job in paged_jobs.get_page(page_count):
+            serialized_job = get_serialized_employer_job(job)
+            serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
+                job, application_requirements
+            )
+            serialized_jobs.append(serialized_job)
+        
         return Response(status=status.HTTP_200_OK, data={
             'total_page_count': paged_jobs.num_pages,
             'total_employer_job_count': total_jobs,
             'has_job_subscription': has_job_subscription,
-            'jobs': [get_serialized_employer_job(j) for j in paged_jobs.get_page(page_count)],
+            'jobs': serialized_jobs,
             'employer': get_serialized_employer(employer),
             'owner_id': link_filter.owner_id if link_filter else None,
             'is_active_employee': link_filter.owner.is_active_employee if (link_filter and link_filter.owner) else True,

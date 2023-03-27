@@ -14,7 +14,8 @@ def base_application_serializer(app: JobApplication or JobApplicationTemplate):
         'email': app.email,
         'phone_number': app.phone_number,
         'linkedin_url': app.linkedin_url,
-        'resume_url': app.resume.url if app.resume else None
+        'resume_url': app.resume.url if app.resume else None,
+        'academic_transcript_url': app.academic_transcript.url if app.academic_transcript else None
     }
 
 

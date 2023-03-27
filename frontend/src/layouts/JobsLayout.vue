@@ -5,7 +5,7 @@
       <div class="justify-center row" style="position: relative">
         <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
           <q-toolbar-title shrink>
-            <img :src="employer?.logo_url" alt="Logo" style="height: 40px; object-fit: scale-down">
+            <img :src="employer?.logo_url" alt="Logo" style="max-height: 40px; max-width: 120px; object-fit: scale-down">
           </q-toolbar-title>
         </q-toolbar>
         <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
@@ -203,7 +203,7 @@
                               </q-chip>
                               <q-chip v-if="getSalaryRange(job.salary_floor, job.salary_ceiling)" color="grey-7"
                                       text-color="white" size="md" icon="attach_money">
-                                {{ getSalaryRange(job.salary_floor, job.salary_ceiling) }}
+                                {{ getSalaryRange(job.salary_floor, job.salary_ceiling, job.salary_interval) }}
                               </q-chip>
                             </div>
                             <q-separator class="q-mt-sm"/>

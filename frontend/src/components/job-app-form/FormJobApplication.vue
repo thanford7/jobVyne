@@ -9,47 +9,72 @@
       </div>
       <div class="q-pa-sm q-mt-sm">
         <q-form
+          ref="form"
           @submit="saveApplication"
           class="q-gutter-xs"
         >
           <q-input
+            v-if="isFieldShown('first_name')"
             filled autofocus
             v-model="formData.first_name"
             class="jv-form-job-app-fname"
-            label="First name"
+            :label="(isFieldOptional('first_name')) ? 'First name*' : 'First name'"
             lazy-rules
-            :rules="[ val => val && val.length > 0 || 'First name is required']"
+            :rules="[ val => isFieldOptional('first_name') || (val && val.length > 0) || 'First name is required']"
           />
           <q-input
+            v-if="isFieldShown('last_name')"
             filled
             v-model="formData.last_name"
             class="jv-form-job-app-lname"
-            label="Last name"
+            :label="(isFieldOptional('last_name')) ? 'Last name*' : 'Last name'"
             lazy-rules
-            :rules="[ val => val && val.length > 0 || 'Last name is required']"
+            :rules="[ val => isFieldOptional('last_name') || (val && val.length > 0) || 'Last name is required']"
           />
           <q-input
+            v-if="isFieldShown('email')"
             filled
             v-model="formData.email"
             class="jv-form-job-app-email"
             type="email"
-            label="Email"
+            :label="(isFieldOptional('email')) ? 'Email*' : 'Email'"
             lazy-rules
-            :rules="[ val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'A valid email is required']"
+            :rules="[ val => {
+              if (isFieldOptional('email') && (!val?.length || formUtil.isGoodEmail(val))) {
+                return true
+              } else if (!isFieldOptional('email') && val?.length && formUtil.isGoodEmail(val)) {
+                return true
+              }
+              return 'A valid email is required'
+            }]"
           />
-          <PhoneInput v-model="formData.phone_number" label="Phone number*" :is-required="false"/>
+          <PhoneInput
+            v-if="isFieldShown('phone_number')"
+            v-model="formData.phone_number"
+            :label="(isFieldOptional('phone_number')) ? 'Phone number*' : 'Phone number'"
+            :is-required="!isFieldOptional('phone_number')"
+          />
           <q-input
+            v-if="isFieldShown('linkedin_url')"
             filled
             v-model="formData.linkedin_url"
             class="jv-form-job-app-linkedin"
-            label="LinkedIn URL*"
+            :label="(isFieldOptional('linkedin_url')) ? 'LinkedIn URL*' : 'LinkedIn URL'"
             hint="www.linkedin.com/in/{your profile id}"
             lazy-rules
-            :rules="[ val => !val || !val.length || formUtil.isGoodLinkedInUrl(val)  || 'The LinkedIn URL must be valid']"
+            :rules="[ val => {
+              if (isFieldOptional('linkedin_url') && (!val?.length || formUtil.isGoodLinkedInUrl(val))) {
+                return true
+              } else if (!isFieldOptional('linkedin_url') && val?.length && formUtil.isGoodLinkedInUrl(val)) {
+                return true
+              }
+              return 'The LinkedIn URL must be valid'
+            }]"
           />
           <FileDisplayOrUpload
+            v-if="isFieldShown('resume')"
             ref="resumeUpload"
-            label="resume"
+            :label="(isFieldOptional('resume')) ? 'Resume*' : 'Resume'"
             :file-url="formData.resume_url"
             :new-file="formData.resume"
             :new-file-key="newResumeKey"
@@ -60,12 +85,45 @@
                 ref="newResumeUpload"
                 filled bottom-slots clearable
                 v-model="formData.resume"
-                label="Resume"
+                :label="(isFieldOptional('resume')) ? 'Resume*' : 'Resume'"
                 class="q-mb-none jv-form-job-app-resume"
-                :accept="allowedResumeExtensionsStr"
+                :accept="allowedFileExtensionsStr"
                 max-file-size="1000000"
                 lazy-rules="ondemand"
-                :rules="[ val => val || 'A resume is required']"
+                :rules="[ val => {
+                  if (!this.$refs.resumeUpload.isUpload) {
+                    return true
+                  }
+                  return isFieldOptional('resume') || val || 'A resume is required'
+                }]"
+              />
+            </template>
+          </FileDisplayOrUpload>
+          <FileDisplayOrUpload
+            v-if="isFieldShown('academic_transcript')"
+            ref="transcriptUpload"
+            :label="(isFieldOptional('academic_transcript')) ? 'Academic transcript*' : 'Academic transcript'"
+            :file-url="formData.academic_transcript_url"
+            :new-file="formData.academic_transcript"
+            :new-file-key="newAcademicTranscriptKey"
+            file-url-key="academic_transcript_url"
+          >
+            <template v-slot:fileInput>
+              <q-file
+                ref="newTranscriptUpload"
+                filled bottom-slots clearable
+                v-model="formData.academic_transcript"
+                :label="(isFieldOptional('academic_transcript')) ? 'Academic transcript*' : 'Academic transcript'"
+                class="q-mb-none jv-form-job-app-resume"
+                :accept="allowedFileExtensionsStr"
+                max-file-size="1000000"
+                lazy-rules="ondemand"
+                :rules="[ val => {
+                  if (!this.$refs.transcriptUpload.isUpload) {
+                    return true
+                  }
+                  return isFieldOptional('academic_transcript') || val || 'A transcript is required'
+                }]"
               />
             </template>
           </FileDisplayOrUpload>
@@ -158,7 +216,9 @@ const formDataTemplate = {
   phone_number: '',
   linkedin_url: null,
   resume: null,
-  resume_url: null
+  resume_url: null,
+  academic_transcript: null,
+  academic_transcript_url: null
 }
 
 export default {
@@ -168,6 +228,7 @@ export default {
     return {
       formData: this.resetFormData(),
       newResumeKey: 'resume',
+      newAcademicTranscriptKey: 'academic_transcript',
       isApplicationSaved: false,
       isSaving: false,
       isVerifyEmail: false,
@@ -183,7 +244,7 @@ export default {
     employer: Object
   },
   computed: {
-    allowedResumeExtensionsStr () {
+    allowedFileExtensionsStr () {
       return fileUtil.getAllowedFileExtensionsStr([FILE_TYPES.FILE.key])
     }
   },
@@ -210,6 +271,12 @@ export default {
         await this.authStore.setUser(true)
         this.$emit('login')
       })
+    },
+    isFieldShown (fieldKey) {
+      return Boolean(this.jobApplication.application_fields[fieldKey]?.is_required) || this.isFieldOptional(fieldKey)
+    },
+    isFieldOptional (fieldKey) {
+      return Boolean(this.jobApplication.application_fields[fieldKey]?.is_optional)
     },
     resetFormData () {
       return Object.assign(
@@ -243,22 +310,24 @@ export default {
     },
     async saveApplication () {
       this.isSaving = true
+
+      const isValidForm = await this.$refs.form.validate()
+      if (!isValidForm) {
+        this.isSaving = false
+        return
+      }
+
       const data = Object.assign(
         {
           platform_name: this.$route?.query?.platform
         },
         this.formData,
-        this.$refs.resumeUpload.getValues(),
+        (this.$refs.resumeUpload) ? this.$refs.resumeUpload.getValues() : {},
+        (this.$refs.transcriptUpload) ? this.$refs.transcriptUpload.getValues() : {},
         { job_id: this.jobApplication.id, filter_id: this.$route.params.filterId }
       )
 
-      // Make sure a resume is uploaded if existing resume is not being used
-      if (this.$refs.resumeUpload.isUpload && !this.$refs.newResumeUpload.validate()) {
-        this.isSaving = false
-        return
-      }
-
-      await this.$api.post('job-application/', getAjaxFormData(data, [this.newResumeKey]))
+      await this.$api.post('job-application/', getAjaxFormData(data, [this.newResumeKey, this.newAcademicTranscriptKey]))
       await this.authStore.setApplications(this.authStore.propUser, true) // Update user applications and application template
       this.isApplicationSaved = true
       // Leave the drawer open to allow user to create an account if they don't have one

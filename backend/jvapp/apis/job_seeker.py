@@ -106,7 +106,13 @@ class ApplicationView(JobVyneAPIView):
             resume = resume[0]
         elif application_template:
             resume = application_template.resume
-        self.create_application(user, application, self.data, resume=resume)
+            
+        if academic_transcript := self.files.get('academic_transcript'):
+            academic_transcript = academic_transcript[0]
+        elif application_template:
+            academic_transcript = application_template.academic_transcript
+
+        self.create_application(user, application, self.data, resume=resume, academic_transcript=academic_transcript)
         
         ## Send notification emails
         employer = application.employer_job.employer
@@ -117,7 +123,14 @@ class ApplicationView(JobVyneAPIView):
             'link_name': application.social_link_filter.name,
             'employer': employer
         }
-        files = [application.resume] if resume else None
+        if any([resume, academic_transcript]):
+            files = []
+            if resume:
+                files.append(application.resume)
+            if academic_transcript:
+                files.append(application.academic_transcript)
+        else:
+            files = None
         
         # Email the job applicant
         send_django_email(
@@ -237,7 +250,7 @@ class ApplicationView(JobVyneAPIView):
             ats_api = get_ats_api(ats_cfg)
             referrer = application.social_link_filter.owner
             referrer_note = f'''
-                {referrer.first_name} {referrer.last_name} provided feedback on this candidate:
+                {referrer.first_name} {referrer.last_name} ({referrer.email}) provided feedback on this candidate:
                 Do you know the applicant? {application.get_know_applicant_label()}
                 Would you recommend this applicant for the { application.employer_job.job_title } position? {application.get_recommend_applicant_label(application.feedback_recommend_this_job)}
                 Would you recommend this applicant for any position? {application.get_recommend_applicant_label(application.feedback_recommend_any_job)}
@@ -252,7 +265,7 @@ class ApplicationView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_application(user, application, data, resume=None):
+    def create_application(user, application, data, resume=None, academic_transcript=None):
         application.user = user
         platform_name = data.get('platform_name')
         platform = None
@@ -269,6 +282,7 @@ class ApplicationView(JobVyneAPIView):
         set_object_attributes(application, data, cfg)
         application.platform = platform
         application.resume = resume
+        application.academic_transcript = academic_transcript
         
         ApplicationView.add_application_referral_bonus(application)
         application.save()
