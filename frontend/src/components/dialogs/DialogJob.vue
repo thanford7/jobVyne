@@ -35,6 +35,9 @@
         </div>
         <div class="col-12">
           <q-toggle v-model="isAddSalary" label="Add salary range"/>
+          <CustomTooltip :is_include_space="true">
+            Salary can mean salary, remuneration, compensation, or stipend
+          </CustomTooltip>
         </div>
         <template v-if="isAddSalary">
           <div class="col-12 col-md-4 q-pr-md-sm">

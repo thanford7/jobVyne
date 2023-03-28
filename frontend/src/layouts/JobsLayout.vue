@@ -179,6 +179,7 @@
                                   <div class="q-mb-sm">{{ job.employer_name }}</div>
                                   <div class="text-grey-7 q-mb-sm">
                                     Posted on: {{ dateTimeUtil.getShortDate(job.open_date) }}
+                                    <span v-if="job.close_date">| Closes on: {{ dateTimeUtil.getShortDate(job.close_date) }}</span>
                                   </div>
                                 </div>
                               </div>
@@ -188,6 +189,7 @@
                               <div class="q-mb-sm">{{ job.employer_name }}</div>
                               <div class="text-grey-7 q-mb-sm">
                                 Posted on: {{ dateTimeUtil.getShortDate(job.open_date) }}
+                                <span v-if="job.close_date">| Closes on: {{ dateTimeUtil.getShortDate(job.close_date) }}</span>
                               </div>
                             </template>
                             <div>

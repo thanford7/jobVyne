@@ -32,7 +32,7 @@ class DataUtil {
     } else {
       salaryRange = this.formatCurrency(salaryCeiling)
     }
-    return `${salaryRange} per ${salaryInterval}`
+    return `${salaryRange} per ${salaryInterval || 'year'}`
   }
 
   getBitsFromList (bitList) {
