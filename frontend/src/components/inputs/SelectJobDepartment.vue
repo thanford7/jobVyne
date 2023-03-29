@@ -101,6 +101,9 @@ export default {
       })
     },
     createDepartment (departmentName) {
+      if (!this.isAllowCreate) {
+        return
+      }
       const newDept = (this.isEmitId) ? departmentName : { id: departmentName, name: departmentName }
       this.filterTxt = null
       this.$refs.select.updateInputValue('')
