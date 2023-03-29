@@ -207,7 +207,8 @@ class UserView(JobVyneAPIView):
             django_context={
                 'supportEmail': EMAIL_ADDRESS_SUPPORT,
                 'reset_password_url': reset_password_url,
-                'is_new': is_new
+                'is_new': is_new,
+                'user': user
             },
             is_tracked=False
         )

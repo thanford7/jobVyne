@@ -38,10 +38,10 @@
           </SeparatorWithText>
           <div class="row q-gutter-y-md">
             <div class="col-12">
-              <SelectJobDepartment v-model="formData.required.departments" :employer-id="employerId"/>
+              <SelectJobDepartment v-model="formData.required.departments" :employer-id="employerId" :is-emit-id="false"/>
             </div>
             <div class="col-12">
-              <SelectJob v-model="formData.required.jobs" :employer-id="employerId"/>
+              <SelectJob v-model="formData.required.jobs" :employer-id="employerId" :is-emit-id="false"/>
             </div>
           </div>
         </div>
@@ -53,10 +53,10 @@
           </SeparatorWithText>
           <div class="row q-gutter-y-md">
             <div class="col-12">
-              <SelectJobDepartment v-model="formData.optional.departments" :employer-id="employerId"/>
+              <SelectJobDepartment v-model="formData.optional.departments" :employer-id="employerId" :is-emit-id="false"/>
             </div>
             <div class="col-12">
-              <SelectJob v-model="formData.optional.jobs" :employer-id="employerId"/>
+              <SelectJob v-model="formData.optional.jobs" :employer-id="employerId" :is-emit-id="false"/>
             </div>
           </div>
         </div>
@@ -68,10 +68,10 @@
           </SeparatorWithText>
           <div class="row q-gutter-y-md">
             <div class="col-12">
-              <SelectJobDepartment v-model="formData.hidden.departments" :employer-id="employerId"/>
+              <SelectJobDepartment v-model="formData.hidden.departments" :employer-id="employerId" :is-emit-id="false"/>
             </div>
             <div class="col-12">
-              <SelectJob v-model="formData.hidden.jobs" :employer-id="employerId"/>
+              <SelectJob v-model="formData.hidden.jobs" :employer-id="employerId" :is-emit-id="false"/>
             </div>
           </div>
         </div>

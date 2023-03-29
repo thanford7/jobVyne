@@ -69,7 +69,9 @@
                 return true
               }
               return 'The LinkedIn URL must be valid'
-            }]"
+            },
+            val => !val || val.length <= 200 || 'LinkedIn URL must be less than or equal to 200 characters'
+            ]"
           />
           <FileDisplayOrUpload
             v-if="isFieldShown('resume')"

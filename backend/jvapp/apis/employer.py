@@ -701,7 +701,7 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
                     if filters['departments']:
                         requirement.filter_departments.add(*[d['id'] for d in filters['departments']])
                     if filters['jobs']:
-                        requirement.filter_jobs.add(*filters['jobs'])
+                        requirement.filter_jobs.add(*[j['id'] for j in filters['jobs']])
             elif requirement:
                 # If there is an old default value, we need to get rid of it
                 requirement.delete()

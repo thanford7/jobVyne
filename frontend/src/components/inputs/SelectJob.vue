@@ -3,7 +3,8 @@
     v-if="isLoaded"
     ref="select"
     :multiple="isMulti" :clearable="isMulti" :use-chips="isMulti"
-    filled use-input map-options emit-value
+    filled use-input map-options
+    :emit-value="isEmitId"
     @filter="filter"
     :options="filteredJobs"
     option-value="id" option-label="job_title"
@@ -50,6 +51,10 @@ export default {
       default: false
     },
     isMulti: {
+      type: Boolean,
+      default: true
+    },
+    isEmitId: {
       type: Boolean,
       default: true
     },
