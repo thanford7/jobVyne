@@ -264,6 +264,7 @@ EMAIL_PORT = 587  # 25 or 587 (for unencrypted/TLS connections).
 EMAIL_USE_TLS = True
 SERVER_EMAIL = 'no-reply@jobvyne.com'  # This is used to send error messages to admins
 DEFAULT_FROM_EMAIL = 'no-reply@jobvyne.com'
+EMAIL_ADDRESS_TEST = env('EMAIL_ADDRESS_TEST', default='test@jobvyne.com')
 SENDGRID_WEBHOOK_KEY = env('SENDGRID_WEBHOOK_KEY')
 
 # SMS

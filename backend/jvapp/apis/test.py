@@ -1,10 +1,11 @@
+from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from jvapp.apis._apiBase import SUCCESS_MESSAGE_KEY
 from jvapp.permissions.general import IsAdmin
-from jvapp.utils.email import EMAIL_ADDRESS_TEST, send_django_email
+from jvapp.utils.email import send_django_email
 
 
 class TestErrorView(APIView):
@@ -21,7 +22,7 @@ class TestEmailView(APIView):
         send_django_email(
             'TEST EMAIL',
             'emails/base_general_email.html',
-            to_email=[EMAIL_ADDRESS_TEST],
+            to_email=[settings.EMAIL_ADDRESS_TEST],
             django_context={
                 'is_exclude_final_message': True
             },

@@ -18,7 +18,6 @@ from jvapp.utils.file import get_file_name, get_safe_file_path
 IS_PRODUCTION = os.getenv('DB') == 'prod'
 MESSAGE_ID_KEY = 'jv_message_id'
 MESSAGE_ENVIRONMENT_KEY = 'jv_base_url'
-EMAIL_ADDRESS_TEST = 'test@jobvyne.com'
 EMAIL_ADDRESS_SEND = 'no-reply@jobvyne.com'  # Email address where all emails originate from
 EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
 EMAIL_ADDRESS_SALES = 'sales@jobvyne.com'
@@ -69,10 +68,10 @@ def send_django_email(
         logger.info(
             f'Sending email to test address. This email would have been sent to {to_email}, cced to {cc_email}, and bcced to {bcc_email}')
         if cc_email:
-            cc_email = [EMAIL_ADDRESS_TEST]
+            cc_email = [settings.EMAIL_ADDRESS_TEST]
         if bcc_email:
-            bcc_email = [EMAIL_ADDRESS_TEST]
-        to_email = [EMAIL_ADDRESS_TEST]
+            bcc_email = [settings.EMAIL_ADDRESS_TEST]
+        to_email = [settings.EMAIL_ADDRESS_TEST]
         from_email = EMAIL_ADDRESS_SEND
     
     if cc_email and not isinstance(cc_email, list):

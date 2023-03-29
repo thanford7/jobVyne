@@ -11,7 +11,7 @@ from sendgrid import EventWebhook
 
 from jvapp.models import Message, MessageRecipient
 from jvapp.utils.datetime import get_datetime_from_unix
-from jvapp.utils.email import EMAIL_ADDRESS_TEST, MESSAGE_ENVIRONMENT_KEY, MESSAGE_ID_KEY
+from jvapp.utils.email import MESSAGE_ENVIRONMENT_KEY, MESSAGE_ID_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class SendgridWebhooksView(APIView):
                 recipients_to_save.append(recipient)
 
                 # Update job application notifications if this event is related
-                if job_application and event['email'] in (job_application.employer_job.employer.notification_email, EMAIL_ADDRESS_TEST):
+                if job_application and event['email'] in (job_application.employer_job.employer.notification_email, settings.EMAIL_ADDRESS_TEST):
                     job_application.notification_email_failure_dt = event_datetime
                     job_application.save()
             elif event_type == 'delivered':
@@ -106,7 +106,7 @@ class SendgridWebhooksView(APIView):
                     recipients_to_save.append(recipient)
                     
                     # Update job application notifications if this event is related
-                    if job_application and event['email'] in (job_application.employer_job.employer.notification_email, EMAIL_ADDRESS_TEST):
+                    if job_application and event['email'] in (job_application.employer_job.employer.notification_email, settings.EMAIL_ADDRESS_TEST):
                         job_application.notification_email_dt = event_datetime
                         job_application.save()
             # Engagement events
