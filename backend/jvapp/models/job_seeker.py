@@ -17,7 +17,7 @@ class JobApplicationFields(AuditFields):
     # Can be blank when we are capturing an application that is occuring outside of JobVyne
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=25, null=True, blank=True)
-    linkedin_url = models.CharField(max_length=75, null=True, blank=True)
+    linkedin_url = models.CharField(max_length=200, null=True, blank=True)
     resume = models.FileField(
         upload_to=get_user_upload_location,
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_FILE)]
