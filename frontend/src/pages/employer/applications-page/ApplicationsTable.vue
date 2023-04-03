@@ -566,7 +566,7 @@ export default {
         sortBy: 'created_dt',
         descending: true,
         page: 1,
-        rowsPerPage: 2,
+        rowsPerPage: 25,
         rowsNumber: null,
         totalPageCount: 1
       },
