@@ -220,7 +220,7 @@ export default {
       }
       await method(url, getAjaxFormData(data))
       await this.employerStore.setEmployerBonusRules(this.user.employer_id, true)
-      await this.employerStore.setEmployerJobs(this.user.employer_id, true)
+      await this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh: true })
       this.$emit('ok')
     }
   },

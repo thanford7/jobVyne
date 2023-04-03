@@ -17,10 +17,10 @@ class ApplicantFeedbackUtil {
     this.RECOMMEND_UNSURE = 2
     this.RECOMMEND_NA = 3
     this.RECOMMEND_APPLICANT_OPTS = {
-      [this.RECOMMEND_NO]: { label: 'No', val: this.RECOMMEND_NO },
-      [this.RECOMMEND_YES]: { label: 'Yes', val: this.RECOMMEND_YES },
-      [this.RECOMMEND_UNSURE]: { label: 'Not sure', val: this.RECOMMEND_UNSURE },
-      [this.RECOMMEND_NA]: { label: 'Not applicable', val: this.RECOMMEND_NA }
+      [this.RECOMMEND_NO]: { label: 'No', val: this.RECOMMEND_NO, icon: 'thumb_down' },
+      [this.RECOMMEND_YES]: { label: 'Yes', val: this.RECOMMEND_YES, icon: 'thumb_up' },
+      [this.RECOMMEND_UNSURE]: { label: 'Not sure', val: this.RECOMMEND_UNSURE, icon: 'remove' },
+      [this.RECOMMEND_NA]: { label: 'Not applicable', val: this.RECOMMEND_NA, icon: '' }
     }
   }
 
@@ -44,6 +44,13 @@ class ApplicantFeedbackUtil {
       return this.NULL_DEFAULT_VAL
     }
     return this.RECOMMEND_APPLICANT_OPTS[val].label
+  }
+
+  getRecommendApplicantIcon (val) {
+    if (dataUtil.isNil(val)) {
+      return this.NULL_DEFAULT_VAL
+    }
+    return this.RECOMMEND_APPLICANT_OPTS[val].icon
   }
 }
 

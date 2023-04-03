@@ -22,7 +22,6 @@ from jvapp.serializers.user import get_serialized_user
 from jvapp.tasks import task_run_job_scrapers
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
-from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
 from scrape.scraper import run_job_scrapers
 
 
@@ -149,18 +148,19 @@ class AdminEmployerView(JobVyneAPIView):
             ).save()
         
         # Create account owner
-        user = JobVyneUser.objects.create_user(
-            self.data['owner_email'],
-            first_name=self.data['owner_first_name'],
-            last_name=self.data['owner_last_name'],
-            user_type_bits=JobVyneUser.USER_TYPE_EMPLOYER,
-            employer_id=employer.id,
-            is_employer_owner=True
-        )
-        self.assign_employer_admin_permission(user, employer)
+        if owner_email := self.data.get('owner_email'):
+            user = JobVyneUser.objects.create_user(
+                owner_email,
+                first_name=self.data.get('owner_first_name'),
+                last_name=self.data.get('owner_last_name'),
+                user_type_bits=JobVyneUser.USER_TYPE_EMPLOYER,
+                employer_id=employer.id,
+                is_employer_owner=True
+            )
+            self.assign_employer_admin_permission(user, employer)
         
-        # Send welcome email to owner
-        UserView.send_password_reset_email(user, is_new=True)
+            # Send welcome email to owner
+            UserView.send_password_reset_email(user, is_new=True)
         
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Employer successfully created'

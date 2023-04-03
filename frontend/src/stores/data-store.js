@@ -11,8 +11,8 @@ export const useDataStore = defineStore('data', {
 
   actions: {
     async getData (url, dataAttr, startDate, endDate, extraParams = {}, isForceRefresh = false) {
-      startDate = dateTimeUtil.serializeDate(startDate, { isIncludeTime: true })
-      endDate = dateTimeUtil.serializeDate(endDate, { isIncludeTime: true, isEndOfDay: true })
+      startDate = (startDate) ? dateTimeUtil.serializeDate(startDate, { isIncludeTime: true }) : null
+      endDate = (endDate) ? dateTimeUtil.serializeDate(endDate, { isIncludeTime: true, isEndOfDay: true }) : null
       const apiKey = this.makeApiKey(startDate, endDate, extraParams)
       if (!isForceRefresh) {
         const data = this[dataAttr][apiKey]

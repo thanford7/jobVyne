@@ -59,11 +59,15 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     
     FEEDBACK_NO_RESPONSE_LABEL = 'No response'
 
+    # Keep in sync with ApplicationUtil
     class ApplicationStatus(Enum):
+        INTERESTED = 'interested'
         APPLIED = 'applied'
+        APPROVED = 'application approved'
         INTERVIEWING = 'interviewing'
         HIRED = 'hired'
         DECLINED = 'declined'
+        ARCHIVED = 'archived'
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link_filter = models.ForeignKey(

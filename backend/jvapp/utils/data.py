@@ -63,7 +63,7 @@ def coerce_bool(val):
 def coerce_int(val, default=None, is_raise_error=False):
     try:
         return int(val)
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         if is_raise_error:
             raise e
         return default
@@ -72,7 +72,7 @@ def coerce_int(val, default=None, is_raise_error=False):
 def coerce_float(val, default=None, is_raise_error=False):
     try:
         return float(val)
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         if is_raise_error:
             raise e
         return default

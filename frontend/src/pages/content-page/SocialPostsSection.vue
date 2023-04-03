@@ -133,7 +133,7 @@
       v-model="pageNumber"
       :max-pages="5"
       :max="socialPostPagesCount"
-      direction-links
+      input
     />
   </div>
 </template>

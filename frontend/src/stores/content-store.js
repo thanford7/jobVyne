@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { makeApiRequestKey } from 'src/utils/requests.js'
 
 export const useContentStore = defineStore('content', {
   state: () => ({
@@ -9,7 +10,7 @@ export const useContentStore = defineStore('content', {
 
   actions: {
     async setSocialContent (employerId, userId, isForceRefresh = false) {
-      const key = this.makeKey(employerId, userId)
+      const key = makeApiRequestKey(employerId, userId)
       if (this.socialContent[key] && !isForceRefresh) {
         return
       }
@@ -22,7 +23,7 @@ export const useContentStore = defineStore('content', {
       employerId, userId, pageNumber,
       { isForceRefresh = false, filterParams = {}, isEmployees = false } = {}
     ) {
-      const key = this.makeKey(employerId, userId, pageNumber, filterParams, isEmployees)
+      const key = makeApiRequestKey(employerId, userId, pageNumber, filterParams, isEmployees)
       if (!isForceRefresh && this.socialPosts[key]) {
         return
       }
@@ -42,16 +43,13 @@ export const useContentStore = defineStore('content', {
       this.userFiles[userId] = resp.data
     },
     getSocialContent (employerId, userId) {
-      return this.socialContent[this.makeKey(employerId, userId)]
+      return this.socialContent[makeApiRequestKey(employerId, userId)]
     },
     getSocialPosts (employerId, userId, pageNumber, filterParams = {}, isEmployees = false) {
-      return this.socialPosts[this.makeKey(employerId, userId, pageNumber, filterParams, isEmployees)]
+      return this.socialPosts[makeApiRequestKey(employerId, userId, pageNumber, filterParams, isEmployees)]
     },
     getUserFiles (userId) {
       return this.userFiles[userId]
-    },
-    makeKey () {
-      return JSON.stringify(arguments)
     }
   }
 })

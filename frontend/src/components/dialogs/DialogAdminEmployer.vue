@@ -58,8 +58,7 @@
         Account owner
         <CustomTooltip>
           This will be the person that will be in charge of setting up the system on the employer's end. They will
-          receive
-          employer admin priveleges.
+          receive employer admin priveleges.
         </CustomTooltip>
       </div>
       <template v-if="employer">
@@ -70,15 +69,11 @@
           filled
           v-model="formData.owner_first_name"
           label="First name"
-          lazy-rules
-          :rules="[ val => val && val.length > 0 || 'First name is required']"
         />
         <q-input
           filled
           v-model="formData.owner_last_name"
           label="Last name"
-          lazy-rules
-          :rules="[ val => val && val.length > 0 || 'Last name is required']"
         />
         <q-input
           filled
@@ -86,9 +81,9 @@
           label="Email"
           lazy-rules
           :rules="[
-          val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'Please enter a valid email',
-          val => hasPermittedEmail(val) || 'Email address does not have a permitted domain'
-        ]"
+            val => !val?.length || formUtil.isGoodEmail(val) || 'Please enter a valid email',
+            val => !val?.length || hasPermittedEmail(val) || 'Email address does not have a permitted domain'
+          ]"
         />
       </template>
       <template v-if="canUpdateSubscription">

@@ -69,3 +69,7 @@ export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) =>
 export const getAssetsPath = (relativePath) => {
   return process.env.ASSETS_PATH + relativePath
 }
+
+export const makeApiRequestKey = (...args) => {
+  return JSON.stringify(args)
+}

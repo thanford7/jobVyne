@@ -3,7 +3,8 @@ from enum import Enum
 from functools import reduce
 
 from django.contrib.sites.shortcuts import get_current_site
-from django.db.models import Count, F, Q, Sum
+from django.core.paginator import Paginator
+from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -18,7 +19,7 @@ from jvapp.apis.notification import MessageGroupView
 from jvapp.apis.social import SocialLinkFilterView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
-from jvapp.models import MessageThread, MessageThreadContext, SocialLinkFilter
+from jvapp.models import JobApplication, MessageThread, MessageThreadContext, SocialLinkFilter
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
@@ -30,7 +31,9 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page, \
     get_serialized_employer_referral_request
-from jvapp.utils.data import AttributeCfg, coerce_int, is_obfuscated_string, set_object_attributes
+from jvapp.serializers.job_seeker import get_serialized_job_application
+from jvapp.serializers.location import get_serialized_location
+from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import get_domain_from_email, send_django_email
 from jvapp.utils.sanitize import sanitize_html
@@ -526,7 +529,9 @@ class EmployerJobView(JobVyneAPIView):
                 job_filter &= Q(job_department_id__in=department_ids)
             if job_ids := self.query_params.getlist('job_ids[]'):
                 job_filter &= Q(id__in=job_ids)
-            jobs = self.get_employer_jobs(employer_job_filter=job_filter)
+            is_only_closed = coerce_bool(self.query_params.get('is_only_closed'))
+            is_include_closed = coerce_bool(self.query_params.get('is_include_closed'))
+            jobs = self.get_employer_jobs(employer_job_filter=job_filter, is_only_closed=is_only_closed, is_include_closed=is_include_closed)
             rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user,
                                                                    employer_id=employer_id) if self.user else None
             data = [get_serialized_employer_job(j, rules=rules, is_include_bonus=bool(self.user)) for j in jobs]
@@ -628,12 +633,14 @@ class EmployerJobView(JobVyneAPIView):
     @staticmethod
     def get_employer_jobs(
             employer_job_id=None, employer_job_filter=None, order_by='-open_date',
-            is_include_closed=False, is_include_future=False
+            is_only_closed=False, is_include_closed=False, is_include_future=False
     ):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
         else:
-            if not is_include_closed:
+            if is_only_closed:
+                employer_job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
+            elif not is_include_closed:
                 employer_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
             if not is_include_future:
                 employer_job_filter &= Q(open_date__lte=timezone.now().date())
@@ -656,6 +663,45 @@ class EmployerJobView(JobVyneAPIView):
             return jobs[0]
         
         return jobs
+
+
+class EmployerJobApplicationView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def put(self, request):
+        if not (application_id := self.data.get('id')):
+            return get_error_response('An application ID is required')
+        
+        application = self.get_application(application_id)
+        has_changed = False
+        new_application_status = self.data.get('application_status')
+        if new_application_status and new_application_status != application.application_status:
+            application.application_status = new_application_status
+            application.application_status_dt = timezone.now()
+            has_changed = True
+        
+        if has_changed:
+            if not self.has_edit_permission(self.user, application):
+                return get_error_response('You do not have the appropriate permissions to edit this application')
+            application.save()
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Updated job application'
+        })
+        
+    
+    @staticmethod
+    def has_edit_permission(user, application):
+        return (
+            (application.employer_job.employer_id == user.employer_id)
+            and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_JOBS.value, application.employer_job.employer_id)
+        )
+    
+    @staticmethod
+    def get_application(application_id):
+        return JobApplication.objects\
+            .select_related('employer_job')\
+            .get(id=application_id)
 
 
 class EmployerJobApplicationRequirementView(JobVyneAPIView):
@@ -682,7 +728,8 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
             application_field=application_field
         )
         
-        for app_requirement_key, requirement_attr in (('required', 'is_required'), ('optional', 'is_optional'), ('hidden', 'is_hidden')):
+        for app_requirement_key, requirement_attr in (
+                ('required', 'is_required'), ('optional', 'is_optional'), ('hidden', 'is_hidden')):
             filters = self.data.get(app_requirement_key)
             is_default = self.data['default'].get(requirement_attr)
             requirement = next((r for r in application_requirements if getattr(r, requirement_attr)), None)
@@ -709,7 +756,7 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'Updated application requirements for {application_field} field'
         })
-        
+    
     @staticmethod
     def get_application_requirements(employer_id=None, job=None):
         assert employer_id or job
@@ -765,21 +812,25 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
         application_fields = {}
         for requirement in consolidated_requirements:
             field_key = requirement['application_field']
-            if (required := requirement['required']) and EmployerJobApplicationRequirementView.is_job_filter_match(job, required):
+            if (required := requirement['required']) and EmployerJobApplicationRequirementView.is_job_filter_match(job,
+                                                                                                                   required):
                 application_fields[field_key] = {'is_required': True}
-            elif (optional := requirement['optional']) and EmployerJobApplicationRequirementView.is_job_filter_match(job, optional):
+            elif (optional := requirement['optional']) and EmployerJobApplicationRequirementView.is_job_filter_match(
+                    job, optional):
                 application_fields[field_key] = {'is_optional': True}
-            elif (hidden := requirement['hidden']) and EmployerJobApplicationRequirementView.is_job_filter_match(job, hidden):
+            elif (hidden := requirement['hidden']) and EmployerJobApplicationRequirementView.is_job_filter_match(job,
+                                                                                                                 hidden):
                 pass
             else:
                 application_fields[field_key] = {**requirement['default']}
         return application_fields
-        
+    
     @staticmethod
     def is_job_filter_match(job: EmployerJob, requirement_filter: dict):
         return any([
             requirement_filter['jobs'] and next((j for j in requirement_filter['jobs'] if j['id'] == job.id), None),
-            requirement_filter['departments'] and next((d for d in requirement_filter['departments'] if d['id'] == job.job_department_id), None)
+            requirement_filter['departments'] and next(
+                (d for d in requirement_filter['departments'] if d['id'] == job.job_department_id), None)
         ])
 
 

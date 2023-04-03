@@ -208,7 +208,7 @@ export default {
     async updateData (isForceRefresh) {
       await this.employerStore.setEmployer(this.user.employer_id, isForceRefresh)
       await this.employerStore.setEmployerBonusRules(this.user.employer_id, isForceRefresh)
-      await this.employerStore.setEmployerJobs(this.user.employer_id, isForceRefresh)
+      await this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh: isForceRefresh })
     },
     async copyBonusRule (bonusRule) {
       bonusRule.order_idx = this.employerStore.getEmployerBonusRules(this.user.employer_id).length

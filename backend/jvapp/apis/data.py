@@ -1,17 +1,18 @@
 import json
 from collections import defaultdict
+from datetime import timezone
 
 from django.core.paginator import Paginator
-from django.db.models import Count, F, Prefetch, Q, Value
+from django.db.models import Count, F, Prefetch, Q, Sum, Value
 from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek, TruncYear
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import EmployerJob, JobApplication, JobVyneUser, MessageThreadContext, PageView
+from jvapp.models import JobApplication, JobVyneUser, MessageThreadContext, PageView, UserApplicationReview
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.social import get_serialized_message_thread
-from jvapp.utils.data import coerce_bool
+from jvapp.utils.data import coerce_bool, coerce_int
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 
 
@@ -21,7 +22,7 @@ class BaseDataView(JobVyneAPIView):
         super().initial(request, *args, **kwargs)
         self.start_dt = get_datetime_or_none(self.query_params.get('start_dt'))
         self.end_dt = get_datetime_or_none(self.query_params.get('end_dt'))
-        self.timezone = self.end_dt.tzinfo
+        self.timezone = self.end_dt.tzinfo if self.end_dt else timezone.utc
         self.owner_id = self.query_params.get('owner_id')
         if self.owner_id:
             self.owner_id = int(self.owner_id)
@@ -35,7 +36,8 @@ class BaseDataView(JobVyneAPIView):
         self.is_sort_descending = coerce_bool(self.query_params.get('is_descending'))
         if self.filter_by and isinstance(self.filter_by, str):
             self.filter_by = json.loads(self.filter_by)
-        self.page_count = self.query_params.get('page_count')
+        self.page_count = coerce_int(self.query_params.get('page_count'), default=1)
+        self.records_per_page = coerce_int(self.query_params.get('rows_per_page'), default=25)
         if not any([self.owner_id, self.employer_id]):
             raise ValueError('You must provide an owner ID, or employer ID')
     
@@ -57,7 +59,8 @@ class ApplicationsView(BaseDataView):
         'email': ('email',),
         'created_dt': ('created_dt',),
         'source': ('social_link_filter__owner__first_name', 'social_link_filter__name'),
-        'recommended': ('feedback_recommend_this_job',)
+        'recommended': ('feedback_recommend_this_job',),
+        'total_user_rating': ('total_user_rating',),
     }
     
     def get(self, request):
@@ -68,7 +71,7 @@ class ApplicationsView(BaseDataView):
                 return Response('You do not have access to this user', status=status.HTTP_401_UNAUTHORIZED)
         is_exclude_job_board = self.query_params.get('is_exclude_job_board', False)
         applications = self.get_job_applications(
-            self.user, self.start_dt, self.end_dt,
+            self.user, start_date=self.start_dt, end_date=self.end_dt,
             employer_id=self.employer_id, owner_id=self.owner_id, is_ignore_permission=True,
             is_exclude_job_board=is_exclude_job_board
         )
@@ -101,6 +104,8 @@ class ApplicationsView(BaseDataView):
                 if None in recommended_filter:
                     rec_filter_q |= Q(feedback_recommend_this_job__isnull=True)
                 app_filter &= rec_filter_q
+            if application_status_filter := self.filter_by.get('application_status'):
+                app_filter &= Q(application_status=application_status_filter)
         
         applications = applications.filter(app_filter)
         
@@ -146,7 +151,7 @@ class ApplicationsView(BaseDataView):
             for key in sort_keys:
                 sort_order.append(f'{"-" if self.is_sort_descending else ""}{key}')
                 
-        paged_applications = Paginator(applications.order_by(*sort_order), 25)
+        paged_applications = Paginator(applications.order_by(*sort_order), per_page=self.records_per_page)
         locations = set()
         for app in applications:
             for location in app.employer_job.locations.all():
@@ -174,8 +179,10 @@ class ApplicationsView(BaseDataView):
             'phone_number': application.phone_number,
             'linkedin_url': application.linkedin_url,
             'resume_url': application.resume.url if application.resume else None,
+            'academic_transcript_url': application.academic_transcript.url if application.academic_transcript else None,
             'created_dt': get_datetime_format_or_none(application.created_dt),
-            'locations': [get_serialized_location(l) for l in application.employer_job.locations.all()]
+            'locations': [get_serialized_location(l) for l in application.employer_job.locations.all()],
+            'application_status': application.application_status
         }
         if is_employer or is_owner:
             application_data['first_name'] = application.first_name
@@ -188,6 +195,23 @@ class ApplicationsView(BaseDataView):
             }
         
         if is_employer:
+            if referrer := application.social_link_filter.owner:
+                application_data['referrer'] = {
+                    'first_name': referrer.first_name,
+                    'last_name': referrer.last_name,
+                    'email': referrer.email
+                }
+            
+            application_reviews = application.user_review.all()
+            if personal_review := next((review for review in application_reviews if review.user_id == self.user.id), None):
+                application_data['personal_rating'] = personal_review.rating
+            application_data['ratings'] = sorted([
+                {
+                    'user_id': review.user_id,
+                    'user_name': review.user.full_name,
+                    'rating': review.rating
+                } for review in application_reviews
+            ], key=lambda x: x['rating'])
             application_data['notification_email_dt'] = get_datetime_format_or_none(application.notification_email_dt)
             application_data['notification_email_failure_dt'] = get_datetime_format_or_none(
                 application.notification_email_failure_dt)
@@ -200,10 +224,14 @@ class ApplicationsView(BaseDataView):
     
     @staticmethod
     def get_job_applications(
-        user, start_date, end_date, employer_id=None, owner_id=None, is_exclude_job_board=False,
+        user, start_date=None, end_date=None, employer_id=None, owner_id=None, is_exclude_job_board=False,
         is_ignore_permission=False
     ):
-        app_filter = Q(created_dt__lte=end_date) & Q(created_dt__gte=start_date)
+        app_filter = Q()
+        if start_date:
+            app_filter &= Q(created_dt__gte=start_date)
+        if end_date:
+            app_filter &= Q(created_dt__lte=end_date)
         if employer_id:
             app_filter &= Q(social_link_filter__employer_id=employer_id)
         if owner_id:
@@ -215,32 +243,45 @@ class ApplicationsView(BaseDataView):
         message_thread_prefetch = Prefetch(
             'message_thread_context',
             queryset=MessageThreadContext.objects
-                .select_related('message_thread')
-                .prefetch_related(
+            .select_related('message_thread')
+            .prefetch_related(
                 'message_thread__message',
                 'message_thread__message__recipient',
                 'message_thread__message_groups'
             )
-                .filter(
+            .filter(
                 message_thread__message_groups__employer_id__isnull=False,
                 message_thread__message_groups__employer_id=employer_id
             )
         )
         
+        if user.is_employer:
+            application_review_filter = Q(application__employer_job__employer_id=employer_id)
+        else:
+            application_review_filter = Q(application__social_link_filter__owner_id=user.id)
+        application_review_prefetch = Prefetch(
+            'user_review',
+            queryset=UserApplicationReview.objects
+            .select_related('application', 'application__employer_job', 'application__social_link_filter', 'user')
+            .filter(application_review_filter)
+        )
+        
         job_applications = JobApplication.objects \
             .select_related(
-            'platform',
-            'employer_job',
-            'social_link_filter',
-            'social_link_filter__owner',
-        ) \
+                'platform',
+                'employer_job',
+                'social_link_filter',
+                'social_link_filter__owner',
+            ) \
             .prefetch_related(
-            'employer_job__locations',
-            'employer_job__locations__city',
-            'employer_job__locations__state',
-            'employer_job__locations__country',
-            message_thread_prefetch
-        ) \
+                'employer_job__locations',
+                'employer_job__locations__city',
+                'employer_job__locations__state',
+                'employer_job__locations__country',
+                message_thread_prefetch,
+                application_review_prefetch
+            ) \
+            .annotate(total_user_rating=Sum('user_review__rating')) \
             .filter(app_filter)
         
         if is_ignore_permission:

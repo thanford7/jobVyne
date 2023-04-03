@@ -15,7 +15,8 @@ from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MES
 from jvapp.apis.geocoding import LocationParser
 from jvapp.models import Employer, EmployerAuthGroup, SocialPost
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.user import JobVyneUser, UserEmployeeProfileQuestion, UserEmployeeProfileResponse, UserFile, \
+from jvapp.models.user import JobVyneUser, UserApplicationReview, UserEmployeeProfileQuestion, \
+    UserEmployeeProfileResponse, UserFile, \
     UserSocialCredential, \
     UserUnknownEmployer
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
@@ -309,6 +310,59 @@ class UserFileView(JobVyneAPIView):
         permission_type = PermissionTypes.EDIT.value if user_file.id else PermissionTypes.CREATE.value
         user_file.jv_check_permission(permission_type, user)
         user_file.save()
+        
+        
+class UserJobApplicationReviewView(JobVyneAPIView):
+    
+    def post(self, request):
+        application_review = self.get_job_application_reviews(
+            self.user, job_application_id=self.data['application_id'], user_id=self.data['user_id']
+        )
+        application_review = application_review[0] if application_review else UserApplicationReview()
+        is_new = self.update_job_application_review(self.user, application_review, self.data)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: f'{"Created" if is_new else "Updated"} job application review'
+        })
+        
+    def put(self, request):
+        application_review = self.get_job_application_reviews(self.user, application_review_id=self.data['application_review_id'])
+        self.update_job_application_review(self.user, application_review, self.data)
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Updated job application review'
+        })
+    
+    @staticmethod
+    def update_job_application_review(user, application_review, data):
+        is_new = False
+        if not application_review.id:
+            set_object_attributes(application_review, data, {
+                'user_id': None,
+                'application_id': None,
+            })
+            is_new = True
+        application_review.rating = data['rating']
+
+        permission_type = PermissionTypes.EDIT.value if application_review.id else PermissionTypes.CREATE.value
+        application_review.jv_check_permission(permission_type, user)
+        application_review.save()
+        return is_new
+        
+    @staticmethod
+    def get_job_application_reviews(user, application_review_id=None, job_application_id=None, user_id=None):
+        review_filter = Q(id=application_review_id) if application_review_id else Q(application_id=job_application_id)
+        if user_id:
+            review_filter &= Q(user_id=user_id)
+        reviews = UserApplicationReview.objects\
+            .select_related('application', 'application__employer_job', 'application__social_link_filter')\
+            .filter(review_filter)
+        reviews = UserApplicationReview.jv_filter_perm(user, reviews)
+        if application_review_id:
+            if reviews:
+                return reviews[0]
+            else:
+                raise UserApplicationReview.DoesNotExist
+        
+        return reviews
 
 
 class UserEmailVerificationGenerateView(JobVyneAPIView):

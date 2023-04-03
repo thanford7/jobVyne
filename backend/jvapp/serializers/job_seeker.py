@@ -20,7 +20,7 @@ def base_application_serializer(app: JobApplication or JobApplicationTemplate):
 
 
 def get_serialized_job_application(job_application: JobApplication):
-    return {
+    data = {
         **base_application_serializer(job_application),
         'social_link_filter_id': job_application.social_link_filter_id,
         'is_external_application': job_application.is_external_application,
@@ -33,3 +33,4 @@ def get_serialized_job_application(job_application: JobApplication):
             'is_open': (not job_application.employer_job.close_date) or (job_application.employer_job.close_date < timezone.now().date())
         }
     }
+    return data

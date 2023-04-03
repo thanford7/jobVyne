@@ -26,7 +26,7 @@ export const useGlobalStore = defineStore('global', {
     getPageTitle (pageName) {
       return `${pageName} - ${this.websiteName}`
     },
-    getMetaCfg ({ pageTitle, description = 'JobVyne helps employees share open positions at their company and get paid for referrals' }) {
+    getMetaCfg ({ pageTitle, description = 'Job recruitment through employee referrals and professional organizations' }) {
       return {
         title: pageTitle,
         titleTemplate: this.getPageTitle,

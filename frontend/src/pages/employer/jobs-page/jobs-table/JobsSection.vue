@@ -11,24 +11,25 @@
         :rows-per-page-options="[25, 50, 100]"
       >
         <template v-if="isEmployer" v-slot:top>
-          <div class="q-gutter-sm">
-            <q-btn
-              v-if="employer.is_manual_job_entry"
-              unelevated label="Add job" icon="add" color="primary"
-              @click.prevent="openEditJobDialog()"
-            />
-            <q-btn
-              v-if="employer?.ats_cfg?.id"
-              unelevated label="Update jobs from ATS" icon="refresh" color="primary"
-              :loading="isFetchingJobs"
-              @click.prevent="updateAtsJobs()"
-            />
-            <q-chip
-              v-if="$route.query.ruleId"
-              class="q-ml-md"
-              removable
-              @remove="removeRuleFilter"
-            >
+          <div class="col-12">
+            <div class="row q-gutter-sm">
+              <q-btn
+                v-if="employer.is_manual_job_entry"
+                unelevated label="Add job" icon="add" color="primary"
+                @click.prevent="openEditJobDialog()"
+              />
+              <q-btn
+                v-if="employer?.ats_cfg?.id"
+                unelevated label="Update jobs from ATS" icon="refresh" color="primary"
+                :loading="isFetchingJobs"
+                @click.prevent="updateAtsJobs()"
+              />
+              <q-chip
+                v-if="$route.query.ruleId"
+                class="q-ml-md"
+                removable
+                @remove="removeRuleFilter"
+              >
               <span v-if="parseInt($route.query.ruleId) > 0">
                 Jobs matching&nbsp;
                 <a
@@ -36,8 +37,20 @@
                   @click="openShowBonusRuleDialog($event,$route.query.ruleId)"
                 >referral bonus rule</a>
               </span>
-              <span v-else>Jobs without matching bonus rule</span>
-            </q-chip>
+                <span v-else>Jobs without matching bonus rule</span>
+              </q-chip>
+              <q-space/>
+              <q-btn-toggle
+                v-model="isClosedJobs"
+                unelevated
+                class="border-1-primary"
+                toggle-color="primary"
+                :options="[
+                {label: 'Open Jobs', value: false},
+                {label: 'Closed Jobs', value: true}
+              ]"
+              />
+            </div>
           </div>
         </template>
 
@@ -258,10 +271,10 @@ export default {
       isLoaded: false,
       isFetchingJobs: false,
       employer: null,
-      employerJobs: null,
       employerBonusRules: null,
       dataUtil,
       BONUS_TYPES,
+      isClosedJobs: false,
       jobsFilter: {
         jobTitle: null,
         departments: null,
@@ -309,9 +322,16 @@ export default {
         columns.push({ name: 'bonus_rule', field: 'bonus_rule', align: 'left', label: 'Bonus rule' })
       }
       return columns
+    },
+    employerJobs () {
+      return this.employerStore.getEmployerJobs(this.user.employer_id, { isOnlyClosed: this.isClosedJobs })
     }
   },
   methods: {
+    async updateEmployerJobs (isForceRefresh = true) {
+      await this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh })
+      await this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh, isOnlyClosed: true })
+    },
     openEditJobDialog (job) {
       if (!this.isEmployer) {
         return
@@ -320,8 +340,7 @@ export default {
         component: DialogJob,
         componentProps: { employerId: this.employer.id, job }
       }).onOk(async () => {
-        await this.employerStore.setEmployerJobs(this.user.employer_id, true)
-        this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
+        await this.updateEmployerJobs()
       })
     },
     openEditJobBonusDialog (job) {
@@ -332,8 +351,7 @@ export default {
         component: DialogJobBonus,
         componentProps: { jobs: [job] }
       }).onOk(async () => {
-        await this.employerStore.setEmployerJobs(this.user.employer_id, true)
-        this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
+        await this.updateEmployerJobs()
       })
     },
     openShowBonusRuleDialog (e, bonusRuleId, bonus) {
@@ -408,8 +426,7 @@ export default {
     async updateAtsJobs () {
       this.isFetchingJobs = true
       await this.$api.put('ats/jobs/', getAjaxFormData({ employer_id: this.user.employer_id }))
-      await this.employerStore.setEmployerJobs(this.user.employer_id, true)
-      this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
+      await this.updateEmployerJobs()
       this.isFetchingJobs = false
     }
   },
@@ -417,10 +434,9 @@ export default {
     await Promise.all([
       this.employerStore.setEmployer(this.user.employer_id),
       this.employerStore.setEmployerBonusRules(this.user.employer_id),
-      this.employerStore.setEmployerJobs(this.user.employer_id)
+      this.updateEmployerJobs(false)
     ])
     this.employer = this.employerStore.getEmployer(this.user.employer_id)
-    this.employerJobs = this.employerStore.getEmployerJobs(this.user.employer_id)
     this.employerBonusRules = this.employerStore.getEmployerBonusRules(this.user.employer_id)
     this.isLoaded = true
   },

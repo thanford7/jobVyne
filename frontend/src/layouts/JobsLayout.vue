@@ -259,7 +259,7 @@
                         v-model="pageNumber"
                         :max-pages="5"
                         :max="jobPagesCount"
-                        direction-links
+                        input
                       />
                     </div>
                   </div>

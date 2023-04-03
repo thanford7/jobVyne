@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import dataUtil from 'src/utils/data'
+import { makeApiRequestKey } from 'src/utils/requests.js'
 
 export const useEmployerStore = defineStore('employer', {
   state: () => ({
@@ -53,15 +54,16 @@ export const useEmployerStore = defineStore('employer', {
         this.employerBilling[employerId] = resp.data
       }
     },
-    async setEmployerJobs (employerId, isForceRefresh = false) {
-      if (!this.employerJobs[employerId] || isForceRefresh) {
+    async setEmployerJobs (employerId, { isOnlyClosed = false, isIncludeClosed = false, isForceRefresh = false } = {}) {
+      const apiRequestKey = makeApiRequestKey(employerId, isOnlyClosed, isIncludeClosed)
+      if (!this.employerJobs[apiRequestKey] || isForceRefresh) {
         const jobResp = await this.$api.get(
           'employer/job/',
           {
-            params: { employer_id: employerId }
+            params: { employer_id: employerId, is_only_closed: isOnlyClosed, is_include_closed: isIncludeClosed }
           }
         )
-        this.employerJobs[employerId] = jobResp.data
+        this.employerJobs[apiRequestKey] = jobResp.data
 
         const locResp = await this.$api.get(
           'employer/job/location/',
@@ -211,8 +213,9 @@ export const useEmployerStore = defineStore('employer', {
     getEmployerFileTags (employerId) {
       return dataUtil.sortBy(this.employerFileTags[employerId] || [], 'name')
     },
-    getEmployerJobs (employerId) {
-      return dataUtil.sortBy(this.employerJobs[employerId] || [], 'job_title')
+    getEmployerJobs (employerId, { isOnlyClosed = false, isIncludeClosed = false } = {}) {
+      const apiRequestKey = makeApiRequestKey(employerId, isOnlyClosed, isIncludeClosed)
+      return dataUtil.sortBy(this.employerJobs[apiRequestKey] || [], 'job_title')
     },
     getEmployerJobApplicationRequirements (employerId) {
       return this.employerJobApplicationRequirements[employerId] || []

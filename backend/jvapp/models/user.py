@@ -1,5 +1,5 @@
 from collections import defaultdict
-from enum import Enum
+from enum import Enum, IntEnum
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import FileExtensionValidator
@@ -16,7 +16,8 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermi
 __all__ = (
     'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
     'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate',
-    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion', 'UserNotificationPreference'
+    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion', 'UserNotificationPreference',
+    'UserApplicationReview'
 )
 
 from jvapp.utils.email import get_domain_from_email
@@ -320,6 +321,38 @@ class UserEmployerCandidate(models.Model):
     
     class Meta:
         unique_together = ('user', 'employer')
+        
+        
+class UserApplicationReview(AuditFields, JobVynePermissionsMixin):
+    # Keep in sync with ApplicationUtil
+    class Rating(IntEnum):
+        POSITIVE = 2
+        NEUTRAL = 1
+        NEGATIVE = 0
+    
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='application_review')
+    application = models.ForeignKey('JobApplication', on_delete=models.CASCADE, related_name='user_review')
+    rating = models.SmallIntegerField()
+    
+    class Meta:
+        unique_together = ('user', 'application')
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+        
+        review_filter = Q(user_id=user.id)
+        if user.is_employer:
+            review_filter |= Q(application__employer_job__employer_id=user.employer_id)
+    
+        return query.filter(review_filter)
+
+    def _jv_can_create(self, user):
+        return any([
+            user.id == self.application.social_link_filter.owner_id,
+            user.is_employer and (user.employer_id == self.application.employer_job.employer_id)
+        ])
     
     
 class UserEmployerPermissionGroup(models.Model):
