@@ -137,15 +137,51 @@
           input
         />
       </div>
+      <div class="col-12">
+        <q-btn-dropdown
+          v-if="false"
+          label="Bulk actions" color="primary"
+          rounded unelevated dense padding="5px 10px"
+          class="q-mr-sm"
+        >
+          <q-list>
+            <q-item clickable v-close-popup @click="openEmailApplicantsDialog()">
+              <q-item-section avatar>
+                <q-icon name="email"/>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Email {{ dataUtil.pluralize('applicant', selectedApplicationIds.length) }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+        <q-btn
+          unelevated dense rounded label="Select all applications" color="grey-6"
+          @click="selectAllApplications"
+        />
+        <q-btn
+          v-if="selectedApplicationIds.length"
+          class="q-ml-sm"
+          unelevated dense rounded label="Unselect all applications" color="grey-6"
+          @click="unselectAllApplications"
+        />
+      </div>
       <div v-for="application in applications" class="col-12 col-md-4 col-lg-3 q-px-sm">
         <q-card class="h-100 q-pb-md">
-          <div class="q-pa-sm text-center" :style="employerJobTitleColors[application.job_title]">
-            {{ application.job_title }}
-            <div>
-              <LocationChip v-if="application.locations?.length" :locations="application.locations" :is-dense="true"/>
+          <div class="row" :style="employerJobTitleColors[application.job_title]">
+            <div class="col-1">
+              <q-checkbox v-model="application.isSelected" @update:model-value="toggleSelectedApplication($event, application.id)"/>
+            </div>
+            <div class="col-11">
+              <div class="q-pa-sm text-center">
+                {{ application.job_title }}
+                <div>
+                  <LocationChip v-if="application.locations?.length" :locations="application.locations" :is-dense="true"/>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="q-px-sm q-pt-sm q-gutter-y-sm">
+          <div class="q-px-sm q-py-sm q-gutter-y-sm border-bottom-1-gray-300">
             <DropdownApplicationStatus
               v-model="application.application_status"
               :is-employer="isEmployer"
@@ -166,19 +202,19 @@
             >
               <template v-slot:positive>
                 <div class="row items-center no-wrap">
-                  <q-icon :name="applicationUtil.RATINGS[applicationUtil.POSITIVE].icon"/>
+                  <q-icon size="24px" :name="applicationUtil.RATINGS[applicationUtil.POSITIVE].icon"/>
                 </div>
               </template>
 
               <template v-slot:neutral>
                 <div class="row items-center no-wrap">
-                  <q-icon :name="applicationUtil.RATINGS[applicationUtil.NEUTRAL].icon"/>
+                  <q-icon size="24px" :name="applicationUtil.RATINGS[applicationUtil.NEUTRAL].icon"/>
                 </div>
               </template>
 
               <template v-slot:negative>
                 <div class="row items-center no-wrap">
-                  <q-icon :name="applicationUtil.RATINGS[applicationUtil.NEGATIVE].icon"/>
+                  <q-icon size="24px" :name="applicationUtil.RATINGS[applicationUtil.NEGATIVE].icon"/>
                 </div>
               </template>
             </q-btn-toggle>
@@ -516,6 +552,7 @@
 import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogApplicantReview from 'components/dialogs/DialogApplicantReview.vue'
+import DialogEmployerApplicantEmail from 'components/dialogs/DialogEmployerApplicantEmail.vue'
 import DropdownApplicationStatus from 'components/inputs/DropdownApplicationStatus.vue'
 import SelectLocation from 'components/inputs/SelectLocation.vue'
 import LocationChip from 'components/LocationChip.vue'
@@ -570,6 +607,7 @@ export default {
         rowsNumber: null,
         totalPageCount: 1
       },
+      selectedApplicationIds: [],
       applicantFeedbackUtil,
       applicationUtil,
       dataUtil,
@@ -683,6 +721,36 @@ export default {
         (this.employer.ats_cfg && (application.notification_ats_dt || application.notification_ats_failure_dt))
       )
     },
+    toggleSelectedApplication (isSelected, applicationId) {
+      if (isSelected && !this.selectedApplicationIds.includes(applicationId)) {
+        this.selectedApplicationIds.push(applicationId)
+      } else {
+        this.selectedApplicationIds = this.selectedApplicationIds.filter((appId) => appId !== applicationId)
+      }
+    },
+    selectAllApplications () {
+      this.applications.forEach((app) => {
+        app.isSelected = true
+        if (!this.selectedApplicationIds.includes(app.id)) {
+          this.selectedApplicationIds.push(app.id)
+        }
+      })
+    },
+    unselectAllApplications () {
+      this.applications.forEach((app) => {
+        app.isSelected = false
+      })
+      this.selectedApplicationIds = []
+    },
+    async openEmailApplicantsDialog () {
+      this.q.dialog({
+        component: DialogEmployerApplicantEmail,
+        componentProps: {
+          applicationIds: this.selectedApplicationIds,
+          employerId: this.user.employer_id
+        }
+      })
+    },
     async removeApplicationQueryParam () {
       await this.$router.replace({ name: this.$route.name, query: dataUtil.omit(this.$route.query, ['application']) })
     },
@@ -732,6 +800,9 @@ export default {
       }
       const paginatedApplications = await this.dataStore.getApplications(null, null, requestCfg, isForceRefresh)
       this.applications = paginatedApplications.applications || []
+      this.applications.forEach((app) => {
+        app.isSelected = this.selectedApplicationIds.includes(app.id)
+      })
       this.locations = paginatedApplications.locations || []
       Object.assign(this.pagination, pagination)
       this.pagination.rowsNumber = paginatedApplications.total_application_count

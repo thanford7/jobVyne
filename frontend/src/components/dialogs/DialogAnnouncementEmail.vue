@@ -67,10 +67,12 @@ export default {
       return await this.$refs.form.validate()
     },
     async sendEmail () {
-      await this.$api.post('email/notification/', getAjaxFormData({
+      const url = (this.employerId) ? 'email/employer/employee/' : 'email/admin/'
+      await this.$api.post(url, getAjaxFormData({
         emailSubject: this.emailSubject,
         emailBody: this.emailBody,
-        userFilters: this.userFilters
+        userFilters: this.userFilters,
+        employer_id: this.employerId
       }))
     }
   }

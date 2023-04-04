@@ -1,8 +1,12 @@
 <template>
   <q-btn-dropdown
+    ref="dropdown"
     :label="statusLabel"
-    color="blue-7" rounded split
+    class="border-1-gray-500"
+    rounded split outline
     padding="2px 16px"
+    @click="$refs.dropdown.toggle()"
+    @blur="$refs.dropdown.hide()"
   >
     <q-list>
       <q-item

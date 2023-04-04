@@ -1,7 +1,7 @@
 from django.core import mail
 from django.db.models import Q
 
-from jvapp.apis.notification import MessageView
+from jvapp.apis.notification import BaseMessageView
 from jvapp.models import JobApplication, MessageThread
 from jvapp.models.tracking import MessageGroup
 from jvapp.tests.base import BaseTestCase
@@ -56,7 +56,7 @@ class JobApplicationTestCase(BaseTestCase):
         self.assertEqual(1, self._get_message_group_count())
         
     def _get_message_thread_count(self):
-        return MessageView.get_message_threads(Q(message_groups__employer=self.employer)).count()
+        return BaseMessageView.get_message_threads(Q(message_groups__employer=self.employer)).count()
     
     def _get_message_group_count(self):
         return MessageGroup.objects.filter(employer=self.employer).count()

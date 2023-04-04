@@ -29,3 +29,12 @@ class IsAdminOrEmployerPermission(permissions.BasePermission):
             user.user_type_bits & JobVyneUser.USER_TYPE_ADMIN,
             user.user_type_bits & JobVyneUser.USER_TYPE_EMPLOYER,
         ))
+
+
+class IsAdminPermission(permissions.BasePermission):
+    
+    def has_permission(self, request, view):
+        user = request.user
+        if isinstance(user, AnonymousUser):
+            return False
+        return user.user_type_bits & JobVyneUser.USER_TYPE_ADMIN

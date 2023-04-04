@@ -13,7 +13,6 @@ urlpatterns = [
     path('admin/job-scraper/', admin.AdminJobScrapersView.as_view()),
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
-    path('email/notification/', notification.MessageView.as_view()),
     path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
     re_path('^employer/(?P<employer_id>[0-9]+)?/?$', employer.EmployerView.as_view()),
@@ -59,6 +58,11 @@ urlpatterns = [
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/job-application-review/', user.UserJobApplicationReviewView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
+    
+    # Emails
+    path('email/admin/', notification.MessageAdminView.as_view()),
+    path('email/employer/applicant/', notification.MessageEmployerApplicantView.as_view()),
+    path('email/employer/employee/', notification.MessageEmployerEmployeeView.as_view()),
     
     # Sales
     path('sales/inquiry/', sales.SalesInquiryView.as_view()),
