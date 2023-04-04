@@ -55,6 +55,7 @@ class Scraper:
             'Referer': get_base_url(self.start_url),
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
         })
+        logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.start_url)
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
                                range(self.MAX_CONCURRENT_PAGES)]
@@ -87,25 +88,32 @@ class Scraper:
         logger.info(f'Attempting to visit: {url}')
         logger.info(f'Number of open pages: {len(self.browser.pages)}')
         page = None
+        error_pages = []
         while retries < (max_retries + 1):
             page = await self.browser.new_page()
             try:
                 await page.goto(url, wait_until=self.PAGE_LOAD_WAIT_EVENT)
                 if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
                     logger.info('Page was redirected. Trying to reload page')
+                    error_pages.append(page)
                     retries += 1
-                    await page.close()
                     await asyncio.sleep(1)
                 else:
+                    for p in error_pages:
+                        await p.close()
                     return page
             except (PlaywrightTimeoutError, PlaywrightError) as e:
+                error_pages.append(page)
+                logger.info('Exception reaching page. Trying to reload page')
                 error = e
                 retries += 1
-                await page.close()
                 await asyncio.sleep(1)
-        
-        if page:
-            await self.save_page_info(page)
+
+        await self.save_page_info(page)
+
+        for p in error_pages:
+            await p.close()
+
         raise error or ValueError(f'Exceeded max tries while trying to visit: {url}')
     
     async def scrape_jobs(self):
@@ -182,6 +190,7 @@ class Scraper:
             await self.queue.put((job_url, meta_data))
     
     async def close_connections(self, page=None):
+        logger.info(f'close connections, page is {page}, session is {self.session}')
         await self.session.close()
         if page:
             await page.close()
