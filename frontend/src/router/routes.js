@@ -147,7 +147,7 @@ const routes = [
         path: ':key(employee-social-accounts)',
         name: 'employee-social-accounts',
         meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/SocialAccountsPage.vue')
+        component: () => import('pages/employee/social-accounts-page/SocialAccountsPage.vue')
       },
       {
         path: ':key(employee-content)',
@@ -239,7 +239,7 @@ const routes = [
       {
         path: ':key(profile)',
         name: 'profile',
-        component: () => import('pages/ProfilePage.vue')
+        component: () => import('pages/profile-page/ProfilePage.vue')
       },
       {
         path: ':key(feedback)',

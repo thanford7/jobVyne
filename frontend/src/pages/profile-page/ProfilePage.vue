@@ -50,6 +50,7 @@
         narrow-indicator
       >
         <q-tab name="general" label="General"/>
+        <q-tab name="connection" label="Connections"/>
         <q-tab name="security" label="Security"/>
         <q-tab name="notify" label="Notifications"/>
       </q-tabs>
@@ -128,6 +129,11 @@
             <div class="col-12 col-md-6 q-pl-md-sm">
               <SelectUserType v-model="userData.user_type_bits" :is-multi="true"/>
             </div>
+          </div>
+        </q-tab-panel>
+        <q-tab-panel name="connection">
+          <div class="row q-gutter-y-lg">
+            <SocialAccountsTable/>
           </div>
         </q-tab-panel>
         <q-tab-panel name="security">
@@ -328,16 +334,17 @@ import PasswordInput from 'components/inputs/PasswordInput.vue'
 import SelectOrDisplayProfilePic from 'components/inputs/SelectOrDisplayProfilePic.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
 import PageHeader from 'components/PageHeader.vue'
+import SocialAccountsTable from 'pages/employee/social-accounts-page/SocialAccountsTable.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { COMPANY_USER_TYPE_BITS } from 'src/utils/user-types.js'
+import SeparatorWithText from 'components/SeparatorWithText.vue'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
-import SeparatorWithText from 'components/SeparatorWithText.vue'
 import { useNotificationStore } from 'stores/notification-store.js'
 
 const userPermissionGroupColumns = [
@@ -349,6 +356,7 @@ const userPermissionGroupColumns = [
 export default {
   name: 'ProfilePage',
   components: {
+    SocialAccountsTable,
     SelectOrDisplayProfilePic,
     SelectUserType,
     PasswordInput,

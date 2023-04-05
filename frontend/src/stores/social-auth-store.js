@@ -99,12 +99,20 @@ export const useSocialAuthStore = defineStore('social-auth', {
         userTypeBit,
         isLogin
       }
-      providerCfg.auth_params.state = getMetaString(metaData)
+      const authParams = { ...providerCfg.auth_params }
+      // Social providers may be used to login, or for more detailed actions
+      // like posting. Different scopes are required for each
+      if (isLogin) {
+        authParams.scope = authParams.login_scope
+      }
+      delete authParams.login_scope
+
+      authParams.state = getMetaString(metaData)
       const authUrl = new URL(providerCfg.auth_url)
-      Object.entries(providerCfg.auth_params).forEach(([key, val]) => {
+      Object.entries(authParams).forEach(([key, val]) => {
         authUrl.searchParams.append(key, encodeURIComponent(val))
       })
-      return buildURL(providerCfg.auth_url, providerCfg.auth_params)
+      return buildURL(providerCfg.auth_url, authParams)
     },
     async setUserSocialCredentials (isForceRefresh) {
       if (!isForceRefresh && this.socialCredentials) {

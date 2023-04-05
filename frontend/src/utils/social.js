@@ -4,17 +4,45 @@ import locationUtil from 'src/utils/location.js'
 
 class SocialUtil {
   constructor () {
+    this.SOCIAL_KEY_LINKED_IN = 'LinkedIn'
+    this.SOCIAL_KEY_FACEBOOK = 'Facebook'
+    this.SOCIAL_KEY_GOOGLE = 'Google'
+    this.SOCIAL_KEY_TWITTER = 'Twitter'
+    this.SOCIAL_KEY_INSTAGRAM = 'Instagram'
+    this.SOCIAL_KEY_TIKTOK = 'TikTok'
+    this.SOCIAL_KEY_YOUTUBE = 'YouTube'
+
     this.platformCfgs = {
-      LinkedIn: {
+      [this.SOCIAL_KEY_LINKED_IN]: {
+        name: this.SOCIAL_KEY_LINKED_IN,
         allowedMedia: [FILE_TYPES.IMAGE.key],
         isMultiMedia: false,
-        characterLimit: 3000
+        characterLimit: 3000,
+        icon: 'fa-linkedin-in',
+        redirectProvider: 'linkedin-oauth2'
       },
-      Facebook: {},
-      Twitter: {},
-      Instagram: {},
-      TikTok: {},
-      YouTube: {}
+      [this.SOCIAL_KEY_FACEBOOK]: {
+        name: this.SOCIAL_KEY_FACEBOOK,
+        icon: 'fa-facebook-f',
+        redirectProvider: 'facebook'
+      },
+      [this.SOCIAL_KEY_TWITTER]: {
+        name: this.SOCIAL_KEY_TWITTER
+      },
+      [this.SOCIAL_KEY_INSTAGRAM]: {
+        name: this.SOCIAL_KEY_INSTAGRAM
+      },
+      [this.SOCIAL_KEY_TIKTOK]: {
+        name: this.SOCIAL_KEY_TIKTOK
+      },
+      [this.SOCIAL_KEY_YOUTUBE]: {
+        name: this.SOCIAL_KEY_YOUTUBE
+      },
+      [this.SOCIAL_KEY_GOOGLE]: {
+        name: this.SOCIAL_KEY_GOOGLE,
+        icon: 'fa-google',
+        redirectProvider: 'google-oauth2'
+      }
     }
   }
 

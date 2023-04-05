@@ -306,6 +306,7 @@ class UserFile(models.Model, JobVynePermissionsMixin):
 class UserSocialCredential(models.Model):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='social_credential')
     access_token = models.CharField(max_length=1000)
+    refresh_token = models.CharField(max_length=1000, null=True)
     provider = models.CharField(max_length=32)
     email = models.EmailField()
     expiration_dt = models.DateTimeField(null=True, blank=True)

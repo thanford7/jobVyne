@@ -1,5 +1,7 @@
 from django.db.models import Q
 from django.shortcuts import redirect
+from social_core.backends.google import GoogleOAuth2
+from social_core.backends.linkedin import LinkedinOAuth2
 
 from jvapp.apis.auth import get_token_expiration_dt, update_all_social_creds
 from jvapp.models import JobVyneUser
@@ -58,3 +60,21 @@ def redirect_if_no_refresh_token(backend, response, social, *args, **kwargs):
         and social.extra_data.get('refresh_token') is None
     ):
         return redirect('/login/google-oauth2?approval_prompt=force')
+    
+    
+class CustomGoogleOAuth2(GoogleOAuth2):
+
+    def get_scope(self):
+        scope = super(GoogleOAuth2, self).get_scope()
+        if not self.data.get('isLogin'):
+            scope = scope + ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.readonly']
+        return scope
+    
+    
+class CustomLinkedinOAuth2(LinkedinOAuth2):
+
+    def get_scope(self):
+        scope = super(LinkedinOAuth2, self).get_scope()
+        if not self.data.get('isLogin'):
+            scope = scope + ['w_member_social']
+        return scope

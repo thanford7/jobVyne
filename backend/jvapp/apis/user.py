@@ -421,9 +421,6 @@ class UserSocialCredentialsView(JobVyneAPIView):
         social_credentials = UserSocialCredential.objects.filter(user_id=self.user.id)
         data = defaultdict(list)
         for cred in social_credentials:
-            # Google is only used for authentication, not for social sharing
-            if cred.provider == OauthProviders.google.value:
-                continue
             name = OAUTH_CFGS[cred.provider]['name']
             data[name].append({
                 'id': cred.id,

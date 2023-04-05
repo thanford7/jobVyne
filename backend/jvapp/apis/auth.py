@@ -161,20 +161,28 @@ def social_auth(request, backend):
         
         expiration_seconds = social_response.get('expires_in')
         expiration_dt = get_token_expiration_dt(expiration_seconds) if expiration_seconds else None
+        refresh_token= social_response.get('refresh_token')
+        
         for email in user_emails:
-            update_all_social_creds(user, backend, email, access_token, expiration_dt)
+            update_all_social_creds(user, backend, email, access_token, expiration_dt, refresh_token=refresh_token)
 
     return Response(status=status.HTTP_200_OK, data={'user_id': user.id})
 
 
-def update_all_social_creds(user, provider, email, access_token, expiration_dt):
+def update_all_social_creds(user, provider, email, access_token, expiration_dt, refresh_token=None):
     # Email can be associated with multiple accounts
     # Make sure all accounts have the latest token
     if creds := UserSocialCredential.objects.filter(provider=provider, email=email):
+        update_vals = ['access_token', 'expiration_dt']
+        if refresh_token:
+            update_vals.append('refresh_token')
+
         for cred in creds:
             cred.access_token = access_token
             cred.expiration_dt = expiration_dt
-        UserSocialCredential.objects.bulk_update(creds, ['access_token', 'expiration_dt'])
+            if refresh_token:
+                cred.refresh_token = refresh_token
+        UserSocialCredential.objects.bulk_update(creds, update_vals)
     
     # Make sure the current user has the social credential
     if user:

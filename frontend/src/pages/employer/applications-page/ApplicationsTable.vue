@@ -139,7 +139,6 @@
       </div>
       <div class="col-12">
         <q-btn-dropdown
-          v-if="false"
           label="Bulk actions" color="primary"
           rounded unelevated dense padding="5px 10px"
           class="q-mr-sm"

@@ -1,7 +1,7 @@
 <template>
   <div class="q-gutter-y-sm">
     <q-btn
-      v-for="platform in AUTH_PLATFORMS"
+      v-for="platform in authPlatforms"
       type="div"
       class="w-100 btn-bordered"
       ripple flat unelevated
@@ -16,25 +16,8 @@
 </template>
 
 <script>
+import socialUtil from 'src/utils/social.js'
 import { useSocialAuthStore } from 'stores/social-auth-store'
-
-const AUTH_PLATFORMS = [
-  {
-    name: 'LinkedIn',
-    icon: 'fa-linkedin-in',
-    redirectProvider: 'linkedin-oauth2'
-  },
-  {
-    name: 'Google',
-    icon: 'fa-google',
-    redirectProvider: 'google-oauth2'
-  }
-  // {
-  //   name: 'Facebook',
-  //   icon: 'fa-facebook-f',
-  //   redirectProvider: 'facebook'
-  // }
-]
 
 export default {
   name: 'AuthSocialButtons',
@@ -42,7 +25,10 @@ export default {
     return {
       createText: 'Create with ',
       loginText: 'Login with ',
-      AUTH_PLATFORMS
+      authPlatforms: [
+        socialUtil.platformCfgs[socialUtil.SOCIAL_KEY_LINKED_IN],
+        socialUtil.platformCfgs[socialUtil.SOCIAL_KEY_GOOGLE]
+      ]
     }
   },
   props: {

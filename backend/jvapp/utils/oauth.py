@@ -20,7 +20,10 @@ OAUTH_CFGS = {
             'client_id': settings.SOCIAL_AUTH_GOOGLE_KEY,
             'state': settings.AUTH_STATE,
             'response_type': 'code',
-            'scope': 'profile email',
+            'login_scope': 'profile email',
+            'scope': 'profile email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly',
+            'access_type': 'offline',
+            'include_granted_scopes': 'true',
             'redirect_uri': f'{settings.FRONTEND_URL}auth/google-oauth2/callback',
         }
     },
@@ -32,6 +35,7 @@ OAUTH_CFGS = {
         'auth_params': {
             'client_id': settings.SOCIAL_AUTH_FACEBOOK_KEY,
             'state': settings.AUTH_STATE,
+            'login_scope': 'email',
             'scope': 'email',
             'redirect_uri': f'{settings.FRONTEND_URL}auth/facebook/callback',
         }
@@ -45,6 +49,7 @@ OAUTH_CFGS = {
             'client_id': settings.SOCIAL_AUTH_LINKEDIN_KEY,
             'state': settings.AUTH_STATE,
             'response_type': 'code',
+            'login_scope': 'r_emailaddress r_liteprofile',
             'scope': 'r_emailaddress r_liteprofile w_member_social',
             'redirect_uri': f'{settings.FRONTEND_URL}auth/linkedin-oauth2/callback',
         }
@@ -73,6 +78,8 @@ def get_payload(backend, code):
             'client_id': client_id,
             'client_secret': client_secret,
             'redirect_uri': redirect_uri,
+            'access_type': backend_cfg['auth_params']['access_type'],
+            'include_granted_scopes': backend_cfg['auth_params']['include_granted_scopes'],
             'grant_type': 'authorization_code',
         }
     elif backend == 'facebook':

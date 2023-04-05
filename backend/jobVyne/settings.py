@@ -89,9 +89,9 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = [
     'social_core.backends.facebook.FacebookOAuth2',
-    'social_core.backends.google.GoogleOAuth2',
+    'jobVyne.customSocialPipeline.CustomGoogleOAuth2',
     'social_core.backends.instagram.InstagramOAuth2',
-    'social_core.backends.linkedin.LinkedinOAuth2',
+    'jobVyne.customSocialPipeline.CustomLinkedinOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -128,7 +128,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
     # https://python-social-auth.readthedocs.io/en/latest/use_cases.html#re-prompt-google-oauth2-users-to-refresh-the-refresh-token
     # 'approval_prompt': 'auto'
 }
-SOCIAL_AUTH_LINKEDIN_OAUTH2_SCOPE = ['r_emailaddress', 'r_liteprofile', 'w_member_social']
+SOCIAL_AUTH_LINKEDIN_OAUTH2_SCOPE = ['r_emailaddress', 'r_liteprofile']
 SOCIAL_AUTH_LINKEDIN_OAUTH2_FIELD_SELECTORS = ['emailAddress']
 SOCIAL_AUTH_LINKEDIN_OAUTH2_EXTRA_DATA = [
     ('id', 'id'),
