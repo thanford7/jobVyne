@@ -206,8 +206,8 @@ class Scraper:
             done, _ = await asyncio.wait([self.queue.join(), *self.job_processors],
                                          return_when=asyncio.FIRST_COMPLETED)
             # The set of tasks that are 'done' but have not been removed from
-            # `self.job_processors` are exceptions. `await` an arbitrary one
-            # to propagate the exception.
+            # `self.job_processors` are exceptions. There is only one (since we
+            # used FIRST_COMPLETED), so we `await` it to propagate the exception.
             consumers_raised = set(done) & set(self.job_processors)
             if consumers_raised:
                 logger.info(f'Found {len(consumers_raised)} consumers that raised exceptions')
