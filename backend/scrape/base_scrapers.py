@@ -104,7 +104,7 @@ class Scraper:
                     return page
             except (PlaywrightTimeoutError, PlaywrightError) as e:
                 error_pages.append(page)
-                logger.info('Exception reaching page. Trying to reload page')
+                logger.info(f'Exception reaching page {url}. Trying to reload page (retry {retries} of {max_retries})')
                 error = e
                 retries += 1
                 await asyncio.sleep(1)
@@ -204,8 +204,12 @@ class Scraper:
             # wait for either `queue.join()` to complete or a consumer to raise
             done, _ = await asyncio.wait([self.queue.join(), *self.job_processors],
                                          return_when=asyncio.FIRST_COMPLETED)
+            # The set of tasks that are 'done' but have not been removed from
+            # `self.job_processors` are exceptions. `await` an arbitrary one
+            # to propagate the exception.
             consumers_raised = set(done) & set(self.job_processors)
             if consumers_raised:
+                logger.info(f'Found {len(consumers_raised)} consumers that raised exceptions')
                 await consumers_raised.pop()  # propagate the exception
         await self.close_connections(page=page)
     

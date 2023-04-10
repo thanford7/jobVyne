@@ -65,10 +65,11 @@ def run_job_scrapers(employer_names=None):
             job_processor.finalize_data()
             logger.info(f'Scraping complete for {scraper_class.employer_name}')
         except Exception as e:
+            logger.exception(f'Error occurred while scraping jobs for {scraper_class.employer_name}', exc_info=e)
             if employer:
                 employer.has_job_scrape_failure = True
                 employer.save()
-            logger.exception(f'Error occurred while scraping jobs for {scraper_class.employer_name}', exc_info=e)
         finally:
+            logger.info(f'Running `finally` block for {scraper_class.employer_name} for {len(scrapers)} scrapers')
             for scraper in scrapers:
-                scraper.close_connections()
+                asyncio.run(scraper.close_connections())
