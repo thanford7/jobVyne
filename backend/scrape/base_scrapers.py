@@ -104,9 +104,9 @@ class Scraper:
                     return page
             except (PlaywrightTimeoutError, PlaywrightError) as e:
                 error_pages.append(page)
-                logger.info(f'Exception reaching page {url}. Trying to reload page (retry {retries} of {max_retries})')
                 error = e
                 retries += 1
+                logger.info(f'Exception reaching page {url}. Trying to reload page (retry {retries} of {max_retries})')
                 await asyncio.sleep(1)
 
         await self.save_page_info(page)
@@ -138,8 +138,8 @@ class Scraper:
         """
         while True:
             url, meta_data = await self.queue.get()
-            self.job_page_count += 1
-            logger.info(f'Fetching new job page ({self.job_page_count}): {url}')
+            current_page = self.job_page_count = self.job_page_count + 1
+            logger.info(f'Fetching new job page ({current_page}): {url}')
             if self.IS_JS_REQUIRED:
                 page = await self.visit_page_with_retry(url)
                 if self.job_item_page_wait_sel:
@@ -151,8 +151,9 @@ class Scraper:
                 page_html = await self.get_html_from_url(url)
             meta_data = meta_data or {}
             job_item = self.get_job_data_from_html(page_html, job_url=url, **meta_data)
-            self.job_items.append(job_item)
-            logger.info(f'Job page scraped ({self.job_page_count})')
+            if job_item:
+                self.job_items.append(job_item)
+            logger.info(f'Job page scraped ({current_page})')
             self.queue.task_done()
     
     async def get_html_from_url(self, url):
@@ -498,8 +499,11 @@ class GreenhouseScraper(Scraper):
         await self.close()
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
-        
-        location = html.xpath('//div[@id="header"]//div[@class="location"]/text()').get().strip()
+        location = html.xpath('//div[@id="header"]//div[@class="location"]/text()').get()
+        if location is None:
+            logger.error('Unable to parse JobItem from document.')
+            return None
+        location = location.strip()
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = html.xpath('//div[@id="content"]').get()
         description_compensation_data = self.parse_compensation_text(job_description)
@@ -530,11 +534,15 @@ class GreenhouseIframeScraper(GreenhouseScraper):
     async def do_job_page_js(self, page):
         html_dom = await self.get_page_html(page)
         iframe_url = html_dom.xpath('//*[@id="grnhse_iframe"]/@src').get()
-        try:
-            await page.goto(iframe_url)
-        except PlaywrightError as e:
+        if iframe_url is None:
             await self.save_page_info(page)
-            raise e
+            logger.error(f'Could not parse iframe URL from page {page.url}')
+        else:
+            try:
+                await page.goto(iframe_url)
+            except PlaywrightError as e:
+                await self.save_page_info(page)
+                raise e
 
 
 class WorkdayScraper(Scraper):
