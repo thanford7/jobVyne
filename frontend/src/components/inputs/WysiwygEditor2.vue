@@ -170,7 +170,11 @@ export default {
       this.editor.commands.setContent(value, false)
     }
   },
-
+  methods: {
+    insertContent (text) {
+      this.editor.commands.insertContent(text)
+    }
+  },
   mounted () {
     this.editor = new Editor({
       extensions: [

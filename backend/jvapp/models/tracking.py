@@ -63,6 +63,7 @@ class Message(models.Model):
     body_html = models.TextField(null=True, blank=True)
     from_user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.SET_NULL, related_name='outgoing_message')
     from_address = models.CharField(max_length=255)
+    external_message_key = models.CharField(max_length=25, null=True, blank=True)
     created_dt = models.DateTimeField()
     # TODO: Limit message sub thread depth to one level
     message_parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
@@ -102,6 +103,8 @@ class MessageThread(models.Model):
     multiple HR users are messaging with a job candidate.
     """
     message_groups = models.ManyToManyField('MessageGroup')
+    # Used to query message threads from external sources (e.g. gmail)
+    external_thread_key = models.CharField(max_length=25, null=True, blank=True)
     
     
 class MessageThreadContext(models.Model):

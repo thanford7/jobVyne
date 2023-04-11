@@ -20,6 +20,7 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.serializers.content import get_serialized_social_post
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
+from jvapp.utils.email import ContentPlaceholders
 from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
 
 
@@ -104,12 +105,6 @@ class SocialContentItemView(JobVyneAPIView):
 
 
 class SocialPostView(JobVyneAPIView):
-    
-    # Keep in sync with SOCIAL_CONTENT_PLACEHOLDERS on frontend
-    class ContentPlaceholders(Enum):
-        EMPLOYER = '{{employer}}'
-        JOB_LINK = '{{link}}'
-        JOBS_LIST = '{{jobs-list}}'
     
     def get(self, request):
         employer_id = self.query_params.get('employer_id')
@@ -248,13 +243,13 @@ class SocialPostView(JobVyneAPIView):
             return formatted_content
         
         formatted_content = post.content.replace(
-            SocialPostView.ContentPlaceholders.EMPLOYER.value,
+            ContentPlaceholders.EMPLOYER_NAME.value,
             post.link_filter.employer.employer_name
         )
         
         job_link = f'{settings.BASE_URL}/jobs-link/{post.link_filter.id}/?platform={post.social_platform.name}'
         formatted_content = formatted_content.replace(
-            SocialPostView.ContentPlaceholders.JOB_LINK.value,
+            ContentPlaceholders.JOB_LINK.value,
             job_link
         )
         job_titles = list({j.job_title for j in jobs})
@@ -264,7 +259,7 @@ class SocialPostView(JobVyneAPIView):
             jobs_list += '\n- And more jobs viewable on the website'
 
         formatted_content = formatted_content.replace(
-            SocialPostView.ContentPlaceholders.JOBS_LIST.value,
+            ContentPlaceholders.JOBS_LIST.value,
             jobs_list
         )
         return formatted_content

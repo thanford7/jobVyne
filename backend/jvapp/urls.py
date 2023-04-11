@@ -63,6 +63,7 @@ urlpatterns = [
     path('email/admin/', notification.MessageAdminView.as_view()),
     path('email/employer/applicant/', notification.MessageEmployerApplicantView.as_view()),
     path('email/employer/employee/', notification.MessageEmployerEmployeeView.as_view()),
+    path('gmail/webhooks/inbound/', email.GmailInboundView.as_view()),
     
     # Sales
     path('sales/inquiry/', sales.SalesInquiryView.as_view()),
@@ -109,6 +110,7 @@ urlpatterns = [
     
     # Sendgrid email
     path('sendgrid/webhooks/', email.SendgridWebhooksView.as_view()),
+    path('sendgrid/webhooks/inbound/', email.SendgridWebhooksInboundView.as_view()),
     
     # Twilio SMS
     path('twilio/webhooks/', message.TwilioWebhooksView.as_view()),

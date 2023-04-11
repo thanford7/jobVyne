@@ -35,7 +35,7 @@ from jvapp.serializers.job_seeker import get_serialized_job_application
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
-from jvapp.utils.email import get_domain_from_email, send_django_email
+from jvapp.utils.email import ContentPlaceholders, get_domain_from_email, send_django_email
 from jvapp.utils.sanitize import sanitize_html
 
 __all__ = (
@@ -247,13 +247,6 @@ class EmployerBillingView(JobVyneAPIView):
 class EmployerReferralRequestView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
     
-    # Keep in sync with REFERRAL_CONTENT_PLACEHOLDERS on frontend
-    class ContentPlaceholders(Enum):
-        JOB_LINK = '{{link}}'
-        JOBS_LIST = '{{jobs-list}}'
-        EMPLOYEE_FIRST_NAME = '{{first-name}}'
-        EMPLOYEE_LAST_NAME = '{{last-name}}'
-    
     def get(self, request):
         if not (employer_id := self.query_params.get('employer_id')):
             return get_error_response('An employer ID is required')
@@ -323,7 +316,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
             
             job_link = f'{settings.BASE_URL}/jobs-link/{link_filter.id}/'
             email_body = email_body.replace(
-                EmployerReferralRequestView.ContentPlaceholders.JOB_LINK.value,
+                ContentPlaceholders.JOB_LINK.value,
                 job_link
             )
             
@@ -341,18 +334,15 @@ class EmployerReferralRequestView(JobVyneAPIView):
                 jobs_list += '</ul>'
             
             email_body = email_body.replace(
-                EmployerReferralRequestView.ContentPlaceholders.JOBS_LIST.value,
+                ContentPlaceholders.JOBS_LIST.value,
                 jobs_list
             )
             
             email_body = email_body.replace(
-                EmployerReferralRequestView.ContentPlaceholders.EMPLOYEE_FIRST_NAME.value,
+                ContentPlaceholders.EMPLOYEE_FIRST_NAME.value,
                 recipient.first_name
             )
-            email_body = email_body.replace(
-                EmployerReferralRequestView.ContentPlaceholders.EMPLOYEE_LAST_NAME.value,
-                recipient.last_name
-            )
+            email_body = email_body.replace(ContentPlaceholders.EMPLOYEE_LAST_NAME.value, recipient.last_name)
             
             emails = [recipient.email]
             if recipient.business_email:

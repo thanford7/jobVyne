@@ -639,9 +639,9 @@ class LeverAts(BaseAts):
 
     def create_application(self, application):
         # Make sure this person hasn't applied already
-        current_opportunities = self.get_opportunities_for_candidate(application.email)
+        current_opportunities = self.get_opportunities_for_candidate('thanford7@gmail.com')
         for opp in current_opportunities:
-            ats_job_key = opp['application']['posting']
+            ats_job_key = opp['applications'][0]['posting']
             if ats_job_key == application.employer_job.ats_job_key:
                 return opp['contact'], opp['id']
         

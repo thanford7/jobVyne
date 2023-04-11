@@ -40,8 +40,8 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
-import { SOCIAL_CONTENT_PLACEHOLDERS } from 'components/dialogs/dialog-social-content/DialogSocialContent.vue'
 import dataUtil from 'src/utils/data.js'
+import emailUtil from 'src/utils/email.js'
 import fileUtil from 'src/utils/file.js'
 import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -90,7 +90,7 @@ export default {
         return ''
       }
       let formattedContent = this.content
-        .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, this.employer.name)
+        .replaceAll(emailUtil.PLACEHOLDER_EMPLOYER_NAME.placeholder, this.employer.name)
       if (this.jobLink) {
         const jobLinkUrl = socialUtil.getJobLinkUrl(this.jobLink, { platform: this.jobLink.platformName })
 
@@ -100,8 +100,8 @@ export default {
         }
 
         formattedContent = formattedContent
-          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK, jobLinkUrl)
-          .replaceAll(SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST, formattedJobTitles)
+          .replaceAll(emailUtil.PLACEHOLDER_JOB_LINK.placeholder, jobLinkUrl)
+          .replaceAll(emailUtil.PLACEHOLDER_JOBS_LIST.placeholder, formattedJobTitles)
       }
       return formattedContent
     },

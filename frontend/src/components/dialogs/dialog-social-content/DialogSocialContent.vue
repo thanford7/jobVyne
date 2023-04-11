@@ -59,21 +59,14 @@
               job you choose to post
             </CustomTooltip>
           </template>
-          <q-table
-            dense flat
-            :hide-bottom="true"
-            :columns="placeholderTableColumns"
-            :rows="placeholderTableRows"
-          >
-            <template v-slot:body-cell-action="props">
-              <q-td>
-                <q-btn
-                  unelevated dense label="Add" color="grey-6"
-                  @click="addContent(props.row.placeholder)"
-                />
-              </q-td>
-            </template>
-          </q-table>
+          <EmailPlaceholderTable
+            :placeholders="[
+              emailUtil.PLACEHOLDER_EMPLOYER_NAME,
+              emailUtil.PLACEHOLDER_JOB_LINK,
+              emailUtil.PLACEHOLDER_JOBS_LIST
+            ]"
+            @addContent="addContent($event)"
+          />
         </BaseExpansionItem>
         <template v-if="!isTemplate">
           <BaseExpansionItem
@@ -151,11 +144,13 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import FormAutoPost from 'components/dialogs/dialog-social-content/FormAutoPost.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import DialogSocialLink from 'components/dialogs/DialogSocialLink.vue'
+import EmailPlaceholderTable from 'components/EmailPlaceholderTable.vue'
 import SelectFiles from 'components/inputs/SelectFiles.vue'
 import SelectJobLink from 'components/inputs/SelectJobLink.vue'
 import PostLiveView from 'pages/content-page/PostLiveView.vue'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
+import emailUtil from 'src/utils/email.js'
 import { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import socialUtil from 'src/utils/social.js'
@@ -175,18 +170,11 @@ export const loadDialogSocialContentFn = () => {
   })
 }
 
-// Keep in sync with ContentPlaceholders on SocialPost backend
-export const SOCIAL_CONTENT_PLACEHOLDERS = {
-  EMPLOYER: '{{employer}}',
-  JOB_LINK: '{{link}}',
-  JOBS_LIST: '{{jobs-list}}'
-}
-
 export default {
   name: 'DialogSocialContent',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { FormAutoPost, PostLiveView, SelectJobLink, SelectFiles, BaseExpansionItem, CustomTooltip, DialogBase },
+  components: { EmailPlaceholderTable, FormAutoPost, PostLiveView, SelectJobLink, SelectFiles, BaseExpansionItem, CustomTooltip, DialogBase },
   props: {
     contentItem: {
       type: [Object, null],
@@ -202,7 +190,8 @@ export default {
       formData: (this.contentItem) ? { ...this.contentItem, post_accounts: {} } : { post_accounts: {} },
       contentStore: null,
       socialAuthStore: null,
-      FILE_TYPES
+      FILE_TYPES,
+      emailUtil
     }
   },
   computed: {
@@ -227,7 +216,7 @@ export default {
     isValidForm () {
       return Boolean(
         this.formData.content && this.formData.content.length &&
-        this.formData.content.includes(SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK) &&
+        this.formData.content.includes(emailUtil.PLACEHOLDER_JOB_LINK.placeholder) &&
         (this.isTemplate || this.isEmployer || this.formData.jobLink) &&
         (!this.platformCfg || (this.formData?.formatted_content?.length || 0) <= this.platformCfg.characterLimit)
       )
@@ -255,29 +244,6 @@ export default {
         return null
       }
       return this.socialAuthStore.socialCredentials
-    },
-    placeholderTableColumns () {
-      return [
-        { name: 'action', field: 'action', align: 'center' },
-        { name: 'name', field: 'name', align: 'left', label: 'Name' },
-        { name: 'placeholder', field: 'placeholder', align: 'left', label: 'Placeholder' },
-        { name: 'example', field: 'example', align: 'left', label: 'Example', style: 'white-space: pre-line;' }
-      ]
-    },
-    placeholderTableRows () {
-      return [
-        { name: 'Employer', placeholder: SOCIAL_CONTENT_PLACEHOLDERS.EMPLOYER, example: 'Google' },
-        {
-          name: 'Jobs page link',
-          placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOB_LINK,
-          example: 'www.app.jobvyne.com/jobs-link/ad8audafdi'
-        },
-        {
-          name: 'Open jobs list',
-          placeholder: SOCIAL_CONTENT_PLACEHOLDERS.JOBS_LIST,
-          example: '- Software engineer\n- Product manager\n- Market analyst'
-        }
-      ]
     },
     templateTableColumns () {
       return [

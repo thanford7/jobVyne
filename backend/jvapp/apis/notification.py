@@ -10,7 +10,8 @@ from jvapp.models import Employer, JobApplication, JobVyneUser, MessageThread, U
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.tracking import Message, MessageGroup, MessageThreadContext
 from jvapp.permissions.employer import IsAdminOrEmployerPermission, IsAdminPermission
-from jvapp.utils.email import send_django_email
+from jvapp.utils.email import ContentPlaceholders, send_django_email
+from jvapp.utils.gmail import GmailException
 from jvapp.utils.sanitize import sanitize_html
 
 
@@ -267,7 +268,7 @@ class BaseMessageEmployerView(BaseMessageView):
         self.employer_message_group = MessageGroupView.get_or_create_message_group({
             'employer_id': self.employer_id,
             'user_type_bits': JobVyneUser.USER_TYPE_EMPLOYER
-        }, employer_message_groups)
+        }, message_groups=employer_message_groups)
     
     
 class MessageEmployerApplicantView(BaseMessageEmployerView):
@@ -275,8 +276,9 @@ class MessageEmployerApplicantView(BaseMessageEmployerView):
     def post(self, request):
         if not (application_ids := self.data.get('application_ids')):
             return get_error_response('At least one application ID is required')
-    
+
         job_applications = JobApplication.objects\
+            .select_related('employer_job')\
             .prefetch_related(
                 'message_thread_context',
                 'message_thread_context__message_thread'
@@ -288,7 +290,7 @@ class MessageEmployerApplicantView(BaseMessageEmployerView):
         for job_application in job_applications:
             if message_thread_context := job_application.message_thread_context.all():
                 message_thread_context = message_thread_context[0]
-                message_thread = message_thread_context.message_thread.all()[0]
+                message_thread = message_thread_context.message_thread
             else:
                 message_thread = MessageThread()
                 message_thread.save()
@@ -300,22 +302,45 @@ class MessageEmployerApplicantView(BaseMessageEmployerView):
 
             message_thread.message_groups.add(self.employer_message_group)
             
-            # TODO: Figure out how to allow employer to send email from their domain
-            send_django_email(
-                self.email_subject,
-                'emails/base_general_email.html',
-                to_email=job_application.email,
-                django_context={
-                    'employer_name': self.employer.employer_name,
-                    'is_exclude_final_message': True,
-                    'is_unsubscribe': True
-                },
-                employer=self.employer,
-                html_body_content=self.email_body,
-                message_thread=message_thread
-            )
+            formatted_email_subject = self.get_formatted_text(self.email_subject, job_application)
+            formatted_email_body = self.get_formatted_text(self.email_body, job_application)
+            try:
+                send_django_email(
+                    formatted_email_subject,
+                    'emails/base_general_email.html',
+                    to_email=job_application.email,
+                    from_email=self.data.get('from_email'),
+                    is_include_jobvyne_subject=False,
+                    django_context={
+                        'employer_name': self.employer.employer_name,
+                        'is_exclude_final_message': True,
+                        'is_unsubscribe': True
+                    },
+                    employer=self.employer,
+                    html_body_content=formatted_email_body,
+                    message_thread=message_thread,
+                    is_gmail=True
+                )
+            except GmailException as e:
+                return get_error_response(str(e))
         
         return self.get_success_response(len(job_applications), job_applications, 'applicant')
+    
+    @staticmethod
+    def get_formatted_text(raw_text, job_application):
+        formatted_text = raw_text.replace(
+            ContentPlaceholders.APPLICANT_FIRST_NAME.value,
+            job_application.first_name
+        )
+        formatted_text = formatted_text.replace(
+            ContentPlaceholders.APPLICANT_LAST_NAME.value,
+            job_application.last_name
+        )
+        formatted_text = formatted_text.replace(
+            ContentPlaceholders.JOB_TITLE.value,
+            job_application.employer_job.job_title
+        )
+        return formatted_text
 
 
 class MessageEmployerEmployeeView(BaseMessageEmployerView):
@@ -388,6 +413,7 @@ class MessageGroupView(JobVyneAPIView):
     
     @staticmethod
     def get_or_create_employer_message_group(employer_id, message_groups=None):
+        message_groups = message_groups or MessageGroupView.get_message_groups(Q(employer_id=employer_id))
         return MessageGroupView.get_or_create_message_group({
             'employer_id': employer_id,
             'user_type_bits': JobVyneUser.USER_TYPE_EMPLOYER

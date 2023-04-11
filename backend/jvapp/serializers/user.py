@@ -5,6 +5,7 @@ from jvapp.models.user import JobVyneUser, UserFile
 from jvapp.serializers.job_seeker import base_application_serializer
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.datetime import get_datetime_format_or_none
+from jvapp.utils.oauth import OauthProviders
 
 
 def reduce_user_type_bits(permission_groups):
@@ -61,6 +62,10 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
         data['is_business_email_verified'] = user.is_business_email_verified
         data['is_business_email_employer_permitted'] = user.is_business_email_employer_permitted
         data['is_employer_verified'] = user.is_employer_verified
+        data['connected_emails'] = [
+            cred.email for cred in user.social_credential.all() if
+            (cred.provider == OauthProviders.google.value) and cred.refresh_token
+        ]
     
     return data
 

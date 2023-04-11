@@ -104,6 +104,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields['user_type_bits'] = JobVyneUser.USER_TYPE_ADMIN | JobVyneUser.USER_TYPE_CANDIDATE | JobVyneUser.USER_TYPE_EMPLOYEE | JobVyneUser.USER_TYPE_EMPLOYER
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError(_('Superuser must have is_staff=True.'))
@@ -318,7 +319,7 @@ class UserSocialCredential(models.Model):
 class UserEmployerCandidate(models.Model):
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='candidate_key')
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
-    ats_candidate_key = models.CharField(max_length=30)
+    ats_candidate_key = models.CharField(max_length=100)
     
     class Meta:
         unique_together = ('user', 'employer')

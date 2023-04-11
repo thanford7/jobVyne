@@ -1,10 +1,11 @@
 <template>
-  <div style="display: inline-block">
+  <div>
     <template v-if="locations.length > condenseLocationLimit">
       <CustomTooltip>
         <template v-slot:icon>
           <q-chip
             color="grey-7" text-color="white" size="md" :icon="icon" :dense="isDense"
+            class="ellipsis" title="Multiple locations"
           >
             Multiple locations&nbsp;
             <span v-if="utilStore.isMobile">(press to view)</span>
@@ -22,7 +23,7 @@
       <q-chip
         v-for="location in locations"
         color="grey-7" text-color="white" size="md" :icon="icon"
-        :dense="isDense"
+        :dense="isDense" class="ellipsis" :title="locationUtil.getFullLocation(location)"
       >
         {{ locationUtil.getFullLocation(location) }}
       </q-chip>

@@ -154,20 +154,21 @@ class UserView(JobVyneAPIView):
         users = JobVyneUser.objects \
             .select_related('employer') \
             .prefetch_related(
-            'application_template',
-            'employer_permission_group',
-            'employer_permission_group__employer',
-            'employer_permission_group__permission_group',
-            'employer_permission_group__permission_group__permissions',
-            'profile_response',
-            'profile_response__question'
-        ) \
+                'application_template',
+                'employer_permission_group',
+                'employer_permission_group__employer',
+                'employer_permission_group__permission_group',
+                'employer_permission_group__permission_group__permissions',
+                'profile_response',
+                'profile_response__question',
+                'social_credential'
+            ) \
             .annotate(is_approval_required=Count(
-            'employer_permission_group',
-            # Note this does not differentiate between different employers
-            # It's possible that a user needs permission from one employer, but not another
-            filter=Q(employer_permission_group__is_employer_approved=False)
-        )) \
+                'employer_permission_group',
+                # Note this does not differentiate between different employers
+                # It's possible that a user needs permission from one employer, but not another
+                filter=Q(employer_permission_group__is_employer_approved=False)
+            )) \
             .filter(user_filter)
         
         if is_check_permission:

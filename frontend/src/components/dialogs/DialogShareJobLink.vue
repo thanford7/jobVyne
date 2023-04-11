@@ -16,7 +16,7 @@
               val => val && val.length > 0 || 'Email subject is required'
             ]"
           />
-          <WysiwygEditor2 v-model="emailBody"/>
+          <WysiwygEditor2 v-model="emailBody" ref="editor"/>
           <ErrorCallout ref="emailBodyError" :error-text="emailBodyErrorText"/>
           <BaseExpansionItem
             title="Placeholder content" class="content-expansion q-mt-md"
@@ -28,21 +28,15 @@
                 link and the job filters.
               </CustomTooltip>
             </template>
-            <q-table
-              dense flat
-              :hide-bottom="true"
-              :columns="placeholderTableColumns"
-              :rows="placeholderTableRows"
-            >
-              <template v-slot:body-cell-action="props">
-                <q-td>
-                  <q-btn
-                    unelevated dense label="Add" color="grey-6"
-                    @click="addContent(props.row.placeholder)"
-                  />
-                </q-td>
-              </template>
-            </q-table>
+            <EmailPlaceholderTable
+              :placeholders="[
+                emailUtil.PLACEHOLDER_EMPLOYEE_FIRST_NAME,
+                emailUtil.PLACEHOLDER_EMPLOYEE_LAST_NAME,
+                emailUtil.PLACEHOLDER_JOB_LINK,
+                emailUtil.PLACEHOLDER_JOBS_LIST
+              ]"
+              @addContent="addContent($event)"
+            />
           </BaseExpansionItem>
         </div>
         <div class="col-md-4 col-12 q-pl-md-sm q-mt-md q-mt-md-none">
@@ -102,6 +96,7 @@
 <script>
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
+import EmailPlaceholderTable from 'components/EmailPlaceholderTable.vue'
 import ErrorCallout from 'components/ErrorCallout.vue'
 import dataUtil from 'src/utils/data.js'
 import DialogBase from 'components/dialogs/DialogBase.vue'
@@ -112,44 +107,17 @@ import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
 import WysiwygEditor2 from 'components/inputs/WysiwygEditor2.vue'
+import emailUtil from 'src/utils/email.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import socialUtil from 'src/utils/social.js'
 import { useEmployerStore } from 'stores/employer-store.js'
-
-// Keep in sync with ContentPlaceholders on SocialPost backend
-const REFERRAL_CONTENT_PLACEHOLDERS = {
-  JOB_LINK: '{{link}}',
-  JOBS_LIST: '{{jobs-list}}',
-  EMPLOYEE_FIRST_NAME: '{{first-name}}',
-  EMPLOYEE_LAST_NAME: '{{last-name}}'
-}
-
-const placeholderTableColumns = [
-  { name: 'action', field: 'action', align: 'center' },
-  { name: 'name', field: 'name', align: 'left', label: 'Name' },
-  { name: 'placeholder', field: 'placeholder', align: 'left', label: 'Placeholder' },
-  { name: 'example', field: 'example', align: 'left', label: 'Example', style: 'white-space: pre-line;' }
-]
-const placeholderTableRows = [
-  { name: 'Employee first name', placeholder: REFERRAL_CONTENT_PLACEHOLDERS.EMPLOYEE_FIRST_NAME, example: 'Jake' },
-  { name: 'Employee last name', placeholder: REFERRAL_CONTENT_PLACEHOLDERS.EMPLOYEE_LAST_NAME, example: 'Smith' },
-  {
-    name: 'Jobs page link',
-    placeholder: REFERRAL_CONTENT_PLACEHOLDERS.JOB_LINK,
-    example: 'www.app.jobvyne.com/jobs-link/ad8audafdi'
-  },
-  {
-    name: 'Open jobs list',
-    placeholder: REFERRAL_CONTENT_PLACEHOLDERS.JOBS_LIST,
-    example: '- Software engineer\n- Product manager\n- Market analyst'
-  }
-]
 
 export default {
   name: 'DialogShareJobLink',
   extends: DialogBase,
   inheritAttrs: false,
   components: {
+    EmailPlaceholderTable,
     BaseExpansionItem,
     ErrorCallout,
     SelectJob,
@@ -184,10 +152,9 @@ export default {
         country_ids: [],
         job_ids: []
       },
-      placeholderTableRows,
-      placeholderTableColumns,
       employerStore: null,
-      dataUtil
+      dataUtil,
+      emailUtil
     }
   },
   computed: {
@@ -217,7 +184,7 @@ export default {
       deep: true
     },
     emailBody () {
-      if (!this.emailBody.includes(REFERRAL_CONTENT_PLACEHOLDERS.JOB_LINK)) {
+      if (!this.emailBody.includes(emailUtil.PLACEHOLDER_JOB_LINK.placeholder)) {
         this.emailBodyErrorText = 'The email message must include the jobs page link placeholder'
       } else if (!this.emailBody?.length) {
         this.emailBodyErrorText = 'An email message is required'
@@ -228,10 +195,7 @@ export default {
   },
   methods: {
     addContent (content) {
-      if (!this.emailBody) {
-        this.emailBody = ''
-      }
-      this.emailBody += content
+      this.$refs.editor.insertContent(content)
     },
     async getFilteredJobs () {
       const params = { employer_id: this.employerId, ...this.jobFilters }
@@ -289,13 +253,13 @@ export default {
         specifically for you and allows anyone to click the link to view and apply for open jobs at
         our company including:
       </p>
-      <p>${REFERRAL_CONTENT_PLACEHOLDERS.JOBS_LIST}</p>
+      <p>${emailUtil.PLACEHOLDER_JOBS_LIST.placeholder}</p>
       <p>
         Please help us hire by sharing your personal referral link directly with your professional network
         and also across professional social media sites like LinkedIn.
       </p>
       <p>
-        Your referral link: ${REFERRAL_CONTENT_PLACEHOLDERS.JOB_LINK}
+        Your referral link: ${emailUtil.PLACEHOLDER_JOB_LINK.placeholder}
       </p>
       <p>
         Thanks for helping us grow!

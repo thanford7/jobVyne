@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.models import JobApplication, JobVyneUser, MessageThreadContext, PageView, UserApplicationReview
 from jvapp.serializers.location import get_serialized_location
-from jvapp.serializers.social import get_serialized_message_thread
+from jvapp.serializers.tracking import get_serialized_message
 from jvapp.utils.data import coerce_bool, coerce_int
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 
@@ -212,6 +212,9 @@ class ApplicationsView(BaseDataView):
                     'rating': review.rating
                 } for review in application_reviews
             ], key=lambda x: x['rating'])
+            
+            application_data['message_threads'] = self.get_serialized_job_application_message_threads(application)
+            
             application_data['notification_email_dt'] = get_datetime_format_or_none(application.notification_email_dt)
             application_data['notification_email_failure_dt'] = get_datetime_format_or_none(
                 application.notification_email_failure_dt)
@@ -247,11 +250,13 @@ class ApplicationsView(BaseDataView):
             .prefetch_related(
                 'message_thread__message',
                 'message_thread__message__recipient',
+                'message_thread__message__attachment',
                 'message_thread__message_groups'
             )
             .filter(
                 message_thread__message_groups__employer_id__isnull=False,
-                message_thread__message_groups__employer_id=employer_id
+                message_thread__message_groups__employer_id=employer_id,
+                message_thread__message_groups__user_type_bits=JobVyneUser.USER_TYPE_EMPLOYER
             )
         )
         
@@ -288,6 +293,19 @@ class ApplicationsView(BaseDataView):
             return job_applications
         
         return JobApplication.jv_filter_perm(user, job_applications)
+    
+    @staticmethod
+    def get_serialized_job_application_message_threads(job_application):
+        message_thread_contexts = job_application.message_thread_context.all()
+        message_threads = []
+        for message_thread_context in message_thread_contexts:
+            messages = []
+            for message in message_thread_context.message_thread.message.all():
+                messages.append(get_serialized_message(message))
+            
+            message_threads.append(messages)
+        
+        return message_threads
 
 
 class PageViewsView(BaseDataView):

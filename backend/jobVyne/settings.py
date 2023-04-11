@@ -33,7 +33,7 @@ DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,f615-71-196-128-60.ngrok.io').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_SEND_EMAILS = env('IS_SEND_EMAILS', cast=bool, default=True)
@@ -388,6 +388,13 @@ file_path = f'{BASE_DIR}/secure/google-captcha.json'
 with open(file_path, 'w') as outfile:
     json.dump(google_credentials, outfile)
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = file_path
+
+# Gmail
+google_gmail_credentials = json.loads(env('GOOGLE_GMAIL_CREDENTIALS_STR').replace('\'', '"'), strict=False)
+file_path = f'{BASE_DIR}/secure/google-gmail.json'
+with open(file_path, 'w') as outfile:
+    json.dump(google_gmail_credentials, outfile)
+GOOGLE_GMAIL_CREDENTIALS = file_path
 
 # Geolocation
 GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'  # This is for location lookup of an IP address

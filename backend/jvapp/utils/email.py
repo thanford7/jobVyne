@@ -3,26 +3,45 @@ import logging
 import os
 import re
 from email.mime.image import MIMEImage
+from enum import Enum
 from urllib.request import urlopen
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template import loader
 from django.templatetags.static import static
 from django.utils import timezone
-from django.utils.html import strip_tags
 
 from jvapp.models.tracking import Message, MessageAttachment, MessageRecipient
 from jvapp.utils.file import get_file_name, get_safe_file_path
+from jvapp.utils.gmail import GmailAPIService
 
 IS_PRODUCTION = os.getenv('DB') == 'prod'
 MESSAGE_ID_KEY = 'jv_message_id'
 MESSAGE_ENVIRONMENT_KEY = 'jv_base_url'
 EMAIL_ADDRESS_SEND = 'no-reply@jobvyne.com'  # Email address where all emails originate from
+EMAIL_ADDRESS_COMMUNICATION = 'communications@jobvyne.com'  # Bi-directional email for users to correspond
 EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
 EMAIL_ADDRESS_SALES = 'sales@jobvyne.com'
 EMAIL_ADDRESS_MARKETING = 'marketing@jobvyne.com'
+ALLOWED_LOCAL_EMAIL_ADDRESSES = [
+    EMAIL_ADDRESS_SEND, EMAIL_ADDRESS_COMMUNICATION, EMAIL_ADDRESS_SUPPORT,
+    EMAIL_ADDRESS_SALES, EMAIL_ADDRESS_MARKETING, 'thanford7@gmail.com'
+]
 logger = logging.getLogger(__name__)
+
+
+# Keep in sync with EmailUtil on frontend
+class ContentPlaceholders(Enum):
+    APPLICANT_FIRST_NAME = '{{applicant.first_name}}'
+    APPLICANT_LAST_NAME = '{{applicant.last_name}}'
+    JOB_LINK = '{{link}}'
+    JOB_TITLE = '{{job.job_title}}'
+    JOBS_LIST = '{{jobs-list}}'
+    EMPLOYEE_FIRST_NAME = '{{employee.first_name}}'
+    EMPLOYEE_LAST_NAME = '{{employee.last_name}}'
+    EMPLOYER_NAME = '{{employer.name}}'
 
 
 def get_file_from_path(file_path):
@@ -37,7 +56,7 @@ def send_django_email(
     subject_text, django_email_body_template,
     to_email=None, cc_email=None, bcc_email=None, from_email=EMAIL_ADDRESS_SEND,
     django_context=None, html_body_content=None, employer=None, is_include_jobvyne_subject=True,
-    files=None, message_thread=None, is_tracked=True
+    files=None, message_thread=None, is_tracked=True, is_gmail=False
 ):
     if not settings.IS_SEND_EMAILS:
         return
@@ -57,7 +76,7 @@ def send_django_email(
     django_context['is_employer_logo'] = bool(employer)
     django_context['employer_name'] = employer.employer_name if employer else None
     html_content = loader.render_to_string(django_email_body_template, django_context)
-    plain_content = strip_tags(html_content)
+    plain_content = BeautifulSoup(html_content).get_text(strip=True, separator=' ')
     
     # Make sure emails aren't sent to actual people when not in production
     if not any([
@@ -72,7 +91,8 @@ def send_django_email(
         if bcc_email:
             bcc_email = [settings.EMAIL_ADDRESS_TEST]
         to_email = [settings.EMAIL_ADDRESS_TEST]
-        from_email = EMAIL_ADDRESS_SEND
+        if (from_email not in ALLOWED_LOCAL_EMAIL_ADDRESSES) and not re.match('^communications_[0-9]+@jobvyne\.com$', from_email):
+            from_email = EMAIL_ADDRESS_SEND
     
     if cc_email and not isinstance(cc_email, list):
         cc_email = [cc_email]
@@ -84,11 +104,13 @@ def send_django_email(
         to_email = [to_email]
     
     # Save messages to the database so we can track delivery
+    jv_message = None
+    message_attachments = None
     if is_tracked:
         jv_message = Message(
             type=Message.MessageType.EMAIL.value,
             subject=subject,
-            body=plain_content,
+            body=BeautifulSoup(html_body_content).get_text(strip=True, separator=' ') if html_body_content else plain_content,
             body_html=html_content,
             from_address=from_email,
             created_dt=timezone.now(),
@@ -102,10 +124,13 @@ def send_django_email(
             (MessageRecipient.RecipientType.BCC.value, bcc_email or [])
         ):
             for recipient_email in recipient_emails:
+                # Add error upfront incase email is never sent. Remove error once sent
                 recipients.append(MessageRecipient(
                     message=jv_message,
                     recipient_address=recipient_email,
-                    recipient_type=recipient_type
+                    recipient_type=recipient_type,
+                    error_dt=timezone.now(),
+                    error_reason='UNSENT'
                 ))
         MessageRecipient.objects.bulk_create(recipients)
         message_attachments = []
@@ -151,7 +176,31 @@ def send_django_email(
         for f in (files or []):
             message.attach(f.name, f.read())
     
-    return message.send()
+    message_id = None
+    num_sent = None
+    if is_gmail:
+        gmail_api = GmailAPIService(user_email=from_email)
+        message_id, thread_id = gmail_api.send_gmail_message(message.message())
+        if jv_message:
+            jv_message.external_message_key = message_id
+            jv_message.save()
+        # Save google message thread to track further emails
+        if message_thread and not message_thread.external_thread_key:
+            message_thread.external_thread_key = thread_id
+            message_thread.save()
+    else:
+        num_sent = message.send()
+        
+    # Successfully sent message
+    if jv_message and (message_id or num_sent):
+        recipients = MessageRecipient.objects.filter(message=jv_message)
+        for recipient in recipients:
+            recipient.error_dt = None
+            recipient.error_reason = None
+        
+        MessageRecipient.objects.bulk_update(recipients, ['error_dt', 'error_reason'])
+    
+    return message_id or num_sent
 
 
 def get_domain_from_email(email):

@@ -25,7 +25,7 @@ from jvapp.models import JobVyneUser
 from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
-from jvapp.utils.oauth import get_access_token_from_code, OAUTH_CFGS
+from jvapp.utils.oauth import OauthProviders, get_access_token_from_code, OAUTH_CFGS
 
 __all__ = ('LoginView', 'LoginSetCookieView', 'LogoutView', 'CheckAuthView', 'SocialAuthCredentialsView')
 
@@ -161,7 +161,7 @@ def social_auth(request, backend):
         
         expiration_seconds = social_response.get('expires_in')
         expiration_dt = get_token_expiration_dt(expiration_seconds) if expiration_seconds else None
-        refresh_token= social_response.get('refresh_token')
+        refresh_token = social_response.get('refresh_token')
         
         for email in user_emails:
             update_all_social_creds(user, backend, email, access_token, expiration_dt, refresh_token=refresh_token)
@@ -179,7 +179,8 @@ def update_all_social_creds(user, provider, email, access_token, expiration_dt, 
 
         for cred in creds:
             cred.access_token = access_token
-            cred.expiration_dt = expiration_dt
+            # Google refresh tokens don't expire
+            cred.expiration_dt = None if provider == OauthProviders.google.value and refresh_token else expiration_dt
             if refresh_token:
                 cred.refresh_token = refresh_token
         UserSocialCredential.objects.bulk_update(creds, update_vals)

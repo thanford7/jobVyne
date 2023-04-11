@@ -1,17 +1,22 @@
+import json
 import logging
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from sendgrid import EventWebhook
 
-from jvapp.models import Message, MessageRecipient
+from jvapp.apis.notification import MessageGroupView
+from jvapp.models import Message, MessageRecipient, MessageThread
 from jvapp.utils.datetime import get_datetime_from_unix
 from jvapp.utils.email import MESSAGE_ENVIRONMENT_KEY, MESSAGE_ID_KEY
+from jvapp.utils.gmail import DEFAULT_GMAIL_EMAIL, GmailAPIService
 
 logger = logging.getLogger(__name__)
 
@@ -139,3 +144,99 @@ class SendgridWebhooksView(APIView):
             return f'Attempts ({event.get("attempt")}) {event.get("response")}'
         if event_type == 'bounce':
             return f'{event.get("status")} | Type: {event.get("type")} | Classification: {event.get("bounce_classification")} | Reason: {event.get("reason")}'
+
+
+class SendgridWebhooksInboundView(APIView):
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser]
+
+    @method_decorator(csrf_exempt)
+    @method_decorator(ensure_csrf_cookie)
+    def post(self, request):
+        to_email = request.data.get('to')
+        # Don't use "from" data field because it can contain text other than the email e.g. "todd <todd@jobvyne.com>"
+        from_email = json.loads(request.data['envelope'])['from']
+        
+        # gmail_api = GmailAPIService()
+        # if to_email == DEFAULT_GMAIL_EMAIL and (received_emails := gmail_api.get_gmail_messages(from_email)):
+        #     message_thread_keys = {e['threadId'] for e in received_emails}
+        #     message_keys = {e['id'] for e in received_emails}
+        #     existing_message_keys = Message.objects.filter(
+        #         external_message_key__in=message_keys,
+        #         type=Message.MessageType.EMAIL.value
+        #     ).values_list('external_message_key', flat=True)
+        #     message_threads = {
+        #         mt.external_thread_key: mt for mt in
+        #         MessageThread.objects.filter(external_thread_key__in=message_thread_keys)
+        #     }
+        #
+        #     messages_to_save = []
+        #     for received_email in received_emails:
+        #         # This email has already been saved
+        #         if received_email['id'] in existing_message_keys:
+        #             continue
+            
+        return Response(status=status.HTTP_200_OK)
+
+
+class GmailInboundView(APIView):
+    permission_classes = [AllowAny]
+    
+    @method_decorator(csrf_exempt)
+    @method_decorator(ensure_csrf_cookie)
+    def post(self, request):
+        gmail_api = GmailAPIService()
+        
+        # Check new messages against ones already saved in the database
+        message_keys = gmail_api.get_new_message_ids_from_pub_sub(request)
+        if not message_keys:
+            return Response(status=status.HTTP_200_OK)
+        
+        existing_message_keys = Message.objects.filter(
+            external_message_key__in=message_keys,
+            type=Message.MessageType.EMAIL.value
+        ).values_list('external_message_key', flat=True)
+        new_message_keys = [mk for mk in message_keys if mk not in existing_message_keys]
+        
+        full_gmail_messages = []
+        for message_key in new_message_keys:
+            raw_email = gmail_api.get_gmail_message(message_key)
+            full_gmail_messages.append(gmail_api.get_normalized_email(raw_email))
+        
+        message_thread_keys = {m.thread_key for m in full_gmail_messages}
+        message_threads = {
+            mt.external_thread_key: mt for mt in
+            MessageThread.objects.filter(external_thread_key__in=message_thread_keys)
+        }
+        employer_message_group = {}
+        
+        messages = []
+        for gmail_message in full_gmail_messages:
+            message_thread = message_threads.get(gmail_message.thread_key)
+            
+            # If someone sends a new email without responding to an existing thread,
+            # we need to create a new thread so the employer can access the email
+            if (not message_thread) and gmail_message.employer_id:
+                message_group = (
+                    employer_message_group.get(gmail_message.employer_id) or
+                    MessageGroupView.get_or_create_employer_message_group(gmail_message.employer_id)
+                )
+                message_thread = MessageThread(external_thread_key=gmail_message.thread_key)
+                message_thread.save()
+                message_thread.message_groups.add(message_group)
+                message_threads[gmail_message.thread_key] = message_thread
+            if not message_thread:
+                continue
+            messages.append(Message(
+                type=Message.MessageType.EMAIL.value,
+                subject=gmail_message.subject,
+                body=gmail_message.body_text,
+                body_html=gmail_message.body_html,
+                from_address=gmail_message.from_email,
+                created_dt=gmail_message.created_dt,
+                message_thread=message_thread,
+                external_message_key=gmail_message.message_key
+            ))
+        Message.objects.bulk_create(messages)
+        
+        return Response(status=status.HTTP_200_OK)

@@ -25,6 +25,7 @@ OAUTH_CFGS = {
             'access_type': 'offline',
             'include_granted_scopes': 'true',
             'redirect_uri': f'{settings.FRONTEND_URL}auth/google-oauth2/callback',
+            'prompt': 'consent'
         }
     },
     OauthProviders.facebook.value: {

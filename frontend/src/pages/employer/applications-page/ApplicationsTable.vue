@@ -139,12 +139,13 @@
       </div>
       <div class="col-12">
         <q-btn-dropdown
+          v-if="user.connected_emails?.length"
           label="Bulk actions" color="primary"
           rounded unelevated dense padding="5px 10px"
           class="q-mr-sm"
         >
           <q-list>
-            <q-item clickable v-close-popup @click="openEmailApplicantsDialog()">
+            <q-item v-if="user.connected_emails?.length" clickable v-close-popup @click="openEmailApplicantsDialog()">
               <q-item-section avatar>
                 <q-icon name="email"/>
               </q-item-section>
@@ -169,13 +170,15 @@
         <q-card class="h-100 q-pb-md">
           <div class="row" :style="employerJobTitleColors[application.job_title]">
             <div class="col-1">
-              <q-checkbox v-model="application.isSelected" @update:model-value="toggleSelectedApplication($event, application.id)"/>
+              <q-checkbox v-model="application.isSelected"
+                          @update:model-value="toggleSelectedApplication($event, application.id)"/>
             </div>
             <div class="col-11">
               <div class="q-pa-sm text-center">
                 {{ application.job_title }}
                 <div>
-                  <LocationChip v-if="application.locations?.length" :locations="application.locations" :is-dense="true"/>
+                  <LocationChip v-if="application.locations?.length" :locations="application.locations"
+                                :is-dense="true"/>
                 </div>
               </div>
             </div>
@@ -286,7 +289,7 @@
             </div>
           </template>
           <div class="bg-grey-3 q-px-sm">Contact</div>
-          <div class="q-px-md q-gutter-y-sm q-pt-sm">
+          <div class="q-px-md q-gutter-y-sm q-py-sm">
             <div v-if="application.phone_number">
               <q-icon name="phone"/>&nbsp;&nbsp;{{ application.phone_number }}
             </div>
@@ -294,6 +297,18 @@
               <q-icon name="email"/>&nbsp;&nbsp;{{ application.email }}
             </div>
           </div>
+          <template v-if="application.message_threads?.length">
+            <div class="bg-grey-3 q-px-sm">Messages</div>
+            <div class="q-px-md q-gutter-y-sm q-pt-sm">
+              <div>
+                <div class="text-small">Latest message</div>
+                <div class="text-small text-bold">{{ application.message_threads[0][0].subject }}</div>
+                <div class="text-small">Sent: {{ dateTimeUtil.getDateTime(application.message_threads[0][0].created_dt, { isIncludeSeconds: false }) }}</div>
+                <div class="text-small">{{ dataUtil.truncateText(application.message_threads[0][0].body, 100) }}</div>
+                <div></div>
+              </div>
+            </div>
+          </template>
         </q-card>
       </div>
       <div v-if="!applications?.length" class="col-12 ">
@@ -748,6 +763,9 @@ export default {
           applicationIds: this.selectedApplicationIds,
           employerId: this.user.employer_id
         }
+      }).onOk(async () => {
+        await this.fetchApplications({ isForceRefresh: true })
+        this.unselectAllApplications()
       })
     },
     async removeApplicationQueryParam () {

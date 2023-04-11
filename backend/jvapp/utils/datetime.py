@@ -35,5 +35,8 @@ def get_unix_datetime(date_time: datetime):
     return int(time.mktime(date_time.timetuple()))
 
 
-def get_datetime_from_unix(unix_time):
-    return datetime.fromtimestamp(int(unix_time), tz=timezone.utc)
+def get_datetime_from_unix(unix_time, is_in_ms=False):
+    unix_time = int(unix_time)
+    if is_in_ms:
+        unix_time /= 1000
+    return datetime.fromtimestamp(unix_time, tz=timezone.utc)
