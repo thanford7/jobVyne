@@ -11,6 +11,16 @@
             <div v-html="email.body_html"></div>
           </div>
           <div v-else class="q-mt-sm">{{ dataUtil.truncateText(email.body, 100) }}</div>
+          <template v-if="email.attachments?.length">
+            <div class="text-small text-bold q-mt-sm">
+              Attachments
+            </div>
+            <div class="text-small">
+              <a v-for="attachment in email.attachments" :href="attachment.url" target="_blank" @click.stop>
+                {{ attachment.name }}
+              </a>
+            </div>
+          </template>
         </q-item-section>
         <q-item-section side top class="text-small">
           {{ dateTimeUtil.getDateTime(email.created_dt, { isIncludeSeconds: false }) }}
