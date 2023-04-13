@@ -1,17 +1,12 @@
 <template>
   <div class="row q-mt-md q-gutter-y-md">
     <div class="col-12 q-gutter-sm">
-      <q-btn
+      <AuthSocialButton
         v-for="platform in allowedPlatforms"
-        class="btn-bordered"
-        ripple color="primary"
+        :platform="platform"
+        :button-text="`Connect ${platform.name}`"
         @click="redirectAuthUrl(platform.redirectProvider)"
-      >
-        <q-icon tag="div" :name="`fa-brands ${platform.icon}`" class="q-mr-sm"/>
-        <div class="text-center">
-          Connect {{ platform.name }}
-        </div>
-      </q-btn>
+      />
     </div>
     <div class="col-12">
       <q-table
@@ -75,6 +70,7 @@
 </template>
 
 <script>
+import AuthSocialButton from 'components/AuthSocialButton.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
@@ -85,6 +81,7 @@ import { useSocialAuthStore } from 'stores/social-auth-store.js'
 
 export default {
   name: 'SocialAccountsTable',
+  components: { AuthSocialButton },
   props: {
     excludePlatforms: {
       type: Array,

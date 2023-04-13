@@ -21,7 +21,7 @@ OAUTH_CFGS = {
             'state': settings.AUTH_STATE,
             'response_type': 'code',
             'login_scope': 'profile email',
-            'scope': 'profile email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly',
+            'scope': 'profile email https://www.googleapis.com/auth/gmail.send',
             'access_type': 'offline',
             'include_granted_scopes': 'true',
             'redirect_uri': f'{settings.FRONTEND_URL}auth/google-oauth2/callback',

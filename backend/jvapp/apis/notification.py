@@ -2,6 +2,7 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 
 from django.db.models import F, Q
+from google.auth.exceptions import RefreshError
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -323,6 +324,8 @@ class MessageEmployerApplicantView(BaseMessageEmployerView):
                 )
             except GmailException as e:
                 return get_error_response(str(e))
+            except RefreshError as e:
+                return get_error_response('Your Gmail credentials are no longer valid. Please refresh your credentials on the Account page.')
         
         return self.get_success_response(len(job_applications), job_applications, 'applicant')
     

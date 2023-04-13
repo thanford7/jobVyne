@@ -114,10 +114,7 @@ export const useSocialAuthStore = defineStore('social-auth', {
       })
       return buildURL(providerCfg.auth_url, authParams)
     },
-    async setUserSocialCredentials (isForceRefresh) {
-      if (!isForceRefresh && this.socialCredentials) {
-        return
-      }
+    async setUserSocialCredentials () {
       const resp = await this.$api.get('user/social-credentials/')
       this.socialCredentials = resp.data
     }

@@ -1,7 +1,9 @@
 import json
 import logging
+import tempfile
 
 from django.conf import settings
+from django.core.files import File
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
@@ -13,7 +15,7 @@ from rest_framework.views import APIView
 from sendgrid import EventWebhook
 
 from jvapp.apis.notification import MessageGroupView
-from jvapp.models import Message, MessageRecipient, MessageThread
+from jvapp.models import Message, MessageAttachment, MessageRecipient, MessageThread
 from jvapp.utils.datetime import get_datetime_from_unix
 from jvapp.utils.email import MESSAGE_ENVIRONMENT_KEY, MESSAGE_ID_KEY
 from jvapp.utils.gmail import DEFAULT_GMAIL_EMAIL, GmailAPIService
@@ -208,26 +210,17 @@ class GmailInboundView(APIView):
             mt.external_thread_key: mt for mt in
             MessageThread.objects.filter(external_thread_key__in=message_thread_keys)
         }
-        employer_message_group = {}
         
-        messages = []
         for gmail_message in full_gmail_messages:
             message_thread = message_threads.get(gmail_message.thread_key)
-            
-            # If someone sends a new email without responding to an existing thread,
-            # we need to create a new thread so the employer can access the email
-            if (not message_thread) and gmail_message.employer_id:
-                message_group = (
-                    employer_message_group.get(gmail_message.employer_id) or
-                    MessageGroupView.get_or_create_employer_message_group(gmail_message.employer_id)
-                )
-                message_thread = MessageThread(external_thread_key=gmail_message.thread_key)
-                message_thread.save()
-                message_thread.message_groups.add(message_group)
-                message_threads[gmail_message.thread_key] = message_thread
             if not message_thread:
                 continue
-            messages.append(Message(
+            
+            # Don't save a message without any content
+            if not any((gmail_message.body_text, gmail_message.attachment_files)):
+                continue
+
+            message = Message(
                 type=Message.MessageType.EMAIL.value,
                 subject=gmail_message.subject,
                 body=gmail_message.body_text,
@@ -236,7 +229,38 @@ class GmailInboundView(APIView):
                 created_dt=gmail_message.created_dt,
                 message_thread=message_thread,
                 external_message_key=gmail_message.message_key
-            ))
-        Message.objects.bulk_create(messages)
+            )
+            message.save()
+            recipients = []
+            for recipient_email in gmail_message.to_emails:
+                recipients.append(MessageRecipient(
+                    message=message,
+                    recipient_address=recipient_email,
+                    recipient_type=MessageRecipient.RecipientType.TO.value,
+                    delivered_dt=gmail_message.created_dt,
+                    processed_dt=gmail_message.created_dt
+                ))
+            MessageRecipient.objects.bulk_create(recipients)
+            
+            if gmail_message.attachment_files:
+                attachments = []
+                attachment_files = []
+                for attachment_file_data in gmail_message.attachment_files:
+                    attachment_data = gmail_api.get_message_attachment(
+                        gmail_message.message_key, attachment_file_data['id']
+                    )
+                    if not attachment_data:
+                        continue
+                    attachment_file = tempfile.NamedTemporaryFile()
+                    attachment_file.write(attachment_data)
+                    attachment_file.flush()
+                    attachment_files.append(attachment_file)
+                    attachments.append(MessageAttachment(
+                        message_id=message.id,
+                        file=File(attachment_file, name=attachment_file_data['name'])
+                    ))
+                MessageAttachment.objects.bulk_create(attachments)
+                for attachment_file in attachment_files:
+                    attachment_file.close()
         
         return Response(status=status.HTTP_200_OK)

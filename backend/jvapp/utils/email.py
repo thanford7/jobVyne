@@ -9,6 +9,7 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.db.transaction import atomic
 from django.template import loader
 from django.templatetags.static import static
 from django.utils import timezone
@@ -51,7 +52,7 @@ def get_file_from_path(file_path):
         file_data = file.read()
     return file_data
 
-
+@atomic
 def send_django_email(
     subject_text, django_email_body_template,
     to_email=None, cc_email=None, bcc_email=None, from_email=EMAIL_ADDRESS_SEND,
@@ -151,6 +152,7 @@ def send_django_email(
         'bcc': bcc_email
     }
     if is_tracked:
+        email_cfg['reply_to'] = [from_email, f'communications_{jv_message.id}@jobvyne.com']
         email_cfg['headers'] = {
             'X-SMTPAPI': json.dumps({'unique_args': {MESSAGE_ID_KEY: jv_message.id, MESSAGE_ENVIRONMENT_KEY: settings.BASE_URL}})
         }

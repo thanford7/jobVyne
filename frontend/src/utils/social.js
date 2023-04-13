@@ -19,6 +19,7 @@ class SocialUtil {
         isMultiMedia: false,
         characterLimit: 3000,
         icon: 'fa-linkedin-in',
+        logo: '/logos/linkedIn_logo.png',
         redirectProvider: 'linkedin-oauth2'
       },
       [this.SOCIAL_KEY_FACEBOOK]: {
@@ -41,6 +42,7 @@ class SocialUtil {
       [this.SOCIAL_KEY_GOOGLE]: {
         name: this.SOCIAL_KEY_GOOGLE,
         icon: 'fa-google',
+        logo: '/logos/google_logo.png',
         redirectProvider: 'google-oauth2'
       }
     }

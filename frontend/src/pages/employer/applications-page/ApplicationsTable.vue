@@ -114,6 +114,10 @@
         </template>
       </CollapsableCard>
       <div class="col-12">
+        <div v-if="!user.connected_emails?.length" class="callout-card">
+          <q-icon name="lightbulb" color="warning" size="24px"/>
+          Want to email applicants? Connect your Google account on your <a href="/user/profile?tab=connection">Account page</a>.
+        </div>
         <q-tabs
           v-model="applicationFilter.application_status"
           dense
@@ -302,10 +306,20 @@
             <div class="q-px-md q-gutter-y-sm q-pt-sm">
               <div>
                 <div class="text-small">Latest message</div>
-                <div class="text-small text-bold">{{ application.message_threads[0][0].subject }}</div>
+                <div>
+                  <q-icon
+                    v-if="isMessageOutbound(application.message_threads[0][0])"
+                    name="fa-solid fa-paper-plane" title="Outbound message"
+                  />
+                  <q-icon v-else name="fa-solid fa-reply" title="Inbound message"/>
+                  &nbsp;
+                  <span class="text-small text-bold">{{ application.message_threads[0][0].subject }}</span>
+                </div>
                 <div class="text-small">Sent: {{ dateTimeUtil.getDateTime(application.message_threads[0][0].created_dt, { isIncludeSeconds: false }) }}</div>
                 <div class="text-small">{{ dataUtil.truncateText(application.message_threads[0][0].body, 100) }}</div>
-                <div></div>
+                <div class="q-mt-sm">
+                  <a href="#" @click.prevent="openShowEmailDialog(application)">Show all messages</a>
+                </div>
               </div>
             </div>
           </template>
@@ -567,6 +581,7 @@ import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogApplicantReview from 'components/dialogs/DialogApplicantReview.vue'
 import DialogEmployerApplicantEmail from 'components/dialogs/DialogEmployerApplicantEmail.vue'
+import DialogShowEmails from 'components/dialogs/DialogShowEmails.vue'
 import DropdownApplicationStatus from 'components/inputs/DropdownApplicationStatus.vue'
 import SelectLocation from 'components/inputs/SelectLocation.vue'
 import LocationChip from 'components/LocationChip.vue'
@@ -720,6 +735,12 @@ export default {
       }
       return false
     },
+    isMessageOutbound (message) {
+      if (!this.user.connected_emails?.length) {
+        return false
+      }
+      return this.user.connected_emails.includes(message.from_address)
+    },
     getIsNotificationFailure (application) {
       if (this.employer.notification_email && application.notification_email_failure_dt) {
         return true
@@ -756,7 +777,15 @@ export default {
       })
       this.selectedApplicationIds = []
     },
-    async openEmailApplicantsDialog () {
+    openShowEmailDialog (application) {
+      this.q.dialog({
+        component: DialogShowEmails,
+        componentProps: {
+          emailThreads: application.message_threads
+        }
+      })
+    },
+    openEmailApplicantsDialog () {
       this.q.dialog({
         component: DialogEmployerApplicantEmail,
         componentProps: {

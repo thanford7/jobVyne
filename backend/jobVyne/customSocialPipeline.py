@@ -67,7 +67,7 @@ class CustomGoogleOAuth2(GoogleOAuth2):
     def get_scope(self):
         scope = super(GoogleOAuth2, self).get_scope()
         if not self.data.get('isLogin'):
-            scope = scope + ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.readonly']
+            scope = scope + ['https://www.googleapis.com/auth/gmail.send', ]
         return scope
     
     

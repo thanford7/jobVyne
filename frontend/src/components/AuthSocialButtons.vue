@@ -1,26 +1,23 @@
 <template>
   <div class="q-gutter-y-sm">
-    <q-btn
-      v-for="platform in authPlatforms"
-      type="div"
-      class="w-100 btn-bordered"
-      ripple flat unelevated
-      @click="redirectAuthUrl(platform.redirectProvider)"
-    >
-      <q-icon tag="div" :name="`fa-brands ${platform.icon}`" class="q-mr-sm"/>
-      <div class="text-center">
-        {{ (isCreate) ? createText : loginText }}{{ platform.name }}
-      </div>
-    </q-btn>
+    <div v-for="platform in authPlatforms" class="flex flex-center">
+      <AuthSocialButton
+        :platform="platform"
+        :button-text="`${(isCreate) ? createText : loginText}${platform.name}`"
+        @click="redirectAuthUrl(platform.redirectProvider)"
+      />
+    </div>
   </div>
 </template>
 
 <script>
+import AuthSocialButton from 'components/AuthSocialButton.vue'
 import socialUtil from 'src/utils/social.js'
 import { useSocialAuthStore } from 'stores/social-auth-store'
 
 export default {
   name: 'AuthSocialButtons',
+  components: { AuthSocialButton },
   data () {
     return {
       createText: 'Create with ',

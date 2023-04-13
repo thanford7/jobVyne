@@ -6,7 +6,6 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
@@ -24,7 +23,6 @@ from jvapp.apis.user import UserView
 from jvapp.models import JobVyneUser
 from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.user import get_serialized_user
-from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT
 from jvapp.utils.oauth import OauthProviders, get_access_token_from_code, OAUTH_CFGS
 
 __all__ = ('LoginView', 'LoginSetCookieView', 'LogoutView', 'CheckAuthView', 'SocialAuthCredentialsView')
@@ -193,6 +191,7 @@ def update_all_social_creds(user, provider, email, access_token, expiration_dt, 
             UserSocialCredential(
                 user=user,
                 access_token=access_token,
+                refresh_token=refresh_token,
                 provider=provider,
                 email=email,
                 expiration_dt=expiration_dt
