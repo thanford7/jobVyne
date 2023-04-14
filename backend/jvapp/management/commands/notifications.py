@@ -1,3 +1,4 @@
+import datetime
 from collections import defaultdict
 from datetime import timedelta
 from time import sleep
@@ -10,6 +11,7 @@ from jvapp.models.user import UserSocialCredential
 from jvapp.utils.cron_util import CronPattern, get_datetime_to_nearest_minutes, get_seconds_to_next_minute_interval
 from jvapp.utils.datetime import get_current_datetime
 from jvapp.utils.email import send_django_email
+from jvapp.utils.gmail import GmailAPIService
 from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
 
 MINUTES_PER_RUN = 10
@@ -61,14 +63,21 @@ class Command(BaseCommand):
         )
     
     def handle(self, *args, **options):
+        gmail_api = GmailAPIService()
         if options['test']:
             self.send_credential_notifications(True)
+            gmail_api.start_pub_sub_watch()
         else:
+            last_gmail_service_date = False
             while True:
+                current_date = datetime.date.today()
+                if not last_gmail_service_date or (current_date != last_gmail_service_date):
+                    gmail_api.start_pub_sub_watch()
+                    last_gmail_service_date = current_date
+                self.send_credential_notifications(False)
                 seconds_to_next_run = get_seconds_to_next_minute_interval(MINUTES_PER_RUN)
                 self.stdout.write(f'Waiting {seconds_to_next_run / 60} minutes for next run')
                 sleep(seconds_to_next_run)
-                self.send_credential_notifications(False)
             
     def send_credential_notifications(self, is_test):
         writer = self.stdout.write

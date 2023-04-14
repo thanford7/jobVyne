@@ -47,8 +47,19 @@ if IS_LOCAL:
 else:
     CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com']
 
-SUBDOMAIN = env('SUBDOMAIN', default=None)
-BASE_URL = 'https://localhost' if IS_LOCAL else (f'https://{SUBDOMAIN}.jobvyne.com' if SUBDOMAIN else 'https://app.jobvyne.com')
+SUBDOMAIN = env('SUBDOMAIN', default='app')
+# COMMUNICATION_ADDRESS is used for email webhooks
+# All emails starting with "communications" are routed to communications@jobvyne.com
+# Email subscription services will push a notification whenever any email is received to this address
+# Different JobVyne application domains need to determine wether the push notification is relevant
+# E.g. an email to communications_local@jobvyne.com should only be parsed by a localhost environment
+if IS_LOCAL:
+    BASE_URL = 'https://localhost'
+    COMMUNICATION_ADDRESS = 'communications_local'
+elif SUBDOMAIN:
+    BASE_URL = f'https://{SUBDOMAIN}.jobvyne.com'
+    COMMUNICATION_ADDRESS = f'communications_{SUBDOMAIN}'
+
 API_PATH = 'api/v1/'
 API_URL = f'{BASE_URL}/{API_PATH}'
 

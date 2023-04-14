@@ -22,7 +22,7 @@ IS_PRODUCTION = os.getenv('DB') == 'prod'
 MESSAGE_ID_KEY = 'jv_message_id'
 MESSAGE_ENVIRONMENT_KEY = 'jv_base_url'
 EMAIL_ADDRESS_SEND = 'no-reply@jobvyne.com'  # Email address where all emails originate from
-EMAIL_ADDRESS_COMMUNICATION = 'communications@jobvyne.com'  # Bi-directional email for users to correspond
+EMAIL_ADDRESS_COMMUNICATION = f'{settings.COMMUNICATION_ADDRESS}@jobvyne.com'  # Bi-directional email for users to correspond
 EMAIL_ADDRESS_SUPPORT = 'support@jobvyne.com'
 EMAIL_ADDRESS_SALES = 'sales@jobvyne.com'
 EMAIL_ADDRESS_MARKETING = 'marketing@jobvyne.com'
@@ -92,7 +92,7 @@ def send_django_email(
         if bcc_email:
             bcc_email = [settings.EMAIL_ADDRESS_TEST]
         to_email = [settings.EMAIL_ADDRESS_TEST]
-        if (from_email not in ALLOWED_LOCAL_EMAIL_ADDRESSES) and not re.match('^communications_[0-9]+@jobvyne\.com$', from_email):
+        if (from_email not in ALLOWED_LOCAL_EMAIL_ADDRESSES) and not re.match('^communications.*?@jobvyne\.com$', from_email):
             from_email = EMAIL_ADDRESS_SEND
     
     if cc_email and not isinstance(cc_email, list):
@@ -152,7 +152,7 @@ def send_django_email(
         'bcc': bcc_email
     }
     if is_tracked:
-        email_cfg['reply_to'] = [from_email, f'communications_{jv_message.id}@jobvyne.com']
+        email_cfg['reply_to'] = [from_email, f'{settings.COMMUNICATION_ADDRESS}_{jv_message.id}@jobvyne.com']
         email_cfg['headers'] = {
             'X-SMTPAPI': json.dumps({'unique_args': {MESSAGE_ID_KEY: jv_message.id, MESSAGE_ENVIRONMENT_KEY: settings.BASE_URL}})
         }

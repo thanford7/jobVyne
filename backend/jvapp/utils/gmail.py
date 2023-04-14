@@ -20,7 +20,7 @@ from googleapiclient.discovery import build
 
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none
 
-DEFAULT_GMAIL_EMAIL = 'communications@jobvyne.com'
+DEFAULT_GMAIL_EMAIL = f'{settings.COMMUNICATION_ADDRESS}@jobvyne.com'
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 
 
@@ -162,7 +162,7 @@ class GmailAPIService:
         thread_key = None
         final_to_emails = []
         for email in to_emails:
-            message_match = re.match('^communications_(?P<message_id>[0-9]+)@jobvyne\.com$', email)
+            message_match = re.match(f'^{settings.COMMUNICATION_ADDRESS}_(?P<message_id>[0-9]+)@jobvyne\.com$', email)
             if message_match:
                 message_id = int(message_match.group('message_id'))
                 try:
