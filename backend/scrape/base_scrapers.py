@@ -153,7 +153,7 @@ class Scraper:
             job_item = self.get_job_data_from_html(page_html, job_url=url, **meta_data)
             if job_item:
                 self.job_items.append(job_item)
-            logger.info(f'Job page scraped ({current_page})')
+            logger.info(f'Job page scraped ({current_page}) -- {(job_item and job_item.job_title) or "no job found"}')
             self.queue.task_done()
     
     async def get_html_from_url(self, url):
@@ -511,8 +511,7 @@ class GreenhouseScraper(Scraper):
         compensation_data = self.merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
-        
-        
+
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
