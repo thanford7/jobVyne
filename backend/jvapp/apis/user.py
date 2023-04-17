@@ -2,7 +2,6 @@ from collections import defaultdict
 from string import Template
 
 from django.conf import settings
-from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import IntegrityError
 from django.db.models import Count, Q
@@ -11,9 +10,9 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import Employer, EmployerAuthGroup, SocialPost
+from jvapp.models import Employer, SocialPost
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import JobVyneUser, UserApplicationReview, UserEmployeeProfileQuestion, \
     UserEmployeeProfileResponse, UserFile, \
@@ -56,14 +55,14 @@ class UserView(JobVyneAPIView):
             
             return Response(status=status.HTTP_200_OK, data=[get_serialized_user(u) for u in users])
         
-        return Response('Please provide a user ID or search text', status=status.HTTP_400_BAD_REQUEST)
+        return get_error_response('Please provide a user ID or search text')
     
     @atomic
     def post(self, request):
         email = self.data.get('email')
         password = self.data.get('password')
         if not email or not password:
-            return Response('Email and password are required', status=status.HTTP_400_BAD_REQUEST)
+            return get_error_response('Email and password are required')
         
         extra_user_props = {}
         for prop in ('user_type_bits', 'first_name', 'last_name'):
@@ -93,8 +92,7 @@ class UserView(JobVyneAPIView):
         # Make sure business email is not a duplicate
         new_business_email = self.data.get('business_email')
         if new_business_email and new_business_email == user.email:
-            return Response('Business email cannot be the same as your personal email',
-                            status=status.HTTP_400_BAD_REQUEST)
+            return get_error_response('Business email cannot be the same as your personal email')
         
         # Reset email verification if this is a new email
         if new_business_email != user.business_email:
@@ -122,7 +120,10 @@ class UserView(JobVyneAPIView):
             location = location_parser.get_location(home_location_text)
             user.home_location = location
         
-        user.save()
+        try:
+            user.save()
+        except IntegrityError as e:
+            return get_error_response(str(e))
         
         if responses := self.data.get('profile_questions'):
             new_responses = []

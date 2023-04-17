@@ -10,6 +10,7 @@ class AttributeCfg:
     prop_func: Callable = None  # A function that processes the raw form value
     is_protect_existing: bool = False  # If true, prevents setting the object attribute to None
     is_ignore_excluded: bool = True  # If true, doesn't modify the attribute if it's not included in the form data
+    is_empty_to_none: bool = True
 
 
 def set_object_attributes(obj: object, data: dict, form_cfg: dict):
@@ -22,6 +23,8 @@ def set_object_attributes(obj: object, data: dict, form_cfg: dict):
         val = data.get(attribute_cfg.form_name or key)
         if attribute_cfg.prop_func:
             val = attribute_cfg.prop_func(val)
+        if attribute_cfg.is_empty_to_none and isinstance(val, str) and not val:
+            val = None
         if val is None and attribute_cfg.is_protect_existing:
             continue
         setattr(obj, key, val)
