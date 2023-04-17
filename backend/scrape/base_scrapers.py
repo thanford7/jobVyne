@@ -64,21 +64,26 @@ class Scraper:
         return await self.browser.new_page()
     
     async def save_page_info(self, page):
-        logger.info('Saving page info')
-        storage = get_file_storage_engine()
-        employer_name = '_'.join(self.employer_name.split(' '))
-        
-        screenshot_file_path = f'scraper_error/{employer_name}_screenshot_{timezone.now()}.png'
-        screenshot = await page.screenshot(full_page=True)
-        screenshot_file = tempfile.TemporaryFile()
-        screenshot_file.write(screenshot)
-        storage.save(screenshot_file_path, screenshot_file)
-        
-        html_file_path = f'scraper_error/{employer_name}_page_{timezone.now()}.html'
-        page_content = await page.content()
-        html_file = tempfile.TemporaryFile()
-        html_file.write(bytes(page_content, 'utf-8'))
-        storage.save(html_file_path, html_file)
+        logger.info(f'Saving page info for {page.url}')
+        try:
+            storage = get_file_storage_engine()
+            employer_name = '_'.join(self.employer_name.split(' '))
+
+            screenshot_file_path = f'scraper_error/{employer_name}_screenshot_{timezone.now()}.png'
+            screenshot = await page.screenshot(full_page=True)
+            screenshot_file = tempfile.TemporaryFile()
+            screenshot_file.write(screenshot)
+            storage.save(screenshot_file_path, screenshot_file)
+
+            html_file_path = f'scraper_error/{employer_name}_page_{timezone.now()}.html'
+            page_content = await page.content()
+            html_file = tempfile.TemporaryFile()
+            html_file.write(bytes(page_content, 'utf-8'))
+            storage.save(html_file_path, html_file)
+        except Exception:  # noqa -- broad catch okay here, stack trace logged
+            # Since we're already in an error state when we get to this method, if anything went
+            # wrong trying to save the page info, don't raise the exception, just log it.
+            logger.exception(f'Exception occurred trying to save page info for {page.url}')
     
     async def visit_page_with_retry(self, url, max_retries=4):
         # Some browser IPs may not work. If they don't we'll remove the browser and try another
@@ -534,8 +539,8 @@ class GreenhouseIframeScraper(GreenhouseScraper):
         html_dom = await self.get_page_html(page)
         iframe_url = html_dom.xpath('//*[@id="grnhse_iframe"]/@src').get()
         if iframe_url is None:
+            logger.error(f'Could not parse iframe URL from page {page.url}, saving info')
             await self.save_page_info(page)
-            logger.error(f'Could not parse iframe URL from page {page.url}')
         else:
             try:
                 await page.goto(iframe_url)
