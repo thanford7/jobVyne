@@ -119,7 +119,7 @@ class Scraper:
         for p in error_pages:
             await p.close()
 
-        raise error or ValueError(f'Exceeded max tries while trying to visit: {url}')
+        raise error or ValueError(f'Exceeded max tries while trying to visit: "{url}"')
     
     async def scrape_jobs(self):
         raise NotImplementedError()
@@ -601,6 +601,7 @@ class WorkdayScraper(Scraper):
                     # Try reloading the page once
                     if not has_page_loaded:
                         logger.info('Failed to go to next page. Trying page reload')
+                        # TODO: Add retry for this
                         await self.reload_page(page)
                         has_page_loaded, html_dom = await self.get_next_page(page, last_page_job_href)
                     # If reload doesn't fix the issue, something is wrong
