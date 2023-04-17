@@ -25,9 +25,14 @@ async def launch_scrapers(scraper_classes):
     async with async_playwright() as p:
         browser = await get_browser(p)
         scrapers = [sc(p, browser) for sc in scraper_classes]
-        async_scrapers = [s.scrape_jobs() for s in scrapers]
-        await asyncio.gather(*async_scrapers)
-    
+        try:
+            async_scrapers = [s.scrape_jobs() for s in scrapers]
+            await asyncio.gather(*async_scrapers)
+        except Exception:
+            for scraper in scrapers:
+                await scraper.close_connections()
+            raise
+
     return scrapers
     
     
