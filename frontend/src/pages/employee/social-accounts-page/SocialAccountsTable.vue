@@ -4,7 +4,7 @@
       <AuthSocialButton
         v-for="platform in allowedPlatforms"
         :platform="platform"
-        :button-text="`Connect ${platform.name}`"
+        :button-text="`Connect with ${platform.name}`"
         @click="redirectAuthUrl(platform.redirectProvider)"
       />
     </div>
@@ -52,8 +52,9 @@
               <span v-else>{{ col.value }}</span>
             </q-td>
             <q-td auto-width>
-              <q-btn
-                color="gray-500" no-wrap dense icon="sync" label="Refresh" class="q-pr-sm"
+              <AuthSocialButton
+                :platform="socialUtil.platformCfgs[props.row.platform_name]"
+                :button-text="`Refresh with ${props.row.platform_name}`"
                 @click="redirectAuthUrl(props.row.provider)"
               />
             </q-td>

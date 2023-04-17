@@ -21,6 +21,7 @@ from googleapiclient.discovery import build
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none
 
 DEFAULT_GMAIL_EMAIL = f'{settings.COMMUNICATION_ADDRESS}@jobvyne.com'
+SERVICE_GMAIL_EMAIL = 'communications@jobvyne.com'  # This is the user email address that can access the email account
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 
 
@@ -44,7 +45,7 @@ class GmailException(Exception):
 
 class GmailAPIService:
     
-    def __init__(self, user_email=DEFAULT_GMAIL_EMAIL):
+    def __init__(self, user_email=SERVICE_GMAIL_EMAIL):
         # oauth2client.client.Credentials.new_from_json
         self.user_email = user_email
         self.set_service()
