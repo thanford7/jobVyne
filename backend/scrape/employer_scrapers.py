@@ -65,7 +65,7 @@ class InvenergyScraper(WorkdayScraper):
 
 class GuildEducationScraper(GreenhouseIframeScraper):
     employer_name = 'Guild Education'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=guildeducation&b=https%3A%2F%2Fwww.guildeducation.com%2Fabout-us%2Fcareers%2Fopen-positions%2F'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=guild&b=https%3A%2F%2Fwww.guild.com%2Fopen-positions-at-guild'
 
 
 class LiveViewTechnologiesScraper(BambooHrScraper):
