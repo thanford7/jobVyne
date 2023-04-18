@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="hHr lpR fFf">
+  <q-layout view="hHh lpR fFf">
 
     <q-header v-if="isLoaded" elevated class="bg-white text-primary">
       <div class="justify-center row" style="position: relative">
@@ -39,6 +39,8 @@
         </ResponsiveWidth>
       </div>
     </q-header>
+
+    <UserSidebar :user="user"/>
 
     <q-drawer
       v-if="jobApplication"
@@ -349,6 +351,7 @@ import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import LocationChip from 'components/LocationChip.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
+import UserSidebar from 'pages/jobs-page/UserSidebar.vue'
 import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
@@ -358,7 +361,6 @@ import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useUserStore } from 'stores/user-store.js'
 import { useUtilStore } from 'stores/utility-store.js'
-import { ref } from 'vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import locationUtil from 'src/utils/location'
 import dataUtil from 'src/utils/data'
@@ -406,6 +408,7 @@ export default {
     }
   },
   components: {
+    UserSidebar,
     MoneyInput,
     LocationChip,
     EmployerProfile,
@@ -635,7 +638,6 @@ export default {
     })
   },
   setup () {
-    const isRightDrawerOpen = ref(false)
     const globalStore = useGlobalStore()
     const authStore = useAuthStore()
     const { user, applications } = storeToRefs(authStore)
@@ -648,7 +650,8 @@ export default {
     return {
       user,
       applications,
-      isRightDrawerOpen,
+      leftDrawerOpen: true,
+      isRightDrawerOpen: false,
       authStore,
       employerStore: useEmployerStore(),
       userStore: useUserStore(),
