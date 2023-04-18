@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import urllib.request
 
 from django.conf import settings
 from django.utils import timezone

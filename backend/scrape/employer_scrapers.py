@@ -46,7 +46,6 @@ class FICOScraper(WorkdayScraper):
     
     
 class HealthGorillaScraper(GreenhouseIframeScraper):
-    PAGE_LOAD_WAIT_EVENT = 'networkidle'
     employer_name = 'Health Gorilla'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=healthgorilla&b=https%3A%2F%2Fwww.healthgorilla.com%2Fhome%2Fcompany%2Fcareers%2Fjob-openings'
 

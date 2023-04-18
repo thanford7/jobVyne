@@ -6,6 +6,7 @@ import tempfile
 from datetime import timedelta
 from functools import reduce
 from json import JSONDecodeError
+from urllib.parse import unquote
 
 from aiohttp import ClientSession
 from django.utils import timezone
@@ -60,44 +61,51 @@ class Scraper:
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
                                range(self.MAX_CONCURRENT_PAGES)]
     
-    async def get_page(self):
-        return await self.browser.new_page()
+    async def get_new_page(self):
+        page = await self.browser.new_page()
+        page.on('dialog', lambda dialog: dialog.accept())
+        return page
+        
+    async def accept_cookies(self, page):
+        return True
     
     async def save_page_info(self, page):
-        logger.info(f'Saving page info for {page.url}')
-        try:
-            storage = get_file_storage_engine()
-            employer_name = '_'.join(self.employer_name.split(' '))
+        # If page didn't load we won't have a URL
+        if (not page.url) or (not re.match('^http.*?', page.url)):
+            return
+        
+        storage = get_file_storage_engine()
+        employer_name = '_'.join(self.employer_name.split(' '))
 
-            screenshot_file_path = f'scraper_error/{employer_name}_screenshot_{timezone.now()}.png'
-            screenshot = await page.screenshot(full_page=True)
-            screenshot_file = tempfile.TemporaryFile()
-            screenshot_file.write(screenshot)
-            storage.save(screenshot_file_path, screenshot_file)
+        screenshot_file_path = f'scraper_error/{employer_name}_screenshot_{timezone.now()}.png'
+        screenshot = await page.screenshot(full_page=True)
+        screenshot_file = tempfile.TemporaryFile()
+        screenshot_file.write(screenshot)
+        storage.save(screenshot_file_path, screenshot_file)
 
-            html_file_path = f'scraper_error/{employer_name}_page_{timezone.now()}.html'
-            page_content = await page.content()
-            html_file = tempfile.TemporaryFile()
-            html_file.write(bytes(page_content, 'utf-8'))
-            storage.save(html_file_path, html_file)
-        except Exception:  # noqa -- broad catch okay here, stack trace logged
-            # Since we're already in an error state when we get to this method, if anything went
-            # wrong trying to save the page info, don't raise the exception, just log it.
-            logger.exception(f'Exception occurred trying to save page info for {page.url}')
-    
+        html_file_path = f'scraper_error/{employer_name}_page_{timezone.now()}.html'
+        # This won't load if the error is caused by a page load issue
+        # page_content = await page.content()
+        page_content = page.content()
+        html_file = tempfile.TemporaryFile()
+        html_file.write(bytes(page_content, 'utf-8'))
+        storage.save(html_file_path, html_file)
+
     async def visit_page_with_retry(self, url, max_retries=4):
         # Some browser IPs may not work. If they don't we'll remove the browser and try another
         retries = 0
         error = None
         
-        logger.info(f'Attempting to visit: {url}')
+        logger.info(f'Attempting to visit: "{url}"')
         logger.info(f'Number of open pages: {len(self.browser.pages)}')
         page = None
         error_pages = []
         while retries < (max_retries + 1):
-            page = await self.browser.new_page()
+            page = await self.get_new_page()
+            resp = None
             try:
-                await page.goto(url, wait_until=self.PAGE_LOAD_WAIT_EVENT)
+                resp = await page.goto(url, referer=self.start_url, wait_until=self.PAGE_LOAD_WAIT_EVENT)
+                await self.accept_cookies(page)
                 if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
                     logger.info('Page was redirected. Trying to reload page')
                     error_pages.append(page)
@@ -111,7 +119,9 @@ class Scraper:
                 error_pages.append(page)
                 error = e
                 retries += 1
-                logger.info(f'Exception reaching page {url}. Trying to reload page (retry {retries} of {max_retries})')
+                logger.info(f'Exception reaching page "{url}". Trying to reload page (retry {retries} of {max_retries})')
+                if resp:
+                    logger.info(f'Response: {resp.status} -- {resp.status_text}')
                 await asyncio.sleep(1)
 
         await self.save_page_info(page)
@@ -119,7 +129,7 @@ class Scraper:
         for p in error_pages:
             await p.close()
 
-        raise error or ValueError(f'Exceeded max tries while trying to visit: "{url}"')
+        raise error or ValueError(f'{str(e)} -- Exceeded max tries while trying to visit: "{url}"')
     
     async def scrape_jobs(self):
         raise NotImplementedError()
@@ -133,7 +143,7 @@ class Scraper:
         return Selector(text=html)
     
     async def do_job_page_js(self, page):
-        return
+        return None
     
     async def get_job_item_from_url(self):
         """Get HTML and process it to a job item. This will wait for the page to load any necessary JS.
@@ -149,8 +159,12 @@ class Scraper:
                 page = await self.visit_page_with_retry(url)
                 if self.job_item_page_wait_sel:
                     page = await self.wait_for_el(page, self.job_item_page_wait_sel, max_retries=2)
-                await self.do_job_page_js(page)
-                page_html = await self.get_page_html(page)
+                new_url = await self.do_job_page_js(page)
+                if new_url:
+                    url = new_url
+                    page_html = await self.get_html_from_url(url)
+                else:
+                    page_html = await self.get_page_html(page)
                 await page.close()
             else:
                 page_html = await self.get_html_from_url(url)
@@ -170,15 +184,15 @@ class Scraper:
             html = await resp.text()
             return Selector(text=html)
     
-    async def wait_for_el(self, page, selector, max_retries=0):
+    async def wait_for_el(self, page, selector, max_retries=0, state='visible', timeout=30000):
         retries = 0
         while True:
             try:
-                await page.wait_for_selector(selector)
+                await page.wait_for_selector(selector, state=state)
                 return page
             except PlaywrightTimeoutError as e:
                 retries += 1
-                logger.info(f'Could not find selector {selector} in: {page.url}')
+                logger.info(f'Could not find selector {selector} in: "{page.url}"')
                 if retries > max_retries:
                     logger.info(f'Retries ({retries}) exceeded max retries ({max_retries})')
                     await self.save_page_info(page)
@@ -226,6 +240,7 @@ class Scraper:
         is_relative_url = url[0] == '/'
         if is_relative_url:
             url = self.base_url + url
+        url = re.sub('[,"\']', '', unquote(url))
         return url
     
     def strip_or_none(self, val):
@@ -533,21 +548,25 @@ class GreenhouseScraper(Scraper):
 class GreenhouseIframeScraper(GreenhouseScraper):
     TEST_REDIRECT = False
     IS_JS_REQUIRED = True
+    PAGE_LOAD_WAIT_EVENT = 'commit'
     job_item_page_wait_sel = None
     
     async def do_job_page_js(self, page):
+        await self.wait_for_el(page, '#grnhse_iframe')
         html_dom = await self.get_page_html(page)
         iframe_url = html_dom.xpath('//*[@id="grnhse_iframe"]/@src').get()
         if iframe_url is None:
             logger.error(f'Could not parse iframe URL from page {page.url}, saving info')
             await self.save_page_info(page)
         else:
-            try:
-                await page.goto(iframe_url)
-            except PlaywrightError as e:
-                await self.save_page_info(page)
-                raise e
-
+            return iframe_url
+            
+    async def accept_cookies(self, page):
+        if not await page.locator('css=#onetrust-accept-btn-handler').is_visible():
+            return True
+        logger.info('Accepting page cookies')
+        await page.locator('css=#onetrust-accept-btn-handler').click()
+        
 
 class WorkdayScraper(Scraper):
     IS_JS_REQUIRED = True
@@ -731,6 +750,8 @@ class WorkdayScraper(Scraper):
                 await self.wait_for_el(page, '[data-automation-id="additionalLocations"]')
             except PlaywrightTimeoutError:
                 pass
+        
+        return None
     
     def is_job_quantity_match(self, html_dom, expected_job_quantity):
         job_quantity_string = html_dom.xpath('//*[@data-automation-id="jobOutOfText"]/text()').get()
