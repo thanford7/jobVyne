@@ -65,9 +65,6 @@ class Scraper:
         page = await self.browser.new_page()
         page.on('dialog', lambda dialog: dialog.accept())
         return page
-        
-    async def accept_cookies(self, page):
-        return True
     
     async def save_page_info(self, page):
         # If page didn't load we won't have a URL
@@ -85,11 +82,17 @@ class Scraper:
 
         html_file_path = f'scraper_error/{employer_name}_page_{timezone.now()}.html'
         # This won't load if the error is caused by a page load issue
-        # page_content = await page.content()
-        page_content = page.content()
+        page_content = await page.content()
         html_file = tempfile.TemporaryFile()
         html_file.write(bytes(page_content, 'utf-8'))
         storage.save(html_file_path, html_file)
+        
+    async def request_failure_logger(self, request):
+        logger.info(f'REQUEST FAILED: {request.url} {request.failure}')
+        
+    def response_failure_logger(self, response):
+        if response.status >= 400 and 'reddit' not in response.request.url:
+            logger.info(f'RESPONSE ERROR: {response.status} {response.status_text} for {response.request.url}')
 
     async def visit_page_with_retry(self, url, max_retries=4):
         # Some browser IPs may not work. If they don't we'll remove the browser and try another
@@ -104,8 +107,9 @@ class Scraper:
             page = await self.get_new_page()
             resp = None
             try:
+                page.on('requestfailed', self.request_failure_logger)
+                page.on('response', self.response_failure_logger)
                 resp = await page.goto(url, referer=self.start_url, wait_until=self.PAGE_LOAD_WAIT_EVENT)
-                await self.accept_cookies(page)
                 if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
                     logger.info('Page was redirected. Trying to reload page')
                     error_pages.append(page)
@@ -514,9 +518,15 @@ class GreenhouseScraper(Scraper):
             for sub_department_section in department_section.xpath('.//section[@class="child level-1"]'):
                 department = sub_department_section.xpath('.//h4/text()').get()
                 job_links = sub_department_section.xpath('.//div[@class="opening"]//a/@href').getall()
-                await self.add_job_links_to_queue(job_links, meta_data={'job_department': department})
+                await self.add_job_links_to_queue(
+                    [self.update_job_link(jl) for jl in job_links],
+                    meta_data={'job_department': department}
+                )
         
         await self.close()
+        
+    def update_job_link(self, job_link):
+        return job_link
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         location = html.xpath('//div[@id="header"]//div[@class="location"]/text()').get()
@@ -547,26 +557,16 @@ class GreenhouseScraper(Scraper):
 
 class GreenhouseIframeScraper(GreenhouseScraper):
     TEST_REDIRECT = False
-    IS_JS_REQUIRED = True
-    PAGE_LOAD_WAIT_EVENT = 'commit'
     job_item_page_wait_sel = None
     
-    async def do_job_page_js(self, page):
-        await self.wait_for_el(page, '#grnhse_iframe')
-        html_dom = await self.get_page_html(page)
-        iframe_url = html_dom.xpath('//*[@id="grnhse_iframe"]/@src').get()
-        if iframe_url is None:
-            logger.error(f'Could not parse iframe URL from page {page.url}, saving info')
-            await self.save_page_info(page)
-        else:
-            return iframe_url
-            
-    async def accept_cookies(self, page):
-        if not await page.locator('css=#onetrust-accept-btn-handler').is_visible():
-            return True
-        logger.info('Accepting page cookies')
-        await page.locator('css=#onetrust-accept-btn-handler').click()
-        
+    def update_job_link(self, job_link):
+        # https://boards.greenhouse.io/embed/job_app?for=healthgorilla&token=4840862004
+        parsed_url = re.match('^https?://(www)?(?P<domain>.+?)\..*?gh_jid=(?P<job_id>[0-9]+?)$', job_link)
+        if not parsed_url:
+            raise ValueError(f'Could not parse URL for {job_link}')
+        link_values = parsed_url.groupdict()
+        return f'https://boards.greenhouse.io/embed/job_app?for={link_values["domain"]}&token={link_values["job_id"]}'
+    
 
 class WorkdayScraper(Scraper):
     IS_JS_REQUIRED = True
