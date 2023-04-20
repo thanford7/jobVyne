@@ -513,7 +513,10 @@ class GreenhouseScraper(Scraper):
             department = department_section.xpath('.//h3/text()').get() or department_section.xpath(
                 './/h2/text()').get()
             job_links = department_section.xpath('./div[@class="opening"]//a/@href').getall()
-            await self.add_job_links_to_queue(job_links, meta_data={'job_department': department})
+            await self.add_job_links_to_queue(
+                [self.update_job_link(jl) for jl in job_links],
+                meta_data={'job_department': department}
+            )
             
             for sub_department_section in department_section.xpath('.//section[@class="child level-1"]'):
                 department = sub_department_section.xpath('.//h4/text()').get()
@@ -557,6 +560,7 @@ class GreenhouseScraper(Scraper):
 
 class GreenhouseIframeScraper(GreenhouseScraper):
     TEST_REDIRECT = False
+    GREENHOUSE_JOB_BOARD_DOMAIN = None
     job_item_page_wait_sel = None
     
     def update_job_link(self, job_link):
@@ -565,7 +569,8 @@ class GreenhouseIframeScraper(GreenhouseScraper):
         if not parsed_url:
             raise ValueError(f'Could not parse URL for {job_link}')
         link_values = parsed_url.groupdict()
-        return f'https://boards.greenhouse.io/embed/job_app?for={link_values["domain"]}&token={link_values["job_id"]}'
+        domain = self.GREENHOUSE_JOB_BOARD_DOMAIN or link_values["domain"]
+        return f'https://boards.greenhouse.io/embed/job_app?for={domain}&token={link_values["job_id"]}'
     
 
 class WorkdayScraper(Scraper):

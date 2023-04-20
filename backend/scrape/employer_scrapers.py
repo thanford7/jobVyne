@@ -4,6 +4,7 @@ from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, GreenhouseIf
 
 
 class BenevityScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'benevity'
     employer_name = 'Benevity'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=benevity&b=https%3A%2F%2Fbenevity.com%2Fcareers'
 
@@ -46,6 +47,7 @@ class FICOScraper(WorkdayScraper):
     
     
 class HealthGorillaScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'healthgorilla'
     employer_name = 'Health Gorilla'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=healthgorilla&b=https%3A%2F%2Fwww.healthgorilla.com%2Fhome%2Fcompany%2Fcareers%2Fjob-openings'
 
@@ -63,6 +65,7 @@ class InvenergyScraper(WorkdayScraper):
         
 
 class GuildEducationScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'guild'
     employer_name = 'Guild Education'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=guild&b=https%3A%2F%2Fwww.guild.com%2Fopen-positions-at-guild'
 
@@ -88,6 +91,7 @@ class ProofpointScraper(WorkdayScraper):
 
 
 class RecursionScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'recursionpharmaceuticals'
     employer_name = 'Recursion'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=recursionpharmaceuticals&b=https%3A%2F%2Fwww.recursion.com%2Fcareers'
 
@@ -113,6 +117,7 @@ class TendoScraper(LeverScraper):
     
     
 class TheMxGroupScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'themxgroup'
     employer_name = 'The MX Group'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=themxgroup&b=https%3A%2F%2Fwww.themxgroup.com%2Fcareers%2Fjob-openings%2F'
 
