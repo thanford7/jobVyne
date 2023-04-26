@@ -48,6 +48,7 @@ class Scraper:
     
     def __init__(self, playwright, browser, skip_urls_by_employer_name):
         self.job_page_count = 0
+        self.skipped_urls = []
         self.job_items = []
         self.queue = asyncio.Queue()
         self.playwright = playwright
@@ -214,6 +215,7 @@ class Scraper:
                 continue
             if job_url in self.skip_urls_by_employer_name.get(self.employer_name, []):
                 logger.info(f'URL {job_url} has been recently scraped; skipping')
+                self.skipped_urls.append(job_url)
                 continue
             await self.queue.put((job_url, meta_data))
     

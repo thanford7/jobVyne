@@ -46,21 +46,27 @@ class JobProcessor:
         self.location_parser = LocationParser()
         self.job_departments = {j.name.lower(): j for j in JobDepartment.objects.all()}
         
-    def finalize_data(self):
+    def finalize_data(self, skipped_job_urls):
         # Set the close date of a job if it no longer exists on the employers job page
+        skipped_jobs = []
         for employer_data in self.employers.values():
             employer = employer_data['employer']
             if employer.employer_name not in self.scraped_employers:
                 continue
             for job_key, job in employer_data['jobs'].items():
-                if job_key not in employer_data['found_jobs'] and not job.close_date:
+                if job.application_url in skipped_job_urls:
+                    skipped_jobs.append(job)
+                elif job_key not in employer_data['found_jobs'] and not job.close_date:
                     job.close_date = timezone.now().date()
                     job.save()
             employer.has_job_scraper = True
             employer.last_job_scrape_success_dt = timezone.now()
             employer.has_job_scrape_failure = False
             employer.save()
-    
+        # Bulk update the modified timestamp of jobs that were skipped
+        now = datetime.datetime.now()
+        EmployerJob.objects.filter(id__in=[j.id for j in skipped_jobs]).update(modified_dt=now)
+
     def process_jobs(self, job_items):
         for job_item in job_items:
             self.process_job(job_item)

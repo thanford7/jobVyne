@@ -81,7 +81,7 @@ def run_job_scrapers(employer_names=None):
             for scraper in scrapers:
                 job_processor.process_jobs(scraper.job_items)
             logger.info(f'Finalizing all data for {scraper_class.employer_name}')
-            job_processor.finalize_data()
+            job_processor.finalize_data(scraper.skipped_urls)
             logger.info(f'Scraping complete for {scraper_class.employer_name}')
         except Exception as e:
             logger.exception(f'Error occurred while scraping jobs for {scraper_class.employer_name}', exc_info=e)
