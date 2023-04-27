@@ -18,20 +18,7 @@
           <DateSelector v-model="formData.auto_start_date" label="Start date"/>
         </div>
         <div class="col-12 col-md-6">
-          <q-input filled v-model="formData.auto_time" mask="time" :rules="['time']"
-                   :label="`Time of day (${dateTimeUtil.getCurrentTimeZone()})`">
-            <template v-slot:append>
-              <q-icon name="access_time" class="cursor-pointer">
-                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                  <q-time v-model="formData.auto_time" :minute-options="[0, 15, 30, 45]">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Close" color="primary" flat/>
-                    </div>
-                  </q-time>
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
+          <InputTime v-model="formData.auto_time"/>
         </div>
         <div class="col-12 col-md-6 q-pr-md-sm">
           <q-input
@@ -60,13 +47,14 @@
 /* eslint-disable camelcase */
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DateSelector from 'components/inputs/DateSelector.vue'
+import InputTime from 'components/inputs/InputTime.vue'
 import SelectDayOfWeek from 'components/inputs/SelectDayOfWeek.vue'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil, { DAYS_OF_WEEK } from 'src/utils/datetime.js'
 
 export default {
   name: 'FormAutoPost',
-  components: { DateSelector, SelectDayOfWeek, CustomTooltip },
+  components: { InputTime, DateSelector, SelectDayOfWeek, CustomTooltip },
   props: {
     post: {
       type: Object,
@@ -114,7 +102,12 @@ export default {
     },
     getAutoStartDt () {
       const postDt = new Date(this.formData.auto_start_date)
-      const { hour, minute } = dateTimeUtil.parseTimeStr(this.formData.auto_time)
+      const parsedVal = dateTimeUtil.parseTimeStr(this.formData.auto_time)
+      let hour, minute = 0
+      if (parsedVal) {
+        hour = parsedVal.hour
+        minute = parsedVal.minute
+      }
       postDt.setHours(hour, minute, 0, 0)
       return postDt
     },

@@ -1,13 +1,15 @@
 import datetime
+import logging
 from time import sleep
 
 from django.core.management import BaseCommand
 
 from jvapp.apis.content import ShareSocialPostView
+from jvapp.apis.slack import SlackJobsMessageView
 from jvapp.utils.cron_util import get_datetime_to_nearest_minutes, get_seconds_to_next_minute_interval
 from jvapp.utils.datetime import get_current_datetime
 
-
+logger = logging.getLogger(__name__)
 MINUTES_PER_RUN = 15
 
 
@@ -41,4 +43,9 @@ class Command(BaseCommand):
                 errors, successful_posts = ShareSocialPostView.run_auto_posts(current_dt)
                 for error in errors:
                     writer(self.style.ERROR(error))
-                writer(self.style.SUCCESS(f'{successful_posts} successful posts'))
+                    logger.error(error)
+                    
+                writer(self.style.SUCCESS(f'{successful_posts} successful social posts'))
+                
+                successful_slack_posts = SlackJobsMessageView.run_auto_posts(current_dt)
+                writer(self.style.SUCCESS(f'{successful_slack_posts} successful Slack posts'))

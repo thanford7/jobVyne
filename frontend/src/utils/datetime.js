@@ -5,13 +5,13 @@ import dataUtil from 'src/utils/data.js'
 // This helps stay in sync with backend
 // jsDayOfWeek corresponds with JS getDay() method
 export const DAYS_OF_WEEK = {
-  0: { jsDayOfWeek: 1, name: 'Monday' },
-  1: { jsDayOfWeek: 2, name: 'Tuesday' },
-  2: { jsDayOfWeek: 3, name: 'Wednesday' },
-  3: { jsDayOfWeek: 4, name: 'Thursday' },
-  4: { jsDayOfWeek: 5, name: 'Friday' },
-  5: { jsDayOfWeek: 6, name: 'Saturday' },
-  6: { jsDayOfWeek: 0, name: 'Sunday' }
+  0: { jsDayOfWeek: 1, name: 'Monday', dowBit: 1 },
+  1: { jsDayOfWeek: 2, name: 'Tuesday', dowBit: 2 },
+  2: { jsDayOfWeek: 3, name: 'Wednesday', dowBit: 4 },
+  3: { jsDayOfWeek: 4, name: 'Thursday', dowBit: 8 },
+  4: { jsDayOfWeek: 5, name: 'Friday', dowBit: 16 },
+  5: { jsDayOfWeek: 6, name: 'Saturday', dowBit: 32 },
+  6: { jsDayOfWeek: 0, name: 'Sunday', dowBit: 64 }
 }
 
 class DateTimeUtil {
@@ -137,6 +137,28 @@ class DateTimeUtil {
     return `${operator}${hourOffset}00`
   }
 
+  getTimeStrFromMinutes (timeMinutes) {
+    const minutes = timeMinutes % 60
+    let minutesStr = minutes.toString()
+    if (minutesStr.length === 1) {
+      minutesStr = '0' + minutesStr
+    }
+    let hours = Math.floor(timeMinutes / 60)
+    let ampm = 'AM'
+    if (hours > 11) {
+      ampm = 'PM'
+    }
+    hours = hours % 12
+    if (hours === 0) {
+      hours = 12
+    }
+    let hoursStr = hours.toString()
+    if (hoursStr.length === 1) {
+      hoursStr = '0' + hoursStr
+    }
+    return `${hoursStr}:${minutesStr} ${ampm}`
+  }
+
   parseTimeStr (timeStr) {
     const time12HMatch = timeStr.match(this.time12HRegex)
     const time24HMatch = timeStr.match(this.time24HRegex)
@@ -251,6 +273,15 @@ class DateTimeUtil {
       !this.isAfter(targetDate, endDate, { isIncludeTime, isInclusive: !isEndInclusive }) &&
       !this.isBefore(targetDate, startDate, { isIncludeTime, isInclusive: !isStartInclusive })
     )
+  }
+
+  getDaysOfWeekFromBits (dowBits, isNumbersOnly = true) {
+    return Object.entries(DAYS_OF_WEEK).reduce((allBits, [dowNum, dow]) => {
+      if (dow.dowBit & dowBits) {
+        allBits.push((isNumbersOnly) ? dowNum : dow)
+      }
+      return allBits
+    }, [])
   }
 }
 

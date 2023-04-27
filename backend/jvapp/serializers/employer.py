@@ -63,6 +63,19 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
             'employment_type_field_key': ats_cfg.employment_type_field_key,
             'salary_range_field_key': ats_cfg.salary_range_field_key
         } if ats_cfg else None
+
+        slack_cfg = next((c for c in employer.slack_cfg.all()), None)
+        data['slack_cfg'] = {
+            'id': slack_cfg.id,
+            'oauth_key': slack_cfg.oauth_key,
+            'is_enabled': slack_cfg.is_enabled,
+            'jobs_post_channel': slack_cfg.jobs_post_channel,
+            'jobs_post_dow_bits': slack_cfg.jobs_post_dow_bits,
+            'jobs_post_tod_minutes': slack_cfg.jobs_post_tod_minutes,
+            'jobs_post_max_jobs': slack_cfg.jobs_post_max_jobs,
+            'referrals_post_channel': slack_cfg.referrals_post_channel
+        } if slack_cfg else None
+        
         employees = employer.employee.all()
         data['employee_count_total'] = len(employees)
         data['employee_count_active'] = len([

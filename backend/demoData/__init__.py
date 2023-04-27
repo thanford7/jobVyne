@@ -238,7 +238,7 @@ def generate_page_view(social_link, platform, access_dt=None):
 
 
 def create_ancillary_data():
-    for employer_name in ('Google', 'Vandelay Industries'):
+    for employer_name in ('Google', 'Vandelay Industries', 'JobVyne'):
         employer = generate_employer(employer_name)
         users = [generate_user(employer) for _ in range(40)]
         

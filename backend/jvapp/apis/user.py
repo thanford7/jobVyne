@@ -185,7 +185,7 @@ class UserView(JobVyneAPIView):
     @staticmethod
     def get_or_create_user(user, data):
         """
-            :return {tuple}: (user, is_new)
+        :return {tuple}: (user, is_new)
         """
         try:
             return UserView.get_user(user, user_email=data['email']), False

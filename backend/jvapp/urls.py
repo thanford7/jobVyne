@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from jvapp.apis import (
     admin, ats, auth, content, currency, data, email, employer, job_seeker, job, job_subscription,
-    message, notification, sales, social, stripe, test, tracking, user
+    message, notification, sales, slack, social, stripe, test, tracking, user
 )
 
 urlpatterns = [
@@ -33,6 +33,7 @@ urlpatterns = [
     path('employer/page/', employer.EmployerPageView.as_view()),
     re_path('^employer/permission/(?P<auth_group_id>[0-9]+)?/?$', employer.EmployerAuthGroupView.as_view()),
     path('employer/referral/request/', employer.EmployerReferralRequestView.as_view()),
+    re_path('^employer/slack/(?P<slack_cfg_id>[0-9]+)?/?$', employer.EmployerSlackView.as_view()),
     re_path('^employer/subscription/(?P<employer_id>[0-9]+)?/?$', employer.EmployerSubscriptionView.as_view()),
     path('employer/user/approve/', employer.EmployerUserApproveView.as_view()),
     re_path('^employer/user/(?P<user_id>[0-9]+)?/?$', employer.EmployerUserView.as_view()),
@@ -111,6 +112,12 @@ urlpatterns = [
     # Sendgrid email
     path('sendgrid/webhooks/', email.SendgridWebhooksView.as_view()),
     path('sendgrid/webhooks/inbound/', email.SendgridWebhooksInboundView.as_view()),
+    
+    # Slack
+    path('slack/channel/', slack.SlackChannelView.as_view()),
+    path('slack/message/job/', slack.SlackJobsMessageView.as_view()),
+    path('slack/message/referral/', slack.SlackReferralsMessageView.as_view()),
+    path('slack/webhooks/inbound/', slack.SlackWebhookInboundView.as_view()),
     
     # Twilio SMS
     path('twilio/webhooks/', message.TwilioWebhooksView.as_view()),

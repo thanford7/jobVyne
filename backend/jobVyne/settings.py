@@ -411,6 +411,11 @@ GOOGLE_GMAIL_CREDENTIALS = file_path
 GEOIP_PATH = f'{BASE_DIR}/jvapp/geolocation'  # This is for location lookup of an IP address
 GOOGLE_MAPS_KEY = env('GOOGLE_MAPS_KEY')  # This is for reverse geolocation lookup
 
+# Slack
+SLACK_CLIENT_ID = env('SLACK_CLIENT_ID')
+SLACK_CLIENT_SECRET = env('SLACK_CLIENT_SECRET')
+SLACK_SIGNING_SECRET = env('SLACK_SIGNING_SECRET')
+
 # Stripe payments
 IS_STRIPE_LIVE = env('IS_STRIPE_LIVE', cast=bool, default=False)
 if IS_STRIPE_LIVE:
