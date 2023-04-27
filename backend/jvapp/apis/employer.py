@@ -888,7 +888,7 @@ class EmployerJobBonusView(JobVyneAPIView):
         jobs_to_update = []
         for job in jobs:
             job.referral_bonus = self.data['referral_bonus']
-            job.referral_bonus_currency_id = self.data['referral_bonus_currency']['name']
+            job.referral_bonus_currency_id = self.data['referral_bonus_currency']
             jobs_to_update.append(job)
         
         EmployerJob.objects.bulk_update(jobs_to_update, ['referral_bonus', 'referral_bonus_currency_id'],
