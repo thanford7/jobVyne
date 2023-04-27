@@ -5,7 +5,7 @@ from typing import Union
 from django.utils import timezone
 
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import Employer, EmployerJob, JobDepartment
+from jvapp.models import EmployerJob, JobDepartment
 from jvapp.utils.sanitize import sanitize_html
 
 
@@ -36,57 +36,47 @@ class JobItem:
 class JobProcessor:
     default_employment_type = 'Full Time'
     
-    def __init__(self):
-        self.employers = {employer.employer_name: {
-            'employer': employer,
-            'jobs': {j.get_key(): j for j in employer.employer_job.all() if j.is_scraped},
-            'found_jobs': set()
-        } for employer in Employer.objects.prefetch_related('employer_job', 'employer_job__locations').all()}
-        self.scraped_employers = set()
+    def __init__(self, employer):
+        self.employer = employer
+        self.jobs = {
+            j.get_key(): j for j in
+            EmployerJob.objects.prefetch_related('locations').filter(
+                employer=employer,
+                is_scraped=True
+            )
+        }
+        self.found_jobs = set()
         self.location_parser = LocationParser()
         self.job_departments = {j.name.lower(): j for j in JobDepartment.objects.all()}
         
     def finalize_data(self, skipped_job_urls):
         # Set the close date of a job if it no longer exists on the employers job page
         skipped_jobs = []
-        for employer_data in self.employers.values():
-            employer = employer_data['employer']
-            if employer.employer_name not in self.scraped_employers:
-                continue
-            for job_key, job in employer_data['jobs'].items():
-                if job.application_url in skipped_job_urls:
-                    skipped_jobs.append(job)
-                elif job_key not in employer_data['found_jobs'] and not job.close_date:
-                    job.close_date = timezone.now().date()
-                    job.save()
-            employer.has_job_scraper = True
-            employer.last_job_scrape_success_dt = timezone.now()
-            employer.has_job_scrape_failure = False
-            employer.save()
+        close_jobs = []
+        for job_key, job in self.jobs.items():
+            if job.application_url in skipped_job_urls:
+                skipped_jobs.append(job)
+            elif job_key not in self.found_jobs and not job.close_date:
+                job.close_date = timezone.now().date()
+                job.modified_dt = timezone.now()
+                close_jobs.append(job)
+        
+        EmployerJob.objects.bulk_update(close_jobs, ['close_date', 'modified_dt'])
+        self.employer.has_job_scraper = True
+        self.employer.last_job_scrape_success_dt = timezone.now()
+        self.employer.has_job_scrape_failure = False
+        self.employer.save()
+        
         # Bulk update the modified timestamp of jobs that were skipped
-        now = datetime.datetime.now()
-        EmployerJob.objects.filter(id__in=[j.id for j in skipped_jobs]).update(modified_dt=now)
+        EmployerJob.objects\
+            .filter(id__in=[j.id for j in skipped_jobs])\
+            .update(modified_dt=timezone.now())
 
     def process_jobs(self, job_items):
         for job_item in job_items:
             self.process_job(job_item)
     
     def process_job(self, job_item: JobItem):
-        employer_name = job_item.employer_name
-        employer_data = self.employers.get(employer_name)
-        if not employer_data:
-            employer = Employer(employer_name=employer_name)
-            employer.save()
-            employer_data = {
-                'employer': employer,
-                'jobs': {},
-                'found_jobs': set()
-            }
-            self.employers[employer_name] = employer_data
-        else:
-            employer = employer_data['employer']
-        self.scraped_employers.add(employer_name)
-        
         job_item.job_description = sanitize_html(job_item.job_description)
         job_item.employment_type = job_item.employment_type or self.default_employment_type
         
@@ -102,10 +92,10 @@ class JobProcessor:
             job_title=job_item.job_title,
             is_scraped=True
         )
-        if not (job := employer_data['jobs'].get(EmployerJob.generate_job_key(new_job.job_title, location_ids))):
-            new_job.employer = employer
+        if not (job := self.jobs.get(EmployerJob.generate_job_key(new_job.job_title, location_ids))):
+            new_job.employer = self.employer
             self.update_job(new_job, job_item)
-            employer_data['jobs'][EmployerJob.generate_job_key(new_job.job_title, location_ids)] = new_job
+            self.jobs[EmployerJob.generate_job_key(new_job.job_title, location_ids)] = new_job
             job = new_job
         else:
             self.update_job(job, job_item)
@@ -116,7 +106,7 @@ class JobProcessor:
             ignore_conflicts=True
         )
         
-        employer_data['found_jobs'].add(EmployerJob.generate_job_key(job.job_title, location_ids))
+        self.found_jobs.add(EmployerJob.generate_job_key(job.job_title, location_ids))
         
         return job
     
@@ -141,6 +131,7 @@ class JobProcessor:
     
     def update_job(self, job: EmployerJob, job_item: JobItem):
         if self.is_same_job(job, job_item):
+            job.save()  # Updates the modified_dt
             return job
         
         job.application_url = job_item.application_url
