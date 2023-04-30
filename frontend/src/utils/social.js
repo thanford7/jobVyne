@@ -11,6 +11,7 @@ class SocialUtil {
     this.SOCIAL_KEY_INSTAGRAM = 'Instagram'
     this.SOCIAL_KEY_TIKTOK = 'TikTok'
     this.SOCIAL_KEY_YOUTUBE = 'YouTube'
+    this.SOCIAL_KEY_SLACK = 'Slack'
 
     this.platformCfgs = {
       [this.SOCIAL_KEY_LINKED_IN]: {
@@ -44,6 +45,12 @@ class SocialUtil {
         icon: 'fa-google',
         logo: '/logos/google_logo.png',
         redirectProvider: 'google-oauth2'
+      },
+      [this.SOCIAL_KEY_SLACK]: {
+        name: this.SOCIAL_KEY_SLACK,
+        icon: 'fa-slack',
+        logo: '/logos/slack_logo.png',
+        redirectProvider: 'slack'
       }
     }
   }

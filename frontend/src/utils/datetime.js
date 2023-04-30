@@ -278,7 +278,7 @@ class DateTimeUtil {
   getDaysOfWeekFromBits (dowBits, isNumbersOnly = true) {
     return Object.entries(DAYS_OF_WEEK).reduce((allBits, [dowNum, dow]) => {
       if (dow.dowBit & dowBits) {
-        allBits.push((isNumbersOnly) ? dowNum : dow)
+        allBits.push((isNumbersOnly) ? parseInt(dowNum) : dow)
       }
       return allBits
     }, [])

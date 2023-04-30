@@ -26,6 +26,7 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import WEEKDAY_BITS, get_datetime_format_or_none, get_datetime_minutes, get_dow_bit, \
     get_unix_datetime
+from jvapp.utils.email import send_django_email
 from jvapp.utils.slack import raise_slack_exception_if_error
 
 logger = logging.getLogger(__name__)
@@ -50,8 +51,8 @@ class SlackBaseView(JobVyneAPIView):
         return False
     
     @staticmethod
-    def get_slack_client(slack_cfg):
-        return WebClient(token=slack_cfg.oauth_key)
+    def get_slack_client(slack_cfg=None, token=None):
+        return WebClient(token=token or slack_cfg.oauth_key)
     
     @staticmethod
     def get_user_profile(user_key, slack_client: WebClient):
@@ -396,9 +397,44 @@ class SlackReferralsMessageView(SlackBaseView):
         return blocks
 
 
-class SlackWebhookInboundView(JobVyneAPIView):
+class SlackChannelView(SlackBaseView):
+    
+    def get(self, request):
+        if bad_request := self.is_bad_request():
+            return bad_request
+        client = self.get_slack_client(self.slack_cfg)
+        resp = client.conversations_list(exclude_archived=True)
+        raise_slack_exception_if_error(resp)
+        channels = [{'key': c['id'], 'name': c['name']} for c in resp['channels']]
+        channels.sort(key=lambda c: c['name'])
+        return Response(status=status.HTTP_200_OK, data=channels)
+    
+    
+class SlackExternalBaseView(JobVyneAPIView):
     permission_classes = [AllowAny]
     parser_classes = [RawFormParser]
+
+    @staticmethod
+    def is_valid_slack_request(request):
+        # verifier = SignatureVerifier(signing_secret=settings.SLACK_SIGNING_SECRET)
+        timestamp = int(request.headers['X-Slack-Request-Timestamp'])
+        current_timestamp = get_unix_datetime(timezone.now())
+        if abs(current_timestamp - timestamp) > 60 * 5:
+            # The request timestamp is more than five minutes from local time.
+            # It could be a replay attack, so let's ignore it.
+            return
+    
+        sig_basestring = 'v0:' + str(timestamp) + ':' + request.data['_raw_data']
+        signature = 'v0=' + hmac.new(
+            key=settings.SLACK_SIGNING_SECRET.encode('utf-8'),
+            msg=sig_basestring.encode('utf-8'),
+            digestmod=hashlib.sha256
+        ).hexdigest()
+        slack_signature = request.headers['X-Slack-Signature']
+        return hmac.compare_digest(signature, slack_signature)
+
+
+class SlackWebhookInboundView(SlackExternalBaseView):
     
     def post(self, request):
         if not self.is_valid_slack_request(request):
@@ -454,34 +490,27 @@ class SlackWebhookInboundView(JobVyneAPIView):
         )
         return Response(status=status.HTTP_200_OK)
     
-    @staticmethod
-    def is_valid_slack_request(request):
-        # verifier = SignatureVerifier(signing_secret=settings.SLACK_SIGNING_SECRET)
-        timestamp = int(request.headers['X-Slack-Request-Timestamp'])
-        current_timestamp = get_unix_datetime(timezone.now())
-        if abs(current_timestamp - timestamp) > 60 * 5:
-            # The request timestamp is more than five minutes from local time.
-            # It could be a replay attack, so let's ignore it.
-            return
-        
-        sig_basestring = 'v0:' + str(timestamp) + ':' + request.data['_raw_data']
-        signature = 'v0=' + hmac.new(
-            key=settings.SLACK_SIGNING_SECRET.encode('utf-8'),
-            msg=sig_basestring.encode('utf-8'),
-            digestmod=hashlib.sha256
-        ).hexdigest()
-        slack_signature = request.headers['X-Slack-Signature']
-        return hmac.compare_digest(signature, slack_signature)
-
-
-class SlackChannelView(SlackBaseView):
     
-    def get(self, request):
-        if bad_request := self.is_bad_request():
-            return bad_request
-        client = self.get_slack_client(self.slack_cfg)
-        resp = client.conversations_list(exclude_archived=True)
-        raise_slack_exception_if_error(resp)
-        channels = [{'key': c['id'], 'name': c['name']} for c in resp['channels']]
-        channels.sort(key=lambda c: c['name'])
-        return Response(status=status.HTTP_200_OK, data=channels)
+class SlackCommandSuggestView(SlackExternalBaseView):
+    
+    def post(self, request):
+        if not self.is_valid_slack_request(request):
+            return Response(status=status.HTTP_403_FORBIDDEN, data='Invalid request signature')
+        employer_suggestion = request.data['text']
+        slack_client = SlackBaseView.get_slack_client(token=request.data['token'])
+        team_resp = slack_client.team_info(team=request.data['team_id'])
+        raise_slack_exception_if_error(team_resp)
+        company_name = team_resp['team']['enterprise_name']
+        user_profile = SlackBaseView.get_user_profile(request.data['user_id'], slack_client)
+        send_django_email(
+            'New employer suggestion',
+            'emails/base_general_email.html',
+            to_email=[settings.EMAIL_ADDRESS_SUPPORT],
+            django_context={
+                'is_exclude_final_message': True
+            },
+            html_body_content=f'<p>{user_profile["real_name"]} ({user_profile["email"]}) from {company_name} recommended a new employer: {employer_suggestion}</p>',
+            is_tracked=False,
+            is_include_jobvyne_subject=False
+        )
+        return Response(status=status.HTTP_200_OK)

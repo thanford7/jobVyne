@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.password_validation import validate_password
+from django.db.transaction import atomic
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
@@ -20,7 +21,8 @@ from social_django.utils import load_strategy, psa
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.user import UserView
-from jvapp.models import JobVyneUser
+from jvapp.models import EmployerSlack, JobVyneUser
+from jvapp.models.abstract import PermissionTypes
 from jvapp.models.user import UserSocialCredential
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.oauth import OauthProviders, get_access_token_from_code, OAUTH_CFGS
@@ -90,6 +92,52 @@ class CheckAuthView(APIView):
                 'user': get_serialized_user(user, is_include_employer_info=True, is_include_personal_info=True)
             }
         )
+    
+
+@csrf_exempt
+@ensure_csrf_cookie
+@api_view(http_method_names=['POST'])
+@permission_classes([AllowAny])
+def social_auth_slack(request):
+    data = request.data
+    code = data.get('code', '').strip()
+    if not code:
+        return Response('An auth token is required', status=status.HTTP_400_BAD_REQUEST)
+    
+    state = data.get('state', '').strip()
+    if state != settings.AUTH_STATE:
+        return get_error_response('Request state is not the same as the callback state')
+    
+    access_token, social_response = get_access_token_from_code(OauthProviders.slack.value, code)
+
+    user = request.user
+    if isinstance(user, AnonymousUser):
+        return get_error_response('You must be logged in to complete this action')
+    if not user.employer_id:
+        return get_error_response('You must be associated with an employer to connect Slack')
+    
+    with atomic():
+        # Make sure there are no existing slack configurations
+        EmployerSlack.objects.filter(employer_id=user.employer_id).delete()
+    
+        # Create new config
+        enterprise_data = social_response['enterprise']
+        team_data = social_response['team']
+        if not any((enterprise_data, team_data)):
+            raise ValueError('Slack response is missing enterprise and/or team data')
+        
+        slack_cfg = EmployerSlack(
+            employer_id=user.employer_id,
+            oauth_key=access_token,
+            enterprise_key=enterprise_data['id'] if enterprise_data else None,
+            enterprise_name=enterprise_data['name'] if enterprise_data else None,
+            team_key=team_data['id'] if team_data else None,
+            team_name=team_data['name'] if team_data else None
+        )
+        slack_cfg.jv_check_permission(PermissionTypes.CREATE.value, user)
+        slack_cfg.save()
+    
+    return Response(status=status.HTTP_200_OK)
 
 
 @csrf_exempt
@@ -125,7 +173,7 @@ def social_auth(request, backend):
     
     state = data.get('state', '').strip()
     if state != settings.AUTH_STATE:
-        return Response('Request state is not the same as the callback state', status=status.HTTP_401_UNAUTHORIZED)
+        return get_error_response('Request state is not the same as the callback state')
     
     access_token, social_response = get_access_token_from_code(backend, code)
     is_login = data.get('isLogin', True)  # We use social auth for login and also to connect to social accounts
@@ -138,13 +186,13 @@ def social_auth(request, backend):
             return Response('Authentication failed', status=status.HTTP_400_BAD_REQUEST)
         
         if not user.is_active:
-            return Response('User is not active', status=status.HTTP_401_UNAUTHORIZED)
+            return get_error_response('User is not active')
 
         login(request, user)
     else:
         user = request.user
         if isinstance(user, AnonymousUser):
-            return Response('You must be logged in to complete this action', status=status.HTTP_401_UNAUTHORIZED)
+            return get_error_response('You must be logged in to complete this action')
         
         user_data = request.backend.user_data(access_token)
         if not isinstance(data, dict):

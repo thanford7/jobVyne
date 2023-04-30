@@ -208,19 +208,25 @@ class EmployerAtsView(JobVyneAPIView):
 class EmployerSlackView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
     
-    def post(self, request):
+    def put(self, request, slack_cfg_id):
         if not (employer_id := self.data.get('employer_id')):
             return get_error_response('An employer ID is required')
         if not self.user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, employer_id):
             return get_error_response('You do not have permission for this operation')
-        slack_cfg = self.get_slack_cfg(employer_id) or EmployerSlack(employer_id=employer_id)
-        is_new = self.update_slack_cfg(self.user, slack_cfg, self.data)
-        if slack_cfg.oauth_key and slack_cfg.jobs_post_channel:
-            client = WebClient(token=slack_cfg.oauth_key)
+        slack_cfg = EmployerSlack.objects.get(id=slack_cfg_id)
+        self.update_slack_cfg(self.user, slack_cfg, self.data)
+        
+        # Slack bot needs to be part of the channel to post to it
+        client = WebClient(token=slack_cfg.oauth_key)
+        if slack_cfg.jobs_post_channel:
             resp = client.conversations_join(channel=slack_cfg.jobs_post_channel)
             raise_slack_exception_if_error(resp)
+        if slack_cfg.referrals_post_channel:
+            resp = client.conversations_join(channel=slack_cfg.referrals_post_channel)
+            raise_slack_exception_if_error(resp)
+        
         return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: f'{"Created" if is_new else "Updated"} Slack configuration'
+            SUCCESS_MESSAGE_KEY: 'Updated Slack configuration'
         })
     
     def delete(self, request, slack_cfg_id):
@@ -240,7 +246,6 @@ class EmployerSlackView(JobVyneAPIView):
     @atomic
     def update_slack_cfg(user, slack_cfg, data):
         set_object_attributes(slack_cfg, data, {
-            'oauth_key': None,
             'is_enabled': None,
             'jobs_post_channel': None,
             'jobs_post_dow_bits': None,
@@ -248,11 +253,8 @@ class EmployerSlackView(JobVyneAPIView):
             'jobs_post_max_jobs': None,
             'referrals_post_channel': None
         })
-        is_new = not slack_cfg.id
-        permission_type = PermissionTypes.EDIT.value if not is_new else PermissionTypes.CREATE.value
-        slack_cfg.jv_check_permission(permission_type, user)
+        slack_cfg.jv_check_permission(PermissionTypes.EDIT.value, user)
         slack_cfg.save()
-        return is_new
     
     @staticmethod
     def get_slack_cfg(employer_id):

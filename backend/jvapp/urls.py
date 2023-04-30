@@ -115,6 +115,7 @@ urlpatterns = [
     
     # Slack
     path('slack/channel/', slack.SlackChannelView.as_view()),
+    path('slack/command/suggest/', slack.SlackCommandSuggestView.as_view()),
     path('slack/message/job/', slack.SlackJobsMessageView.as_view()),
     path('slack/message/referral/', slack.SlackReferralsMessageView.as_view()),
     path('slack/webhooks/inbound/', slack.SlackWebhookInboundView.as_view()),
@@ -123,6 +124,7 @@ urlpatterns = [
     path('twilio/webhooks/', message.TwilioWebhooksView.as_view()),
     
     # Social auth
+    path('social/slack/', auth.social_auth_slack),
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
     

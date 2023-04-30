@@ -19,7 +19,7 @@
 import { DAYS_OF_WEEK } from 'src/utils/datetime.js'
 
 export default {
-  name: 'SelectDayOfWeek',
+  inname: 'SelectDayOfWeek',
   props: {
     modelValue: [Number, Array, null],
     isMulti: {
@@ -38,14 +38,14 @@ export default {
     emitVal (val) {
       this.$emit('update:modelValue', val)
     },
-    getDowBitsFromSelection () {
-      if (Array.isArray(this.modelValue)) {
-        return this.modelValue.reduce((allBits, dowNum) => {
+    getDowBitsFromSelection (val) {
+      if (Array.isArray(val)) {
+        return val.reduce((allBits, dowNum) => {
           allBits |= DAYS_OF_WEEK[dowNum].dowBit
           return allBits
         }, 0)
-      } else if (this.modelValue) {
-        return DAYS_OF_WEEK[this.modelValue].dowBit
+      } else if (val) {
+        return DAYS_OF_WEEK[val].dowBit
       }
       return 0
     }

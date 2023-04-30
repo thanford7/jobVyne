@@ -109,6 +109,10 @@ class EmployerSubscription(models.Model, JobVynePermissionsMixin):
 class EmployerSlack(models.Model, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', unique=True, on_delete=models.CASCADE, related_name='slack_cfg')
     oauth_key = models.CharField(max_length=75, unique=True)
+    team_key = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    team_name = models.CharField(max_length=100, null=True, blank=True)
+    enterprise_key = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    enterprise_name = models.CharField(max_length=100, null=True, blank=True)
     is_enabled = models.BooleanField(default=True)
     jobs_post_channel = models.CharField(max_length=75, null=True, blank=True)
     jobs_post_dow_bits = models.SmallIntegerField(null=True, blank=True)

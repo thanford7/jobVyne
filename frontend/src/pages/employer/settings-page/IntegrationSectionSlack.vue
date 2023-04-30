@@ -2,7 +2,7 @@
   <div class="row q-gutter-y-md">
     <div class="col-12">
       <div class="text-h6">Slack</div>
-      <a href="#" @click.prevent="showSlackIntegrationDialog">Show integration instructions</a>
+      <AuthSocialButton :platform="slackCfg" button-text="Connect Slack" @click="redirectOauth()"/>
     </div>
     <div v-if="hasChanged" class="col-12">
       <q-btn ripple label="Save" icon="save" color="primary" @click="saveSlackCfg"/>
@@ -17,10 +17,6 @@
           keep-color
         />
       </div>
-      <q-input
-        v-model="slackFormData.oauth_key"
-        filled label="OAuth Token (xoxb-...)"
-      />
     </div>
     <div v-if="slackData.oauth_key" class="col-12">
       <q-form ref="slackForm" class="q-gutter-y-sm">
@@ -128,28 +124,32 @@
 </template>
 
 <script>
+import AuthSocialButton from 'components/AuthSocialButton.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import InputTime from 'components/inputs/InputTime.vue'
 import SelectDayOfWeek from 'components/inputs/SelectDayOfWeek.vue'
 import SelectSlackChannel from 'components/inputs/SelectSlackChannel.vue'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
-import DialogSlackIntegration from 'pages/employer/settings-page/DialogSlackIntegration.vue'
 import dateTimeUtil, { DAYS_OF_WEEK } from 'src/utils/datetime.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
+import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
+import { useSocialAuthStore } from 'stores/social-auth-store.js'
 
 export default {
   name: 'IntegrationSectionSlack',
-  components: { InputTime, CustomTooltip, SelectDayOfWeek, SelectSlackChannel },
+  components: { AuthSocialButton, InputTime, CustomTooltip, SelectDayOfWeek, SelectSlackChannel },
   props: {
     slackData: [Object, null]
   },
   data () {
     return {
       slackFormData: {},
+      slackCfg: socialUtil.platformCfgs[socialUtil.SOCIAL_KEY_SLACK],
       q: useQuasar(),
-      authStore: useAuthStore()
+      authStore: useAuthStore(),
+      socialAuthStore: useSocialAuthStore()
     }
   },
   computed: {
@@ -193,12 +193,9 @@ export default {
         this.slackFormData.jobs_post_tod = dateTimeUtil.getTimeStrFromMinutes(this.slackFormData.jobs_post_tod_minutes)
       }
     },
-    showSlackIntegrationDialog () {
-      this.q.dialog({ component: DialogSlackIntegration })
-    },
     updateJobPostDow (val) {
       this.slackFormData.jobs_post_dows = val
-      this.slackFormData.jobs_post_dow_bits = this.$refs.jobPostDows.getDowBitsFromSelection()
+      this.slackFormData.jobs_post_dow_bits = this.$refs.jobPostDows.getDowBitsFromSelection(val)
     },
     updateJobPostTod (val) {
       this.slackFormData.jobs_post_tod = val
@@ -208,6 +205,15 @@ export default {
       } else {
         this.slackFormData.jobs_post_tod_minutes = null
       }
+    },
+    async redirectOauth () {
+      window.location.href = await this.socialAuthStore.getOauthUrl(
+        this.slackCfg.redirectProvider, {
+          redirectPageUrl: window.location.pathname,
+          redirectParams: dataUtil.getQueryParams(),
+          isLogin: false
+        }
+      )
     },
     async postSlackMessage () {
       await this.$api.post('slack/message/job/', getAjaxFormData({
@@ -222,18 +228,14 @@ export default {
       }))
     },
     async saveSlackCfg () {
-      if (!this.slackFormData.id && this.slackData?.id) {
-        await this.deleteSlackCfg()
-      } else {
-        const isGoodForm = await this.$refs.slackForm.validate()
-        if (!isGoodForm) {
-          return
-        }
-        await this.$api.post('employer/slack/', getAjaxFormData({
-          ...this.slackFormData,
-          employer_id: this.authStore.propUser.employer_id
-        }))
+      const isGoodForm = await this.$refs.slackForm.validate()
+      if (!isGoodForm) {
+        return
       }
+      await this.$api.put(`employer/slack/${this.slackData.id}`, getAjaxFormData({
+        ...this.slackFormData,
+        employer_id: this.authStore.propUser.employer_id
+      }))
       this.$emit('updateEmployer')
     },
     async deleteSlackCfg () {
