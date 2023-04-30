@@ -37,6 +37,7 @@ urlpatterns = [
     path('employer/user/approve/', employer.EmployerUserApproveView.as_view()),
     re_path('^employer/user/(?P<user_id>[0-9]+)?/?$', employer.EmployerUserView.as_view()),
     path('employer/user/activate/', employer.EmployerUserActivateView.as_view()),
+    path('employer/user/upload/', employer.EmployerUserUploadView.as_view()),
     path('feedback/', user.FeedbackView.as_view()),
     re_path('^job-application/(?P<application_id>[0-9]+)?/?$', job_seeker.ApplicationView.as_view()),
     path('job-application/external/', job_seeker.ApplicationExternalView.as_view()),
