@@ -3,6 +3,7 @@
     ripple no-wrap
     class="no-hover"
     :color="color"
+    :text-color="textColor"
     style="padding: 8px; height: 40px;"
   >
     <q-img v-if="platform.logo" :src="platform.logo" width="18px"/>
@@ -22,6 +23,10 @@ export default {
     color: {
       type: String,
       default: 'white'
+    },
+    textColor: {
+      type: String,
+      default: 'primary'
     }
   }
 }

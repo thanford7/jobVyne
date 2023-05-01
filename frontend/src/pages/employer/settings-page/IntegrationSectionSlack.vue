@@ -6,6 +6,7 @@
         :platform="slackCfg"
         class="q-mt-md"
         color="primary"
+        text-color="white"
         button-text="Connect Slack"
         @click="redirectOauth()"
       />

@@ -3,6 +3,7 @@ from string import Template
 
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.db.transaction import atomic
@@ -10,7 +11,8 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
+    get_warning_response
 from jvapp.apis.geocoding import LocationParser
 from jvapp.models import Employer, SocialPost
 from jvapp.models.abstract import PermissionTypes
@@ -73,10 +75,9 @@ class UserView(JobVyneAPIView):
         try:
             user = JobVyneUser.objects.create_user(email, password=password, **extra_user_props)
         except IntegrityError:
-            return Response(status=status.HTTP_200_OK, data={
-                WARNING_MESSAGES_KEY: [
-                    f'User with email address <{email}> already exists. Login or reset your password.']
-            })
+            return get_warning_response(f'User with email address <{email}> already exists. Login or reset your password.')
+        except ValidationError as e:
+            return get_warning_response(str(e))
         
         # User wasn't created through social auth so we need to verify their email
         self.send_email_verification_email(request, user, 'email')
