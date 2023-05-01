@@ -2,6 +2,7 @@
   <q-btn
     ripple no-wrap
     class="no-hover"
+    :color="color"
     style="padding: 8px; height: 40px;"
   >
     <q-img v-if="platform.logo" :src="platform.logo" width="18px"/>
@@ -17,7 +18,11 @@ export default {
   name: 'AuthSocialButton',
   props: {
     platform: Object,
-    buttonText: String
+    buttonText: String,
+    color: {
+      type: String,
+      default: 'white'
+    }
   }
 }
 </script>

@@ -26,7 +26,7 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import WEEKDAY_BITS, get_datetime_format_or_none, get_datetime_minutes, get_dow_bit, \
     get_unix_datetime
-from jvapp.utils.email import send_django_email
+from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.slack import raise_slack_exception_if_error
 
 logger = logging.getLogger(__name__)
@@ -482,7 +482,7 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                         'type': 'section',
                         'text': {
                             'type': 'mrkdwn',
-                            'text': 'You can copy this link and share it anywhere. Anyone that applies using this link will be considered your referral. You will be notified by email whenever you get a new referral.'
+                            'text': '• You can copy this link and share it anywhere.\n• Anyone that applies using this link will be considered your referral.\n• You will be notified by email whenever you get a new referral.'
                         }
                     },
                 ],
@@ -497,20 +497,33 @@ class SlackCommandSuggestView(SlackExternalBaseView):
         if not self.is_valid_slack_request(request):
             return Response(status=status.HTTP_403_FORBIDDEN, data='Invalid request signature')
         employer_suggestion = request.data['text']
-        slack_client = SlackBaseView.get_slack_client(token=request.data['token'])
-        team_resp = slack_client.team_info(team=request.data['team_id'])
-        raise_slack_exception_if_error(team_resp)
-        company_name = team_resp['team']['enterprise_name']
+        team_id = request.data['team_id']
+        try:
+            slack_cfg = EmployerSlack.objects.select_related('employer').get(team_key=team_id)
+        except EmployerSlack.DoesNotExist:
+            logger.error(f'Unknown Slack team key ({team_id}) for domain {request.data["team_domain"]}')
+            return Response(status=status.HTTP_400_BAD_REQUEST, data='Unknown team ID')
+        slack_client = SlackBaseView.get_slack_client(token=slack_cfg.oauth_key)
         user_profile = SlackBaseView.get_user_profile(request.data['user_id'], slack_client)
         send_django_email(
             'New employer suggestion',
             'emails/base_general_email.html',
-            to_email=[settings.EMAIL_ADDRESS_SUPPORT],
+            to_email=[EMAIL_ADDRESS_SUPPORT],
             django_context={
                 'is_exclude_final_message': True
             },
-            html_body_content=f'<p>{user_profile["real_name"]} ({user_profile["email"]}) from {company_name} recommended a new employer: {employer_suggestion}</p>',
+            html_body_content=f'<p>{user_profile["real_name"]} ({user_profile["email"]}) from {slack_cfg.employer.employer_name} recommended a new employer: {employer_suggestion}</p>',
             is_tracked=False,
             is_include_jobvyne_subject=False
         )
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data={
+            'blocks': [
+                {
+                    'type': 'section',
+                    'text': {
+                        'type': 'mrkdwn',
+                        'text': f':grapes: Thank you for the suggestion! Our support team will review and determine whether we can add {employer_suggestion}.'
+                    }
+                }
+            ]
+        })

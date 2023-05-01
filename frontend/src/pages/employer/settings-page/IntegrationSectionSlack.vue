@@ -2,11 +2,13 @@
   <div class="row q-gutter-y-md">
     <div class="col-12">
       <div class="text-h6">Slack</div>
-      <AuthSocialButton :platform="slackCfg" button-text="Connect Slack" @click="redirectOauth()"/>
-    </div>
-    <div v-if="hasChanged" class="col-12">
-      <q-btn ripple label="Save" icon="save" color="primary" @click="saveSlackCfg"/>
-      <q-btn ripple label="Undo" icon="undo" color="grey-6" class="q-ml-sm" @click="resetSlackFormData()"/>
+      <AuthSocialButton
+        :platform="slackCfg"
+        class="q-mt-md"
+        color="primary"
+        button-text="Connect Slack"
+        @click="redirectOauth()"
+      />
     </div>
     <div class="col-12">
       <div v-if="slackData.oauth_key">
@@ -50,7 +52,7 @@
                 <div class="col-12 col-md-6 q-pr-md-sm q-mb-sm">
                   <SelectDayOfWeek
                     ref="jobPostDows"
-                    :model-value="slackFormData.jobs_post_dows"
+                    :model-value="jobs_post_dows"
                     @update:modelValue="updateJobPostDow($event)"
                     :is-multi="true"
                   >
@@ -63,7 +65,7 @@
                 </div>
                 <div class="col-12 col-md-6 q-pl-md-sm">
                   <InputTime
-                    :model-value="slackFormData.jobs_post_tod"
+                    :model-value="jobs_post_tod"
                     @update:modelValue="updateJobPostTod($event)"
                     :is-required="false"
                   >
@@ -93,6 +95,10 @@
                   </q-input>
                 </div>
               </template>
+              <div class="col-12">
+                <q-btn ripple label="Save" icon="save" color="primary" @click="saveSlackCfg"/>
+                <q-btn ripple label="Undo" icon="undo" color="grey-6" class="q-ml-sm" @click="resetSlackFormData()"/>
+              </div>
             </div>
           </q-card-section>
         </q-card>
@@ -115,6 +121,10 @@
             </div>
             <div v-if="slackData.referrals_post_channel" class="col-12 q-my-md">
               <q-btn label="Send test Slack message" color="primary" @click="postSlackReferralMessage()"/>
+            </div>
+            <div class="col-12 q-mt-md">
+              <q-btn ripple label="Save" icon="save" color="primary" @click="saveSlackCfg"/>
+              <q-btn ripple label="Undo" icon="undo" color="grey-6" class="q-ml-sm" @click="resetSlackFormData()"/>
             </div>
           </q-card-section>
         </q-card>
@@ -147,6 +157,8 @@ export default {
     return {
       slackFormData: {},
       slackCfg: socialUtil.platformCfgs[socialUtil.SOCIAL_KEY_SLACK],
+      jobs_post_dows: null,
+      jobs_post_tod: null,
       q: useQuasar(),
       authStore: useAuthStore(),
       socialAuthStore: useSocialAuthStore()
@@ -161,8 +173,8 @@ export default {
     },
     jobPostText () {
       let text = 'A post will be sent every'
-      if (this.slackFormData.jobs_post_dows?.length) {
-        text += ` ${this.slackFormData.jobs_post_dows.map((dowNum) => {
+      if (this.jobs_post_dows?.length) {
+        text += ` ${this.jobs_post_dows.map((dowNum) => {
           return DAYS_OF_WEEK[dowNum].name
         }).join(', ')}`
       } else {
@@ -185,20 +197,20 @@ export default {
     resetSlackFormData () {
       this.slackFormData = (this.slackData) ? { ...this.slackData } : {}
       if (this.slackFormData.jobs_post_dow_bits) {
-        this.slackFormData.jobs_post_dows = dateTimeUtil.getDaysOfWeekFromBits(this.slackFormData.jobs_post_dow_bits)
+        this.jobs_post_dows = dateTimeUtil.getDaysOfWeekFromBits(this.slackFormData.jobs_post_dow_bits)
       } else {
-        this.slackFormData.jobs_post_dows = []
+        this.jobs_post_dows = []
       }
       if (this.slackFormData.jobs_post_tod_minutes) {
-        this.slackFormData.jobs_post_tod = dateTimeUtil.getTimeStrFromMinutes(this.slackFormData.jobs_post_tod_minutes)
+        this.jobs_post_tod = dateTimeUtil.getTimeStrFromMinutes(this.slackFormData.jobs_post_tod_minutes)
       }
     },
     updateJobPostDow (val) {
-      this.slackFormData.jobs_post_dows = val
+      this.jobs_post_dows = val
       this.slackFormData.jobs_post_dow_bits = this.$refs.jobPostDows.getDowBitsFromSelection(val)
     },
     updateJobPostTod (val) {
-      this.slackFormData.jobs_post_tod = val
+      this.jobs_post_tod = val
       const parsedTimeStr = dateTimeUtil.parseTimeStr(val)
       if (parsedTimeStr) {
         this.slackFormData.jobs_post_tod_minutes = parsedTimeStr.hour * 60 + parsedTimeStr.minute
