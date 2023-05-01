@@ -93,7 +93,7 @@ class GmailAPIService:
 
     def get_gmail_messages(self, after_date):
         resp = self.service.users().messages().list(userId=self.user_email, q=f'after:{after_date}').execute()
-        return resp.get('messages')
+        return resp.get('messages') or []
 
     def get_gmail_message(self, message_id):
         return self.service.users().messages().get(userId=self.user_email, id=message_id).execute()

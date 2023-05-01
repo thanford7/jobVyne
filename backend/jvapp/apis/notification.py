@@ -1,3 +1,4 @@
+import logging
 from dataclasses import asdict, dataclass
 from enum import Enum
 
@@ -14,6 +15,9 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission, IsAdminPermi
 from jvapp.utils.email import ContentPlaceholders, send_django_email
 from jvapp.utils.gmail import GmailException
 from jvapp.utils.sanitize import sanitize_html
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -325,7 +329,8 @@ class MessageEmployerApplicantView(BaseMessageEmployerView):
             except GmailException as e:
                 return get_error_response(str(e))
             except RefreshError as e:
-                return get_error_response('Your Gmail credentials are no longer valid. Please refresh your credentials on the Account page.')
+                logger.warning(f'Gmail credential error: {e}')
+                return get_error_response(f'Your Gmail credentials are no longer valid. Please refresh your credentials on the Account page.')
         
         return self.get_success_response(len(job_applications), job_applications, 'applicant')
     
