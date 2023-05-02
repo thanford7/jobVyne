@@ -36,6 +36,9 @@
           max-total-size="50000000"
         >
           <template v-slot:append>
+            <q-icon name="cloud_upload"/>
+          </template>
+          <template v-slot:after>
             <CustomTooltip :is_include_space="true">
               Screenshots of issues or product ideas are very helpful!
               <ul>

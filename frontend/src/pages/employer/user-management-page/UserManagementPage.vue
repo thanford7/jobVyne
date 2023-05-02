@@ -19,7 +19,6 @@
       >
         <q-tab name="users" label="Users"/>
         <q-tab name="groups" label="Group permissions"/>
-        <q-tab name="upload" label="Upload"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="users">
@@ -157,28 +156,6 @@
               </q-card>
             </div>
           </div>
-        </q-tab-panel>
-        <q-tab-panel name="upload">
-          Click '+' or drag file onto uploader below to bulk-upload users. Files should be CSV formatted and use the following fields:
-          <table>
-            <tr><th>Field</th><th>Required</th></tr>
-            <tr><td>Email</td><td>Yes</td></tr>
-            <tr><td>First name</td><td>Yes</td></tr>
-            <tr><td>Last name</td><td>Yes</td></tr>
-          </table>
-          <!-- TODO: Remove-->
-          <q-uploader
-            label="Upload"
-            filled
-            url="/api/v1/employer/user/upload/"
-            method="POST"
-            :with-credentials="true"
-            :headers="[
-              {name: 'Content-Type', value: 'application/x-www-form-urlencoded'},
-              {name: 'Content-Disposition', value: 'form-data'},
-              {name: 'X-CSRFTOKEN', value: xCsrfToken}
-             ]"
-          ></q-uploader>
         </q-tab-panel>
       </q-tab-panels>
     </div>

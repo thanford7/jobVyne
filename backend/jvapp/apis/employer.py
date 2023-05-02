@@ -1337,10 +1337,14 @@ class EmployerUserUploadView(JobVyneAPIView):
 
     @atomic
     def post(self, request):
-        csv_text = list(request.data.dict().values())[0].split('\r\n')[3]
+        if not (employer_id := self.data.get('employer_id')):
+            return get_error_response('An employer ID is required')
+        
+        employer = EmployerView.get_employers(employer_id=employer_id)
+        csv_text = self.files['user_file'][0]
         with StringIO(csv_text) as csv_file:
-            csv.bulk_load_users(csv_file, request.user.employer)
-        return Response(status=status.HTTP_200_OK, data={})
+            csv.bulk_load_users(csv_file, employer)
+        return Response(status=status.HTTP_200_OK)
 
 
 class EmployerFileView(JobVyneAPIView):

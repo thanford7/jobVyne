@@ -5,7 +5,8 @@
         <div class="text-h6 text-center">Apply to {{ jobApplication.job_title }}</div>
       </div>
       <div v-if="!authStore.propIsAuthenticated" class="q-pa-sm">
-        <a id="jv-form-job-app-login" href="#" @click="openLoginModal">Have an account? Login to auto-populate the form</a>
+        <a id="jv-form-job-app-login" href="#" @click="openLoginModal">Have an account? Login to auto-populate the
+          form</a>
       </div>
       <div class="q-pa-sm q-mt-sm">
         <q-form
@@ -98,7 +99,11 @@
                   }
                   return isFieldOptional('resume') || val || 'A resume is required'
                 }]"
-              />
+              >
+                <template v-slot:append>
+                  <q-icon name="cloud_upload"/>
+                </template>
+              </q-file>
             </template>
           </FileDisplayOrUpload>
           <FileDisplayOrUpload
@@ -126,7 +131,11 @@
                   }
                   return isFieldOptional('academic_transcript') || val || 'A transcript is required'
                 }]"
-              />
+              >
+                <template v-slot:append>
+                  <q-icon name="cloud_upload"/>
+                </template>
+              </q-file>
             </template>
           </FileDisplayOrUpload>
           <div class="text-small text-gray-3">

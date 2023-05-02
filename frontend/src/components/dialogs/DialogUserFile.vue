@@ -22,6 +22,9 @@
             filled
           >
             <template v-slot:append>
+              <q-icon name="cloud_upload"/>
+            </template>
+            <template v-slot:after>
               <CustomTooltip :is_include_space="true">
                 Supported file types: {{ allowedFileExtensionsStr }}
               </CustomTooltip>

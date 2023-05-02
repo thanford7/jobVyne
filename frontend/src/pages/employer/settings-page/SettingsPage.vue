@@ -51,7 +51,11 @@
                     lazy-rules="ondemand"
                     :rules="[val => val || 'A file is required']"
                     max-file-size="1000000"
-                  />
+                  >
+                    <template v-slot:append>
+                      <q-icon name="cloud_upload"/>
+                    </template>
+                  </q-file>
                 </template>
               </FileDisplayOrUpload>
             </div>
