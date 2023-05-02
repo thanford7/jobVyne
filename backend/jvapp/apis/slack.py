@@ -8,7 +8,7 @@ from urllib.request import urlopen
 
 from django.conf import settings
 from django.core.files import File
-from django.db.models import Count, F, Q
+from django.db.models import F, Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -19,6 +19,7 @@ from slack_sdk import WebClient
 from jobVyne.multiPartJsonParser import RawFormParser
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.employer import EmployerJobView, EmployerSlackView
+from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
 from jvapp.apis.social import SocialLinkFilterView
 from jvapp.models import EmployerSlack, JobVyneUser, PermissionName, SocialLinkFilter
 from jvapp.models.content import JobPost
@@ -185,22 +186,24 @@ class SlackJobsMessageView(SlackBaseView):
     @staticmethod
     def get_jobs_for_post(employer_id, slack_cfg):
         jobs_filter = Q(employer_id=employer_id)
-        # Don't post jobs that have already been posted
-        jobs_filter &= (
-                Q(job_post__isnull=True) | ~Q(job_post__channel=JobPost.PostChannel.SLACK_JOB.value)
-        )
+        
+        # Get job subscriptions
+        job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+        if job_subscription_filter := EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions):
+            jobs_filter = (jobs_filter | job_subscription_filter)
+
         # Only post recent jobs
         jobs_filter &= Q(open_date__gte=timezone.now().date() - timedelta(days=SlackJobsMessageView.JOB_LOOKBACK_DAYS))
-        job_count = min(slack_cfg.jobs_post_max_jobs or SlackJobsMessageView.MAX_JOBS, SlackJobsMessageView.MAX_JOBS)
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)[:job_count]
-        
+
         # Don't post jobs that have already been posted
-        jobs = jobs \
-            .annotate(has_slack_post=Count('pk', filter=~Q(job_post__channel=JobPost.PostChannel.SLACK_JOB.value))) \
-            .filter(has_slack_post=0)
+        job_post_filter = Q(job_post__channel=JobPost.PostChannel.SLACK_JOB.value) & Q(job_post__employer_id=employer_id)
+        jobs_filter &= ~job_post_filter
         
-        return jobs
-    
+        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+
+        job_count = min(slack_cfg.jobs_post_max_jobs or SlackJobsMessageView.MAX_JOBS, SlackJobsMessageView.MAX_JOBS)
+        return jobs[:job_count]
+        
     @staticmethod
     def build_jobs_message(jobs, employer):
         blocks = [
@@ -351,15 +354,13 @@ class SlackReferralsMessageView(SlackBaseView):
         jobs_filter = Q(employer_id=employer_id)
         # Only post recent jobs
         jobs_filter &= Q(open_date__gte=timezone.now().date() - timedelta(days=SlackJobsMessageView.JOB_LOOKBACK_DAYS))
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
 
         # Don't post jobs that have already been posted
-        jobs = jobs\
-            .annotate(has_slack_referral=Count('pk', filter=~Q(job_post__channel=JobPost.PostChannel.SLACK_EMPLOYEE_REFERRAL.value))) \
-            .filter(has_slack_referral=0)
+        job_post_filter = Q(job_post__channel=JobPost.PostChannel.SLACK_EMPLOYEE_REFERRAL.value) & Q(job_post__employer_id=employer_id)
+        jobs_filter &= ~job_post_filter
         
-        return jobs
-    
+        return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+
     @staticmethod
     def build_referral_message(job, slack_cfg):
         blocks = [
