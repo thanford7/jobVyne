@@ -195,7 +195,7 @@ class SlackJobsMessageView(SlackBaseView):
         jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)[:job_count]
         
         # Don't post jobs that have already been posted
-        jobs \
+        jobs = jobs \
             .annotate(has_slack_post=Count('pk', filter=~Q(job_post__channel=JobPost.PostChannel.SLACK_JOB.value))) \
             .filter(has_slack_post=0)
         
@@ -354,7 +354,7 @@ class SlackReferralsMessageView(SlackBaseView):
         jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
 
         # Don't post jobs that have already been posted
-        jobs\
+        jobs = jobs\
             .annotate(has_slack_referral=Count('pk', filter=~Q(job_post__channel=JobPost.PostChannel.SLACK_EMPLOYEE_REFERRAL.value))) \
             .filter(has_slack_referral=0)
         
