@@ -19,7 +19,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--test_dt',
-            type=datetime.datetime,
+            type=str,
             help='A specific datetime to use as a test trigger for auto-posts',
         )
     

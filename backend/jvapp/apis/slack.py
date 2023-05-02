@@ -126,7 +126,7 @@ class SlackJobsMessageView(SlackBaseView):
             jobs_post_dow_bits__lt=F('jobs_post_dow_bits') + (1 * F('jobs_post_dow_bits').bitand(target_dow)))
         if is_default_dow:
             post_filter = (
-                    Q(jobs_post_dow_bits__isnull=True) | dow_filter
+                Q(jobs_post_dow_bits__isnull=True) | dow_filter
             )
         else:
             post_filter = dow_filter
@@ -143,7 +143,7 @@ class SlackJobsMessageView(SlackBaseView):
         ).filter(post_filter)
         successful_posts = 0
         for slack_cfg in slack_cfgs:
-            is_success = SlackJobsMessageView.send_slack_job_post(slack_cfg)
+            is_success = SlackJobsMessageView.send_slack_job_post(slack_cfg, False)
             if is_success:
                 successful_posts += 1
         
@@ -302,7 +302,7 @@ class SlackReferralsMessageView(SlackBaseView):
         )
         successful_posts = 0
         for slack_cfg in slack_cfgs:
-            is_success = SlackReferralsMessageView.send_slack_referral_post(slack_cfg)
+            is_success = SlackReferralsMessageView.send_slack_referral_post(slack_cfg, False)
             if is_success:
                 successful_posts += 1
     

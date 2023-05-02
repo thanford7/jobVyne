@@ -137,26 +137,31 @@ class DateTimeUtil {
     return `${operator}${hourOffset}00`
   }
 
-  getTimeStrFromMinutes (timeMinutes) {
+  getTimeStrFromMinutes (timeMinutes, isAmPm) {
     const minutes = timeMinutes % 60
     let minutesStr = minutes.toString()
     if (minutesStr.length === 1) {
       minutesStr = '0' + minutesStr
     }
     let hours = Math.floor(timeMinutes / 60)
-    let ampm = 'AM'
-    if (hours > 11) {
-      ampm = 'PM'
+
+    let ampm = ''
+    if (isAmPm) {
+      ampm = 'AM'
+      if (hours > 11) {
+        ampm = 'PM'
+      }
+      hours = hours % 12
+      if (hours === 0) {
+        hours = 12
+      }
     }
-    hours = hours % 12
-    if (hours === 0) {
-      hours = 12
-    }
+
     let hoursStr = hours.toString()
     if (hoursStr.length === 1) {
       hoursStr = '0' + hoursStr
     }
-    return `${hoursStr}:${minutesStr} ${ampm}`
+    return `${hoursStr}:${minutesStr}${ampm}`
   }
 
   parseTimeStr (timeStr) {
