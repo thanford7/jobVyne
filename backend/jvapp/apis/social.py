@@ -38,7 +38,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             if owner_id := self.query_params.get('owner_id'):
                 q_filter = Q(owner_id=owner_id)
             elif employer_id := self.query_params.get('employer_id'):
-                q_filter = Q(employer_id=employer_id, owner_id__isnull=True)
+                q_filter = Q(employer_id=employer_id, owner_id__isnull=True, name__isnull=False)
             else:
                 return Response('You must provide an ID, owner ID, or employer ID', status=status.HTTP_400_BAD_REQUEST)
             

@@ -156,7 +156,7 @@ class SlackJobsMessageView(SlackBaseView):
             logger.warning('No Slack channel set to post jobs to')
             return False
         jobs = SlackJobsMessageView.get_jobs_for_post(slack_cfg.employer_id, slack_cfg)
-        if not jobs:
+        if not jobs and not is_test:
             logger.info('No new jobs to post to Slack')
             return False
         
@@ -295,11 +295,25 @@ class SlackReferralsMessageView(SlackBaseView):
         })
     
     @staticmethod
+    def run_auto_posts():
+        slack_cfgs = EmployerSlack.objects.select_related('employer').filter(
+            is_enabled=True,
+            referrals_post_channel__isnull=False
+        )
+        successful_posts = 0
+        for slack_cfg in slack_cfgs:
+            is_success = SlackReferralsMessageView.send_slack_referral_post(slack_cfg)
+            if is_success:
+                successful_posts += 1
+    
+        return successful_posts
+    
+    @staticmethod
     @atomic
     def send_slack_referral_post(slack_cfg, is_test):
         jobs = SlackReferralsMessageView.get_jobs_for_post(slack_cfg.employer_id)
         if is_test:
-            jobs = jobs[:1]
+            jobs = jobs[:1] if jobs else []
         
         client = SlackBaseView.get_slack_client(slack_cfg)
         for job in jobs:

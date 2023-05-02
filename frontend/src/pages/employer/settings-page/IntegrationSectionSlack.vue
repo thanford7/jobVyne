@@ -12,8 +12,10 @@
       />
     </div>
     <div class="col-12">
-      <div v-if="slackData.oauth_key">
+      <div v-if="slackData?.oauth_key">
         <q-toggle
+          :model-value="slackFormData.is_enabled"
+          @update:model-value="toggleEnabled($event)"
           v-model="slackFormData.is_enabled"
           :color="(slackFormData.is_enabled) ? 'positive' : 'negative'"
           :label="(slackFormData.is_enabled) ? 'Enabled' : 'Disabled'"
@@ -21,7 +23,7 @@
         />
       </div>
     </div>
-    <div v-if="slackData.oauth_key" class="col-12">
+    <div v-if="slackData?.oauth_key" class="col-12">
       <q-form ref="slackForm" class="q-gutter-y-sm">
         <q-card flat bordered>
           <q-card-section>
@@ -96,7 +98,7 @@
                   </q-input>
                 </div>
               </template>
-              <div class="col-12">
+              <div class="col-12 q-mt-md">
                 <q-btn ripple label="Save" icon="save" color="primary" @click="saveSlackCfg"/>
                 <q-btn ripple label="Undo" icon="undo" color="grey-6" class="q-ml-sm" @click="resetSlackFormData()"/>
               </div>
@@ -239,6 +241,10 @@ export default {
         employer_id: this.authStore.propUser.employer_id,
         is_test: true
       }))
+    },
+    async toggleEnabled (isEnabled) {
+      this.slackFormData.is_enabled = isEnabled
+      await this.saveSlackCfg()
     },
     async saveSlackCfg () {
       const isGoodForm = await this.$refs.slackForm.validate()
