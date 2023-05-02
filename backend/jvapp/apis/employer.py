@@ -19,7 +19,7 @@ from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
 from jvapp.models import JobApplication, MessageThread, MessageThreadContext, SocialLinkFilter
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.content import ContentItem
+from jvapp.models.content import ContentItem, JobPost
 from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule, \
     EmployerReferralRequest
@@ -696,11 +696,11 @@ class EmployerJobView(JobVyneAPIView):
         jobs = EmployerJob.objects \
             .select_related('job_department', 'employer', 'referral_bonus_currency') \
             .prefetch_related(
-            'locations',
-            'locations__city',
-            'locations__state',
-            'locations__country'
-        ) \
+                'locations',
+                'locations__city',
+                'locations__state',
+                'locations__country'
+            ) \
             .filter(employer_job_filter) \
             .distinct() \
             .order_by(order_by, 'id')

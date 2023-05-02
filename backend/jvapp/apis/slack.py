@@ -8,7 +8,7 @@ from urllib.request import urlopen
 
 from django.conf import settings
 from django.core.files import File
-from django.db.models import F, Q
+from django.db.models import Count, F, Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -192,7 +192,14 @@ class SlackJobsMessageView(SlackBaseView):
         # Only post recent jobs
         jobs_filter &= Q(open_date__gte=timezone.now().date() - timedelta(days=SlackJobsMessageView.JOB_LOOKBACK_DAYS))
         job_count = min(slack_cfg.jobs_post_max_jobs or SlackJobsMessageView.MAX_JOBS, SlackJobsMessageView.MAX_JOBS)
-        return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)[:job_count]
+        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)[:job_count]
+        
+        # Don't post jobs that have already been posted
+        jobs \
+            .annotate(has_slack_post=Count('pk', filter=~Q(job_post__channel=JobPost.PostChannel.SLACK_JOB.value))) \
+            .filter(has_slack_post=0)
+        
+        return jobs
     
     @staticmethod
     def build_jobs_message(jobs, employer):
@@ -342,13 +349,16 @@ class SlackReferralsMessageView(SlackBaseView):
     @staticmethod
     def get_jobs_for_post(employer_id):
         jobs_filter = Q(employer_id=employer_id)
-        # Don't post jobs that have already been posted
-        jobs_filter &= (
-                Q(job_post__isnull=True) | ~Q(job_post__channel=JobPost.PostChannel.SLACK_EMPLOYEE_REFERRAL.value)
-        )
         # Only post recent jobs
         jobs_filter &= Q(open_date__gte=timezone.now().date() - timedelta(days=SlackJobsMessageView.JOB_LOOKBACK_DAYS))
-        return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+
+        # Don't post jobs that have already been posted
+        jobs\
+            .annotate(has_slack_referral=Count('pk', filter=~Q(job_post__channel=JobPost.PostChannel.SLACK_EMPLOYEE_REFERRAL.value))) \
+            .filter(has_slack_referral=0)
+        
+        return jobs
     
     @staticmethod
     def build_referral_message(job, slack_cfg):
