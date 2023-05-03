@@ -1,7 +1,8 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader :title="(employerType === employerTypeUtil.ORG_TYPE_EMPLOYER) ? 'Jobs & Referral bonuses' : 'Job subscriptions'"/>
+      <PageHeader
+        :title="(employerType === employerTypeUtil.ORG_TYPE_EMPLOYER) ? 'Jobs & Referral bonuses' : 'Job subscriptions'"/>
       <q-tabs
         v-model="tab"
         dense
@@ -17,7 +18,10 @@
           <q-tab name="application" label="Application Questions"/>
           <q-tab name="bonus" label="Bonuses"/>
         </template>
-        <q-tab v-else name="subscription" label="Job Subscriptions"/>
+        <template v-else>
+          <q-tab name="subscription" label="Job Subscriptions"/>
+          <q-tab name="employer" label="Employers"/>
+        </template>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <template v-if="employerType === employerTypeUtil.ORG_TYPE_EMPLOYER">
@@ -31,9 +35,14 @@
             <BonusesSection/>
           </q-tab-panel>
         </template>
-        <q-tab-panel v-else name="subscription">
-          <JobSubscriptionsSection/>
-        </q-tab-panel>
+        <template v-else>
+          <q-tab-panel name="subscription">
+            <JobSubscriptionsSection/>
+          </q-tab-panel>
+          <q-tab-panel name="employer">
+            <EmployerSection/>
+          </q-tab-panel>
+        </template>
       </q-tab-panels>
     </div>
   </q-page>
@@ -43,6 +52,7 @@
 import PageHeader from 'components/PageHeader.vue'
 import ApplicationQuestionsSection from 'pages/employer/jobs-page/ApplicationQuestionsSection.vue'
 import BonusesSection from 'pages/employer/jobs-page/BonusesSection.vue'
+import EmployerSection from 'pages/employer/jobs-page/EmployerSection.vue'
 import JobsSection from 'pages/employer/jobs-page/jobs-table/JobsSection.vue'
 import JobSubscriptionsSection from 'pages/employer/jobs-page/JobSubscriptionsSection.vue'
 import { Loading, useMeta } from 'quasar'
@@ -54,7 +64,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
   name: 'JobsPage',
-  components: { ApplicationQuestionsSection, JobSubscriptionsSection, BonusesSection, JobsSection, PageHeader },
+  components: { EmployerSection, ApplicationQuestionsSection, JobSubscriptionsSection, BonusesSection, JobsSection, PageHeader },
   data () {
     const employerType = employerTypeUtil.getEmployerTypeByBit(this.employer.organization_type)
     return {

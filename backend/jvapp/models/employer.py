@@ -245,7 +245,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         salary_symbol = self.salary_currency.symbol if self.salary_currency else '$'
         salary_text = f'{salary_symbol}{self.salary_floor}'
         if self.salary_ceiling and (self.salary_floor != self.salary_ceiling):
-            salary_text += f' - {salary_symbol}{self.salary_floor}'
+            salary_text += f' - {salary_symbol}{self.salary_ceiling}'
         if self.salary_interval:
             salary_text += f' per {self.salary_interval}'
         return salary_text

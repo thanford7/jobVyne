@@ -1,7 +1,7 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, email, employer, job_seeker, job, job_subscription,
+    admin, ats, auth, content, currency, data, email, employer, job_seeker, job, jobs, job_subscription,
     message, notification, sales, slack, social, stripe, test, tracking, user
 )
 
@@ -43,6 +43,7 @@ urlpatterns = [
     path('job-application/external/', job_seeker.ApplicationExternalView.as_view()),
     path('job/department/', job.JobDepartmentView.as_view()),
     path('job/location/', job.LocationView.as_view()),
+    path('jobs/', jobs.JobsView.as_view()),
     path('notification-preference/', notification.UserNotificationPreferenceView.as_view()),
     path('page-view/', tracking.PageTrackView.as_view()),
     re_path('^social-content-item/(?P<item_id>[0-9]+)?/?$', content.SocialContentItemView.as_view()),

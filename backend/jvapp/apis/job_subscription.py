@@ -69,13 +69,12 @@ class EmployerJobSubscriptionView(JobVyneAPIView):
         
         job_subscriptions = EmployerJobSubscription.objects \
             .prefetch_related(
-            'filter_department',
-            'filter_city',
-            'filter_state',
-            'filter_country',
-            'filter_job',
-            'filter_employer'
-        ) \
+                'filter_city',
+                'filter_state',
+                'filter_country',
+                'filter_job',
+                'filter_employer'
+            ) \
             .filter(subscription_filter)
         
         if subscription_id:
@@ -89,6 +88,8 @@ class EmployerJobSubscriptionView(JobVyneAPIView):
     @atomic
     def update_job_subscription(user, job_subscription, data):
         set_object_attributes(job_subscription, data, {
+            'filter_job_title_regex': AttributeCfg(form_name='job_title_regex'),
+            'filter_exclude_job_title_regex': AttributeCfg(form_name='exclude_job_title_regex'),
             'filter_remote_type_bit': AttributeCfg(form_name='remote_type_bit')
         })
         
@@ -97,8 +98,6 @@ class EmployerJobSubscriptionView(JobVyneAPIView):
         
         # Clear existing filters
         if job_subscription.id:
-            if job_subscription.filter_department.all():
-                job_subscription.filter_department.clear()
             if job_subscription.filter_city.all():
                 job_subscription.filter_city.clear()
             if job_subscription.filter_state.all():
@@ -113,15 +112,6 @@ class EmployerJobSubscriptionView(JobVyneAPIView):
         job_subscription.save()
         
         # Add new filters
-        if department_ids := data.get('departments'):
-            filter_departments = []
-            filter_model = job_subscription.filter_department.through
-            for department_id in department_ids:
-                filter_departments.append(filter_model(
-                    employerjobsubscription_id=job_subscription.id,
-                    jobdepartment_id=department_id
-                ))
-            filter_model.objects.bulk_create(filter_departments)
         if city_ids := data.get('cities'):
             filter_cities = []
             filter_model = job_subscription.filter_city.through

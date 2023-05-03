@@ -652,7 +652,7 @@ class WorkdayScraper(Scraper):
         await self.close(page=page)
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
-        job_data = html.xpath('//div[@data-automation-id="jobPostingPage"]')
+        job_data = html.xpath('//div[@data-automation-id="job-posting-details"]')
         # Note workday only shows the first 5 locations. JS automation would be necessary
         # to click the button to show additional locations
         locations = [l.get().strip() for l in job_data.xpath('.//div[@data-automation-id="locations"]/dl/dd/text()')]
@@ -673,7 +673,7 @@ class WorkdayScraper(Scraper):
             else:
                 posted_date = None
         
-        job_title = self.strip_or_none(job_data.xpath('.//*[@data-automation-id="jobPostingHeader"]/text()').get())
+        job_title = self.strip_or_none(html.xpath('.//*[@data-automation-id="jobPostingHeader"]/text()').get())
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = html.xpath('//*[@data-automation-id="jobPostingDescription"]').get()
         description_compensation_data = self.parse_compensation_text(job_description)

@@ -19,7 +19,7 @@ from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
 from jvapp.models import JobApplication, MessageThread, MessageThreadContext, SocialLinkFilter
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.content import ContentItem, JobPost
+from jvapp.models.content import ContentItem
 from jvapp.models.employer import *
 from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule, \
     EmployerReferralRequest
