@@ -12,139 +12,147 @@
     @request="fetchUsers"
   >
     <template v-slot:top>
-      <div class="q-gutter-y-sm flex items-center">
-        <q-btn-dropdown
-          v-if="isAdminMode || authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)"
-          color="primary" label="User actions"
-        >
-          <q-list>
-            <q-item clickable v-close-popup @click="openUserModal()">
-              <q-item-section avatar>
-                <q-icon name="add"/>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>Add user</q-item-label>
-              </q-item-section>
-            </q-item>
-            <template v-if="selectedUsers && selectedUsers.length">
-              <q-item clickable v-close-popup @click="openUserModal(selectedUsers)">
+      <div class="col-12">
+        <div class="q-gutter-y-sm flex items-center">
+          <q-btn-dropdown
+            v-if="isAdminMode || authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)"
+            color="primary" label="User actions"
+          >
+            <q-list>
+              <q-item clickable v-close-popup @click="openUserModal()">
                 <q-item-section avatar>
-                  <q-icon name="edit"/>
+                  <q-icon name="add"/>
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>Modify {{ dataUtil.pluralize('user', selectedUsers.length) }}</q-item-label>
+                  <q-item-label>Add user</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item
-                v-if="deactivatedUserCount"
-                clickable v-close-popup @click="activateUsers(false)"
-              >
-                <q-item-section avatar>
-                  <q-icon name="power"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Re-activate {{
-                      dataUtil.pluralize('user', deactivatedUserCount)
-                    }}
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item
-                v-if="activatedUserCount"
-                clickable v-close-popup @click="activateUsers(true)"
-              >
-                <q-item-section avatar>
-                  <q-icon name="power_off"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Deactivate {{
-                      dataUtil.pluralize('user', activatedUserCount)
-                    }}
-                  </q-item-label>
-                  <Tooltip>
-                    User(s) will no longer be able to create links for your company. Any current links will
-                    be re-directed to a general company page with all open jobs shown.
-                  </Tooltip>
-                </q-item-section>
-              </q-item>
-              <q-item
-                v-if="hasNoSeatUserCount"
-                clickable v-close-popup @click="assignUserSeat(true)"
-              >
-                <q-item-section avatar>
-                  <q-icon name="person_add"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Assign employee seat {{
-                      dataUtil.pluralize('user', hasNoSeatUserCount)
-                    }}
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item
-                v-if="hasSeatUserCount"
-                clickable v-close-popup @click="assignUserSeat(false)"
-              >
-                <q-item-section avatar>
-                  <q-icon name="person_remove"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Un-assign employee seat {{
-                      dataUtil.pluralize('user', hasSeatUserCount)
-                    }}
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item
-                v-if="unapprovedUserCount"
-                clickable v-close-popup @click="approveUsers()"
-              >
-                <q-item-section avatar>
-                  <q-icon name="how_to_reg"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Approve permissions for {{
-                      dataUtil.pluralize('user', unapprovedUserCount)
-                    }}
-                  </q-item-label>
-                  <Tooltip>
-                    If you don't want to approve all permissions for a specific user. Select the user, click
-                    the "Modify user"
-                    button and remove the permission from the list of permissions for that user.
-                  </Tooltip>
-                </q-item-section>
-              </q-item>
-              <q-item
-                v-if="isAdminMode"
-                clickable v-close-popup @click="deleteUsers()"
-              >
-                <q-item-section avatar>
-                  <q-icon name="delete"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Delete {{
-                      dataUtil.pluralize('user', selectedUsers.length)
-                    }}
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
+              <template v-if="selectedUsers && selectedUsers.length">
+                <q-item clickable v-close-popup @click="openUserModal(selectedUsers)">
+                  <q-item-section avatar>
+                    <q-icon name="edit"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Modify {{ dataUtil.pluralize('user', selectedUsers.length) }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  v-if="deactivatedUserCount"
+                  clickable v-close-popup @click="activateUsers(false)"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="power"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Re-activate {{
+                        dataUtil.pluralize('user', deactivatedUserCount)
+                      }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  v-if="activatedUserCount"
+                  clickable v-close-popup @click="activateUsers(true)"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="power_off"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Deactivate {{
+                        dataUtil.pluralize('user', activatedUserCount)
+                      }}
+                    </q-item-label>
+                    <Tooltip>
+                      User(s) will no longer be able to create links for your company. Any current links will
+                      be re-directed to a general company page with all open jobs shown.
+                    </Tooltip>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  v-if="hasNoSeatUserCount"
+                  clickable v-close-popup @click="assignUserSeat(true)"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="person_add"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Assign employee seat {{
+                        dataUtil.pluralize('user', hasNoSeatUserCount)
+                      }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  v-if="hasSeatUserCount"
+                  clickable v-close-popup @click="assignUserSeat(false)"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="person_remove"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Un-assign employee seat {{
+                        dataUtil.pluralize('user', hasSeatUserCount)
+                      }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  v-if="unapprovedUserCount"
+                  clickable v-close-popup @click="approveUsers()"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="how_to_reg"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Approve permissions for {{
+                        dataUtil.pluralize('user', unapprovedUserCount)
+                      }}
+                    </q-item-label>
+                    <Tooltip>
+                      If you don't want to approve all permissions for a specific user. Select the user, click
+                      the "Modify user"
+                      button and remove the permission from the list of permissions for that user.
+                    </Tooltip>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  v-if="isAdminMode"
+                  clickable v-close-popup @click="deleteUsers()"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="delete"/>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Delete {{
+                        dataUtil.pluralize('user', selectedUsers.length)
+                      }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-list>
+          </q-btn-dropdown>
+          <q-input
+            class="q-ml-md-md"
+            dense filled borderless debounce="300"
+            v-model="userFilter.searchText" placeholder="Search"
+          >
+            <template v-slot:append>
+              <q-icon name="search"/>
+              <Tooltip>
+                Search by first name, last name, or email
+              </Tooltip>
             </template>
-          </q-list>
-        </q-btn-dropdown>
-        <q-input
-          class="q-ml-md-md"
-          dense filled borderless debounce="300"
-          v-model="userFilter.searchText" placeholder="Search"
-        >
-          <template v-slot:append>
-            <q-icon name="search"/>
-            <Tooltip>
-              Search by first name, last name, or email
-            </Tooltip>
-          </template>
-        </q-input>
-        <div class="q-ml-md-md" style="display: inline-block">
-          <a href="#" @click="clearUserFilter">Clear all filters</a>
+          </q-input>
+          <div class="q-ml-md-md" style="display: inline-block">
+            <a href="#" @click="clearUserFilter">Clear all filters</a>
+          </div>
+          <q-space/>
+          <q-btn
+            v-if="isAdminMode || authStore.getHasPermission(PERMISSION_NAMES.MANAGE_USER)"
+            filled color="primary" label="Bulk upload users"
+            @click="openBulkUploadUserDialog"
+          />
         </div>
       </div>
     </template>
@@ -283,6 +291,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DialogBulkUploadUsers from 'components/dialogs/DialogBulkUploadUsers.vue'
 import DialogUser from 'components/dialogs/DialogUser.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
@@ -330,7 +339,15 @@ const pagination = {
 
 export default {
   name: 'UserTable',
-  components: { Tooltip, SelectEmployer, CustomTooltip, TableFilter, SelectPermissionGroup, SelectUserType, SelectYesNo },
+  components: {
+    Tooltip,
+    SelectEmployer,
+    CustomTooltip,
+    TableFilter,
+    SelectPermissionGroup,
+    SelectUserType,
+    SelectYesNo
+  },
   props: {
     isAdminMode: {
       type: Boolean,
@@ -513,6 +530,15 @@ export default {
         componentProps: { users, isAdmin: this.isAdminMode }
       }
       return this.q.dialog(cfg).onOk(async () => {
+        this.unselectUsers()
+        await this.fetchUsers()
+      })
+    },
+    openBulkUploadUserDialog () {
+      return this.q.dialog({
+        component: DialogBulkUploadUsers,
+        componentProps: { isAdminMode: this.isAdminMode }
+      }).onOk(async () => {
         this.unselectUsers()
         await this.fetchUsers()
       })

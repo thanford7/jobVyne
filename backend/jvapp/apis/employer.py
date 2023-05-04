@@ -1,7 +1,8 @@
 from collections import defaultdict
 from functools import reduce
+from io import StringIO
 
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -20,15 +21,17 @@ from jvapp.apis.user import UserView
 from jvapp.models import JobApplication, MessageThread, MessageThreadContext, SocialLinkFilter
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
-from jvapp.models.employer import *
-from jvapp.models.employer import EmployerAuthGroup, EmployerReferralBonusRule, \
-    EmployerReferralRequest
+from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerReferralBonusRule, \
+    EmployerReferralRequest, EmployerAts, EmployerSubscription, JobDepartment, EmployerJob, \
+    EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
+    EmployerFileTag, EmployerPage
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page, \
     get_serialized_employer_referral_request
+from jvapp.utils import csv
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import ContentPlaceholders, get_domain_from_email, send_django_email
@@ -1391,6 +1394,22 @@ class EmployerUserActivateView(JobVyneAPIView):
                 f'{unassigned_users} {"user" if unassigned_users == 1 else "users"} was unable to be assigned a seat because you have reached the number of seats allowed by your subscription']
         
         return Response(status=status.HTTP_200_OK, data=data)
+
+
+class EmployerUserUploadView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+
+    @atomic
+    def post(self, request):
+        if not (employer_id := self.data.get('employer_id')):
+            return get_error_response('An employer ID is required')
+        
+        employer = EmployerView.get_employers(employer_id=employer_id)
+        raw_file = self.files['user_file'][0]
+        csv_text = raw_file.read().decode('utf-8')
+        with StringIO(csv_text) as csv_file:
+            csv.bulk_load_users(csv_file, employer)
+        return Response(status=status.HTTP_200_OK)
 
 
 class EmployerFileView(JobVyneAPIView):

@@ -34,6 +34,9 @@
             max-file-size="5000000"
           >
             <template v-slot:append>
+              <q-icon name="cloud_upload"/>
+            </template>
+            <template v-slot:after>
               <CustomTooltip :is_include_space="true">
                 <ul>
                   <li>Supported file types: {{ allowedFileExtensionsStr }}</li>

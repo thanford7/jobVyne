@@ -210,6 +210,19 @@ export default {
     }
   },
   computed: {
+    xCsrfToken () {
+      // TODO: Remove
+      const cookies = document.cookie.split(';')
+      const d = {
+        csrftoken: null
+      }
+      for (const cookie of cookies) {
+        const [k, v] = cookie.split('=')
+        d[k.trim()] = v.trim()
+      }
+      console.log(d.csrftoken)
+      return d.csrftoken
+    },
     selectedGroup () {
       if (!this.selectedGroupId) {
         return null
