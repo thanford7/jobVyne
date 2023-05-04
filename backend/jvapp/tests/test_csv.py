@@ -10,8 +10,8 @@ class CsvUploadTest(BaseTestCase):
         employer = models.Employer.objects.filter(employer_name='ChickFilet').first()
         self.assertEqual(0, models.JobVyneUser.objects.filter(email='michael@jobvyne.com').count())
         csv_text = '\n'.join([
-            "email,first_name,last_name,user_type_bits",
-            "mark@jobvyne.com,Marky,  Mark,1",
+            "email,first_name,last_name,user_type_bits,phone",
+            "mark@jobvyne.com,Marky,  Mark,1,(610)585-2457",
         ])
         with StringIO(csv_text) as csv_file:
             csv.bulk_load_users(csv_file, employer)
@@ -19,6 +19,7 @@ class CsvUploadTest(BaseTestCase):
         initial_id = user.id
         self.assertEqual('Marky', user.first_name)
         self.assertEqual('Mark', user.last_name)
+        self.assertEqual('(610)585-2457', user.phone_number)
         self.assertEqual(models.JobVyneUser.USER_TYPE_EMPLOYEE, user.user_type_bits)
         self.assertEqual(employer, user.employer)
         initial_mod_time = user.modified_dt
@@ -32,11 +33,14 @@ class CsvUploadTest(BaseTestCase):
         user = models.JobVyneUser.objects.get(email='mark@jobvyne.com')
         self.assertEqual('Mark', user.first_name)
         self.assertEqual('Wahlberg', user.last_name)
+        self.assertEqual('(610)585-2457', user.phone_number)
         self.assertEqual(employer, user.employer)
         self.assertEqual(initial_id, user.id)
         # Make sure the mod time has been updated via save signals
         self.assertGreater(user.modified_dt, initial_mod_time)
 
+    def test_validate_email(self):
+        employer = models.Employer.objects.filter(employer_name='ChickFilet').first()
         # Make sure the email domain rules are followed when an employer has email domains set
         employer.email_domains = 'chickfilet.com'
         employer.save()
