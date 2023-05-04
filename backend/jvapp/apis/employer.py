@@ -1404,7 +1404,8 @@ class EmployerUserUploadView(JobVyneAPIView):
             return get_error_response('An employer ID is required')
         
         employer = EmployerView.get_employers(employer_id=employer_id)
-        csv_text = self.files['user_file'][0]
+        raw_file = self.files['user_file'][0]
+        csv_text = raw_file.read().decode('utf-8')
         with StringIO(csv_text) as csv_file:
             csv.bulk_load_users(csv_file, employer)
         return Response(status=status.HTTP_200_OK)
