@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import reduce
 from io import StringIO
 
-from django.db.models import Count, F, Prefetch, Q, Sum
+from django.db.models import Count, F, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -22,7 +22,7 @@ from jvapp.models import JobApplication, MessageThread, MessageThreadContext, So
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import ContentItem
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerReferralBonusRule, \
-    EmployerReferralRequest, EmployerAts, EmployerSubscription, JobDepartment, EmployerJob, \
+    EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
     EmployerFileTag, EmployerPage
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
