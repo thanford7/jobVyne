@@ -38,7 +38,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             if owner_id := self.query_params.get('owner_id'):
                 q_filter = Q(owner_id=owner_id)
             elif employer_id := self.query_params.get('employer_id'):
-                q_filter = Q(employer_id=employer_id, owner_id__isnull=True)
+                q_filter = Q(employer_id=employer_id, owner_id__isnull=True, name__isnull=False)
             else:
                 return Response('You must provide an ID, owner ID, or employer ID', status=status.HTTP_400_BAD_REQUEST)
             
@@ -159,7 +159,7 @@ class SocialLinkFilterView(JobVyneAPIView):
             link_filter.tags.set(normalized_link_tags)
         
         existing_filters = SocialLinkFilterView.get_user_existing_filters(
-            user, link_filter.owner_id, current_link_filter_id=link_filter.id
+            user, link_filter.owner_id, link_filter.employer_id, current_link_filter_id=link_filter.id
         )
         
         # Remove default flag from previous filters
@@ -186,11 +186,11 @@ class SocialLinkFilterView(JobVyneAPIView):
         return (existing_filter or link_filter), is_duplicate
     
     @staticmethod
-    def get_user_existing_filters(user, owner_id, current_link_filter_id=None):
+    def get_user_existing_filters(user, owner_id, employer_id, current_link_filter_id=None):
         return {
             f.get_unique_key(): f for f in
             SocialLinkFilterView.get_link_filters(
-                user, link_filter_filter=Q(owner_id=owner_id), is_use_permissions=False
+                user, link_filter_filter=Q(owner_id=owner_id) & Q(employer_id=employer_id), is_use_permissions=False
             ) if (f.id != current_link_filter_id or not current_link_filter_id)
         }
     

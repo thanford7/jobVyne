@@ -4,7 +4,6 @@ import tempfile
 
 from django.conf import settings
 from django.core.files import File
-from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
@@ -14,11 +13,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from sendgrid import EventWebhook
 
-from jvapp.apis.notification import MessageGroupView
 from jvapp.models import Message, MessageAttachment, MessageRecipient, MessageThread
 from jvapp.utils.datetime import get_datetime_from_unix
 from jvapp.utils.email import MESSAGE_ENVIRONMENT_KEY, MESSAGE_ID_KEY
-from jvapp.utils.gmail import DEFAULT_GMAIL_EMAIL, GmailAPIService
+from jvapp.utils.gmail import GmailAPIService
 
 logger = logging.getLogger(__name__)
 

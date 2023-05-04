@@ -247,7 +247,7 @@ export default {
     this.employer = this.employerStore.getEmployer(this.employerId)
     this.emailSubject = `Help us hire at ${this.employer.name}! Share your personal referral link`
     this.emailBody = `
-      <p>Hi {{first-name}},</p>
+      <p>Hi ${emailUtil.PLACEHOLDER_EMPLOYEE_FIRST_NAME.placeholder},</p>
       <p>
         We are using JobVyne to help hire for ${this.employer.name}. The link below is personalized
         specifically for you and allows anyone to click the link to view and apply for open jobs at

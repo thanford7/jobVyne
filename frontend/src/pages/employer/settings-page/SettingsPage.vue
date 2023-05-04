@@ -142,7 +142,7 @@
           </div>
         </q-tab-panel>
         <q-tab-panel name="integration">
-          <IntegrationSection :ats-data="employerData.ats_cfg" @update-employer="updateEmployerData()"/>
+          <IntegrationSection :employer-data="employerData" @update-employer="updateEmployerData()"/>
         </q-tab-panel>
         <q-tab-panel v-if="hasPaymentPermission" name="billing">
           <q-form ref="planForm" class="q-mb-md">

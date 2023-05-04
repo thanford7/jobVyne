@@ -1,6 +1,5 @@
 import json
 import re
-from enum import Enum
 
 import requests
 from django.conf import settings
@@ -247,7 +246,7 @@ class SocialPostView(JobVyneAPIView):
             post.link_filter.employer.employer_name
         )
         
-        job_link = f'{settings.BASE_URL}/jobs-link/{post.link_filter.id}/?platform={post.social_platform.name}'
+        job_link = post.link_filter.get_link_url(platform_name=post.social_platform.name)
         formatted_content = formatted_content.replace(
             ContentPlaceholders.JOB_LINK.value,
             job_link

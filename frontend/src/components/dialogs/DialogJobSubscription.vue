@@ -7,7 +7,28 @@
     <q-form ref="form">
       <div class="row q-gutter-y-md q-mt-sm">
         <div class="col-12">
-          <SelectJobDepartment v-model="formData.departments" :is-emit-id="true" :is-all="true"/>
+          <q-input
+            v-model="formData.job_title_regex"
+            filled label="Include job titles"
+          >
+            <template v-slot:after>
+              <CustomTooltip>
+                Use partial or full job titles. You can include multiple titles using a "|" separator
+              </CustomTooltip>
+            </template>
+          </q-input>
+        </div>
+        <div class="col-12">
+          <q-input
+            v-model="formData.exclude_job_title_regex"
+            filled label="Exclude job titles"
+          >
+            <template v-slot:after>
+              <CustomTooltip>
+                Use partial or full job titles. You can include multiple titles using a "|" separator
+              </CustomTooltip>
+            </template>
+          </q-input>
         </div>
         <div class="col-12">
           <SelectEmployer v-model="formData.employers" :is-multi="true"/>
@@ -34,7 +55,6 @@ import DialogBase from 'components/dialogs/DialogBase.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
-import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import { getAjaxFormData } from 'src/utils/requests.js'
@@ -45,7 +65,6 @@ export default {
   inheritAttrs: false,
   components: {
     DialogBase,
-    SelectJobDepartment,
     SelectEmployer,
     SelectJobCity,
     SelectJobState,
@@ -70,7 +89,7 @@ export default {
     this.formData = Object.assign({}, this.jobSubscription.filters)
 
     // Turn filter objects into flat IDs
-    const flattenFilterItems = ['departments', 'cities', 'states', 'countries', 'jobs', 'employers']
+    const flattenFilterItems = ['cities', 'states', 'countries', 'jobs', 'employers']
     flattenFilterItems.forEach((filterKey) => {
       this.formData[filterKey] = this.formData[filterKey].map((item) => item.id)
     })

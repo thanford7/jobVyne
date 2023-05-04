@@ -46,8 +46,9 @@ class Scraper:
     employer_name = None
     job_item_page_wait_sel = None
     
-    def __init__(self, playwright, browser):
+    def __init__(self, playwright, browser, skip_urls):
         self.job_page_count = 0
+        self.skipped_urls = []
         self.job_items = []
         self.queue = asyncio.Queue()
         self.playwright = playwright
@@ -56,6 +57,7 @@ class Scraper:
             'Referer': get_base_url(self.start_url),
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
         })
+        self.skip_urls = skip_urls
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.start_url)
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
@@ -210,6 +212,10 @@ class Scraper:
         for job_link in job_links:
             job_url = self.get_absolute_url(job_link)
             if not job_url:
+                continue
+            if job_url in self.skip_urls:
+                logger.info(f'URL {job_url} has been recently scraped; skipping')
+                self.skipped_urls.append(job_url)
                 continue
             await self.queue.put((job_url, meta_data))
     
@@ -646,7 +652,7 @@ class WorkdayScraper(Scraper):
         await self.close(page=page)
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
-        job_data = html.xpath('//div[@data-automation-id="jobPostingPage"]')
+        job_data = html.xpath('//div[@data-automation-id="job-posting-details"]')
         # Note workday only shows the first 5 locations. JS automation would be necessary
         # to click the button to show additional locations
         locations = [l.get().strip() for l in job_data.xpath('.//div[@data-automation-id="locations"]/dl/dd/text()')]
@@ -667,7 +673,7 @@ class WorkdayScraper(Scraper):
             else:
                 posted_date = None
         
-        job_title = self.strip_or_none(job_data.xpath('.//*[@data-automation-id="jobPostingHeader"]/text()').get())
+        job_title = self.strip_or_none(html.xpath('.//*[@data-automation-id="jobPostingHeader"]/text()').get())
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = html.xpath('//*[@data-automation-id="jobPostingDescription"]').get()
         description_compensation_data = self.parse_compensation_text(job_description)
@@ -779,11 +785,12 @@ class LeverScraper(Scraper):
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.start_url)
-        
+
+        job_links = set()
         for department_section in html_dom.xpath('//div[@class="postings-wrapper"]//div[@class="postings-group"]'):
             department = department_section.xpath('.//div[contains(@class, "posting-category-title")]/text()').get()
-            job_links = department_section.xpath('.//div[@class="posting"]//a/@href').getall()
-            await self.add_job_links_to_queue(job_links, meta_data={'job_department': department})
+            job_links.update(department_section.xpath('.//div[@class="posting"]//a/@href').getall())
+        await self.add_job_links_to_queue(list(job_links), meta_data={'job_department': department})
         
         await self.close()
     

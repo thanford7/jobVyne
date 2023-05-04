@@ -7,6 +7,7 @@ from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
+from slack_sdk import WebClient
 
 from jobVyne import settings
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
@@ -42,6 +43,7 @@ __all__ = (
 )
 
 from jvapp.utils.security import generate_user_token, get_uid_from_user
+from jvapp.utils.slack import raise_slack_exception_if_error
 
 BATCH_UPDATE_SIZE = 100
 
@@ -99,13 +101,14 @@ class EmployerView(JobVyneAPIView):
         employers = Employer.objects \
             .select_related('employer_size', 'default_bonus_currency') \
             .prefetch_related(
-            'subscription',
-            'employee',
-            'employee__employer_permission_group',
-            'employee__employer_permission_group__permission_group',
-            'employee__employer_permission_group__permission_group__permissions',
-            'ats_cfg'
-        ) \
+                'subscription',
+                'employee',
+                'employee__employer_permission_group',
+                'employee__employer_permission_group__permission_group',
+                'employee__employer_permission_group__permission_group__permissions',
+                'ats_cfg',
+                'slack_cfg'
+            ) \
             .filter(employer_filter) \
             .annotate(employee_count=Count('employee'))
         
@@ -122,11 +125,12 @@ class EmployerView(JobVyneAPIView):
 
 
 class EmployerAtsView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
     
     @atomic
     def post(self, request):
         if not (employer_id := self.data.get('employer_id')):
-            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
+            return get_error_response('An employer ID is required')
         
         ats = self.get_new_ats_cfg(self.user, employer_id, self.data['name'])
         self.update_ats(self.user, ats, self.data)
@@ -137,7 +141,7 @@ class EmployerAtsView(JobVyneAPIView):
     @atomic
     def put(self, request):
         if not (ats_id := self.data.get('id')):
-            return Response('An ATS ID is required', status=status.HTTP_400_BAD_REQUEST)
+            return get_error_response('An ATS ID is required')
         
         ats = EmployerAts.objects.get(id=ats_id)
         self.update_ats(self.user, ats, self.data)
@@ -202,6 +206,65 @@ class EmployerAtsView(JobVyneAPIView):
         permission_type = PermissionTypes.EDIT.value if ats.id else PermissionTypes.CREATE.value
         ats.jv_check_permission(permission_type, user)
         ats.save()
+        
+        
+class EmployerSlackView(JobVyneAPIView):
+    permission_classes = [IsAdminOrEmployerPermission]
+    
+    def put(self, request, slack_cfg_id):
+        if not (employer_id := self.data.get('employer_id')):
+            return get_error_response('An employer ID is required')
+        if not self.user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, employer_id):
+            return get_error_response('You do not have permission for this operation')
+        slack_cfg = EmployerSlack.objects.get(id=slack_cfg_id)
+        self.update_slack_cfg(self.user, slack_cfg, self.data)
+        
+        # Slack bot needs to be part of the channel to post to it
+        client = WebClient(token=slack_cfg.oauth_key)
+        if slack_cfg.jobs_post_channel:
+            resp = client.conversations_join(channel=slack_cfg.jobs_post_channel)
+            raise_slack_exception_if_error(resp)
+        if slack_cfg.referrals_post_channel:
+            resp = client.conversations_join(channel=slack_cfg.referrals_post_channel)
+            raise_slack_exception_if_error(resp)
+        
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Updated Slack configuration'
+        })
+    
+    def delete(self, request, slack_cfg_id):
+        try:
+            slack_cfg = EmployerSlack.objects.get(id=slack_cfg_id)
+        except EmployerSlack.DoesNotExist:
+            return get_error_response(f'No Slack configuration exists with ID = {slack_cfg_id}')
+        if not self.user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, slack_cfg.employer_id):
+            return get_error_response('You do not have permission for this operation')
+        slack_cfg.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+        slack_cfg.delete()
+        return Response(status=status.HTTP_200_OK, data={
+            SUCCESS_MESSAGE_KEY: 'Slack configuration deleted'
+        })
+        
+    @staticmethod
+    @atomic
+    def update_slack_cfg(user, slack_cfg, data):
+        set_object_attributes(slack_cfg, data, {
+            'is_enabled': None,
+            'jobs_post_channel': None,
+            'jobs_post_dow_bits': None,
+            'jobs_post_tod_minutes': None,
+            'jobs_post_max_jobs': None,
+            'referrals_post_channel': None
+        })
+        slack_cfg.jv_check_permission(PermissionTypes.EDIT.value, user)
+        slack_cfg.save()
+    
+    @staticmethod
+    def get_slack_cfg(employer_id):
+        slack_cfg = EmployerSlack.objects.filter(employer_id=employer_id)
+        if slack_cfg:
+            return slack_cfg[0]
+        return None
 
 
 class EmployerBillingView(JobVyneAPIView):
@@ -312,7 +375,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
             
             email_body = referral_request.email_body
             
-            job_link = f'{settings.BASE_URL}/jobs-link/{link_filter.id}/'
+            job_link = link_filter.get_link_url()
             email_body = email_body.replace(
                 ContentPlaceholders.JOB_LINK.value,
                 job_link
@@ -636,11 +699,11 @@ class EmployerJobView(JobVyneAPIView):
         jobs = EmployerJob.objects \
             .select_related('job_department', 'employer', 'referral_bonus_currency') \
             .prefetch_related(
-            'locations',
-            'locations__city',
-            'locations__state',
-            'locations__country'
-        ) \
+                'locations',
+                'locations__city',
+                'locations__state',
+                'locations__country'
+            ) \
             .filter(employer_job_filter) \
             .distinct() \
             .order_by(order_by, 'id')
@@ -830,7 +893,7 @@ class EmployerJobBonusView(JobVyneAPIView):
         jobs_to_update = []
         for job in jobs:
             job.referral_bonus = self.data['referral_bonus']
-            job.referral_bonus_currency_id = self.data['referral_bonus_currency']['name']
+            job.referral_bonus_currency_id = self.data['referral_bonus_currency']
             jobs_to_update.append(job)
         
         EmployerJob.objects.bulk_update(jobs_to_update, ['referral_bonus', 'referral_bonus_currency_id'],
@@ -1140,7 +1203,7 @@ class EmployerUserView(JobVyneAPIView):
         uid = get_uid_from_user(user)
         token = generate_user_token(user, 'email')
         reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
-        job_referral_url = f'{settings.BASE_URL}/jobs-link/{user_primary_referral_link.id}/'
+        job_referral_url = user_primary_referral_link.get_link_url()
         employer = user.employer
         send_django_email(
             'Welcome to JobVyne!',

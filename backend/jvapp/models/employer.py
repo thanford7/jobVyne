@@ -11,7 +11,8 @@ __all__ = (
     'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
-    'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement'
+    'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
+    'EmployerSlack'
 )
 
 
@@ -101,6 +102,30 @@ class EmployerSubscription(models.Model, JobVynePermissionsMixin):
             or (
                 user.employer_id == self.id
                 and user.has_employer_permission(PermissionName.MANAGE_BILLING_SETTINGS.value, user.employer_id)
+            )
+        )
+    
+    
+class EmployerSlack(models.Model, JobVynePermissionsMixin):
+    employer = models.ForeignKey('Employer', unique=True, on_delete=models.CASCADE, related_name='slack_cfg')
+    oauth_key = models.CharField(max_length=75, unique=True)
+    team_key = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    team_name = models.CharField(max_length=100, null=True, blank=True)
+    enterprise_key = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    enterprise_name = models.CharField(max_length=100, null=True, blank=True)
+    is_enabled = models.BooleanField(default=True)
+    jobs_post_channel = models.CharField(max_length=75, null=True, blank=True)
+    jobs_post_dow_bits = models.SmallIntegerField(null=True, blank=True)
+    jobs_post_tod_minutes = models.SmallIntegerField(null=True, blank=True)
+    jobs_post_max_jobs = models.SmallIntegerField(null=True, blank=True)
+    referrals_post_channel = models.CharField(max_length=75, null=True, blank=True)
+
+    def _jv_can_create(self, user):
+        return (
+            user.is_admin
+            or (
+                user.employer_id == self.employer_id
+                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
             )
         )
     
@@ -200,6 +225,31 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         location_ids.sort()
         return self.generate_job_key(self.job_title, tuple(location_ids))
     
+    def get_locations_text(self):
+        job_locations_text = ''
+        for idx, job_location in enumerate(self.locations.all()):
+            if idx == 0:
+                job_locations_text = job_location.text
+            if idx == 3:
+                job_locations_text += ', and more'
+                break
+            job_locations_text += f', {job_location.text}'
+        if not job_locations_text:
+            job_locations_text = 'Unknown'
+        
+        return job_locations_text
+    
+    def get_salary_text(self):
+        if not any((self.salary_floor, self.salary_ceiling)):
+            return 'Unknown'
+        salary_symbol = self.salary_currency.symbol if self.salary_currency else '$'
+        salary_text = f'{salary_symbol}{self.salary_floor}'
+        if self.salary_ceiling and (self.salary_floor != self.salary_ceiling):
+            salary_text += f' - {salary_symbol}{self.salary_ceiling}'
+        if self.salary_interval:
+            salary_text += f' per {self.salary_interval}'
+        return salary_text
+        
     @staticmethod
     def generate_job_key(job_title, location_ids: tuple):
         """Used to compare jobs that have not yet been saved to ones that have been saved.

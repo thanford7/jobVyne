@@ -14,14 +14,6 @@
         @update:model-value="$emit('update:model-value', $event)"
         mode="international"
         :preferredCountries="['us', 'ca', 'gb']"
-        :onlyCountries="[
-          'ar','at','au','be','bg','bo','br','bs','bz','ca','ch','cl','cn','co',
-          'cr','cu','de','dk','do','ec','ee','eg','er','es','fi','fr','gb','gr',
-          'gt','gu','hk','hn','hr','id','ie','il','in','is','it','jm','jp','kp',
-          'kr','lt','lu','lv','mx','ng','ni','nl','no','nz','pa','pe','ph','pl',
-          'pr','pt','py','qa','ro','rs','sa','se','sg','si','sv','th','tw','ua',
-          'us','uy','za'
-        ]"
         :inputOptions="{
           placeholder: label || 'Phone number',
           autofocus: isAutoFocus

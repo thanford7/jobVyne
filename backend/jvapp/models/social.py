@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
@@ -81,6 +82,13 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
             'job_ids': [j.id for j in self.jobs.all()],
             'remote_type_bit': self.remote_type_bit
         }
+    
+    def get_link_url(self, platform_name=None):
+        link = f'{settings.BASE_URL}/jobs-link/{self.id}/'
+        if platform_name:
+            link += f'?platform={platform_name}'
+        
+        return link
     
     
 class SocialLinkTag(models.Model, JobVynePermissionsMixin):

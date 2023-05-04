@@ -1,3 +1,4 @@
+@use '../quasar.variables' as *;
 
 .q-carousel {
   &.q-carousel--no-stretch {
@@ -31,6 +32,16 @@ a.q-btn.a-style {
   color: -webkit-link;
   text-decoration: underline;
   padding: 0;
+}
+
+.q-btn.no-hover {
+  .q-focus-helper {
+    display: none;
+  }
+
+  &:focus, &:hover {
+    background-color: $white;
+  }
 }
 
 .q-chip.ellipsis .q-chip__content {

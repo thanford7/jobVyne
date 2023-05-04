@@ -18,10 +18,28 @@
         </template>
         <template v-slot:body>
           <div class="col-md-6 col-12 q-pr-md-sm">
-            <SelectJobDepartment v-model="subscriptionFilter.departments" :is-emit-id="true" :is-all="true"/>
+            <q-input
+              v-model="subscriptionFilter.job_title_regex"
+              filled label="Include job titles"
+            >
+              <template v-slot:after>
+                <CustomTooltip>
+                  Use partial or full job titles. You can include multiple titles using a "|" separator
+                </CustomTooltip>
+              </template>
+            </q-input>
           </div>
           <div class="col-md-6 col-12 q-pl-md-sm">
-            <SelectEmployer v-model="subscriptionFilter.employers" :is-multi="true"/>
+            <q-input
+              v-model="subscriptionFilter.exclude_job_title_regex"
+              filled label="Exclude job titles"
+            >
+              <template v-slot:after>
+                <CustomTooltip>
+                  Use partial or full job titles. You can include multiple titles using a "|" separator
+                </CustomTooltip>
+              </template>
+            </q-input>
           </div>
           <div class="col-md-4 col-12 q-pr-md-sm">
             <SelectJobCity v-model="subscriptionFilter.cities" :is-emit-id="true" :is-all="true"/>
@@ -34,6 +52,9 @@
           </div>
           <div class="col-md-4 col-12 q-pr-md-sm">
             <SelectRemote v-model="subscriptionFilter.remote_type_bit"/>
+          </div>
+          <div class="col-md-8 col-12 q-pl-md-sm">
+            <SelectEmployer v-model="subscriptionFilter.employers" :is-multi="true"/>
           </div>
           <div class="col-12">
             <q-btn label="Save job subscription" color="primary" class="w-100" @click="saveJobSubscription"/>
@@ -82,33 +103,23 @@
             >
               <template v-if="col.name === 'filters'">
                 <q-chip
+                  v-if="props.row.filters.job_title_regex"
+                  dense size="13px"
+                >
+                  <b>Include: </b>&nbsp;{{ props.row.filters.job_title_regex }}
+                </q-chip>
+                <q-chip
+                  v-if="props.row.filters.exclude_job_title_regex"
+                  dense size="13px"
+                >
+                  <b>Exclude: </b>&nbsp;{{ props.row.filters.exclude_job_title_regex }}
+                </q-chip>
+                <q-chip
                   v-for="loc in locationUtil.getFormattedLocations(props.row.filters)"
                   dense :color="loc.color" text-color="white" size="13px"
                 >
                   {{ loc.name }}
                 </q-chip>
-                <template v-if="props.row.filters.departments?.length && props.row.filters.departments?.length > 2">
-                  <CustomTooltip :is_include_icon="false">
-                    <template v-slot:content>
-                      <q-chip dense color="grey-8" text-color="white" size="13px">
-                        Multiple departments
-                      </q-chip>
-                    </template>
-                    <ul>
-                      <li v-for="dept in props.row.filters.departments">
-                        {{ dept.name }}
-                      </li>
-                    </ul>
-                  </CustomTooltip>
-                </template>
-                <template v-else>
-                  <q-chip
-                    v-for="dept in props.row.filters.departments"
-                    dense color="grey-8" text-color="white" size="13px"
-                  >
-                    {{ dept.name }}
-                  </q-chip>
-                </template>
                 <template v-if="props.row.filters.jobs?.length && props.row.filters.jobs?.length > 2">
                   <CustomTooltip :is_include_icon="false">
                     <template v-slot:content>
@@ -189,7 +200,6 @@ import locationUtil from 'src/utils/location.js'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectJobCity from 'components/inputs/SelectJobCity.vue'
 import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
-import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
 import SelectJobState from 'components/inputs/SelectJobState.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
@@ -198,7 +208,8 @@ import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
 const subscriptionFilterTemplate = {
-  departments: [],
+  job_title_regex: null,
+  exclude_job_title_regex: null,
   cities: [],
   states: [],
   countries: [],
@@ -221,7 +232,6 @@ export default {
     SelectJobCountry,
     SelectJobState,
     SelectJobCity,
-    SelectJobDepartment,
     CollapsableCard
   },
   data () {

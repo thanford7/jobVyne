@@ -9,6 +9,7 @@ class OauthProviders(Enum):
     google = 'google-oauth2'
     facebook = 'facebook'
     linkedin = 'linkedin-oauth2'
+    slack = 'slack'
 
 OAUTH_CFGS = {
     OauthProviders.google.value: {
@@ -55,6 +56,22 @@ OAUTH_CFGS = {
             'redirect_uri': f'{settings.FRONTEND_URL}auth/linkedin-oauth2/callback',
         }
     },
+    OauthProviders.slack.value: {
+        'backend_key': 'SLACK',
+        'name': 'Slack',
+        'token_url': 'https://slack.com/api/oauth.v2.access',
+        'auth_url': 'https://slack.com/oauth/v2/authorize',
+        'auth_params': {
+            'client_id': settings.SLACK_CLIENT_ID,
+            'state': settings.AUTH_STATE,
+            'response_type': 'code',
+            'scope': ','.join([
+                'channels:join', 'channels:read', 'chat:write', 'commands', 'im:write',
+                'team:read', 'users.profile:read', 'users:read', 'users:read.email'
+            ]),
+            'redirect_uri': f'{settings.FRONTEND_URL}auth/slack/callback',
+        }
+    },
 }
 
 SOCIAL_AUTH_PREFIX = 'SOCIAL_AUTH_'
@@ -91,6 +108,14 @@ def get_payload(backend, code):
             'redirect_uri': redirect_uri,
         }
     elif backend == 'linkedin-oauth2':
+        payload = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'redirect_uri': redirect_uri,
+        }
+    elif backend == 'slack':
         payload = {
             'grant_type': 'authorization_code',
             'code': code,

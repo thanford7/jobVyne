@@ -19,6 +19,12 @@ def get_error_response(error_message):
     })
 
 
+def get_warning_response(warning_message):
+    return Response(status=status.HTTP_200_OK, data={
+        WARNING_MESSAGES_KEY: [warning_message]
+    })
+
+
 def get_files(request):
     if not request.data:
         return None

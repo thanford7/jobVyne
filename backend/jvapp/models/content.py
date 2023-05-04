@@ -2,7 +2,7 @@ from enum import Enum
 
 from django.core.validators import FileExtensionValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, UniqueConstraint
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO, AuditFields, JobVynePermissionsMixin
 
@@ -117,3 +117,34 @@ class SocialPostAudit(models.Model):
     
     class Meta:
         ordering = ('-posted_dt',)
+
+
+class JobPost(AuditFields):
+    """Keep track of which jobs have been posted to specific channels so they are only posted
+    once. Differs from SocialPost because here we are tracking individual jobs whereas a social
+    post includes a referral link which may show the same job multiple times
+    """
+    class PostChannel(Enum):
+        # Sent to professional orgs for candidates to apply to jobs
+        SLACK_JOB = 'slack-job'
+        # Sent to employees to ask them to refer for a specific job
+        SLACK_EMPLOYEE_REFERRAL = 'slack-employee-referral'
+    
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, null=True, blank=True, related_name='job_post')
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True, related_name='job_post')
+    job = models.ForeignKey('EmployerJob', on_delete=models.CASCADE, related_name='job_post')
+    channel = models.CharField(max_length=30)
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['employer', 'job', 'channel'],
+                condition=Q(user=None),
+                name='unique_employer_job_channel'
+            ),
+            UniqueConstraint(
+                fields=['user', 'job', 'channel'],
+                condition=Q(employer=None),
+                name='unique_user_job_channel'
+            ),
+        ]

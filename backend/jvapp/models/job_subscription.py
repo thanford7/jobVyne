@@ -10,7 +10,8 @@ __all__ = ('EmployerJobSubscription',)
 class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='job_subscription')
     is_approved = models.BooleanField(default=False)
-    filter_department = models.ManyToManyField('JobDepartment')
+    filter_job_title_regex = models.CharField(max_length=500, null=True, blank=True)
+    filter_exclude_job_title_regex = models.CharField(max_length=500, null=True, blank=True)
     filter_city = models.ManyToManyField('City')
     filter_state = models.ManyToManyField('State')
     filter_country = models.ManyToManyField('Country')
@@ -30,8 +31,10 @@ class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin)
     
     def get_job_filter(self):
         job_filter = Q()
-        if department_ids := [d.id for d in self.filter_department.all()]:
-            job_filter &= Q(job_department_id__in=department_ids)
+        if self.filter_job_title_regex:
+            job_filter &= Q(job_title__iregex=f'^.*({self.filter_job_title_regex}).*$')
+        if self.filter_exclude_job_title_regex:
+            job_filter &= ~Q(job_title__iregex=f'^.*({self.filter_exclude_job_title_regex}).*$')
         if city_ids := [c.id for c in self.filter_city.all()]:
             job_filter &= Q(locations__city_id__in=city_ids)
         if state_ids := [s.id for s in self.filter_state.all()]:
