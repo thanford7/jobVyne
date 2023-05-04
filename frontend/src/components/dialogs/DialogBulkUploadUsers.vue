@@ -9,6 +9,11 @@
       File must be a CSV and use the headers in the specification (below)
     </template>
     <q-form ref="form">
+      <SelectEmployer
+        v-if="isAdminMode"
+        v-model="employerId"
+        :is-multi="false" :is-required="true"
+      />
       <q-file
         ref="userUpload"
         filled bottom-slots clearable
@@ -52,6 +57,7 @@
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -60,10 +66,14 @@ export default {
   name: 'DialogBulkUploadUsers',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { CollapsableCard, DialogBase },
+  components: { SelectEmployer, CollapsableCard, DialogBase },
+  props: {
+    isAdminMode: Boolean
+  },
   data () {
     return {
       userFile: null,
+      employerId: null,
       fileUtil,
       FILE_TYPES,
       authStore: null
@@ -78,7 +88,7 @@ export default {
         'employer/user/upload/',
         getAjaxFormData({
           user_file: this.userFile,
-          employer_id: this.authStore.propUser.employer_id
+          employer_id: (this.isAdminMode) ? this.employerId : this.authStore.propUser.employer_id
         }, ['user_file']))
       this.$emit('ok')
     }

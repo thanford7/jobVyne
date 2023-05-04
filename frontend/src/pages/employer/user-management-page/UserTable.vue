@@ -536,7 +536,8 @@ export default {
     },
     openBulkUploadUserDialog () {
       return this.q.dialog({
-        component: DialogBulkUploadUsers
+        component: DialogBulkUploadUsers,
+        componentProps: { isAdminMode: this.isAdminMode }
       }).onOk(async () => {
         this.unselectUsers()
         await this.fetchUsers()

@@ -9,6 +9,8 @@
     option-value="id"
     option-label="name"
     label="Employer"
+    lazy-rules
+    :rules="rules"
   />
 </template>
 
@@ -19,7 +21,11 @@ export default {
   name: 'SelectEmployer',
   props: {
     isMulti: Boolean,
-    employers: [Array, null]
+    employers: [Array, null],
+    isRequired: {
+      type: Boolean,
+      default: false
+    }
   },
   data () {
     return {
@@ -29,6 +35,19 @@ export default {
     }
   },
   computed: {
+    rules () {
+      if (!this.isRequired) {
+        return []
+      } else if (this.isMulti) {
+        return [
+          (val) => (val && val.length) || 'The employer field is required'
+        ]
+      } else {
+        return [
+          (val) => val || 'The employer field is required'
+        ]
+      }
+    },
     filteredEmployers () {
       if (!this.isLoaded) {
         return
