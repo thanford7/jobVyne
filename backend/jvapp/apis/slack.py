@@ -165,7 +165,8 @@ class SlackJobsMessageView(SlackBaseView):
         jobs_message = SlackJobsMessageView.build_jobs_message(jobs, slack_cfg.employer)
         resp = client.chat_postMessage(
             channel=slack_cfg.jobs_post_channel,
-            blocks=json.dumps(jobs_message)
+            blocks=json.dumps(jobs_message),
+            unfurl_links=False
         )
         raise_slack_exception_if_error(resp)
         if not is_test:
@@ -330,7 +331,8 @@ class SlackReferralsMessageView(SlackBaseView):
             jobs_message = SlackReferralsMessageView.build_referral_message(job, slack_cfg)
             resp = client.chat_postMessage(
                 channel=slack_cfg.jobs_post_channel,
-                blocks=json.dumps(jobs_message)
+                blocks=json.dumps(jobs_message),
+                unfurl_links=False
             )
             raise_slack_exception_if_error(resp)
         
