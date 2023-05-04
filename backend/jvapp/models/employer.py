@@ -42,6 +42,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     color_accent = models.CharField(max_length=9, null=True, blank=True)
     
     # Bonus rules
+    days_after_hire_payout = models.SmallIntegerField(null=True, blank=True)
     default_bonus_amount = models.FloatField(null=True, blank=True)
     default_bonus_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, to_field='name', default='USD')
     

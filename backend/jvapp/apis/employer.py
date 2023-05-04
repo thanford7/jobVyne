@@ -914,6 +914,7 @@ class EmployerBonusDefaultView(JobVyneAPIView):
         set_object_attributes(employer, self.data, {
             'default_bonus_amount': None,
             'default_bonus_currency_id': AttributeCfg(form_name='default_bonus_currency'),
+            'days_after_hire_payout': None
         })
         employer.save()
         return Response(status=status.HTTP_200_OK, data={

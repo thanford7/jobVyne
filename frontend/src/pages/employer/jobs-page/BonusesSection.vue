@@ -5,7 +5,7 @@
       apply to a job, the highest ranked rule applies. You can adjust the rank of the rules by dragging and dropping
       a rule above or below other rules.
     </div>
-    <div class="col-12 col-md-5">
+    <div class="col-12 col-md-6 q-pr-md-sm">
       <MoneyInput
         label="Default bonus amount"
         v-model:money-value="employerBonusDefaults.default_bonus_amount"
@@ -19,6 +19,12 @@
           </CustomTooltip>
         </template>
       </MoneyInput>
+    </div>
+    <div class="col-12 col-md-6 q-pl-md-sm">
+      <InputDaysAfterHire
+        v-model.number="employerBonusDefaults.days_after_hire_payout"
+        @blur="saveBonusDefaults"
+      />
     </div>
     <div class="col-12">
       <q-btn
@@ -157,6 +163,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBonusRule, { loadDialogBonusRuleFn } from 'components/dialogs/dialog-bonus-rule/DialogBonusRule.vue'
 import DraggableItem from 'components/drag-drop/DraggableItem.vue'
 import DroppableItem from 'components/drag-drop/DroppableItem.vue'
+import InputDaysAfterHire from 'components/inputs/InputDaysAfterHire.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
@@ -169,7 +176,7 @@ import { useEmployerStore } from 'stores/employer-store.js'
 
 export default {
   name: 'BonusesSection',
-  components: { CustomTooltip, DraggableItem, DroppableItem, MoneyInput },
+  components: { InputDaysAfterHire, CustomTooltip, DraggableItem, DroppableItem, MoneyInput },
   data () {
     return {
       isLoaded: false,
@@ -194,7 +201,8 @@ export default {
       const employer = this.employerStore.getEmployer(this.user.employer_id)
       return {
         default_bonus_amount: employer.default_bonus_amount,
-        default_bonus_currency: employer.default_bonus_currency?.name
+        default_bonus_currency: employer.default_bonus_currency?.name,
+        days_after_hire_payout: employer.days_after_hire_payout
       }
     },
     showJobMatches (e, bonusRule) {

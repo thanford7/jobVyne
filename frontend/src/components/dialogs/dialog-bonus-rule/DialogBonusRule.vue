@@ -15,19 +15,9 @@
           />
         </div>
         <div class="col-12 col-md-6">
-          <q-input
+          <InputDaysAfterHire
             v-model.number="formData.days_after_hire_payout"
-            label="Days after hire payout"
-            type="number"
-            filled
-          >
-            <template v-slot:after>
-              <CustomTooltip>
-                The number of days required for a new hire to work after which time
-                the referring employee will be eligible to receive the referral bonus.
-              </CustomTooltip>
-            </template>
-          </q-input>
+          />
         </div>
       </div>
       <CriteriaSection :form-data="formData.inclusion_criteria" :is-inclusion="true"/>
@@ -143,6 +133,7 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import CriteriaSection from 'components/dialogs/dialog-bonus-rule/CriteriaSection.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import InputDaysAfterHire from 'components/inputs/InputDaysAfterHire.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
@@ -176,7 +167,7 @@ export default {
   name: 'DialogBonusRule',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { CustomTooltip, CriteriaSection, MoneyInput, DialogBase, SeparatorWithText },
+  components: { InputDaysAfterHire, CustomTooltip, CriteriaSection, MoneyInput, DialogBase, SeparatorWithText },
   props: {
     bonusRule: {
       type: Object,

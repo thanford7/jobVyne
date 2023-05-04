@@ -39,6 +39,7 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         'color_accent': employer.color_accent,
         'default_bonus_amount': employer.default_bonus_amount or 0,
         'default_bonus_currency': get_serialized_currency(employer.default_bonus_currency),
+        'days_after_hire_payout': employer.days_after_hire_payout
     }
     
     def get_permission_groups(employee):
