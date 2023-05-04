@@ -61,6 +61,7 @@ def bulk_load_users(csv_file, employer):
                 FieldDefinition(model_field='email', aliases=['emailaddress'], is_key=True, validate_fn=email_check),
                 FieldDefinition(model_field='first_name', aliases=['first']),
                 FieldDefinition(model_field='last_name', aliases=['last']),
+                FieldDefinition(model_field='phone_number', aliases=['phone']),
                 FieldDefinition(model_field='employer', default=employer),
                 FieldDefinition(model_field='user_type_bits', override=models.JobVyneUser.USER_TYPE_EMPLOYEE),
             ], instance_create_fn=models.JobVyneUser.objects.create_user)
@@ -112,8 +113,11 @@ def bulk_load_objects(csv_file, model, field_definitions, instance_create_fn=Non
     for row in data_rows:
         kwargs = {
             fd.model_field: fd.get_value(row, idx)
-            for idx, fd in enumerate(field_map + unmapped_fields)
+            for idx, fd in enumerate(field_map)
         }
+        # Go through all the unmapped fields because they might provide default or override values
+        for unmapped_field in unmapped_fields:
+            kwargs[unmapped_field.model_field] = unmapped_field.get_value([], 0)
         instance_create_fn(**kwargs)
 
 
