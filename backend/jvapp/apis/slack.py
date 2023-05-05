@@ -521,6 +521,10 @@ class SlackWebhookInboundView(SlackExternalBaseView):
 class SlackCommandSuggestView(SlackExternalBaseView):
     
     def post(self, request):
+        # Slack sends a test message periodically
+        if not request.headers['X-Slack-Request-Timestamp']:
+            logger.info(f'Slack test message sent to slash command URL: {request.data}')
+            return Response(status=status.HTTP_200_OK)
         if not self.is_valid_slack_request(request):
             return Response(status=status.HTTP_403_FORBIDDEN, data='Invalid request signature')
         employer_suggestion = request.data['text']
