@@ -3,6 +3,12 @@ import re
 from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, GreenhouseIframeScraper, GreenhouseScraper, \
     LeverScraper, \
     WorkdayScraper
+from scrape.custom_scraper.ebay import EbayScraper
+
+
+class AngiScraper(GreenhouseScraper):
+    employer_name = 'Angi'
+    start_url = 'https://boards.greenhouse.io/angi'
 
 
 class BenevityScraper(GreenhouseIframeScraper):
@@ -21,6 +27,11 @@ class CHGHealthcareScraper(WorkdayScraper):
     start_url = 'https://chghealthcare.wd1.myworkdayjobs.com/External'
     job_department_data_automation_id = 'jobFamily'
     job_department_form_data_automation_id = 'jobFamilyCheckboxGroup'
+    
+    
+class CircleScraper(GreenhouseScraper):
+    employer_name = 'Circle'
+    start_url = 'https://boards.greenhouse.io/circle'
     
     
 class ClipboardHealthScraper(GreenhouseScraper):
@@ -101,6 +112,12 @@ class LiveViewTechnologiesScraper(BambooHrScraper):
 class LucidSoftwareScraper(GreenhouseScraper):
     employer_name = 'Lucid Software'
     start_url = 'https://boards.greenhouse.io/lucidsoftware'
+    
+    
+class NiceScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'nice'
+    employer_name = 'Nice'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=nice'
 
 
 class NylasScraper(GreenhouseScraper):
@@ -196,11 +213,14 @@ class ZelisScraper(WorkdayScraper):
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 all_scrapers = {
+    AngiScraper.employer_name: AngiScraper,
     BenevityScraper.employer_name: BenevityScraper,
     CHGHealthcareScraper.employer_name: CHGHealthcareScraper,
+    CircleScraper.employer_name: CircleScraper,
     ClozdScraper.employer_name: ClozdScraper,
     ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
     DevotedHealthScraper.employer_name: DevotedHealthScraper,
+    EbayScraper.employer_name: EbayScraper,
     EntrataScraper.employer_name: EntrataScraper,
     EverCommerceScraper.employer_name: EverCommerceScraper,
     FICOScraper.employer_name: FICOScraper,
@@ -212,6 +232,7 @@ all_scrapers = {
     LaticreteInternationalScraper.employer_name: LaticreteInternationalScraper,
     LiveViewTechnologiesScraper.employer_name: LiveViewTechnologiesScraper,
     LucidSoftwareScraper.employer_name: LucidSoftwareScraper,
+    NiceScraper.employer_name: NiceScraper,
     NylasScraper.employer_name: NylasScraper,
     ProofpointScraper.employer_name: ProofpointScraper,
     RecursionScraper.employer_name: RecursionScraper,

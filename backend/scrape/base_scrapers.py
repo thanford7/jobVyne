@@ -104,6 +104,7 @@ class Scraper:
         logger.info(f'Attempting to visit: "{url}"')
         logger.info(f'Number of open pages: {len(self.browser.pages)}')
         page = None
+        e = None
         error_pages = []
         while retries < (max_retries + 1):
             page = await self.get_new_page()
@@ -211,7 +212,7 @@ class Scraper:
             job_links = [job_links]
         for job_link in job_links:
             job_url = self.get_absolute_url(job_link)
-            if not job_url:
+            if not all((job_url, self.is_english(job_url))):
                 continue
             if job_url in self.skip_urls:
                 logger.info(f'URL {job_url} has been recently scraped; skipping')
@@ -251,7 +252,16 @@ class Scraper:
         if is_relative_url:
             url = self.base_url + url
         url = re.sub('[,"\']', '', unquote(url))
+        url = re.sub('\s', '%A0', url)  # Make spaces in strings safe
         return url
+
+    def is_english(self, text):
+        try:
+            text.encode(encoding='utf-8').decode('ascii')
+        except UnicodeDecodeError:
+            return False
+        else:
+            return True
     
     def strip_or_none(self, val):
         if not val:
