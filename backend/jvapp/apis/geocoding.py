@@ -33,7 +33,7 @@ class LocationParser:
     BASE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
     
     def __init__(self):
-        self.location_lookups = {l.text: l.location for l in LocationLookup.objects.select_related('location').all()}
+        self.location_lookups = {l.text.lower(): l.location for l in LocationLookup.objects.select_related('location').all()}
 
     def get_raw_location(self, location_text):
         resp = requests.get(self.BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
@@ -41,12 +41,13 @@ class LocationParser:
         return self.parse_location_resp(raw_data)
 
     def get_location(self, location_text):
+        location_text = location_text.lower()
         if location := self.location_lookups.get(location_text):
             return location
 
-        is_remote = 'remote' in location_text.lower()
+        is_remote = 'remote' in location_text
         resp = requests.get(self.BASE_URL, params={
-            'address': location_text.lower().replace('remote', '').replace(':', '').strip(),
+            'address': location_text.replace('remote', '').replace(':', '').strip(),
             'key': settings.GOOGLE_MAPS_KEY
         })
         raw_data = json.loads(resp.content)
@@ -56,7 +57,7 @@ class LocationParser:
         country_name = data.get('country')
         if not any([city_name, state_name, country_name]):
             try:
-                location = Location.objects.get(text=location_text)
+                location = Location.objects.get(text__iexact=location_text)
             except Location.DoesNotExist:
                 location = Location(
                     text=location_text,
