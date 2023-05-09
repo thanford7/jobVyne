@@ -1,3 +1,5 @@
+import re
+
 from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, GreenhouseIframeScraper, GreenhouseScraper, \
     LeverScraper, \
     WorkdayScraper
@@ -34,6 +36,11 @@ class ClozdScraper(LeverScraper):
 class DevotedHealthScraper(WorkdayScraper):
     employer_name = 'Devoted Health'
     start_url = 'https://devoted.wd1.myworkdayjobs.com/Devoted'
+    
+    
+class EntrataScraper(LeverScraper):
+    employer_name = 'Entrata'
+    start_url = 'https://jobs.lever.co/entrata'
 
 
 class EverCommerceScraper(WorkdayScraper):
@@ -50,6 +57,11 @@ class HealthGorillaScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'healthgorilla'
     employer_name = 'Health Gorilla'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=healthgorilla&b=https%3A%2F%2Fwww.healthgorilla.com%2Fhome%2Fcompany%2Fcareers%2Fjob-openings'
+    
+    
+class HopperScraper(LeverScraper):
+    employer_name = 'Hopper'
+    start_url = 'https://jobs.lever.co/hopper'
 
 
 class InvenergyScraper(WorkdayScraper):
@@ -64,10 +76,21 @@ class InvenergyScraper(WorkdayScraper):
         await self.wait_for_el(page, 'div[data-automation-id="Department / Area-checkboxgroup"] label')
         
 
+class GalileoScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'galileo'
+    employer_name = 'Galileo'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=galileo'
+
+
 class GuildEducationScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'guild'
     employer_name = 'Guild Education'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=guild&b=https%3A%2F%2Fwww.guild.com%2Fopen-positions-at-guild'
+
+
+class LaticreteInternationalScraper(WorkdayScraper):
+    employer_name = 'LATICRETE International'
+    start_url = 'https://laticrete.wd1.myworkdayjobs.com/laticreteinternational'
 
 
 class LiveViewTechnologiesScraper(BambooHrScraper):
@@ -132,9 +155,24 @@ class VasionScraper(BambooHrScraper2):
     start_url = 'https://printerlogic.bamboohr.com/jobs/'
     
     
+class VeevaScraper(LeverScraper):
+    employer_name = 'Veeva'
+    start_url = 'https://jobs.lever.co/veeva/'
+    
+    def normalize_job_department(self, job_department):
+        job_department_parts = re.split('[-–]', job_department)
+        return job_department_parts[0].strip()
+    
+    
 class VerkadaScraper(LeverScraper):
     employer_name = 'Verkada'
     start_url = 'https://jobs.lever.co/verkada/'
+    
+    
+class VirtaHealthScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'virtahealth'
+    employer_name = 'Virta Health'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=virtahealth'
     
     
 class VivianHealthScraper(GreenhouseScraper):
@@ -158,21 +196,25 @@ class ZelisScraper(WorkdayScraper):
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 all_scrapers = {
-    BenevityScraper.employer_name: BenevityScraper,  # Potentially not working
-    RecursionScraper.employer_name: RecursionScraper,  # Potentially Not working
+    BenevityScraper.employer_name: BenevityScraper,
     CHGHealthcareScraper.employer_name: CHGHealthcareScraper,
     ClozdScraper.employer_name: ClozdScraper,
     ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
     DevotedHealthScraper.employer_name: DevotedHealthScraper,
+    EntrataScraper.employer_name: EntrataScraper,
     EverCommerceScraper.employer_name: EverCommerceScraper,
     FICOScraper.employer_name: FICOScraper,
-    InvenergyScraper.employer_name: InvenergyScraper,
-    HealthGorillaScraper.employer_name: HealthGorillaScraper,
+    GalileoScraper.employer_name: GalileoScraper,
     GuildEducationScraper.employer_name: GuildEducationScraper,
+    HealthGorillaScraper.employer_name: HealthGorillaScraper,
+    HopperScraper.employer_name: HopperScraper,
+    InvenergyScraper.employer_name: InvenergyScraper,
+    LaticreteInternationalScraper.employer_name: LaticreteInternationalScraper,
     LiveViewTechnologiesScraper.employer_name: LiveViewTechnologiesScraper,
     LucidSoftwareScraper.employer_name: LucidSoftwareScraper,
     NylasScraper.employer_name: NylasScraper,
     ProofpointScraper.employer_name: ProofpointScraper,
+    RecursionScraper.employer_name: RecursionScraper,
     RegrowScraper.employer_name: RegrowScraper,
     RoScraper.employer_name: RoScraper,
     TechcyteScraper.employer_name: TechcyteScraper,
@@ -180,7 +222,9 @@ all_scrapers = {
     TheMxGroupScraper.employer_name: TheMxGroupScraper,
     TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
     VasionScraper.employer_name: VasionScraper,
+    VeevaScraper.employer_name: VeevaScraper,
     VerkadaScraper.employer_name: VerkadaScraper,
+    VirtaHealthScraper.employer_name: VirtaHealthScraper,
     VivianHealthScraper.employer_name: VivianHealthScraper,
     WaystarScraper.employer_name: WaystarScraper,
     YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper,

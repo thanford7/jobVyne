@@ -539,11 +539,12 @@ class GreenhouseScraper(Scraper):
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         location = html.xpath('//div[@id="header"]//div[@class="location"]/text()').get()
-        if location is None:
-            logger.error('Unable to parse JobItem from document.')
-            return None
-        location = location.strip()
+        if location:
+            location = location.strip()
         standard_job_item = self.get_google_standard_job_item(html)
+        if not any((location, standard_job_item.locations)):
+            logger.info('Unable to parse JobItem from document. No location found.')
+            return None
         job_description = html.xpath('//div[@id="content"]').get()
         description_compensation_data = self.parse_compensation_text(job_description)
 
@@ -554,10 +555,10 @@ class GreenhouseScraper(Scraper):
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
-            job_title=html.xpath('//div[@id="header"]//h1/text()').get(),
-            locations=[location],
-            job_department=job_department,
-            job_description=job_description,
+            job_title=html.xpath('//div[@id="header"]//h1/text()').get() or standard_job_item.job_title,
+            locations=[location] if location else standard_job_item.locations,
+            job_department=job_department or standard_job_item.job_department,
+            job_description=job_description or standard_job_item.job_description,
             employment_type=standard_job_item.employment_type,
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
@@ -793,6 +794,10 @@ class LeverScraper(Scraper):
         await self.add_job_links_to_queue(list(job_links), meta_data={'job_department': department})
         
         await self.close()
+        
+    def normalize_job_department(self, job_department):
+        # Hook for child classes
+        return job_department
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         standard_job_item = self.get_google_standard_job_item(html)
@@ -818,7 +823,7 @@ class LeverScraper(Scraper):
             application_url=job_url,
             job_title=headline.xpath('//h2/text()').get(),
             locations=[location],
-            job_department=job_department,
+            job_department=self.normalize_job_department(job_department),
             job_description=description,
             employment_type=employment_type,
             first_posted_date=standard_job_item.first_posted_date,
