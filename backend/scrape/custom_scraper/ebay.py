@@ -12,20 +12,20 @@ class EbayScraper(Scraper):
     
     async def scrape_jobs(self):
         page = await self.get_starting_page()
-        
+        page_load_sel = '.phs-jobs-list-header'
         # Make sure page data has loaded
         try:
-            await self.wait_for_el(page, '.phs-jobs-list-header')
+            await self.wait_for_el(page, page_load_sel)
         except PlaywrightTimeoutError:
             page = await self.get_starting_page()
-            await self.wait_for_el(page, '.phs-jobs-list-header')
+            await self.wait_for_el(page, page_load_sel)
         
         page_count = 0
         next_button_selector = '.next-btn'
         while page_count == 0 or await page.locator(f'css={next_button_selector}').is_visible():
             if page_count != 0:
                 await page.locator(f'css={next_button_selector}').click()
-                await self.wait_for_el(page, self.job_item_page_wait_sel)
+                await self.wait_for_el(page, page_load_sel)
             html_dom = await self.get_page_html(page)
             await self.add_job_links_to_queue(html_dom.xpath('//li[@class="jobs-list-item"]//a/@href').getall())
             page_count += 1

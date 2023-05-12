@@ -2,6 +2,7 @@ import json
 
 import requests
 from django.conf import settings
+from django.db import IntegrityError
 
 from jvapp.models.location import City, Country, Location, LocationLookup, State
 
@@ -85,12 +86,16 @@ class LocationParser:
                     longitude=str(longitude)[:15] if longitude else None
                 )
                 location.save()
-            
-        LocationLookup(
-            text=location_text,
-            location=location,
-            raw_result=raw_data
-        ).save()
+        
+        try:
+            LocationLookup(
+                text=location_text,
+                location=location,
+                raw_result=raw_data
+            ).save()
+        except IntegrityError:
+            pass
+        
         self.location_lookups[location_text] = location
         return location
     
