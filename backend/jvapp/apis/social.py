@@ -1,3 +1,6 @@
+import math
+from collections import defaultdict
+
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
@@ -244,9 +247,11 @@ class SocialLinkFilterView(JobVyneAPIView):
 class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
+    EMPLOYERS_PER_PAGE = 20
+    
     def get(self, request, link_filter_id=None):
         from jvapp.apis.employer import EmployerJobApplicationRequirementView, EmployerView  # Avoid circular import
-        page_count = self.query_params.get('page_count', 1)
+        page_count = coerce_int(self.query_params.get('page_count', 1))
         employer_id = self.query_params.get('employer_id')
         if not any([link_filter_id, employer_id]):
             raise ValueError('A link filter ID or employer ID is required')
@@ -267,24 +272,36 @@ class SocialLinkJobsView(JobVyneAPIView):
         application_requirements = EmployerJobApplicationRequirementView.get_consolidated_application_requirements(
             EmployerJobApplicationRequirementView.get_application_requirements(employer_id=employer_id)
         )
-        total_jobs = self.get_jobs_from_filter(employer_id=employer_id, filter_values={}).count()
-        paged_jobs = Paginator(jobs, per_page=5)
-        employer = EmployerView.get_employers(employer_id=employer_id)
-        has_job_subscription = bool(EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id).count())
-        
-        serialized_jobs = []
-        for job in paged_jobs.get_page(page_count):
+        jobs_by_employer = {}
+        for job in jobs:
+            if not (employer_jobs := jobs_by_employer.get(job.employer_id)):
+                employer_jobs = {
+                    'employer_id': job.employer_id,
+                    'employer_name': job.employer.employer_name,
+                    'employer_logo': job.employer.logo.url if job.employer.logo else None,
+                    'is_use_job_url': job.employer.is_use_job_url,
+                    'jobs': defaultdict(list)
+                }
+                jobs_by_employer[job.employer_id] = employer_jobs
+
             serialized_job = get_serialized_employer_job(job)
             serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
                 job, application_requirements
             )
-            serialized_jobs.append(serialized_job)
+            employer_jobs['jobs'][job.job_title].append(serialized_job)
+            
+        jobs_by_employer = sorted(jobs_by_employer.values(), key=lambda x: x['employer_id'])
+        
+        total_jobs = self.get_jobs_from_filter(employer_id=employer_id, filter_values={}).count()
+        employer = EmployerView.get_employers(employer_id=employer_id)
+        has_job_subscription = bool(EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id).count())
+        start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
         
         return Response(status=status.HTTP_200_OK, data={
-            'total_page_count': paged_jobs.num_pages,
+            'total_page_count': math.ceil(len(jobs_by_employer) / self.EMPLOYERS_PER_PAGE),
             'total_employer_job_count': total_jobs,
             'has_job_subscription': has_job_subscription,
-            'jobs': serialized_jobs,
+            'jobs_by_employer': jobs_by_employer[start_employer_job_idx:start_employer_job_idx + self.EMPLOYERS_PER_PAGE],
             'employer': get_serialized_employer(employer),
             'owner_id': link_filter.owner_id if link_filter else None,
             'is_active_employee': link_filter.owner.is_active_employee if (link_filter and link_filter.owner) else True,

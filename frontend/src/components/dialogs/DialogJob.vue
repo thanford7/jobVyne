@@ -158,9 +158,7 @@ export default {
         )
       )
       data.open_date = dateTimeUtil.serializeDate(data.open_date, { isUTC: false })
-      if (data.close_date) {
-        data.close_date = dateTimeUtil.serializeDate(data.close_date, { isUTC: false })
-      }
+      data.close_date = (data.close_date) ? dateTimeUtil.serializeDate(data.close_date, { isUTC: false }) : null
       const method = (this.job) ? this.$api.put : this.$api.post
       await method('employer/job/', getAjaxFormData(data))
       this.$emit('ok')

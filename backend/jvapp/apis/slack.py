@@ -104,7 +104,7 @@ class SlackBaseView(JobVyneAPIView):
 
 class SlackJobsMessageView(SlackBaseView):
     # Jobs later than this will not be posted
-    JOB_LOOKBACK_DAYS = 14
+    JOB_LOOKBACK_DAYS = 60
     MAX_JOBS = 5
     DEFAULT_DOW_BITS = WEEKDAY_BITS
     DEFAULT_TIME_OF_DAY_MINUTES = 12 * 60
@@ -170,8 +170,21 @@ class SlackJobsMessageView(SlackBaseView):
         )
         raise_slack_exception_if_error(resp)
         if not is_test:
-            job_posts = []
+            """
+            Some employers create multiple posts for the same job with different locations
+            We don't want to blast all of these posts - just send one of them.
+            """
+            jobs_filter = None
             for job in jobs:
+                job_filter = Q(employer_id=job.employer_id, job_title=job.job_title)
+                if not jobs_filter:
+                    jobs_filter = job_filter
+                else:
+                    jobs_filter |= job_filter
+            posted_jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+
+            job_posts = []
+            for job in posted_jobs:
                 job_posts.append(
                     JobPost(
                         employer_id=slack_cfg.employer_id,
@@ -200,7 +213,10 @@ class SlackJobsMessageView(SlackBaseView):
         job_post_filter = Q(job_post__channel=JobPost.PostChannel.SLACK_JOB.value) & Q(job_post__employer_id=employer_id)
         jobs_filter &= ~job_post_filter
         
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+        # Make sure we only use one post for a given job title
+        # Some employers create a separate post for each location for a specific job
+        jobs = {(job.employer_id, job.job_title): job for job in EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)}
+        jobs = list(jobs.values())
 
         job_count = min(slack_cfg.jobs_post_max_jobs or SlackJobsMessageView.MAX_JOBS, SlackJobsMessageView.MAX_JOBS)
         return jobs[:job_count]

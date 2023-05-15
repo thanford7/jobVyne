@@ -231,10 +231,11 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         for idx, job_location in enumerate(self.locations.all()):
             if idx == 0:
                 job_locations_text = job_location.text
-            if idx == 3:
+            elif idx == 3:
                 job_locations_text += ', and more'
                 break
-            job_locations_text += f', {job_location.text}'
+            else:
+                job_locations_text += f', {job_location.text}'
         if not job_locations_text:
             job_locations_text = 'Unknown'
         

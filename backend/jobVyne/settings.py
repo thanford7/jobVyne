@@ -365,7 +365,7 @@ LOGGING = {
         },
         'sql': {
             'class': 'logging.StreamHandler',
-            # 'level': 'DEBUG',
+            # 'level': 'DEBUG',  # Uncomment to get Django SQL queries
             'formatter': 'msg_only',
             'filters': ['require_debug_true']
         },
