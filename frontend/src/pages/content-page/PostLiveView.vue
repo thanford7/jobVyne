@@ -68,7 +68,7 @@ export default {
       employerStore: null,
       socialStore: null,
       user: null,
-      jobs: [],
+      jobTitles: [],
       fileUtil
     }
   },
@@ -78,12 +78,6 @@ export default {
         return {}
       }
       return this.employerStore.getEmployer(this.user.employer_id)
-    },
-    jobTitles () {
-      const jobTitles = dataUtil.uniqArray(this.jobs.map((j) => j.job_title))
-      // TODO: Sort by post date
-      jobTitles.sort()
-      return jobTitles
     },
     formattedContent () {
       if (!this.content) {
@@ -127,11 +121,16 @@ export default {
   methods: {
     async setJobsFromLink () {
       if (!this.jobLink) {
-        this.jobs = []
+        this.jobTitles = []
         return
       }
       const resp = await this.$api.get(`social-link-jobs/${this.jobLink.id}`)
-      this.jobs = resp.data.jobs
+      const jobsByEmployer = resp.data.jobs_by_employer
+      this.jobTitles = jobsByEmployer.reduce((allJobs, employerJobs) => {
+        allJobs = [...allJobs, ...Object.keys(employerJobs.jobs)]
+        return allJobs
+      }, [])
+      this.jobTitles.sort()
     }
   },
   async mounted () {

@@ -14,7 +14,7 @@ __all__ = ('JobApplication', 'JobApplicationTemplate')
 class JobApplicationFields(AuditFields):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    # Can be blank when we are capturing an application that is occuring outside of JobVyne
+    # Can be blank when we are capturing an application that is occurring outside of JobVyne
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=25, null=True, blank=True)
     linkedin_url = models.CharField(max_length=200, null=True, blank=True)

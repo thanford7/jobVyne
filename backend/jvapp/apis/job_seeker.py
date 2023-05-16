@@ -30,8 +30,9 @@ __all__ = ('ApplicationView', 'ApplicationTemplateView')
 logger = logging.getLogger(__name__)
 
 APPLICATION_SAVE_CFG = {
-    'first_name': None,
-    'last_name': None,
+    # Users may have an empty string for first or last name
+    'first_name': AttributeCfg(is_empty_to_none=False),
+    'last_name': AttributeCfg(is_empty_to_none=False),
     'email': None,
     'phone_number': None,
     'linkedin_url': None,

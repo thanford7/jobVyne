@@ -26,7 +26,27 @@ class TestEmailView(APIView):
             django_context={
                 'is_exclude_final_message': True
             },
-            html_body_content='<p>This is a test email</p>',
+            html_body_content='''
+                <p>Julia Styles (jstyles@hooli.com) is owed a referral bonus of $2,000 for the following new hire.</p>
+                <p>
+                    <table class="bordered" width="100%" cellpadding="0" cellspacing="0" style="min-width:100%; border-collapse: collapse;">
+                        <tbody>
+                            <tr>
+                                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Hire name</td>
+                                <td style="border: 1px solid black; padding: 5px;">Dwayne Johnson</td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Hire date</td>
+                                <td style="border: 1px solid black; padding: 5px;">April 3, 2023</td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Job title</td>
+                                <td style="border: 1px solid black; padding: 5px;">Customer Success Manager</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </p>
+            ''',
             is_tracked=False,
             is_include_jobvyne_subject=False
         )
