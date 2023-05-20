@@ -29,7 +29,8 @@ class PinterestScraper(Scraper):
             if page_count != 0:
                 next_page_url = self.start_url + f'?pg={page_count + 1}'
                 logger.info(f'Going to next page: {next_page_url}')
-                await page.goto(next_page_url, referer=self.start_url, wait_until=self.PAGE_LOAD_WAIT_EVENT)
+                await self.close(page)
+                page = await self.visit_page_with_retry(next_page_url)
                 await self.wait_for_el(page, page_load_sel)
             html_dom = await self.get_page_html(page)
             await self.add_job_links_to_queue(html_dom.xpath('//div[has-class("job")]//a/@href').getall())
