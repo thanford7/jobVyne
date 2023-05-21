@@ -19,21 +19,31 @@ async def get_browser(playwright):
     browser = await playwright.chromium.launch(headless=True)
     browser_context = await browser.new_context()
     browser_context.set_default_timeout(JS_LOAD_WAIT_MS)
-    return browser_context
+    await browser_context.set_geolocation({'latitude': 34.02016, 'longitude': -118.44472})
+    await browser_context.set_extra_http_headers({
+        'Referer': 'https://www.google.com',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
+    
+    })
+    return browser, browser_context
 
         
 async def launch_scraper(scraper_class, skip_urls):
     # Scrape jobs from web pages
     async with async_playwright() as p:
-        browser = await get_browser(p)
-        scraper = scraper_class(p, browser, skip_urls)
+        browser, browser_context = await get_browser(p)
+        scraper = scraper_class(p, browser_context, skip_urls)
         try:
             async_scrapers = [scraper.scrape_jobs()]
             await asyncio.gather(*async_scrapers)
         except Exception:
             await scraper.close_connections()
             raise
-
+        await browser_context.close()
+        await browser.close()
     return scraper
     
     

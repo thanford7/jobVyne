@@ -33,7 +33,7 @@ class PinterestScraper(Scraper):
                 page = await self.visit_page_with_retry(next_page_url)
                 await self.wait_for_el(page, page_load_sel)
             html_dom = await self.get_page_html(page)
-            await self.add_job_links_to_queue(html_dom.xpath('//div[has-class("job")]//a/@href').getall())
+            await self.add_job_links_to_queue(html_dom.xpath('//div[has-class("job")]//div[has-class("jobTitle")]//a/@href').getall())
             page_count += 1
         
         await self.close(page=page)
