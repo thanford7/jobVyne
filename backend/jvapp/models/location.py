@@ -1,9 +1,12 @@
 from enum import IntEnum
 
 from django.db import models
+from django.contrib.gis.db import models as spatial_models
 
 
 __all__ = ('REMOTE_TYPES', 'Country', 'State', 'City', 'Location')
+
+from django.db.models import Lookup
 
 
 class REMOTE_TYPES(IntEnum):
@@ -30,8 +33,34 @@ class City(models.Model):
     
     def __str__(self):
         return self.name
-    
-    
+
+
+class SridGeometryField(spatial_models.GeometryField):
+    def get_db_prep_save(self, value, connection):
+        # MySQL 8 can use SRIDs but Django doesn't know. Hack to get around that.
+        connection.features.has_spatialrefsys_table = True
+        return super().get_db_prep_save(value, connection)
+
+
+class WithinMiles(Lookup):
+    lookup_name = 'within_miles'
+
+    def __init__(self, lhs, rhs):
+        rhs, self.miles = rhs
+        super().__init__(lhs, rhs)
+
+    def as_sql(self, compiler, connection):
+        lhs, lhs_params = self.process_lhs(compiler, connection)
+        rhs, rhs_params = self.process_rhs(compiler, connection)
+        params = lhs_params
+        point = rhs_params[0]
+        return (
+            "st_distance(%s, st_geomfromtext('%s', %s), 'statute mile') < %s" % (lhs, point.wkt, point.srid, self.miles),
+            params
+        )
+
+SridGeometryField.register_lookup(WithinMiles)
+
 class Location(models.Model):
     text = models.CharField(max_length=100, null=True, blank=True, unique=True)  # Raw text
     is_remote = models.BooleanField(null=True, blank=True)
@@ -40,6 +69,7 @@ class Location(models.Model):
     country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.SET_NULL)
     latitude = models.CharField(max_length=15, null=True, blank=True)
     longitude = models.CharField(max_length=15, null=True, blank=True)
+    geometry = SridGeometryField(null=True, srid=4326)
     
     class Meta:
         unique_together = ('is_remote', 'city', 'state', 'country')

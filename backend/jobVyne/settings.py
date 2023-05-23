@@ -209,7 +209,7 @@ WSGI_APPLICATION = 'jobVyne.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 db_config = {
-    'ENGINE': 'django.db.backends.mysql',
+    'ENGINE': 'django.contrib.gis.db.backends.mysql',
     'NAME': env('MYSQL_DATABASE', default='jobvyne'),
     'HOST': env('MYSQL_DATABASE_HOST', default='db'),
     'PORT': env('MYSQL_DATABASE_PORT', default=3306),

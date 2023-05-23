@@ -1,6 +1,7 @@
 import math
 from collections import defaultdict
 
+from django.contrib.gis.geos import Point
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
@@ -9,6 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
+from jvapp.apis.geocoding import LocationParser
 from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
 from jvapp.models import JobApplication, Message, PageView, REMOTE_TYPES
 from jvapp.models.abstract import PermissionTypes
@@ -309,15 +311,9 @@ class SocialLinkJobsView(JobVyneAPIView):
         })
     
     def get_filter_values_from_query_params(self):
-        filter_values = {}
-        if job_title := self.query_params.get('job_title'):
-            filter_values['job_title'] = job_title
-        if city_ids := self.query_params.getlist('city_ids[]'):
-            filter_values['city_ids'] = [int(city_id) for city_id in city_ids]
-        if state_ids := self.query_params.getlist('state_ids[]'):
-            filter_values['state_ids'] = [int(state_id) for state_id in state_ids]
-        if country_ids := self.query_params.getlist('country_ids[]'):
-            filter_values['country_ids'] = [int(country_id) for country_id in country_ids]
+        filter_values = {
+            k: v for k, v in self.query_params.items() if k in ('job_title', 'location')
+        }
         if department_ids := self.query_params.getlist('department_ids[]'):
             filter_values['department_ids'] = [int(department_id) for department_id in department_ids]
         if job_ids := self.query_params.getlist('job_ids[]'):
@@ -326,6 +322,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             filter_values['remote_type_bit'] = coerce_int(remote_type_bit)
         if minimum_salary := self.query_params.get('minimum_salary'):
             filter_values['minimum_salary'] = coerce_int(minimum_salary)
+        if range_miles := self.query_params.get('range_miles'):
+            filter_values['range_miles'] = int(range_miles)
         
         return filter_values
     
@@ -340,8 +338,9 @@ class SocialLinkJobsView(JobVyneAPIView):
     
     @staticmethod
     def get_filtered_jobs(
-        employer_id, department_ids=None, city_ids=None, state_ids=None, country_ids=None,
-        job_ids=None, job_title=None, remote_type_bit=None, minimum_salary=None
+        employer_id, department_ids=None, location=None,
+        job_ids=None, job_title=None, remote_type_bit=None, minimum_salary=None,
+        range_miles=None,
     ):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         
@@ -356,12 +355,6 @@ class SocialLinkJobsView(JobVyneAPIView):
         
         if department_ids:
             jobs_filter &= Q(job_department_id__in=department_ids)
-        if city_ids:
-            jobs_filter &= Q(locations__city_id__in=city_ids)
-        if state_ids:
-            jobs_filter &= Q(locations__state_id__in=state_ids)
-        if country_ids:
-            jobs_filter &= Q(locations__country_id__in=country_ids)
         if job_ids:
             jobs_filter &= Q(id__in=job_ids)
         if job_title:
@@ -374,6 +367,11 @@ class SocialLinkJobsView(JobVyneAPIView):
         if minimum_salary:
             # Some jobs have a salary floor but no ceiling so we check for both
             jobs_filter &= (Q(salary_ceiling__gte=minimum_salary) | Q(salary_floor__gte=minimum_salary))
+        if location and range_miles:
+            location_parser = LocationParser()
+            raw_location = location_parser.get_raw_location(location)
+            start_point = Point(raw_location['longitude'], raw_location['latitude'], srid=4326)
+            jobs_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
         
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
 

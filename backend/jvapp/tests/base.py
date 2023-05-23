@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import names
 from django.conf import settings
+from django.contrib.gis.geos import Point
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
@@ -47,13 +48,14 @@ class BaseTestCase(TestCase):
         )
         self.currency = Currency.objects.get(name='USD')
         self.job_departments = [self.create_job_department(name) for name in ['Software', 'Product', 'Marketing']]
-        self.cities = [self.create_city(name) for name in ['Boston', 'Denver', 'Miami']]
+        self.cities = [self.create_city(name) for name in ['Boston', 'Denver', 'Miami', 'Newton']]
         self.states = [self.create_state(name) for name in ['MA', 'CO', 'FL']]
         self.countries = list(Country.objects.all())
         self.locations = [self.create_location(*data) for data in [
-            ('Boston, MA, US', self.cities[0], self.states[0], self.countries[0]),
+            ('Boston, MA, US', self.cities[0], self.states[0], self.countries[0], Point(-71.0624, 42.3626, srid=4326)),
             ('Denver, CO, US', self.cities[1], self.states[1], self.countries[0]),
-            ('Miami, FL, US', self.cities[2], self.states[2], self.countries[0])
+            ('Miami, FL, US', self.cities[2], self.states[2], self.countries[0]),
+            ('Newton, MA, US', self.cities[3], self.states[0], self.countries[0], Point(-71.2096, 42.3359)),
         ]]
         self.jobs = [self.create_job(data[0], **data[1]) for data in [
             (
@@ -91,7 +93,16 @@ class BaseTestCase(TestCase):
                     'job_department': self.job_departments[1],
                     'open_date': timezone.now().date() - timedelta(days=40),
                 }
-            )
+            ),
+            (
+                [self.locations[3]],
+                {
+                    'employer': self.employer,
+                    'job_title': 'Graphic Designer',
+                    'job_department': self.job_departments[1],
+                    'open_date': timezone.now().date() - timedelta(days=40),
+                }
+            ),
         ]]
         self.social_link = self.create_social_link(owner=self.user_employee)
     
@@ -113,9 +124,10 @@ class BaseTestCase(TestCase):
         :return: HttpResponse
         """
         url = f'/{settings.API_PATH}{url}'
-        
+
+        resp = None
         if request_type == self.REQUEST_GET:
-            return self.client.get(url, data)
+            resp = self.client.get(url, data)
         else:
             processed_data = {'data': json.dumps(data)}
             if files:
@@ -127,9 +139,12 @@ class BaseTestCase(TestCase):
                 'content_type': MULTIPART_CONTENT
             }
             if request_type == self.REQUEST_POST:
-                return self.client.post(url, **kwargs)
+                resp = self.client.post(url, **kwargs)
             elif request_type == self.REQUEST_PUT:
-                return self.client.put(url, **kwargs)
+                resp = self.client.put(url, **kwargs)
+        if resp:
+            resp.data = json.loads(json.dumps(resp.data))
+        return resp
     
     def create_employer(self, name):
         employer = Employer(employer_name=name)
@@ -200,8 +215,8 @@ class BaseTestCase(TestCase):
         country.save()
         return country
     
-    def create_location(self, text, city, state, country):
-        location = Location(text=text, city=city, state=state, country=country)
+    def create_location(self, text, city, state, country, geometry=None):
+        location = Location(text=text, city=city, state=state, country=country, geometry=geometry)
         location.save()
         return location
     

@@ -76,9 +76,6 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     def get_filter_values(self):
         return {
             'department_ids': [d.id for d in self.departments.all()],
-            'city_ids': [c.id for c in self.cities.all()],
-            'state_ids': [s.id for s in self.states.all()],
-            'country_ids': [c.id for c in self.countries.all()],
             'job_ids': [j.id for j in self.jobs.all()],
             'remote_type_bit': self.remote_type_bit
         }
