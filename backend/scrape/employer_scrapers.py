@@ -1,6 +1,7 @@
 import re
 
-from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, GreenhouseIframeScraper, GreenhouseScraper, \
+from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, BreezyScraper, GreenhouseIframeScraper, \
+    GreenhouseScraper, \
     LeverScraper, \
     WorkdayScraper
 from scrape.custom_scraper.ebay import EbayScraper
@@ -351,6 +352,11 @@ class ElsevierScraper(WorkdayScraper):
 class OverjetScraper(GreenhouseScraper):
     employer_name = 'Overjet'
     start_url = 'https://boards.greenhouse.io/overjet'
+    
+    
+class TwoULaundry(BreezyScraper):
+    employer_name = '2ULaundry'
+    start_url = 'https://2ulaundry.breezy.hr/'
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
@@ -406,6 +412,7 @@ all_scrapers = {
     TendoScraper.employer_name: TendoScraper,
     TheMxGroupScraper.employer_name: TheMxGroupScraper,
     TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
+    TwoULaundry.employer_name: TwoULaundry,
     VasionScraper.employer_name: VasionScraper,
     VeevaScraper.employer_name: VeevaScraper,
     VerkadaScraper.employer_name: VerkadaScraper,
