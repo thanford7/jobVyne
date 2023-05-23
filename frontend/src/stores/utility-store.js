@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 
-const mobileBreakPoint = 768 // In px
-const isMobileFn = () => window.innerWidth < mobileBreakPoint
+const breakpointXS = 599
+const breakpointSM = 1023
+const breakpointMD = 1439
+const breakpointLG = 1919
 
 export const useUtilStore = defineStore('util', {
   state: () => ({
-    mobileBreakPoint,
-    isMobile: isMobileFn(),
+    windowWidth: window.innerWidth,
     elId: 0
   }),
 
@@ -15,8 +16,19 @@ export const useUtilStore = defineStore('util', {
       this.elId++
       return this.elId
     },
-    updateIsMobile () {
-      this.isMobile = isMobileFn()
+    setWindowWidth () {
+      this.windowWidth = window.innerWidth
+    },
+    isUnderBreakPoint (breakpointName) { // xs sm md lg xl
+      if (breakpointName === 'xl') {
+        return this.windowWidth <= breakpointLG
+      } else if (breakpointName === 'lg') {
+        return this.windowWidth <= breakpointMD
+      } else if (breakpointName === 'md') {
+        return this.windowWidth <= breakpointSM
+      } else if (breakpointName === 'sm') {
+        return this.windowWidth <= breakpointXS
+      }
     },
     redirectUrl (url, isNewTab = false) {
       if (isNewTab) {
@@ -29,4 +41,4 @@ export const useUtilStore = defineStore('util', {
 })
 
 const utilStore = useUtilStore()
-window.addEventListener('resize', () => utilStore.updateIsMobile())
+window.addEventListener('resize', () => utilStore.setWindowWidth())

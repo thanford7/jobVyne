@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from jvapp.models import UserEmployerPermissionGroup
 from jvapp.models.employer import *
 from jvapp.models.job_seeker import *
+from jvapp.models.karma import DonationOrganization
 from jvapp.models.location import *
 from jvapp.models.social import *
 
@@ -64,6 +65,7 @@ class SocialPlatformAdmin(admin.ModelAdmin):
     list_display = ('name', 'sort_order', 'is_displayed')
     ordering = ('sort_order',)
 
+
 @admin.register(SocialLinkFilter)
 class SocialLinkAdmin(admin.ModelAdmin):
     pass
@@ -72,3 +74,9 @@ class SocialLinkAdmin(admin.ModelAdmin):
 @admin.register(Country, State, City, Location)
 class LocationAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(DonationOrganization)
+class DonationOrganizationAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    ordering = ('name',)

@@ -8,7 +8,7 @@
             class="ellipsis" title="Multiple locations"
           >
             Multiple locations&nbsp;
-            <span v-if="utilStore.isMobile">(press to view)</span>
+            <span v-if="utilStore.isUnderBreakPoint('md')">(press to view)</span>
             <span v-else>(hover to view)</span>
           </q-chip>
         </template>

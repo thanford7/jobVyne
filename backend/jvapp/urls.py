@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from jvapp.apis import (
     admin, ats, auth, content, currency, data, email, employer, job_seeker, job, jobs, job_subscription,
-    message, notification, sales, slack, social, stripe, test, tracking, user
+    karma, message, notification, sales, slack, social, stripe, test, tracking, user
 )
 
 urlpatterns = [
@@ -61,6 +61,12 @@ urlpatterns = [
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/job-application-review/', user.UserJobApplicationReviewView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
+    
+    # Karma
+    path('karma/donation-organization/', karma.DonationOrganizationView.as_view()),
+    path('karma/user/', karma.UserView.as_view()),
+    path('karma/user-donation/', karma.UserDonationView.as_view()),
+    path('karma/user-donation-organization/', karma.UserDonationOrganizationView.as_view()),
     
     # Emails
     path('email/admin/', notification.MessageAdminView.as_view()),

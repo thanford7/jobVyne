@@ -265,7 +265,7 @@ const routes = [
 
   {
     path: '/:namespace(karma)',
-    component: () => import('layouts/BodyAndFooterLayout.vue'),
+    component: () => import('layouts/BodyLeftDrawerFooterLayout.vue'),
     children: [
       {
         path: 'connect-request/:requestId(\\d+)',
