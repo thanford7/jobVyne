@@ -21,7 +21,7 @@ def parse_compensation_text(text, salary_interval='year'):
     if not text:
         return {**compensation_data_template}
     text = sanitize_html(text)
-    compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9\.]+),?(?P<second_numbers>[0-9]+)?\s?(?P<thousand_marker>[kK])?'
+    compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+[0-9\.]*),?(?P<second_numbers>[0-9]+)?\s?(?P<thousand_marker>[kK])?'
     compensation_matches = list(re.finditer(compensation_pattern, text))
     currency_pattern = reduce(lambda full_pattern, currency: f'{full_pattern}{"|" if full_pattern else ""}{currency}', currencies, '')
     currency_match = re.search(f'({currency_pattern})\s', text)
