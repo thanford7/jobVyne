@@ -360,12 +360,14 @@ class TwoULaundryScraper(BreezyScraper):
     
     
 class ZocdocScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'zocdoc'
     employer_name = 'Zocdoc'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=zocdoc'
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 # EbayScraper.employer_name: EbayScraper,
+# PinterestScraper.employer_name: PinterestScraper,
 all_scrapers = {
     AngiScraper.employer_name: AngiScraper,
     AnthropicScraper.employer_name: AnthropicScraper,
@@ -405,7 +407,6 @@ all_scrapers = {
     NiceScraper.employer_name: NiceScraper,
     NylasScraper.employer_name: NylasScraper,
     PerpayScraper.employer_name: PerpayScraper,
-    PinterestScraper.employer_name: PinterestScraper,
     PlusgradeScraper.employer_name: PlusgradeScraper,
     ProofpointScraper.employer_name: ProofpointScraper,
     RecursionScraper.employer_name: RecursionScraper,
