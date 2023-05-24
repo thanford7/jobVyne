@@ -245,6 +245,7 @@ class Scraper:
             url = self.base_url + url
         url = re.sub('[,"\']', '', unquote(url))
         url = re.sub('\s', '%A0', url)  # Make spaces in strings safe
+        url = url.split('?')[0]
         return url
 
     def is_english(self, text):
