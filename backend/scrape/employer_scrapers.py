@@ -354,9 +354,14 @@ class OverjetScraper(GreenhouseScraper):
     start_url = 'https://boards.greenhouse.io/overjet'
     
     
-class TwoULaundry(BreezyScraper):
+class TwoULaundryScraper(BreezyScraper):
     employer_name = '2ULaundry'
     start_url = 'https://2ulaundry.breezy.hr/'
+    
+    
+class ZocdocScraper(GreenhouseIframeScraper):
+    employer_name = 'Zocdoc'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=zocdoc'
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
@@ -412,7 +417,7 @@ all_scrapers = {
     TendoScraper.employer_name: TendoScraper,
     TheMxGroupScraper.employer_name: TheMxGroupScraper,
     TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
-    TwoULaundry.employer_name: TwoULaundry,
+    TwoULaundryScraper.employer_name: TwoULaundryScraper,
     VasionScraper.employer_name: VasionScraper,
     VeevaScraper.employer_name: VeevaScraper,
     VerkadaScraper.employer_name: VerkadaScraper,
@@ -423,5 +428,6 @@ all_scrapers = {
     WealthsimpleScraper.employer_name: WealthsimpleScraper,
     WhoopScraper.employer_name: WhoopScraper,
     YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper,
-    ZelisScraper.employer_name: ZelisScraper
+    ZelisScraper.employer_name: ZelisScraper,
+    ZocdocScraper.employer_name: ZocdocScraper
 }

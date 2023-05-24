@@ -4,7 +4,6 @@ import logging
 import re
 import tempfile
 from datetime import timedelta
-from functools import reduce
 from json import JSONDecodeError
 from urllib.parse import unquote
 
@@ -34,6 +33,7 @@ class Scraper:
     DEFAULT_EMPLOYMENT_TYPE = 'Full Time'
     TEST_REDIRECT = True
     PAGE_LOAD_WAIT_EVENT = 'load'
+    IS_REMOVE_QUERY_PARAMS = True
     start_url = None
     employer_name = None
     job_item_page_wait_sel = None
@@ -245,7 +245,8 @@ class Scraper:
             url = self.base_url + url
         url = re.sub('[,"\']', '', unquote(url))
         url = re.sub('\s', '%A0', url)  # Make spaces in strings safe
-        url = url.split('?')[0]
+        if self.IS_REMOVE_QUERY_PARAMS:
+            url = url.split('?')[0]
         return url
 
     def is_english(self, text):
@@ -456,6 +457,7 @@ class BambooHrScraper2(Scraper):
 
 class GreenhouseScraper(Scraper):
     TEST_REDIRECT = False
+    IS_REMOVE_QUERY_PARAMS = False
     job_item_page_wait_sel = '#header'
     
     async def scrape_jobs(self):
