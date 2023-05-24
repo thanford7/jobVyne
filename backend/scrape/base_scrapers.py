@@ -4,7 +4,6 @@ import logging
 import re
 import tempfile
 from datetime import timedelta
-from functools import reduce
 from json import JSONDecodeError
 from urllib.parse import unquote
 
@@ -13,21 +12,13 @@ from django.utils import timezone
 from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 
-from jvapp.models.currency import currencies, currency_lookup
 from jvapp.utils.data import capitalize, coerce_float, get_base_url
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.file import get_file_storage_engine
-from jvapp.utils.sanitize import sanitize_html
+from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
-currency_characters = u'[$¢£¤¥֏؋৲৳৻૱௹฿៛\u20a0-\u20bd\ua838\ufdfc\ufe69\uff04\uffe0\uffe1\uffe5\uffe6]'
-compensation_data_template = {
-    'salary_currency': None,
-    'salary_floor': None,
-    'salary_ceiling': None,
-    'salary_interval': None
-}
 
 
 def normalize_url(url):
@@ -42,6 +33,7 @@ class Scraper:
     DEFAULT_EMPLOYMENT_TYPE = 'Full Time'
     TEST_REDIRECT = True
     PAGE_LOAD_WAIT_EVENT = 'load'
+    IS_REMOVE_QUERY_PARAMS = True
     start_url = None
     employer_name = None
     job_item_page_wait_sel = None
@@ -253,6 +245,8 @@ class Scraper:
             url = self.base_url + url
         url = re.sub('[,"\']', '', unquote(url))
         url = re.sub('\s', '%A0', url)  # Make spaces in strings safe
+        if self.IS_REMOVE_QUERY_PARAMS:
+            url = url.split('?')[0]
         return url
 
     def is_english(self, text):
@@ -342,63 +336,6 @@ class Scraper:
         
         return job_item
     
-    def parse_compensation_text(self, text):
-        if not text:
-            return {**compensation_data_template}
-        text = sanitize_html(text)
-        compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+),?(?P<second_numbers>[0-9]+)?\s?(?P<thousand_marker>[kK])?'
-        compensation_matches = list(re.finditer(compensation_pattern, text))
-        currency_pattern = reduce(lambda full_pattern, currency: f'{full_pattern}{"|" if full_pattern else ""}{currency}', currencies, '')
-        currency_match = re.search(f'({currency_pattern})\s', text)
-        first_match = False
-        compensation_data = {'salary_interval': 'year'}
-        for compensation_match in compensation_matches:
-            currency_symbol = compensation_match.group('currency') or ''
-            currency_symbol = currency_symbol.strip()
-            if not (currency_symbol or first_match):
-                continue
-            salary = self.get_salary_from_match(compensation_match)
-            # Some monetary matches may be for things like company valuations. Avoid using
-            # erroneous values for salary
-            if salary < 1000 or salary < 500000:
-                continue
-            if not first_match:
-                compensation_data['salary_floor'] = salary
-                if currency_match:
-                    compensation_data['salary_currency'] = currency_match.group(0).strip()
-                elif currency_symbol:
-                    compensation_data['salary_currency'] = currency_lookup.get(currency_symbol, None)
-                first_match = True
-            else:
-                compensation_data['salary_ceiling'] = salary
-                return compensation_data
-        
-        # If there is only a salary floor, it means there is not a range, only a single value
-        if salary_floor := compensation_data.get('salary_floor'):
-            compensation_data['salary_ceiling'] = salary_floor
-            return compensation_data
-        
-        return {**compensation_data_template}
-    
-    def get_salary_from_match(self, match):
-        salary = int(match.group('first_numbers') + (match.group('second_numbers') or ''))
-        if match.group('thousand_marker'):
-            salary *= 1000
-        return salary
-    
-    def merge_compensation_data(self, compensation_data_sets: list):
-        """Merge compensation data with preference for later data sets
-        """
-        compensation_data = {**compensation_data_template}
-        for data_set in compensation_data_sets:
-            for compensation_key in ('salary_currency', 'salary_floor', 'salary_ceiling', 'salary_interval'):
-                val = data_set.get(compensation_key)
-                if not val:
-                    continue
-                compensation_data[compensation_key] = val
-        
-        return compensation_data
-
 
 class BambooHrScraper(Scraper):
     """ There are two entirely different HTML structures on different BambooHR Sites
@@ -437,12 +374,12 @@ class BambooHrScraper(Scraper):
         
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = job_data.xpath('//div[contains(@class, "jss-e21")]').get()
-        description_compensation_data = self.parse_compensation_text(job_description)
+        description_compensation_data = parse_compensation_text(job_description)
         compensation_data = {}
         if compensation_text := job_detail_data.get('compensation'):
-            compensation_data = self.parse_compensation_text(compensation_text)
+            compensation_data = parse_compensation_text(compensation_text)
         
-        compensation_data = self.merge_compensation_data(
+        compensation_data = merge_compensation_data(
             [description_compensation_data, compensation_data, standard_job_item.get_compensation_dict()]
         )
         
@@ -496,12 +433,12 @@ class BambooHrScraper2(Scraper):
         
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = job_data.xpath('.//div[contains(@class, "js-jobs-description")]').get()
-        description_compensation_data = self.parse_compensation_text(job_description)
+        description_compensation_data = parse_compensation_text(job_description)
         compensation_data = {}
         if compensation_text := job_detail_data.get('compensation'):
-            compensation_data = self.parse_compensation_text(compensation_text)
+            compensation_data = parse_compensation_text(compensation_text)
 
-        compensation_data = self.merge_compensation_data(
+        compensation_data = merge_compensation_data(
             [description_compensation_data, compensation_data, standard_job_item.get_compensation_dict()]
         )
         
@@ -520,6 +457,7 @@ class BambooHrScraper2(Scraper):
 
 class GreenhouseScraper(Scraper):
     TEST_REDIRECT = False
+    IS_REMOVE_QUERY_PARAMS = False
     job_item_page_wait_sel = '#header'
     
     async def scrape_jobs(self):
@@ -556,9 +494,9 @@ class GreenhouseScraper(Scraper):
             logger.info('Unable to parse JobItem from document. No location found.')
             return None
         job_description = html.xpath('//div[@id="content"]').get()
-        description_compensation_data = self.parse_compensation_text(job_description)
+        description_compensation_data = parse_compensation_text(job_description)
 
-        compensation_data = self.merge_compensation_data(
+        compensation_data = merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
 
@@ -687,9 +625,9 @@ class WorkdayScraper(Scraper):
         job_title = self.strip_or_none(html.xpath('.//*[@data-automation-id="jobPostingHeader"]/text()').get())
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = html.xpath('//*[@data-automation-id="jobPostingDescription"]').get()
-        description_compensation_data = self.parse_compensation_text(job_description)
+        description_compensation_data = parse_compensation_text(job_description)
         
-        compensation_data = self.merge_compensation_data(
+        compensation_data = merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
         
@@ -797,11 +735,11 @@ class LeverScraper(Scraper):
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.start_url)
 
-        job_links = set()
         for department_section in html_dom.xpath('//div[@class="postings-wrapper"]//div[@class="postings-group"]'):
+            job_links = set()
             department = department_section.xpath('.//div[contains(@class, "posting-category-title")]/text()').get()
             job_links.update(department_section.xpath('.//div[@class="posting"]//a/@href').getall())
-        await self.add_job_links_to_queue(list(job_links), meta_data={'job_department': department})
+            await self.add_job_links_to_queue(list(job_links), meta_data={'job_department': department})
         
         await self.close()
         
@@ -822,9 +760,9 @@ class LeverScraper(Scraper):
         for section in description_sections:
             description += section
 
-        description_compensation_data = self.parse_compensation_text(description)
+        description_compensation_data = parse_compensation_text(description)
 
-        compensation_data = self.merge_compensation_data(
+        compensation_data = merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
         
@@ -834,6 +772,50 @@ class LeverScraper(Scraper):
             job_title=headline.xpath('//h2/text()').get(),
             locations=[location],
             job_department=self.normalize_job_department(job_department),
+            job_description=description,
+            employment_type=employment_type,
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
+
+
+class BreezyScraper(Scraper):
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html_from_url(self.start_url)
+        await self.add_job_links_to_queue(list(html_dom.xpath('//div[@class="positions-container"]//li[has-class("position")]//a/@href').getall()))
+        await self.close()
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        headline = html.xpath('//div[@class="banner"]')
+        location = headline.xpath('.//li[@class="location"]//text()').get().strip()
+        employment_type = headline.xpath('.//li[@class="type"]//text()').get()
+        if employment_type:
+            employment_type = employment_type.strip()
+            if employment_type == '%LABEL_POSITION_TYPE_PART_TIME%':
+                employment_type = 'Part-Time'
+            else:
+                employment_type = 'Full-Time'
+        compensation_data = {}
+        compensation_text = headline.xpath('.//li[@class="salary-range"]//text()').getall()
+        if compensation_text:
+            compensation_text = ''.join([ct.strip() for ct in compensation_text])
+            salary_interval = 'hour' if 'hr' in compensation_text else 'year'
+            compensation_data = parse_compensation_text(compensation_text, salary_interval=salary_interval)
+        description = html.xpath('//div[@class="description"]').get()
+        description_compensation_data = parse_compensation_text(description)
+        
+        compensation_data = merge_compensation_data(
+            [compensation_data, description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=headline.xpath('//h1/text()').get(),
+            locations=[location],
+            job_department=job_department,
             job_description=description,
             employment_type=employment_type,
             first_posted_date=standard_job_item.first_posted_date,

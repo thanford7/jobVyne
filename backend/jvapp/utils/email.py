@@ -164,7 +164,11 @@ def send_django_email(
     message.attach(logo)
     
     if employer and employer.logo:
-        employer_logo = MIMEImage(get_file_from_path(get_safe_file_path(employer.logo)))
+        file_path = get_safe_file_path(employer.logo)
+        subtype = None
+        if re.match('^.*\.(jpeg|jpg)$', file_path):
+            subtype = 'jpeg'
+        employer_logo = MIMEImage(get_file_from_path(file_path), _subtype=subtype)
         employer_logo.add_header('Content-ID', '<employer_logo>')
         message.attach(employer_logo)
         
