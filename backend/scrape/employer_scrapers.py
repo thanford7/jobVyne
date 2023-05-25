@@ -363,19 +363,45 @@ class ZocdocScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'zocdoc'
     employer_name = 'Zocdoc'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=zocdoc'
+    
+    
+class AvettaScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'avetta'
+    employer_name = 'Avetta'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=avetta'
+    
+    
+class KoalaHealthScraper(LeverScraper):
+    employer_name = 'Koala Health'
+    start_url = 'https://jobs.lever.co/koalahealth'
+    
+    
+class CambiaHealthSolutionsScraper(WorkdayScraper):
+    employer_name = 'Cambia Health Solutions'
+    start_url = 'https://cambiahealth.wd1.myworkdayjobs.com/External'
+    job_department_data_automation_id = 'Job_Category'
+    job_department_form_data_automation_id = 'Job_CategoryCheckboxGroup'
+    
+    
+class AffirmScraper(GreenhouseScraper):
+    employer_name = 'Affirm'
+    start_url = 'https://boards.greenhouse.io/affirm'
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 # EbayScraper.employer_name: EbayScraper,
 # PinterestScraper.employer_name: PinterestScraper,
 all_scrapers = {
+    AffirmScraper.employer_name: AffirmScraper,
     AngiScraper.employer_name: AngiScraper,
     AnthropicScraper.employer_name: AnthropicScraper,
     AtlassianScraper.employer_name: AtlassianScraper,
     AtomicScraper.employer_name: AtomicScraper,
     AttentiveScraper.employer_name: AttentiveScraper,
+    AvettaScraper.employer_name: AvettaScraper,
     BenevityScraper.employer_name: BenevityScraper,
     BrightwheelScraper.employer_name: BrightwheelScraper,
+    CambiaHealthSolutionsScraper.employer_name: CambiaHealthSolutionsScraper,
     CHGHealthcareScraper.employer_name: CHGHealthcareScraper,
     CircleScraper.employer_name: CircleScraper,
     ClozdScraper.employer_name: ClozdScraper,
@@ -394,6 +420,7 @@ all_scrapers = {
     InvenergyScraper.employer_name: InvenergyScraper,
     KandjiScraper.employer_name: KandjiScraper,
     KlarnaScraper.employer_name: KlarnaScraper,
+    KoalaHealthScraper.employer_name: KoalaHealthScraper,
     LaticreteInternationalScraper.employer_name: LaticreteInternationalScraper,
     LeanDataScraper.employer_name: LeanDataScraper,
     LinktreeScraper.employer_name: LinktreeScraper,
