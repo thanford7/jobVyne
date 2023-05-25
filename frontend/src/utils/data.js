@@ -25,7 +25,7 @@ class DataUtil {
       return null
     }
     let salaryRange = ''
-    if (salaryFloor && salaryCeiling) {
+    if (salaryFloor && salaryCeiling && salaryFloor !== salaryCeiling) {
       salaryRange = `${this.formatCurrency(salaryFloor)}-${this.formatCurrency(salaryCeiling)}`
     } else if (salaryFloor) {
       salaryRange = this.formatCurrency(salaryFloor)

@@ -264,6 +264,19 @@ const routes = [
   },
 
   {
+    path: '/:namespace(karma)',
+    component: () => import('layouts/BodyAndFooterLayout.vue'),
+    children: [
+      {
+        path: 'connect-request/:requestId(\\d+)',
+        name: 'connect-request',
+        meta: { isNoAuth: true, trackRoute: true },
+        component: () => import('pages/karma/connection-request-page/ConnectionRequestPage.vue')
+      }
+    ]
+  },
+
+  {
     path: '/error',
     name: 'error',
     meta: { isNoAuth: true },
