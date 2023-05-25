@@ -7,6 +7,7 @@ from django.utils import timezone
 from playwright.async_api import async_playwright
 
 from jvapp.models import Employer, EmployerJob
+from scrape.base_scrapers import REQUEST_HEADERS
 from scrape.employer_scrapers import all_scrapers
 from scrape.job_processor import JobProcessor
 
@@ -20,14 +21,7 @@ async def get_browser(playwright):
     browser_context = await browser.new_context()
     browser_context.set_default_timeout(JS_LOAD_WAIT_MS)
     await browser_context.set_geolocation({'latitude': 34.02016, 'longitude': -118.44472})
-    await browser_context.set_extra_http_headers({
-        'Referer': 'https://www.google.com',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
-    
-    })
+    await browser_context.set_extra_http_headers(REQUEST_HEADERS)
     return browser, browser_context
 
         
