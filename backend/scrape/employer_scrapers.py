@@ -389,8 +389,6 @@ class AffirmScraper(GreenhouseScraper):
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
-# EbayScraper.employer_name: EbayScraper,
-# PinterestScraper.employer_name: PinterestScraper,
 all_scrapers = {
     AffirmScraper.employer_name: AffirmScraper,
     AngiScraper.employer_name: AngiScraper,
@@ -408,6 +406,7 @@ all_scrapers = {
     ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
     CuldesacScraper.employer_name: CuldesacScraper,
     DevotedHealthScraper.employer_name: DevotedHealthScraper,
+    EbayScraper.employer_name: EbayScraper,
     ElsevierScraper.employer_name: ElsevierScraper,
     EntrataScraper.employer_name: EntrataScraper,
     EverCommerceScraper.employer_name: EverCommerceScraper,
@@ -434,6 +433,7 @@ all_scrapers = {
     NiceScraper.employer_name: NiceScraper,
     NylasScraper.employer_name: NylasScraper,
     PerpayScraper.employer_name: PerpayScraper,
+    PinterestScraper.employer_name: PinterestScraper,
     PlusgradeScraper.employer_name: PlusgradeScraper,
     ProofpointScraper.employer_name: ProofpointScraper,
     RecursionScraper.employer_name: RecursionScraper,
