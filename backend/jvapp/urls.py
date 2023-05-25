@@ -67,6 +67,7 @@ urlpatterns = [
     path('karma/user/', karma.UserView.as_view()),
     path('karma/user-donation/', karma.UserDonationView.as_view()),
     path('karma/user-donation-organization/', karma.UserDonationOrganizationView.as_view()),
+    path('karma/user-request/', karma.UserRequestView.as_view()),
     
     # Emails
     path('email/admin/', notification.MessageAdminView.as_view()),

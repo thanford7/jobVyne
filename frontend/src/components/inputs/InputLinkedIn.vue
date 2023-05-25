@@ -2,7 +2,7 @@
   <q-input
     filled
     :label="labelOverride || 'LinkedIn URL'"
-    hint="www.linkedin.com/in/{your profile id}"
+    hint="www.linkedin.com/in/{profile id}"
     lazy-rules
     :rules="[
       val => {

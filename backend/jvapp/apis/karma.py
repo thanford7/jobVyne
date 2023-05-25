@@ -7,8 +7,9 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response, get_warning_response
 from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.karma import DonationOrganization, UserDonation, UserDonationOrganization
-from jvapp.serializers.karma import get_serialized_donation_organization, get_serialized_user_donation
+from jvapp.models.karma import DonationOrganization, UserDonation, UserDonationOrganization, UserRequest
+from jvapp.serializers.karma import get_serialized_donation_organization, get_serialized_user_donation, \
+    get_serialized_user_request
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 
 
@@ -26,6 +27,15 @@ class DonationOrganizationView(JobVyneAPIView):
 
 class UserDonationOrganizationView(JobVyneAPIView):
     
+    def get(self, request):
+        if not (user_id := self.query_params.get('user_id')):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data='A user ID is required')
+        
+        user_donation_organizations = self.get_user_donation_organizations(self.user, user_id)
+        return Response(status=status.HTTP_200_OK, data=[
+            get_serialized_donation_organization(udo.donation_organization) for udo in user_donation_organizations
+        ])
+    
     def post(self, request):
         user_donation_organization = UserDonationOrganization(
             user=self.user,
@@ -38,6 +48,13 @@ class UserDonationOrganizationView(JobVyneAPIView):
             return get_warning_response('You have already added this organization')
         
         return get_success_response('Added donation organization')
+
+    @staticmethod
+    def get_user_donation_organizations(user, user_id):
+        user_donation_organizations = UserDonationOrganization.objects\
+            .select_related('donation_organization')\
+            .filter(user_id=user_id)
+        return UserDonationOrganization.jv_filter_perm(user, user_donation_organizations)
 
 
 class UserDonationView(JobVyneAPIView):
@@ -89,3 +106,56 @@ class UserView(JobVyneAPIView):
                 'donation__donation_amount_currency'
             )\
             .get(id=user_id)
+
+
+class UserRequestView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (user_id := self.query_params.get('user_id')):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data='A user ID is required')
+        
+        user_requests = self.get_user_requests(self.user, user_id)
+        return Response(status=status.HTTP_200_OK, data=[
+            get_serialized_user_request(ur) for ur in user_requests
+        ])
+    
+    def post(self, request):
+        if not (user_id := self.data.get('user_id')):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data='A user ID is required')
+        
+        request_type = self.data['request_type']
+        user_request = UserRequest(user_id=user_id, request_type=request_type)
+        self.update_user_request(self.user, user_request, self.data)
+        return get_success_response(f'Created new {request_type} request')
+        
+    def put(self, request):
+        if not (user_request_id := self.data.get('user_request_id')):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data='A user request ID is required')
+        
+        user_request = UserRequest.objects.get(id=user_request_id)
+        self.update_user_request(self.user, user_request, self.data)
+        return get_success_response('Updated request')
+    
+    @staticmethod
+    def get_user_requests(user, user_id):
+        user_requests = UserRequest.objects.filter(user_id=user_id)
+        return UserRequest.jv_filter_perm(user, user_requests)
+
+    @staticmethod
+    def update_user_request(user, user_request, data):
+        set_object_attributes(user_request, data, {
+            'connection_first_name': AttributeCfg(is_ignore_excluded=True),
+            'connection_last_name': AttributeCfg(is_ignore_excluded=True),
+            'connection_linkedin_url': AttributeCfg(is_ignore_excluded=True),
+            'connection_email': AttributeCfg(is_ignore_excluded=True),
+            'connection_phone_number': AttributeCfg(is_ignore_excluded=True),
+            'connector_first_name': AttributeCfg(is_ignore_excluded=True),
+            'connector_last_name': AttributeCfg(is_ignore_excluded=True),
+            'connector_email': AttributeCfg(is_ignore_excluded=True),
+            'connector_phone_number': AttributeCfg(is_ignore_excluded=True),
+        })
+        
+        permission_type = PermissionTypes.CREATE.value if user_request.id else PermissionTypes.EDIT.value
+        user_request.jv_check_permission(permission_type, user)
+        user_request.save()
+        

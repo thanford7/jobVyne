@@ -8,7 +8,7 @@
 import KarmaContainer from 'pages/karma/KarmaContainer.vue'
 
 export default {
-  name: 'ConnectionRequestPage',
+  name: 'IntroRequestPage',
   components: { KarmaContainer },
   data () {
     return {}

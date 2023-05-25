@@ -1,3 +1,4 @@
+import uuid
 from enum import Enum
 
 from django.core.validators import FileExtensionValidator
@@ -20,6 +21,13 @@ class UserDonationOrganization(models.Model, JobVynePermissionsMixin):
     
     class Meta:
         unique_together = ('user', 'donation_organization')
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+    
+        return query.filter(user_id=user.id)
         
     def _jv_can_create(self, user):
         return user.is_admin or user.id == self.id
@@ -38,6 +46,13 @@ class UserDonation(models.Model, JobVynePermissionsMixin):
     )
     is_verified = models.BooleanField(default=False)
     donation_reason = models.CharField(max_length=200, null=True, blank=True)
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+    
+        return query.filter(user_id=user.id)
     
     def _jv_can_create(self, user):
         return user.is_admin or user.id == self.id
@@ -46,8 +61,32 @@ class UserDonation(models.Model, JobVynePermissionsMixin):
 class UserRequest(AuditFields, JobVynePermissionsMixin):
     class RequestType(Enum):
         INTRODUCTION = 'introduction'
-    
+
+    # Make ID random so people can't randomly guess
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='request')
     request_type = models.CharField(max_length=25)  # RequestType
-    request_cfg = models.JSONField()
+
+    connection_first_name = models.CharField(max_length=150)
+    connection_last_name = models.CharField(max_length=150, null=True, blank=True)
+    connection_linkedin_url = models.CharField(max_length=200, null=True, blank=True)
+    connection_email = models.EmailField(null=True, blank=True)
+    connection_phone_number = models.CharField(max_length=25, null=True, blank=True)
+    
+    connector_first_name = models.CharField(max_length=150, null=True, blank=True)
+    connector_last_name = models.CharField(max_length=150, null=True, blank=True)
+    connector_email = models.EmailField(null=True, blank=True)
+    connector_phone_number = models.CharField(max_length=25, null=True, blank=True)
+    
+    request_data = models.JSONField(null=True, blank=True)
+
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+    
+        return query.filter(user_id=user.id)
+    
+    def _jv_can_create(self, user):
+        return user.is_admin or user.id == self.id
     

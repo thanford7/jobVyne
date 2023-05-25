@@ -268,7 +268,19 @@ const routes = [
     component: () => import('layouts/BodyLeftDrawerFooterLayout.vue'),
     children: [
       {
-        path: 'connect-request/:requestId(\\d+)',
+        path: 'home/',
+        name: 'karma-home',
+        meta: {},
+        component: () => import('pages/karma/home-page/HomePage.vue')
+      },
+      {
+        path: 'intro-request/:requestId',
+        name: 'intro-request',
+        meta: { isNoAuth: true, trackRoute: true },
+        component: () => import('pages/karma/intro-request-page/IntroRequestPage.vue')
+      },
+      {
+        path: 'connect-request/:requestId',
         name: 'connect-request',
         meta: { isNoAuth: true, trackRoute: true },
         component: () => import('pages/karma/connection-request-page/ConnectionRequestPage.vue')

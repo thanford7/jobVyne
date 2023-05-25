@@ -8,76 +8,57 @@
     <q-form ref="form">
       <div class="row">
         <div class="col-12">
-          <q-select
+          <SelectUserRequestType
             v-model="formData.request_type"
-            autofocus filled
-            :options="[
-              { label: 'Introduction', val: 'introduction' }
-            ]"
-            autocomplete="name"
-            option-value="val"
-            option-label="label"
-            label="Request type"
+          />
+        </div>
+        <div class="col-12 q-my-sm">
+          <span class="text-bold">
+            Connector
+          </span>
+          <CustomTooltip icon_size="22px">
+            This is the person that will be making the introduction
+          </CustomTooltip>
+        </div>
+        <div class="col-12">
+          <q-input
+            v-model="formData.connector_first_name"
+            label="First name" filled
+            lazy-rules
             :rules="[
-              (val) => val || 'Request type is required'
+              (val) => val && val.length || 'First name is required'
             ]"
           />
         </div>
         <div class="col-12">
           <q-input
-            v-model="formData.connector_first_name"
-            label="Connector first name" filled
-            lazy-rules
-            :rules="[
-              (val) => val && val.length || 'First name is required'
-            ]"
-          >
-            <template v-slot:after>
-              <CustomTooltip>
-                This is the person that will be making the introduction
-              </CustomTooltip>
-            </template>
-          </q-input>
-        </div>
-        <div class="col-12">
-          <q-input
             v-model="formData.connector_last_name"
-            label="Connector last name" filled
-          >
-            <template v-slot:after>
-              <CustomTooltip>
-                This is the person that will be making the introduction
-              </CustomTooltip>
-            </template>
-          </q-input>
+            label="Last name" filled
+          />
+        </div>
+        <div class="col-12 q-my-sm">
+          <span class="text-bold">
+            Connection
+          </span>
+          <CustomTooltip icon_size="22px">
+            This is the person you want to be introduced to
+          </CustomTooltip>
         </div>
         <div class="col-12">
           <q-input
             v-model="formData.connection_first_name"
-            label="Connection first name" filled
+            label="First name" filled
             lazy-rules
             :rules="[
               (val) => val && val.length || 'First name is required'
             ]"
-          >
-            <template v-slot:after>
-              <CustomTooltip>
-                This is the person you want to be introduced to
-              </CustomTooltip>
-            </template>
-          </q-input>
+          />
         </div>
-        <div class="col-12">
+        <div class="col-12 q-mb-sm">
           <q-input
             v-model="formData.connection_last_name"
-            label="Connection last name" filled
-          >
-            <template v-slot:after>
-              <CustomTooltip>
-                This is the person you want to be introduced to
-              </CustomTooltip>
-            </template>
-          </q-input>
+            label="Last name" filled
+          />
         </div>
         <div class="col-12">
           <InputLinkedIn
@@ -92,15 +73,24 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import SelectUserRequestType from 'components/inputs/SelectUserRequestType.vue'
+import dataUtil from 'src/utils/data.js'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import InputLinkedIn from 'components/inputs/InputLinkedIn.vue'
+import { getAjaxFormData } from 'src/utils/requests.js'
+import { useAuthStore } from 'stores/auth-store.js'
 
 export default {
   name: 'DialogUserRequest',
-  components: { InputLinkedIn, CustomTooltip, DialogBase },
+  components: { SelectUserRequestType, InputLinkedIn, CustomTooltip, DialogBase },
+  props: {
+    userRequest: [Object, null]
+  },
   data () {
     return {
-      formData: {}
+      formData: {},
+      user: null,
+      dataUtil
     }
   },
   methods: {
@@ -108,8 +98,17 @@ export default {
       return await this.$refs.form.validate()
     },
     async saveRequest () {
-      //
+      const method = (this.userRequest?.id) ? this.$api.put : this.$api.post
+      await method('karma/user-request/', getAjaxFormData(Object.assign(
+        { user_id: this.user.id },
+        this.formData
+      )))
+      this.$emit('ok')
     }
+  },
+  mounted () {
+    const authStore = useAuthStore()
+    this.user = authStore.propUser
   }
 }
 </script>
