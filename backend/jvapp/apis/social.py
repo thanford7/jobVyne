@@ -1,8 +1,8 @@
+import json
 import math
 from collections import defaultdict
 
 from django.contrib.gis.geos import Point
-from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
 from rest_framework import status
@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
-from jvapp.apis.geocoding import LocationParser
+from jvapp.apis.geocoding import get_raw_location
 from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
 from jvapp.models import JobApplication, Message, PageView, REMOTE_TYPES
 from jvapp.models.abstract import PermissionTypes
@@ -229,10 +229,7 @@ class SocialLinkFilterView(JobVyneAPIView):
         
         links = SocialLinkFilter.objects \
             .select_related('employer', 'owner') \
-            .prefetch_related(
-                'departments', 'cities', 'states', 'countries', 'jobs', 'tags',
-                app_prefetch, page_view_prefetch
-            ) \
+            .prefetch_related('jobs', 'tags', app_prefetch, page_view_prefetch) \
             .filter(link_filter_filter)
         
         if is_use_permissions:
@@ -312,10 +309,11 @@ class SocialLinkJobsView(JobVyneAPIView):
     
     def get_filter_values_from_query_params(self):
         filter_values = {
-            k: v for k, v in self.query_params.items() if k in ('job_title', 'location')
+            k: v for k, v in self.query_params.items() if k in ('job_title',)
         }
-        if department_ids := self.query_params.getlist('department_ids[]'):
-            filter_values['department_ids'] = [int(department_id) for department_id in department_ids]
+        
+        if location := self.query_params.get('location'):
+            filter_values['location'] = json.loads(location)
         if job_ids := self.query_params.getlist('job_ids[]'):
             filter_values['job_ids'] = [int(job_id) for job_id in job_ids]
         if remote_type_bit := self.query_params.get('remote_type_bit'):
@@ -338,8 +336,8 @@ class SocialLinkJobsView(JobVyneAPIView):
     
     @staticmethod
     def get_filtered_jobs(
-        employer_id, department_ids=None, location=None,
-        job_ids=None, job_title=None, remote_type_bit=None, minimum_salary=None,
+        employer_id, location=None,
+        job_ids=None, search_regex=None, remote_type_bit=None, minimum_salary=None,
         range_miles=None,
     ):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
@@ -353,12 +351,10 @@ class SocialLinkJobsView(JobVyneAPIView):
         else:
             jobs_filter = Q(employer_id=employer_id)
         
-        if department_ids:
-            jobs_filter &= Q(job_department_id__in=department_ids)
         if job_ids:
             jobs_filter &= Q(id__in=job_ids)
-        if job_title:
-            jobs_filter &= Q(job_title__iregex=f'^.*{job_title}.*$')
+        if search_regex:
+            jobs_filter &= (Q(job_title__iregex=f'^.*{search_regex}.*$') | Q(employer__employer_name__iregex=f'^.*{search_regex}.*$'))
         if remote_type_bit:
             if remote_type_bit == REMOTE_TYPES.YES:
                 jobs_filter &= Q(locations__is_remote=True)
@@ -368,9 +364,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             # Some jobs have a salary floor but no ceiling so we check for both
             jobs_filter &= (Q(salary_ceiling__gte=minimum_salary) | Q(salary_floor__gte=minimum_salary))
         if location and range_miles:
-            location_parser = LocationParser()
-            raw_location = location_parser.get_raw_location(location)
-            start_point = Point(raw_location['longitude'], raw_location['latitude'], srid=4326)
+            start_point = Point(location['longitude'], location['latitude'], srid=4326)
             jobs_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
         
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)

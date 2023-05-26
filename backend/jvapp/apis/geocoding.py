@@ -3,7 +3,10 @@ import json
 import requests
 from django.conf import settings
 from django.db import IntegrityError
+from rest_framework import status
+from rest_framework.response import Response
 
+from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.models.location import City, Country, Location, LocationLookup, State
 
 
@@ -30,16 +33,56 @@ def get_or_create_country(country_name):
     return _get_or_create_obj(Country, country_name)
 
 
+BASE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
+
+
+def get_raw_location(location_text, is_best_result=True):
+    resp = requests.get(BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
+    raw_data = json.loads(resp.content)
+    return parse_location_resp(raw_data, is_best_result=is_best_result)
+
+
+def parse_location_resp(raw_data, is_best_result=True):
+    results = raw_data.get('results')
+    if (not results) or (not results[0]):
+        return None
+    if is_best_result:
+        results = results[:1]
+
+    parsed_results = []
+    for result in results:
+        address = result['address_components']
+        location_data = {
+            'formatted_address': result['formatted_address']
+        }
+        for component in address:
+            val = component['long_name']
+            short_val = component['short_name']
+            comp_types = component['types']
+            if 'locality' in comp_types:
+                location_data['city'] = val
+            elif 'administrative_area_level_1' in comp_types:
+                location_data['state'] = val
+            elif 'country' in comp_types:
+                location_data['country'] = val
+                location_data['country_short'] = short_val
+            elif 'postal_code' in comp_types:
+                location_data['postal_code'] = val
+        lat_long = result['geometry']['location']
+        location_data['latitude'] = lat_long['lat']
+        location_data['longitude'] = lat_long['lng']
+        parsed_results.append(location_data)
+
+    if is_best_result:
+        return parsed_results[0]
+
+    return parsed_results
+
+
 class LocationParser:
-    BASE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
     
     def __init__(self):
         self.location_lookups = {l.text.lower(): l.location for l in LocationLookup.objects.select_related('location').all()}
-
-    def get_raw_location(self, location_text):
-        resp = requests.get(self.BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
-        raw_data = json.loads(resp.content)
-        return self.parse_location_resp(raw_data)
 
     def get_location(self, location_text):
         location_text = location_text.lower()
@@ -47,12 +90,12 @@ class LocationParser:
             return location
 
         is_remote = 'remote' in location_text
-        resp = requests.get(self.BASE_URL, params={
+        resp = requests.get(BASE_URL, params={
             'address': location_text.replace('remote', '').replace(':', '').strip(),
             'key': settings.GOOGLE_MAPS_KEY
         })
         raw_data = json.loads(resp.content)
-        data = self.parse_location_resp(raw_data) or {}
+        data = parse_location_resp(raw_data) or {}
         city_name = data.get('city')
         state_name = data.get('state')
         country_name = data.get('country')
@@ -99,29 +142,13 @@ class LocationParser:
         self.location_lookups[location_text] = location
         return location
     
-    def parse_location_resp(self, raw_data):
-        if not raw_data.get('results'):
-            return None
-        best_address = raw_data['results'][0] if raw_data['results'] else None
-        if not best_address:
-            return None
-        address = best_address['address_components']
-        location_data = {}
-        for component in address:
-            val = component['long_name']
-            short_val = component['short_name']
-            comp_types = component['types']
-            if 'locality' in comp_types:
-                location_data['city'] = val
-            elif 'administrative_area_level_1' in comp_types:
-                location_data['state'] = val
-            elif 'country' in comp_types:
-                location_data['country'] = val
-                location_data['country_short'] = short_val
-            elif 'postal_code' in comp_types:
-                location_data['postal_code'] = val
-        lat_long = best_address['geometry']['location']
-        location_data['latitude'] = lat_long['lat']
-        location_data['longitude'] = lat_long['lng']
-        return location_data
+    
+class LocationSearchView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (search_text := self.query_params.get('search_text')):
+            return Response(status=status.HTTP_200_OK, data=[])
+        
+        locations = get_raw_location(search_text, is_best_result=False) or []
+        return Response(status=status.HTTP_200_OK, data=locations)
     

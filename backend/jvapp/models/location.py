@@ -61,6 +61,7 @@ class WithinMiles(Lookup):
 
 SridGeometryField.register_lookup(WithinMiles)
 
+
 class Location(models.Model):
     text = models.CharField(max_length=100, null=True, blank=True, unique=True)  # Raw text
     is_remote = models.BooleanField(null=True, blank=True)

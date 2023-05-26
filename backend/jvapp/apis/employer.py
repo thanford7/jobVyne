@@ -11,7 +11,7 @@ from slack_sdk import WebClient
 
 from jobVyne import settings
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
-from jvapp.apis.geocoding import LocationParser
+from jvapp.apis.geocoding import LocationParser, get_raw_location
 from jvapp.apis.job import LocationView
 from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
 from jvapp.apis.notification import MessageGroupView
@@ -286,8 +286,7 @@ class EmployerBillingView(JobVyneAPIView):
         
         # Street address isn't important to normalize. We are just using the address to determine taxes
         location_text = f'{self.data["city"]}, {self.data["state"]}, {self.data["country"]} {self.data.get("postal_code")}'
-        location_parser = LocationParser()
-        raw_location = location_parser.get_raw_location(location_text)
+        raw_location = get_raw_location(location_text)
         if not raw_location:
             raise ValueError(f'Could not locate address for {location_text}')
         employer.street_address = self.data.get('street_address')
