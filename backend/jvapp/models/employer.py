@@ -295,11 +295,6 @@ class EmployerReferralRequest(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='referral_request')
     email_subject = models.CharField(max_length=255)
     email_body = models.TextField()
-    departments = models.ManyToManyField('JobDepartment')
-    cities = models.ManyToManyField('City')
-    states = models.ManyToManyField('State')
-    countries = models.ManyToManyField('Country')
-    jobs = models.ManyToManyField('EmployerJob')
 
     @classmethod
     def _jv_filter_perm_query(cls, user, query):

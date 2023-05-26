@@ -120,12 +120,6 @@ const routes = [
         component: () => import('pages/employee/DashboardPage.vue')
       },
       {
-        path: ':key(employee-links)',
-        name: 'employee-links',
-        meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/ReferralLinksPage.vue')
-      },
-      {
         path: ':key(employee-jobs)',
         name: 'employee-jobs',
         meta: { userTypeBits: USER_TYPES.Employee },

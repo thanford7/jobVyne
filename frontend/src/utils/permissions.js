@@ -84,12 +84,6 @@ class PagePermissionsUtil {
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
           {
-            icon: 'link',
-            key: 'employee-links',
-            label: 'Referral Links',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
-          },
-          {
             icon: 'work',
             key: 'employee-jobs',
             label: 'Jobs',

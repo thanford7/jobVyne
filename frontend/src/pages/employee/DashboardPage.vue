@@ -157,35 +157,7 @@
           <BaseExpansionItem :is-include-separator="false">
             <template v-slot:header>
               <div class="text-h6">
-                Quick links for
-                <CustomTooltip :is_include_icon="false">
-                  <template v-slot:content>
-                    <span style="text-decoration: underline">default referral</span>
-                  </template>
-                  <div class="border-bottom-1-gray-300 text-bold text-primary q-mb-sm">
-                    {{ dataUtil.pluralize('Open job', defaultReferralLink.jobs_count) }}
-                  </div>
-                  <div>
-                    <q-chip
-                      v-for="dept in defaultReferralLink.departments"
-                      dense color="blue-grey-7" text-color="white" size="13px"
-                    >
-                      {{ dept.name }}
-                    </q-chip>
-                    <q-chip v-if="!defaultReferralLink.departments.length" dense size="13px">
-                      Any department
-                    </q-chip>
-                    <q-chip
-                      v-for="loc in locationUtil.getFormattedLocations(defaultReferralLink)"
-                      dense :color="loc.color" text-color="white" size="13px"
-                    >
-                      {{ loc.name }}
-                    </q-chip>
-                    <q-chip v-if="!locationUtil.getFormattedLocations(defaultReferralLink).length" dense size="13px">
-                      Any location
-                    </q-chip>
-                  </div>
-                </CustomTooltip>
+                Quick referral links
               </div>
             </template>
             <div>
@@ -222,7 +194,6 @@
 
 <script>
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
-import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogImgCarousel from 'components/dialogs/DialogImgCarousel.vue'
 import PageHeader from 'components/PageHeader.vue'
 import ReferralLinkButtons from 'components/ReferralLinkButtons.vue'
@@ -242,7 +213,7 @@ import { useUserStore } from 'stores/user-store.js'
 
 export default {
   name: 'DashboardPage',
-  components: { ReferralLinkButtons, BaseExpansionItem, CustomTooltip, LinkPerformanceChart, EmployeeLeaderBoard, PageHeader },
+  components: { ReferralLinkButtons, BaseExpansionItem, LinkPerformanceChart, EmployeeLeaderBoard, PageHeader },
   data () {
     return {
       GROUPINGS,
