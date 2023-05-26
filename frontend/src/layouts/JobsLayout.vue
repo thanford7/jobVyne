@@ -88,7 +88,7 @@
                       <template v-slot:body>
                         <div class="col-12 q-pa-sm">
                           <div class="row q-gutter-y-sm">
-                            <div class="col-12 col-md-6 q-pr-md-sm">
+                            <div class="col-12 col-md-4 q-pr-md-sm">
                               <q-input
                                 v-model="jobFilters.search_regex"
                                 filled label="Job title or Company"
@@ -99,20 +99,14 @@
                                 </template>
                               </q-input>
                             </div>
-                            <div class="col-12 col-md-6 q-pl-md-sm">
-                              <InputLocation v-model="jobFilters.location"/>
-                            </div>
-                            <div class="col-12 col-md-4 q-pr-md-sm">
-                              <q-select
-                                v-model="jobFilters.range_miles"
-                                filled
-                                label="Within distance"
-                                :options="[{ val: 10 }, { val: 25 }, { val: 50 }, { val: 100 }]"
-                                :option-label="(val) => `${val} miles`"
-                                option-value="val"
+                            <div class="col-12 col-md-8 q-pl-md-sm">
+                              <InputLocation
+                                v-model:location="jobFilters.location"
+                                v-model:range_miles="jobFilters.range_miles"
+                                :is-include-range="true"
                               />
                             </div>
-                            <div class="col-12 col-md-4 q-px-md-sm">
+                            <div class="col-12 col-md-4 q-pr-md-sm">
                               <SelectRemote v-model="jobFilters.remote_type_bit"/>
                             </div>
                             <div class="col-12 col-md-4 q-pl-md-sm">

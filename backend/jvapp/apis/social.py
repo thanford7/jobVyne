@@ -364,7 +364,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             # Some jobs have a salary floor but no ceiling so we check for both
             jobs_filter &= (Q(salary_ceiling__gte=minimum_salary) | Q(salary_floor__gte=minimum_salary))
         if location and range_miles:
-            start_point = Point(location['longitude'], location['latitude'], srid=4326)
+            start_point = Point(location['latitude'], location['longitude'], srid=4326)
             jobs_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
         
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)

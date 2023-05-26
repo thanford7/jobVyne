@@ -51,26 +51,6 @@
                     </ul>
                   </CustomTooltip>
                 </template>
-                <q-chip
-                  v-for="dept in socialLinkFilter.departments"
-                  dense color="blue-grey-7" text-color="white" size="13px"
-                >
-                  {{ dept.name }}
-                </q-chip>
-                <q-chip v-if="!socialLinkFilter.departments.length && !hasSocialLinkJobs(socialLinkFilter)" dense
-                        size="13px">
-                  Any department
-                </q-chip>
-                <q-chip
-                  v-for="loc in getLocations(socialLinkFilter)"
-                  dense :color="loc.color" text-color="white" size="13px"
-                >
-                  {{ loc.name }}
-                </q-chip>
-                <q-chip v-if="!getLocations(socialLinkFilter).length && !hasSocialLinkJobs(socialLinkFilter)" dense
-                        size="13px">
-                  Any location
-                </q-chip>
                 <q-space/>
                 <q-chip
                   dense clickable

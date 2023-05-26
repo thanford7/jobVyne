@@ -1,39 +1,84 @@
 <template>
-  <q-select
-    ref="select"
-    label="Location or Zip Code"
-    filled use-input
-    :hide-dropdown-icon="true"
-    :input-debounce="700"
-    :loading="isLoading"
-    @input-value="getLocationsDebounceFn"
-    :options="locations"
-    option-label="formatted_address"
-    option-value="formatted_address"
+  <div
+    class="grid-container"
+    :class="{
+      'grid-container__range': isAllowRange,
+      'grid-container__mobile': utilStore.isMobile
+    }"
   >
-    <template v-slot:append>
-      <q-icon name="place"/>
-    </template>
-    <template v-slot:no-option>
-      <q-item>
-        <q-item-section class="text-italic text-grey">
-          Begin typing...
-        </q-item-section>
-      </q-item>
-    </template>
-  </q-select>
+    <q-select
+      ref="select"
+      label="Location or Zip Code"
+      :model-value="location"
+      @update:model-value="$emit('update:location', $event)"
+      filled use-input clearable
+      :hide-dropdown-icon="true"
+      :loading="isLoading"
+      @input-value="getLocationsDebounceFn"
+      :options="locations"
+      option-label="formatted_address"
+      option-value="formatted_address"
+    >
+      <template v-slot:selected-item="scope">
+        <span class="ellipsis">{{ scope.opt.formatted_address }}</span>
+      </template>
+      <template v-slot:append>
+        <q-icon name="place"/>
+      </template>
+      <template v-slot:no-option>
+        <q-item>
+          <q-item-section class="text-italic text-grey">
+            Begin typing...
+          </q-item-section>
+        </q-item>
+      </template>
+    </q-select>
+    <q-select
+      v-if="isAllowRange"
+      :model-value="range_miles"
+      @update:model-value="$emit('update:range_miles', $event)"
+      filled map-options
+      label="Within distance"
+      :options="[{ val: 10 }, { val: 25 }, { val: 50 }, { val: 100 }]"
+      :option-label="(dist) => `${dist.val} miles`"
+      option-value="val"
+      :class="(utilStore.isMobile) ? 'q-mt-sm' : 'q-ml-sm'"
+    />
+  </div>
 </template>
 
 <script>
 import { debounce } from 'quasar'
+import { useUtilStore } from 'stores/utility-store.js'
 
 export default {
   name: 'InputLocation',
+  props: {
+    location: [Object, null],
+    range_miles: [Number, null],
+    isIncludeRange: {
+      type: Boolean,
+      default: false
+    }
+  },
+  watch: {
+    location () {
+      if (!this.isAllowRange && this.range_miles) {
+        this.$emit('update:range_miles', null)
+      }
+    }
+  },
+  computed: {
+    isAllowRange () {
+      return this.location && this.location.city && this.isIncludeRange
+    }
+  },
   data () {
     return {
       isLoading: false,
       locations: [],
-      getLocationsDebounceFn: null
+      getLocationsDebounceFn: null,
+      utilStore: useUtilStore()
     }
   },
   methods: {
@@ -58,3 +103,14 @@ export default {
   }
 }
 </script>
+
+<style scoped lang="scss">
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr;
+
+  &.grid-container__range:not(.grid-container__mobile) {
+    grid-template-columns: 60% 40%;
+  }
+}
+</style>
