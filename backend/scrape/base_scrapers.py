@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import random
 import re
 import tempfile
 from datetime import timedelta
@@ -20,22 +21,44 @@ from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
 
+# ---- HEADER OPTIONS
+# ---- Note: Tried adding these to connection session. Requests end up being rejected with everything but User-Agent
+# 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+# 'Referer': 'https://www.google.com',
+# 'Accept-Language': 'en-US,en;q=0.9',
+# 'Accept-Encoding': 'gzip, deflate, br',
+# 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+# 'Connection': 'keep-alive',
+# 'Upgrade-Insecure-Requests': '1',
+# 'Sec-Fetch-Dest': 'document',
+# 'Sec-Fetch-Mode': 'navigate',
+# 'Sec-Fetch-Site': 'none',
+# 'Sec-Fetch-User': '?1',
+# 'Cache-Control': 'max-age=0',
+# 'Sec-Ch-Ua-Mobile': '?0'
 
-REQUEST_HEADERS = {
-    # 'Referer': 'https://www.google.com',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
-    # 'Accept-Language': 'en-US,en;q=0.9',
-    # 'Accept-Encoding': 'gzip, deflate, br',
-    # 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    # 'Connection': 'keep-alive',
-    # 'Upgrade-Insecure-Requests': '1',
-    # 'Sec-Fetch-Dest': 'document',
-    # 'Sec-Fetch-Mode': 'navigate',
-    # 'Sec-Fetch-Site': 'none',
-    # 'Sec-Fetch-User': '?1',
-    # 'Cache-Control': 'max-age=0',
-    # 'Sec-Ch-Ua-Mobile': '?0'
-}
+USER_AGENTS = [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13.4; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Linux i686; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.57',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.57'
+]
+
+
+def get_random_user_agent():
+    return random.choice(USER_AGENTS)
 
 
 def normalize_url(url):
@@ -62,7 +85,9 @@ class Scraper:
         self.queue = asyncio.Queue()
         self.playwright = playwright
         self.browser = browser
-        self.session = ClientSession(headers=REQUEST_HEADERS)
+        self.session = ClientSession(headers={
+            'User-Agent': get_random_user_agent()
+        })
         self.skip_urls = skip_urls
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.start_url)

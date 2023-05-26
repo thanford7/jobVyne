@@ -7,7 +7,7 @@ from django.utils import timezone
 from playwright.async_api import async_playwright
 
 from jvapp.models import Employer, EmployerJob
-from scrape.base_scrapers import REQUEST_HEADERS
+from scrape.base_scrapers import get_random_user_agent
 from scrape.employer_scrapers import all_scrapers
 from scrape.job_processor import JobProcessor
 
@@ -21,7 +21,9 @@ async def get_browser(playwright):
     browser_context = await browser.new_context()
     browser_context.set_default_timeout(JS_LOAD_WAIT_MS)
     await browser_context.set_geolocation({'latitude': 34.02016, 'longitude': -118.44472})
-    await browser_context.set_extra_http_headers(REQUEST_HEADERS)
+    await browser_context.set_extra_http_headers({
+        'User-Agent': get_random_user_agent()
+    })
     return browser, browser_context
 
         
