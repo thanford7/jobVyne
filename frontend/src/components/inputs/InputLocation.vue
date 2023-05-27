@@ -61,13 +61,6 @@ export default {
       default: false
     }
   },
-  watch: {
-    location () {
-      if (!this.isAllowRange && this.range_miles) {
-        this.$emit('update:range_miles', null)
-      }
-    }
-  },
   computed: {
     isAllowRange () {
       return this.location && this.location.city && this.isIncludeRange

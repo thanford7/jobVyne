@@ -309,7 +309,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     
     def get_filter_values_from_query_params(self):
         filter_values = {
-            k: v for k, v in self.query_params.items() if k in ('job_title',)
+            k: v for k, v in self.query_params.items() if k in ('search_regex',)
         }
         
         if location := self.query_params.get('location'):
@@ -337,7 +337,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     @staticmethod
     def get_filtered_jobs(
         employer_id, location=None,
-        job_ids=None, search_regex=None, remote_type_bit=None, minimum_salary=None,
+        job_ids=None, search_regex=None, remote_type_bit=0, minimum_salary=None,
         range_miles=None,
     ):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
@@ -355,17 +355,29 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs_filter &= Q(id__in=job_ids)
         if search_regex:
             jobs_filter &= (Q(job_title__iregex=f'^.*{search_regex}.*$') | Q(employer__employer_name__iregex=f'^.*{search_regex}.*$'))
-        if remote_type_bit:
-            if remote_type_bit == REMOTE_TYPES.YES:
-                jobs_filter &= Q(locations__is_remote=True)
-            elif remote_type_bit == REMOTE_TYPES.NO:
-                jobs_filter &= Q(locations__is_remote=False)
         if minimum_salary:
             # Some jobs have a salary floor but no ceiling so we check for both
             jobs_filter &= (Q(salary_ceiling__gte=minimum_salary) | Q(salary_floor__gte=minimum_salary))
-        if location and range_miles:
+            
+        # Location filters
+        location_filter = Q()
+        if location and location.get('city') and range_miles:
             start_point = Point(location['latitude'], location['longitude'], srid=4326)
-            jobs_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
+            location_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
+        elif location:
+            # If remote is allowed, we only want to filter on country, regardless of whether a state is set
+            if (state := location['state']) and not remote_type_bit & REMOTE_TYPES.YES:
+                location_filter &= Q(locations__state__name=state)
+            elif country := location['country']:
+                location_filter &= Q(locations__country__name=country)
+        
+        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.NO):
+            location_filter &= Q(locations__is_remote=False)
+
+        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.YES):
+            location_filter &= Q(locations__is_remote=True)
+            
+        jobs_filter &= location_filter
         
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
 

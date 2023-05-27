@@ -91,7 +91,8 @@
                             <div class="col-12 col-md-4 q-pr-md-sm">
                               <q-input
                                 v-model="jobFilters.search_regex"
-                                filled label="Job title or Company"
+                                filled
+                                :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
                                 debounce="500"
                               >
                                 <template v-slot:append>
@@ -303,6 +304,9 @@ export default {
     SelectRemote
   },
   computed: {
+    isSingleEmployer () {
+      return this.jobsByEmployer.length === 1
+    },
     employmentYears () {
       if (!this.profile.employment_start_date) {
         return null
