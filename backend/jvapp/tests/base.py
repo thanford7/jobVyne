@@ -3,7 +3,6 @@ from datetime import timedelta
 
 import names
 from django.conf import settings
-from django.contrib.gis.geos import Point
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
@@ -50,12 +49,12 @@ class BaseTestCase(TestCase):
         self.job_departments = [self.create_job_department(name) for name in ['Software', 'Product', 'Marketing']]
         self.cities = [self.create_city(name) for name in ['Boston', 'Denver', 'Miami', 'Newton']]
         self.states = [self.create_state(name) for name in ['MA', 'CO', 'FL']]
-        self.countries = list(Country.objects.all())
+        self.countries = [self.create_country(name) for name in ['USA', 'France']]
         self.locations = [self.create_location(*data) for data in [
-            ('Boston, MA, US', self.cities[0], self.states[0], self.countries[0], Point(-71.0624, 42.3626, srid=4326)),
-            ('Denver, CO, US', self.cities[1], self.states[1], self.countries[0]),
-            ('Miami, FL, US', self.cities[2], self.states[2], self.countries[0]),
-            ('Newton, MA, US', self.cities[3], self.states[0], self.countries[0], Point(-71.2096, 42.3359)),
+            ('Boston, MA, US', self.cities[0], self.states[0], self.countries[0], 42.314232, -71.1350906),
+            ('Denver, CO, US', self.cities[1], self.states[1], self.countries[0], 39.7642224, -105.0199185),
+            ('Miami, FL, US', self.cities[2], self.states[2], self.countries[0], 25.7823843, -80.3118595),
+            ('Newton, MA, US', self.cities[3], self.states[0], self.countries[0], 42.3253655, -71.2548774),
         ]]
         self.jobs = [self.create_job(data[0], **data[1]) for data in [
             (
@@ -215,8 +214,11 @@ class BaseTestCase(TestCase):
         country.save()
         return country
     
-    def create_location(self, text, city, state, country, geometry=None):
-        location = Location(text=text, city=city, state=state, country=country, geometry=geometry)
+    def create_location(self, text, city, state, country, latitude, longitude, is_remote=False):
+        location = Location(
+            text=text, city=city, state=state, country=country, is_remote=is_remote,
+            geometry=Location.get_geometry_point(latitude, longitude)
+        )
         location.save()
         return location
     

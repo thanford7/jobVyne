@@ -1,5 +1,6 @@
 from enum import IntEnum
 
+from django.contrib.gis.geos import Point
 from django.db import models
 from django.contrib.gis.db import models as spatial_models
 
@@ -60,6 +61,7 @@ class WithinMiles(Lookup):
         )
 
 SridGeometryField.register_lookup(WithinMiles)
+SRID = 4326
 
 
 class Location(models.Model):
@@ -70,13 +72,19 @@ class Location(models.Model):
     country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.SET_NULL)
     latitude = models.CharField(max_length=15, null=True, blank=True)
     longitude = models.CharField(max_length=15, null=True, blank=True)
-    geometry = SridGeometryField(null=True, srid=4326)
+    geometry = SridGeometryField(null=True, srid=SRID)
     
     class Meta:
         unique_together = ('is_remote', 'city', 'state', 'country')
     
     def __str__(self):
         return self.text
+    
+    @classmethod
+    def get_geometry_point(cls, latitude, longitude):
+        if not any((latitude, longitude)):
+            return None
+        return Point(latitude, longitude, srid=SRID)
     
 
 # Store results of geocoding lookup for efficiency and to avoid charges

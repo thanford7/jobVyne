@@ -366,15 +366,19 @@ class SocialLinkJobsView(JobVyneAPIView):
             location_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
         elif location:
             # If remote is allowed, we only want to filter on country, regardless of whether a state is set
-            if (state := location['state']) and not remote_type_bit & REMOTE_TYPES.YES:
+            if (state := location['state']) and not remote_type_bit & REMOTE_TYPES.YES.value:
                 location_filter &= Q(locations__state__name=state)
             elif country := location['country']:
-                location_filter &= Q(locations__country__name=country)
+                country_filter = Q(locations__country__name=country)
+                if remote_type_bit & REMOTE_TYPES.YES.value:
+                    # Some remote jobs don't have a country. In this case, we assume it's a global remote job
+                    country_filter |= Q(locations__country__name__isnull=True)
+                location_filter &= country_filter
         
-        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.NO):
+        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.NO.value):
             location_filter &= Q(locations__is_remote=False)
 
-        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.YES):
+        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.YES.value):
             location_filter &= Q(locations__is_remote=True)
             
         jobs_filter &= location_filter

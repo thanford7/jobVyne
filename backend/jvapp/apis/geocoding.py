@@ -126,7 +126,8 @@ class LocationParser:
                     state=get_or_create_state(data.get('state')),
                     country=get_or_create_country(data.get('country')),
                     latitude=str(latitude)[:15] if latitude else None,
-                    longitude=str(longitude)[:15] if longitude else None
+                    longitude=str(longitude)[:15] if longitude else None,
+                    geometry=Location.get_geometry_point(latitude, longitude)
                 )
                 location.save()
         

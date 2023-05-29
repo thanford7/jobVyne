@@ -84,13 +84,14 @@ def generate_country(name):
     return country
 
 
-def generate_location(text, city, state, country):
+def generate_location(text, city, state, country, geometry):
     try:
         location = Location(
             text=text,
             city=city,
             state=state,
-            country=country
+            country=country,
+            geometry=geometry
         )
         location.save()
     except IntegrityError:
@@ -252,12 +253,12 @@ def create_ancillary_data():
         states = set()
         countries = set()
         for location_data in (
-            ('Austin', 'TX', 'USA'),
-            ('Dallas', 'TX', 'USA'),
-            ('Los Angeles', 'CA', 'USA'),
-            ('San Francisco', 'CA', 'USA'),
-            ('Denver', 'CO', 'USA'),
-            ('Boston', 'MA', 'USA')
+            ('Austin', 'TX', 'USA', 30.3076576, -97.9205511),
+            ('Dallas', 'TX', 'USA', 32.8205566, -96.8963608),
+            ('Los Angeles', 'CA', 'USA', 34.0189041, -119.0355635),
+            ('San Francisco', 'CA', 'USA', 37.7576713, -122.5200006),
+            ('Denver', 'CO', 'USA', 39.7642224, -105.0199185),
+            ('Boston', 'MA', 'USA', 42.314232, -71.1350906)
         ):
             city = generate_city(location_data[0])
             state = generate_state(location_data[1])
@@ -265,7 +266,9 @@ def create_ancillary_data():
             cities.add(city)
             states.add(state)
             countries.add(country)
-            locations.append(generate_location(', '.join(location_data), city, state, country))
+            locations.append(generate_location(
+                ', '.join(location_data[:3]), city, state, country, Location.get_geometry_point(location_data[3], location_data[4])
+            ))
     
         cities = list(cities)
         states = list(states)

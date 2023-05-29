@@ -45,8 +45,8 @@ class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin)
             job_filter &= Q(id__in=job_ids)
         if employer_ids := [e.id for e in self.filter_employer.all()]:
             job_filter &= Q(employer_id__in=employer_ids)
-        if self.filter_remote_type_bit == REMOTE_TYPES.NO:
+        if self.filter_remote_type_bit == REMOTE_TYPES.NO.value:
             job_filter &= Q(locations__is_remote=False)
-        elif self.filter_remote_type_bit == REMOTE_TYPES.YES:
+        elif self.filter_remote_type_bit == REMOTE_TYPES.YES.value:
             job_filter &= Q(locations__is_remote=True)
         return job_filter
