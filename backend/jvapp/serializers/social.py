@@ -24,10 +24,6 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         'employer_id': link_filter.employer_id,
         'link_name': link_filter.name,
         'is_default': link_filter.is_default,
-        'departments': [{'name': d.name, 'id': d.id} for d in link_filter.departments.all()],
-        'cities': [{'name': c.name, 'id': c.id} for c in link_filter.cities.all()],
-        'states': [{'name': s.name, 'id': s.id} for s in link_filter.states.all()],
-        'countries': [{'name': c.name, 'id': c.id} for c in link_filter.countries.all()],
         'jobs': [{'title': j.job_title, 'id': j.id} for j in link_filter.jobs.all()],
         'tags': [{'name': tag.tag_name, 'id': tag.id} for tag in link_filter.tags.all()]
     }

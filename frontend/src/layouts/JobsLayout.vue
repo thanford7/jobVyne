@@ -88,49 +88,29 @@
                       <template v-slot:body>
                         <div class="col-12 q-pa-sm">
                           <div class="row q-gutter-y-sm">
-                            <div class="col-12 col-md-6 q-pr-md-sm">
-                              <q-input
-                                v-model="jobFilters.job_title"
-                                filled label="Job title"
-                                debounce="500"
-                              />
-                            </div>
-                            <div class="col-12 col-md-6 q-pl-md-sm">
-                              <SelectJobDepartment
-                                v-if="employer?.id"
-                                v-model="jobFilters.department_ids"
-                                :employer-id="employer.id"
-                                :is-emit-id="true"
-                              />
-                            </div>
                             <div class="col-12 col-md-4 q-pr-md-sm">
-                              <SelectJobCity
-                                v-if="employer?.id"
-                                v-model="jobFilters.city_ids"
-                                :employer-id="employer.id"
-                                :is-emit-id="true"
-                              />
+                              <q-input
+                                v-model="jobFilters.search_regex"
+                                filled
+                                :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
+                                debounce="500"
+                              >
+                                <template v-slot:append>
+                                  <q-icon name="search"/>
+                                </template>
+                              </q-input>
                             </div>
-                            <div class="col-12 col-md-4 q-px-md-sm">
-                              <SelectJobState
-                                v-if="employer?.id"
-                                v-model="jobFilters.state_ids"
-                                :employer-id="employer.id"
-                                :is-emit-id="true"
-                              />
-                            </div>
-                            <div class="col-12 col-md-4 q-pl-md-sm">
-                              <SelectJobCountry
-                                v-if="employer?.id"
-                                v-model="jobFilters.country_ids"
-                                :employer-id="employer.id"
-                                :is-emit-id="true"
+                            <div class="col-12 col-md-8 q-pl-md-sm">
+                              <InputLocation
+                                v-model:location="jobFilters.location"
+                                v-model:range_miles="jobFilters.range_miles"
+                                :is-include-range="true"
                               />
                             </div>
                             <div class="col-12 col-md-4 q-pr-md-sm">
                               <SelectRemote v-model="jobFilters.remote_type_bit"/>
                             </div>
-                            <div class="col-12 col-md-4 q-px-md-sm">
+                            <div class="col-12 col-md-4 q-pl-md-sm">
                               <MoneyInput
                                 v-model:money-value="jobFilters.minimum_salary"
                                 v-model:currency-name="jobFilters.currency"
@@ -253,11 +233,8 @@ import CollapsableCard from 'components/CollapsableCard.vue'
 import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import DialogLogin from 'components/dialogs/DialogLogin.vue'
+import InputLocation from 'components/inputs/InputLocation.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
-import SelectJobCity from 'components/inputs/SelectJobCity.vue'
-import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
-import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
-import SelectJobState from 'components/inputs/SelectJobState.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
@@ -282,12 +259,10 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 
 const jobFiltersTemplate = {
-  department_ids: [],
-  city_ids: [],
-  state_ids: [],
-  country_ids: [],
   job_ids: [],
-  job_title: '',
+  location: null,
+  range_miles: 50,
+  search_regex: '',
   remote_type_bit: null,
   minimum_salary: null
 }
@@ -318,6 +293,7 @@ export default {
     }
   },
   components: {
+    InputLocation,
     MoneyInput,
     EmployerProfile,
     ResponsiveWidth,
@@ -325,13 +301,12 @@ export default {
     FormJobApplication,
     JobCards,
     CollapsableCard,
-    SelectJobDepartment,
-    SelectJobCity,
-    SelectJobState,
-    SelectJobCountry,
     SelectRemote
   },
   computed: {
+    isSingleEmployer () {
+      return this.jobsByEmployer.length === 1
+    },
     employmentYears () {
       if (!this.profile.employment_start_date) {
         return null
@@ -381,7 +356,6 @@ export default {
     },
     async openApplication (jobId) {
       this.jobApplication = this.getJobApplicationById(jobId)
-      console.log(this.jobApplication)
       await this.$router.replace({ name: this.$route.name, query: Object.assign({}, this.$route.query, { jobId }) })
       if (window.innerWidth < 600) {
         this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())

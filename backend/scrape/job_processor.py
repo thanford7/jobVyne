@@ -47,6 +47,7 @@ class JobProcessor:
         }
         self.found_jobs = set()
         self.location_parser = LocationParser()
+        # TODO: Handle bogus locations (multiple, bad format, etc.)
         self.job_departments = {j.name.lower(): j for j in JobDepartment.objects.all()}
         
     def finalize_data(self, skipped_job_urls):

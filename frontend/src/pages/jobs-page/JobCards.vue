@@ -8,7 +8,7 @@
     <div class="row q-gutter-y-lg">
       <div v-for="employer in jobsByEmployer" class="col-12">
         <q-card>
-          <q-card-section class="border-bottom-1-gray-300">
+          <q-card-section v-if="!isSingleEmployer" class="border-bottom-1-gray-300">
             <div class="row justify-center">
               <div v-if="employer.employer_logo" class="col-2">
                 <div class="h-100 flex items-start align-center q-my-sm q-mr-md">

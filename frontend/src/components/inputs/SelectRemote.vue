@@ -1,7 +1,7 @@
 <template>
   <q-select
     ref="select"
-    filled emit-value map-options
+    filled clearable emit-value map-options
     :options="[{val: locationUtil.REMOTE_TYPE_TRUE, label: 'Yes'}, {val: locationUtil.REMOTE_TYPE_FALSE, label: 'No'}]"
     option-value="val"
     option-label="label"

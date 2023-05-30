@@ -35,10 +35,6 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
     # If no owner, this is an employer owned link
     owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True)
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
-    departments = models.ManyToManyField('JobDepartment')
-    cities = models.ManyToManyField('City')
-    states = models.ManyToManyField('State')
-    countries = models.ManyToManyField('Country')
     jobs = models.ManyToManyField('EmployerJob')
     remote_type_bit = models.SmallIntegerField(null=True, blank=True)  # See REMOTE_TYPES
     tags = models.ManyToManyField('SocialLinkTag')
@@ -66,19 +62,11 @@ class SocialLinkFilter(AuditFields, JobVynePermissionsMixin):
 
     def get_unique_key(self):
         # Make sure to prefetch related fields!
-        departmentIds = tuple(self.departments.all().values_list('id', flat=True).order_by('id'))
-        cityIds = tuple(self.cities.all().values_list('id', flat=True).order_by('id'))
-        stateIds = tuple(self.states.all().values_list('id', flat=True).order_by('id'))
-        countryIds = tuple(self.countries.all().values_list('id', flat=True).order_by('id'))
         jobIds = tuple(self.jobs.all().values_list('id', flat=True).order_by('id'))
-        return self.owner_id, self.employer_id, self.name, departmentIds, cityIds, stateIds, countryIds, jobIds
+        return self.owner_id, self.employer_id, self.name, jobIds
     
     def get_filter_values(self):
         return {
-            'department_ids': [d.id for d in self.departments.all()],
-            'city_ids': [c.id for c in self.cities.all()],
-            'state_ids': [s.id for s in self.states.all()],
-            'country_ids': [c.id for c in self.countries.all()],
             'job_ids': [j.id for j in self.jobs.all()],
             'remote_type_bit': self.remote_type_bit
         }
