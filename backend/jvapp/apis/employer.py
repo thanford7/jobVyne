@@ -24,12 +24,12 @@ from jvapp.models.content import ContentItem
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
-    EmployerFileTag, EmployerPage
+    EmployerFileTag
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
-    get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page, \
+    get_serialized_employer_file_tag, get_serialized_employer_job, \
     get_serialized_employer_referral_request
 from jvapp.utils import csv
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
@@ -1460,70 +1460,6 @@ class EmployerFileTagView(JobVyneAPIView):
     @staticmethod
     def get_employer_file_tags(employer_id):
         return EmployerFileTag.objects.filter(employer_id=employer_id)
-
-
-class EmployerPageView(JobVyneAPIView):
-    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
-    
-    def get(self, request):
-        if not (employer_id := self.query_params['employer_id']):
-            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
-        employer_page = self.get_employer_page(employer_id)
-        return Response(
-            status=status.HTTP_200_OK,
-            data=get_serialized_employer_page(employer_page) if employer_page else None
-        )
-    
-    @atomic
-    def put(self, request):
-        if not (employer_id := self.data['employer_id']):
-            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
-        employer_page = self.get_employer_page(employer_id)
-        if employer_page:
-            current_sections = {ci.id: ci for ci in employer_page.content_item.all()}
-        else:
-            employer_page = EmployerPage(employer_id=employer_id)
-            current_sections = {}
-        employer_page.is_viewable = self.data['is_viewable']
-        employer_page.jv_check_permission(PermissionTypes.EDIT.value, self.user)
-        employer_page.save()
-        
-        sections = self.data['sections']
-        for sectionIdx, sectionData in enumerate(sections):
-            section = None
-            if sectionId := sectionData.get('id'):
-                # Remove the section from the dict so we know it has been used
-                section = current_sections.pop(sectionId, None)
-            if not section:
-                section = ContentItem(type=sectionData['type'])
-            section.orderIdx = sectionIdx
-            section.header = sectionData['header']
-            section.config = sectionData.get('config')
-            item_parts = sectionData['item_parts']
-            for part in item_parts:
-                if html_content := part.get('html_content'):
-                    part['html_content'] = sanitize_html(html_content)
-            section.item_parts = item_parts
-            section.save()
-            employer_page.content_item.add(section)
-        
-        # Any sections still in the dict are not used and should be removed
-        for content_item_id, content_item in current_sections.items():
-            employer_page.content_item.remove(content_item_id)
-            content_item.delete()
-        
-        return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: 'Updated the profile page'
-        })
-    
-    @staticmethod
-    def get_employer_page(employer_id):
-        try:
-            return EmployerPage.objects.prefetch_related('content_item').get(employer_id=employer_id)
-        except EmployerPage.DoesNotExist:
-            return None
 
 
 class EmployerFromDomainView(JobVyneAPIView):

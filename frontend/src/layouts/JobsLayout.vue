@@ -33,8 +33,6 @@
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
-            <q-tab v-if="employerPage && employerPage.is_viewable" id="jv-tab-company" name="company"
-                   :label="`About ${employer?.name}`"/>
             <q-tab v-if="isActiveEmployee &&  isShowEmployeeProfile" id="jv-tab-me" name="me"
                    :label="`About ${profile?.first_name}`"/>
           </q-tabs>
@@ -180,17 +178,6 @@
               </ResponsiveWidth>
             </div>
           </q-tab-panel>
-          <q-tab-panel
-            v-if="employerPage && employerPage.is_viewable"
-            name="company"
-            class="q-pa-none"
-          >
-            <div class="row">
-              <div class="col-12">
-                <EmployerProfile :employer-id="employer.id"/>
-              </div>
-            </div>
-          </q-tab-panel>
           <q-tab-panel name="me" v-if="isActiveEmployee && isShowEmployeeProfile" class="q-pa-none">
             <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
               <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
@@ -237,7 +224,6 @@ import InputLocation from 'components/inputs/InputLocation.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
-import EmployerProfile from 'pages/jobs-page/EmployerProfile.vue'
 import JobCards from 'pages/jobs-page/JobCards.vue'
 import employerStyleUtil from 'src/utils/employer-styles.js'
 import formUtil from 'src/utils/form.js'
@@ -275,7 +261,6 @@ export default {
       totalEmployerJobCount: null,
       jobsByEmployer: null,
       employer: null,
-      employerPage: null,
       profile: null,
       isLoaded: false,
       hasJobSubscription: false,
@@ -295,7 +280,6 @@ export default {
   components: {
     InputLocation,
     MoneyInput,
-    EmployerProfile,
     ResponsiveWidth,
     CustomFooter,
     FormJobApplication,
@@ -463,8 +447,6 @@ export default {
     }, {})
     Object.assign(this.jobFilters, params)
     await this.loadData({ isFirstLoad: true })
-    await this.employerStore.setEmployerPage(this.employer.id)
-    this.employerPage = this.employerStore.getEmployerPage(this.employer.id)
 
     const { jobId } = dataUtil.getQueryParams()
     if (jobId) {

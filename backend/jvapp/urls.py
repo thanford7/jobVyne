@@ -31,7 +31,6 @@ urlpatterns = [
     path('employer/job/department/', employer.EmployerJobDepartmentView.as_view()),
     path('employer/job/location/', employer.EmployerJobLocationView.as_view()),
     re_path('^employer/job-subscription/(?P<subscription_id>[0-9]+)?/?$', job_subscription.EmployerJobSubscriptionView.as_view()),
-    path('employer/page/', employer.EmployerPageView.as_view()),
     re_path('^employer/permission/(?P<auth_group_id>[0-9]+)?/?$', employer.EmployerAuthGroupView.as_view()),
     path('employer/referral/request/', employer.EmployerReferralRequestView.as_view()),
     re_path('^employer/slack/(?P<slack_cfg_id>[0-9]+)?/?$', employer.EmployerSlackView.as_view()),

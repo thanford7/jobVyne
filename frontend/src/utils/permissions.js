@@ -137,16 +137,6 @@ class PagePermissionsUtil {
             isPermittedFn: isUserEmployerFn
           },
           {
-            icon: 'web',
-            key: 'employer-profile-page',
-            label: 'Profile Page',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedViewFn: isUserEmployerFn,
-            isPermittedFn: (permissionGroups, permissions) => {
-              return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
-            }
-          },
-          {
             icon: 'work',
             key: 'employer-jobs',
             label: 'Jobs',

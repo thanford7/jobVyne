@@ -10,7 +10,7 @@ from jvapp.models.user import PermissionName
 __all__ = (
     'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
-    'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
+    'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
     'EmployerSlack'
 )
@@ -457,21 +457,6 @@ class EmployerFileTag(models.Model, JobVynePermissionsMixin):
     
     class Meta:
         unique_together = ('employer', 'name')
-    
-    def _jv_can_create(self, user):
-        return (
-            user.is_admin
-            or (
-                self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-            )
-        )
-
-
-class EmployerPage(AuditFields, OwnerFields, JobVynePermissionsMixin):
-    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='profile_page', unique=True)
-    is_viewable = models.BooleanField(default=False)
-    content_item = models.ManyToManyField('ContentItem')
     
     def _jv_can_create(self, user):
         return (

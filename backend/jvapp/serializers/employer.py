@@ -333,14 +333,3 @@ def get_serialized_employer_file_tag(tag: EmployerFileTag):
         'employer_id': tag.employer_id,
         'name': tag.name
     }
-
-
-def get_serialized_employer_page(page: EmployerPage):
-    return {
-        'id': page.id,
-        'employer_id': page.employer_id,
-        'is_viewable': page.is_viewable,
-        'sections': [
-            get_serialized_content_item(ci) for ci in page.content_item.all()
-        ]
-    }

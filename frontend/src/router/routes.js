@@ -200,12 +200,6 @@ const routes = [
         component: () => import('pages/employer/user-management-page/UserManagementPage.vue')
       },
       {
-        path: ':key(employer-profile-page)',
-        name: 'employer-profile-page',
-        meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/EmployerProfileCfgPage.vue')
-      },
-      {
         path: ':key(employer-settings)',
         name: 'employer-settings',
         meta: { userTypeBits: USER_TYPES.Employer },
