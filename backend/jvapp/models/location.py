@@ -9,6 +9,8 @@ __all__ = ('REMOTE_TYPES', 'Country', 'State', 'City', 'Location')
 
 from django.db.models import Lookup
 
+from jvapp.utils.data import coerce_float
+
 
 class REMOTE_TYPES(IntEnum):
     NO = 1
@@ -84,11 +86,11 @@ class Location(models.Model):
     def get_geometry_point(cls, latitude, longitude):
         if not any((latitude, longitude)):
             return None
-        return Point(latitude, longitude, srid=SRID)
+        return Point(coerce_float(latitude), coerce_float(longitude), srid=SRID)
     
 
 # Store results of geocoding lookup for efficiency and to avoid charges
 class LocationLookup(models.Model):
     text = models.CharField(max_length=100, unique=True)
     location = models.ForeignKey('Location', on_delete=models.CASCADE)
-    raw_result = models.JSONField()
+    raw_result = models.JSONField(null=True, blank=True)

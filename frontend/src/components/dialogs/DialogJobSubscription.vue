@@ -34,13 +34,11 @@
           <SelectEmployer v-model="formData.employers" :is-multi="true"/>
         </div>
         <div class="col-12">
-          <SelectJobCity v-model="formData.cities" :is-emit-id="true" :is-all="true"/>
-        </div>
-        <div class="col-12">
-          <SelectJobState v-model="formData.states" :is-emit-id="true" :is-all="true"/>
-        </div>
-        <div class="col-12">
-          <SelectJobCountry v-model="formData.countries" :is-emit-id="true" :is-all="true"/>
+          <InputLocation
+            v-model:location="formData.locations"
+            v-model:range_miles="formData.range_miles"
+            :is-include-range="true" :is-multi="true"
+          />
         </div>
         <div class="col-12">
           <SelectRemote v-model="formData.remote_type_bit"/>
@@ -52,10 +50,8 @@
 
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import InputLocation from 'components/inputs/InputLocation.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
-import SelectJobCity from 'components/inputs/SelectJobCity.vue'
-import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
-import SelectJobState from 'components/inputs/SelectJobState.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import { getAjaxFormData } from 'src/utils/requests.js'
 
@@ -65,10 +61,8 @@ export default {
   inheritAttrs: false,
   components: {
     DialogBase,
+    InputLocation,
     SelectEmployer,
-    SelectJobCity,
-    SelectJobState,
-    SelectJobCountry,
     SelectRemote
   },
   props: {
@@ -89,7 +83,7 @@ export default {
     this.formData = Object.assign({}, this.jobSubscription.filters)
 
     // Turn filter objects into flat IDs
-    const flattenFilterItems = ['cities', 'states', 'countries', 'jobs', 'employers']
+    const flattenFilterItems = ['jobs', 'employers']
     flattenFilterItems.forEach((filterKey) => {
       this.formData[filterKey] = this.formData[filterKey].map((item) => item.id)
     })

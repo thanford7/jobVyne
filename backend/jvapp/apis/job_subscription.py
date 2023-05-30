@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
+from jvapp.apis.geocoding import save_raw_location
 from jvapp.models.job_subscription import EmployerJobSubscription
 from jvapp.models.abstract import PermissionTypes
 from jvapp.serializers.employer import get_serialized_employer_job
@@ -69,9 +70,10 @@ class EmployerJobSubscriptionView(JobVyneAPIView):
         
         job_subscriptions = EmployerJobSubscription.objects \
             .prefetch_related(
-                'filter_city',
-                'filter_state',
-                'filter_country',
+                'filter_location',
+                'filter_location__city',
+                'filter_location__state',
+                'filter_location__country',
                 'filter_job',
                 'filter_employer'
             ) \
@@ -85,78 +87,63 @@ class EmployerJobSubscriptionView(JobVyneAPIView):
         return job_subscriptions
     
     @staticmethod
-    @atomic
     def update_job_subscription(user, job_subscription, data):
-        set_object_attributes(job_subscription, data, {
-            'filter_job_title_regex': AttributeCfg(form_name='job_title_regex'),
-            'filter_exclude_job_title_regex': AttributeCfg(form_name='exclude_job_title_regex'),
-            'filter_remote_type_bit': AttributeCfg(form_name='remote_type_bit')
-        })
+        # This requires an additional query so we can't execute it in the atomic block
+        locations = []
+        if raw_locations := data.get('locations'):
+            for raw_location in raw_locations:
+                locations.append(save_raw_location(raw_location, False))
         
-        permission_type = PermissionTypes.EDIT.value if job_subscription.id else PermissionTypes.CREATE.value
-        job_subscription.jv_check_permission(permission_type, user)
-        
-        # Clear existing filters
-        if job_subscription.id:
-            if job_subscription.filter_city.all():
-                job_subscription.filter_city.clear()
-            if job_subscription.filter_state.all():
-                job_subscription.filter_state.clear()
-            if job_subscription.filter_country.all():
-                job_subscription.filter_country.clear()
-            if job_subscription.filter_job.all():
-                job_subscription.filter_job.clear()
-            if job_subscription.filter_employer.all():
-                job_subscription.filter_employer.clear()
-        
-        job_subscription.save()
-        
-        # Add new filters
-        if city_ids := data.get('cities'):
-            filter_cities = []
-            filter_model = job_subscription.filter_city.through
-            for city_id in city_ids:
-                filter_cities.append(filter_model(
-                    employerjobsubscription_id=job_subscription.id,
-                    city_id=city_id
-                ))
-            filter_model.objects.bulk_create(filter_cities)
-        if state_ids := data.get('states'):
-            filter_states = []
-            filter_model = job_subscription.filter_state.through
-            for state_id in state_ids:
-                filter_states.append(filter_model(
-                    employerjobsubscription_id=job_subscription.id,
-                    state_id=state_id
-                ))
-            filter_model.objects.bulk_create(filter_states)
-        if country_ids := data.get('countries'):
-            filter_countries = []
-            filter_model = job_subscription.filter_country.through
-            for country_id in country_ids:
-                filter_countries.append(filter_model(
-                    employerjobsubscription_id=job_subscription.id,
-                    country_id=country_id
-                ))
-            filter_model.objects.bulk_create(filter_countries)
-        if job_ids := data.get('jobs'):
-            filter_jobs = []
-            filter_model = job_subscription.filter_job.through
-            for job_id in job_ids:
-                filter_jobs.append(filter_model(
-                    employerjobsubscription_id=job_subscription.id,
-                    employerjob_id=job_id
-                ))
-            filter_model.objects.bulk_create(filter_jobs)
-        if employer_ids := data.get('employers'):
-            filter_employers = []
-            filter_model = job_subscription.filter_employer.through
-            for employer_id in employer_ids:
-                filter_employers.append(filter_model(
-                    employerjobsubscription_id=job_subscription.id,
-                    employer_id=employer_id
-                ))
-            filter_model.objects.bulk_create(filter_employers)
+        with atomic():
+            set_object_attributes(job_subscription, data, {
+                'filter_job_title_regex': AttributeCfg(form_name='job_title_regex'),
+                'filter_exclude_job_title_regex': AttributeCfg(form_name='exclude_job_title_regex'),
+                'filter_remote_type_bit': AttributeCfg(form_name='remote_type_bit'),
+                'filter_range_miles': AttributeCfg(form_name='range_miles')
+            })
+            
+            permission_type = PermissionTypes.EDIT.value if job_subscription.id else PermissionTypes.CREATE.value
+            job_subscription.jv_check_permission(permission_type, user)
+            
+            # Clear existing filters
+            if job_subscription.id:
+                if job_subscription.filter_location.all():
+                    job_subscription.filter_location.clear()
+                if job_subscription.filter_job.all():
+                    job_subscription.filter_job.clear()
+                if job_subscription.filter_employer.all():
+                    job_subscription.filter_employer.clear()
+            
+            job_subscription.save()
+            
+            # Add new filters
+            if locations:
+                filter_locations = []
+                filter_model = job_subscription.filter_location.through
+                for location in locations:
+                    filter_locations.append(filter_model(
+                        employerjobsubscription_id=job_subscription.id,
+                        location_id=location.id
+                    ))
+                filter_model.objects.bulk_create(filter_locations)
+            if job_ids := data.get('jobs'):
+                filter_jobs = []
+                filter_model = job_subscription.filter_job.through
+                for job_id in job_ids:
+                    filter_jobs.append(filter_model(
+                        employerjobsubscription_id=job_subscription.id,
+                        employerjob_id=job_id
+                    ))
+                filter_model.objects.bulk_create(filter_jobs)
+            if employer_ids := data.get('employers'):
+                filter_employers = []
+                filter_model = job_subscription.filter_employer.through
+                for employer_id in employer_ids:
+                    filter_employers.append(filter_model(
+                        employerjobsubscription_id=job_subscription.id,
+                        employer_id=employer_id
+                    ))
+                filter_model.objects.bulk_create(filter_employers)
 
 
 class EmployerJobSubscriptionJobView(JobVyneAPIView):

@@ -57,7 +57,7 @@ class JobApplicationTestCase(BaseTestCase):
         self.create_job([location_global_remote], **base_job_data)
         
         location_search_with_city = {
-            'formatted_address': 'Boston, MA, USA 02109',
+            'text': 'Boston, MA, USA 02109',
             'city': 'Boston',
             'state': 'MA',
             'country': 'USA',
@@ -67,7 +67,7 @@ class JobApplicationTestCase(BaseTestCase):
         }
         
         location_search_without_city = {
-            'formatted_address': 'CA, USA 02109',
+            'text': 'CA, USA 02109',
             'city': None,
             'state': 'CA',
             'country': 'USA',

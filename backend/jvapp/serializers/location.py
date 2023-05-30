@@ -11,5 +11,7 @@ def get_serialized_location(location: Location):
         'state': location.state.name if location.state else None,
         'state_id': location.state_id,
         'country': location.country.name if location.country else None,
-        'country_id': location.country_id
+        'country_id': location.country_id,
+        'latitude': location.latitude,
+        'longitude': location.longitude
     }

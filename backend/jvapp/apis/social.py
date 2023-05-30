@@ -1,6 +1,7 @@
 import json
 import math
 from collections import defaultdict
+from typing import Union
 
 from django.contrib.gis.geos import Point
 from django.db.models import Prefetch, Q
@@ -10,9 +11,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
-from jvapp.apis.geocoding import get_raw_location
-from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
-from jvapp.models import JobApplication, Message, PageView, REMOTE_TYPES
+from jvapp.models import JobApplication, Location, Message, PageView, REMOTE_TYPES
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
@@ -249,6 +248,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     EMPLOYERS_PER_PAGE = 20
     
     def get(self, request, link_filter_id=None):
+        from jvapp.apis.job_subscription import EmployerJobSubscriptionView
         from jvapp.apis.employer import EmployerJobApplicationRequirementView, EmployerView  # Avoid circular import
         page_count = coerce_int(self.query_params.get('page_count', 1))
         employer_id = self.query_params.get('employer_id')
@@ -340,6 +340,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         job_ids=None, search_regex=None, remote_type_bit=0, minimum_salary=None,
         range_miles=None,
     ):
+        from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         
         job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
@@ -359,31 +360,34 @@ class SocialLinkJobsView(JobVyneAPIView):
             # Some jobs have a salary floor but no ceiling so we check for both
             jobs_filter &= (Q(salary_ceiling__gte=minimum_salary) | Q(salary_floor__gte=minimum_salary))
             
-        # Location filters
+        jobs_filter &= SocialLinkJobsView.get_location_filter(location, remote_type_bit, range_miles)
+        
+        return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+    
+    @staticmethod
+    def get_location_filter(location_dict: Union[dict, None], remote_type_bit: int, range_miles: Union[int, None]):
         location_filter = Q()
-        if location and location.get('city') and range_miles:
-            start_point = Point(location['latitude'], location['longitude'], srid=4326)
+        if location_dict and location_dict.get('city') and range_miles:
+            start_point = Location.get_geometry_point(location_dict['latitude'], location_dict['longitude'])
             location_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
-        elif location:
+        elif location_dict:
             # If remote is allowed, we only want to filter on country, regardless of whether a state is set
-            if (state := location['state']) and not remote_type_bit & REMOTE_TYPES.YES.value:
+            if (state := location_dict['state']) and not remote_type_bit & REMOTE_TYPES.YES.value:
                 location_filter &= Q(locations__state__name=state)
-            elif country := location['country']:
+            elif country := location_dict['country']:
                 country_filter = Q(locations__country__name=country)
                 if remote_type_bit & REMOTE_TYPES.YES.value:
                     # Some remote jobs don't have a country. In this case, we assume it's a global remote job
                     country_filter |= Q(locations__country__name__isnull=True)
                 location_filter &= country_filter
-        
+    
         if remote_type_bit and (remote_type_bit == REMOTE_TYPES.NO.value):
             location_filter &= Q(locations__is_remote=False)
-
+    
         if remote_type_bit and (remote_type_bit == REMOTE_TYPES.YES.value):
             location_filter &= Q(locations__is_remote=True)
-            
-        jobs_filter &= location_filter
         
-        return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+        return location_filter
 
 
 class ShareSocialLinkView(JobVyneAPIView):

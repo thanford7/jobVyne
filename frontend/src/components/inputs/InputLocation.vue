@@ -10,17 +10,21 @@
       ref="select"
       label="Location or Zip Code"
       :model-value="location"
-      @update:model-value="$emit('update:location', $event)"
-      filled use-input clearable
+      @update:model-value="emitLocation"
+      filled use-input clearable :multiple="isMulti" :use-chips="isMulti"
       :hide-dropdown-icon="true"
       :loading="isLoading"
       @input-value="getLocationsDebounceFn"
-      :options="locations"
-      option-label="formatted_address"
-      option-value="formatted_address"
+      new-value-mode="add-unique"
+      :options="locationOptions"
+      option-label="text"
+      option-value="text"
     >
       <template v-slot:selected-item="scope">
-        <span class="ellipsis">{{ scope.opt.formatted_address }}</span>
+        <q-chip v-if="isMulti" clickable removable>
+          <span class="ellipsis" :title="scope.opt.text">{{ scope.opt.text }}</span>
+        </q-chip>
+        <span v-else class="ellipsis" :title="scope.opt.text">{{ scope.opt.text }}</span>
       </template>
       <template v-slot:append>
         <q-icon name="place"/>
@@ -54,36 +58,53 @@ import { useUtilStore } from 'stores/utility-store.js'
 export default {
   name: 'InputLocation',
   props: {
-    location: [Object, null],
+    location: [Object, Array, null],
     range_miles: [Number, null],
     isIncludeRange: {
+      type: Boolean,
+      default: false
+    },
+    isMulti: {
       type: Boolean,
       default: false
     }
   },
   computed: {
     isAllowRange () {
-      return this.location && this.location.city && this.isIncludeRange
+      let hasCity = false
+      if (this.isMulti && this.location) {
+        hasCity = this.location.reduce((hasCity, location) => {
+          hasCity = hasCity || Boolean(location.city)
+          return hasCity
+        }, false)
+      } else if (!this.isMulti) {
+        hasCity = this.location?.city
+      }
+      return hasCity && this.isIncludeRange
     }
   },
   data () {
     return {
       isLoading: false,
-      locations: [],
+      locationOptions: [],
       getLocationsDebounceFn: null,
       utilStore: useUtilStore()
     }
   },
   methods: {
-    async getLocations (searchText) {
-      this.isLoading = true
+    emitLocation (location) {
+      this.$emit('update:location', location)
+      this.$refs.select.updateInputValue('')
+    },
+    async getLocationOptions (searchText) {
       if (!searchText || !searchText.length) {
         return
       }
+      this.isLoading = true
       const resp = await this.$api.get('search/location/', {
         params: { search_text: searchText }
       })
-      this.locations = resp.data
+      this.locationOptions = resp.data
       this.isLoading = false
       this.$refs.select.refresh()
       this.$refs.select.showPopup()
@@ -92,7 +113,7 @@ export default {
   created () {
     // Using debounce in methods is problematic
     // See: https://stackoverflow.com/questions/42199956/how-to-implement-debounce-in-vue2/49780382#49780382
-    this.getLocationsDebounceFn = debounce(this.getLocations, 700)
+    this.getLocationsDebounceFn = debounce(this.getLocationOptions, 700)
   }
 }
 </script>

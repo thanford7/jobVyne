@@ -1,4 +1,5 @@
 from jvapp.models.job_subscription import EmployerJobSubscription
+from jvapp.serializers.location import get_serialized_location
 
 
 def get_serialized_job_subscription(job_subscription: EmployerJobSubscription):
@@ -8,9 +9,8 @@ def get_serialized_job_subscription(job_subscription: EmployerJobSubscription):
         'filters': {
             'job_title_regex': job_subscription.filter_job_title_regex,
             'exclude_job_title_regex': job_subscription.filter_exclude_job_title_regex,
-            'cities': [{'name': c.name, 'id': c.id} for c in job_subscription.filter_city.all()],
-            'states': [{'name': s.name, 'id': s.id} for s in job_subscription.filter_state.all()],
-            'countries': [{'name': c.name, 'id': c.id} for c in job_subscription.filter_country.all()],
+            'locations': [get_serialized_location(l) for l in job_subscription.filter_location.all()],
+            'range_miles': job_subscription.filter_range_miles,
             'jobs': [{'title': j.job_title, 'id': j.id} for j in job_subscription.filter_job.all()],
             'employers': [{'name': e.employer_name, 'id': e.id} for e in job_subscription.filter_employer.all()],
             'remote_type_bit': job_subscription.filter_remote_type_bit
