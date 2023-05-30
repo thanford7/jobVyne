@@ -28,6 +28,8 @@ def resize_image_with_fill(image, width, height):
     background = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     offset = (round((width - resize_width) / 2), round((height - resize_height) / 2))
     background.paste(image_resize, offset)
+    if get_file_extension(image.url) != 'png':
+        background = background.convert(mode='RGB')
     im.close()
     image.close()
     background_file = NamedTemporaryFile()
