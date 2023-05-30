@@ -277,9 +277,9 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_jobs = {
                     'employer_id': job.employer_id,
                     'employer_name': job.employer.employer_name,
-                    'employer_logo': job.employer.logo.url if job.employer.logo else None,
+                    'employer_logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
                     'is_use_job_url': job.employer.is_use_job_url,
-                    'jobs': defaultdict(list)
+                    'jobs': defaultdict(lambda: defaultdict(list))
                 }
                 jobs_by_employer[job.employer_id] = employer_jobs
 
@@ -287,9 +287,10 @@ class SocialLinkJobsView(JobVyneAPIView):
             serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
                 job, application_requirements
             )
-            employer_jobs['jobs'][job.job_title].append(serialized_job)
+            job_department = job.job_department.name if job.job_department else None
+            employer_jobs['jobs'][job_department or 'General'][job.job_title].append(serialized_job)
             
-        jobs_by_employer = sorted(jobs_by_employer.values(), key=lambda x: x['employer_id'])
+        jobs_by_employer = list(jobs_by_employer.values())
         
         total_jobs = self.get_jobs_from_filter(employer_id=employer_id, filter_values={}).count()
         employer = EmployerView.get_employers(employer_id=employer_id)

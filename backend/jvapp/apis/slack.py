@@ -265,10 +265,10 @@ class SlackJobsMessageView(SlackBaseView):
                     }
                 ],
             }
-            if job.employer.logo:
+            if job.employer.logo_square_88:
                 job_info['accessory'] = {
                     'type': 'image',
-                    'image_url': job.employer.logo.url,
+                    'image_url': job.employer.logo_square_88.url,
                     'alt_text': f'{job.employer.employer_name} logo'
                 }
             

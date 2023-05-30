@@ -1,3 +1,4 @@
+from django.core.files import File
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -10,6 +11,10 @@ from jvapp.models import EmployerAuthGroup, JobApplication, JobApplicationTempla
 from jvapp.models.employer import Employer, EmployerJobApplicationRequirement, is_default_auth_group
 
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
+
+from jvapp.utils.file import get_file_extension, get_file_name
+
+from jvapp.utils.image import resize_image_with_fill
 
 
 def _get_default_user_groups(employer_id):
@@ -160,4 +165,16 @@ def add_job_application_requirements(sender, instance, created, *args, **kwargs)
         application_requirement.employer = instance
         
     EmployerJobApplicationRequirement.objects.bulk_create(requirements)
-    
+
+
+@receiver(post_save, sender=Employer)
+def generate_logo_sizes(sender, instance, created, *args, **kwargs):
+    if instance.logo and not instance.logo_square_88:
+        new_image = resize_image_with_fill(instance.logo, 88, 88)
+        if not new_image:
+            return
+        file_name = get_file_name(instance.logo.url, is_include_extension=False)
+        file_extension = get_file_extension(instance.logo.url)
+        instance.logo_square_88 = File(new_image, name=f'{file_name}_square_88.{file_extension}')
+        instance.save()
+        new_image.close()

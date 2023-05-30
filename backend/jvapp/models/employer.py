@@ -29,6 +29,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     organization_type = models.SmallIntegerField(default=ORG_TYPE_EMPLOYER)
     employer_name = models.CharField(max_length=150, unique=True)
     logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
+    logo_square_88 = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
     email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
     notification_email = models.CharField(max_length=50, null=True, blank=True)  # If present, an email will be sent to this address when a new application is created
