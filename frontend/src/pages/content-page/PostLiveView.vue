@@ -53,7 +53,6 @@ export default {
   components: { CustomTooltip },
   props: {
     content: [String, null],
-    jobLink: [Object, null],
     file: [Object, null],
     maxCharCount: [Number, null],
     isHidden: {
@@ -126,9 +125,14 @@ export default {
       }
       const resp = await this.$api.get(`social-link-jobs/${this.jobLink.id}`)
       const jobsByEmployer = resp.data.jobs_by_employer
-      this.jobTitles = jobsByEmployer.reduce((allJobs, employerJobs) => {
-        allJobs = [...allJobs, ...Object.keys(employerJobs.jobs)]
-        return allJobs
+      console.log(jobsByEmployer)
+      this.jobTitles = jobsByEmployer.reduce((allJobTitles, employer) => {
+        const jobTitles = Object.values(employer.jobs).reduce((allEmployerJobTitles, employerJobsByDept) => {
+          allEmployerJobTitles = [...allEmployerJobTitles, ...Object.keys(employerJobsByDept)]
+          return allEmployerJobTitles
+        }, [])
+        allJobTitles = [...allJobTitles, ...jobTitles]
+        return allJobTitles
       }, [])
       this.jobTitles.sort()
     }
@@ -144,6 +148,7 @@ export default {
       ])
     })
     this.user = this.authStore.propUser
+    await this.setJobsFromLink()
     this.isLoaded = true
   }
 }

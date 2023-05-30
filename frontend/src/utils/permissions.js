@@ -92,7 +92,7 @@ class PagePermissionsUtil {
           {
             icon: 'contact_page',
             key: 'employee-applications',
-            label: 'Job Applications',
+            label: 'Job Referrals',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
           {
@@ -108,12 +108,6 @@ class PagePermissionsUtil {
             icon: 'share',
             key: 'employee-social-accounts',
             label: 'Social Accounts'
-          },
-          {
-            icon: 'dynamic_feed',
-            key: 'employee-content',
-            label: 'Posts and Content',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           }
         ]
       },
@@ -207,16 +201,6 @@ class PagePermissionsUtil {
           //     return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
           //   }
           // },
-          {
-            icon: 'dynamic_feed',
-            key: 'employer-content',
-            label: 'Posts and Content',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedViewFn: isUserEmployerFn,
-            isPermittedFn: (permissionGroups, permissions) => {
-              return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_EMPLOYER_CONTENT)
-            }
-          },
           {
             icon: 'settings',
             key: 'employer-settings',

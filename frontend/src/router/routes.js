@@ -142,12 +142,6 @@ const routes = [
         name: 'employee-social-accounts',
         meta: { userTypeBits: USER_TYPES.Employee },
         component: () => import('pages/employee/social-accounts-page/SocialAccountsPage.vue')
-      },
-      {
-        path: ':key(employee-content)',
-        name: 'employee-content',
-        meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/ContentPage.vue')
       }
     ]
   },
@@ -210,12 +204,6 @@ const routes = [
         name: 'employer-profile-page',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/EmployerProfileCfgPage.vue')
-      },
-      {
-        path: ':key(employer-content)',
-        name: 'employer-content',
-        meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/ContentPage.vue')
       },
       {
         path: ':key(employer-settings)',
