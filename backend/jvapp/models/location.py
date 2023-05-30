@@ -67,7 +67,7 @@ SRID = 4326
 
 
 class Location(models.Model):
-    text = models.CharField(max_length=100, null=True, blank=True, unique=True)  # Raw text
+    text = models.CharField(max_length=100, null=True, blank=True)  # Raw text
     is_remote = models.BooleanField(null=True, blank=True)
     city = models.ForeignKey(City, null=True, blank=True, on_delete=models.SET_NULL)
     state = models.ForeignKey(State, null=True, blank=True, on_delete=models.SET_NULL)

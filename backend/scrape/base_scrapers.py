@@ -862,3 +862,63 @@ class BreezyScraper(Scraper):
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
         )
+
+
+class WorkableScraper(Scraper):
+    IS_JS_REQUIRED = True
+    job_item_page_wait_sel = '[data-ui="job-description"]'
+    
+    async def scrape_jobs(self):
+        page = await self.get_starting_page()
+        # Make sure page data has loaded
+        try:
+            await self.wait_for_el(page, '#jobs')
+        except PlaywrightTimeoutError:
+            page = await self.get_starting_page()
+            await self.wait_for_el(page, '#jobs')
+        
+        # Remove any location filters
+        location_filter_sel = '[data-ui*="pill-location"] [data-ui="dismiss"]'
+        for location_filter in await page.locator(f'css={location_filter_sel}').all():
+            await location_filter.click()
+        
+        # Keep clicking the "show more" button until we have loaded all jobs
+        show_more_btn_sel = 'button[data-ui="load-more-button"]'
+        while await page.locator(f'css={show_more_btn_sel}').is_visible():
+            await page.locator(f'css={show_more_btn_sel}').scroll_into_view_if_needed()
+            await page.locator(f'css={show_more_btn_sel}').click()
+
+        html_dom = await self.get_page_html(page)
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath('//li[@data-ui="job"]//a/@href').getall()))
+        
+        await self.close()
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        job_description = html.xpath('//div[@data-ui="job-description"]').get()
+        job_requirements = html.xpath('//div[@data-ui="job-requirements"]').get()
+        job_benefits = html.xpath('//div[@data-ui="job-benefits"]').get()
+        description = ''
+        for section in [job_description, job_requirements, job_benefits]:
+            try:
+                description += section
+            except TypeError as e:
+                raise e
+        description_compensation_data = parse_compensation_text(description)
+        
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=html.xpath('//h1[@data-ui="job-title"]/text()').get(),
+            locations=[html.xpath('//*[@data-ui="job-location"]/text()').get()],
+            job_department=html.xpath('//*[@data-ui="job-department"]/text()').get(),
+            job_description=description,
+            employment_type=html.xpath('//*[@data-ui="job-type"]/text()').get(),
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
