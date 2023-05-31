@@ -2,6 +2,8 @@ from collections import defaultdict
 from functools import reduce
 from io import StringIO
 
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db.models import Count, F, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -1177,6 +1179,15 @@ class EmployerUserView(JobVyneAPIView):
         
         def get_unique_permission_key(p):
             return p.user_id, p.employer_id, p.permission_group_id
+        
+        if len(users) == 1 and self.user.is_admin and (password := self.data.get('password')):
+            user = users[0]
+            try:
+                validate_password(password, user=user)
+            except ValidationError as e:
+                return get_error_response(f'Password doesn\'t meet requirements: {e}')
+            user.set_password(password)
+            user.save()
         
         while batchCount < len(users):
             user_employer_permissions_to_delete_filters = []
