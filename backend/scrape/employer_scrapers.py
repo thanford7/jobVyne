@@ -3,7 +3,7 @@ import re
 from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, BreezyScraper, GreenhouseIframeScraper, \
     GreenhouseScraper, \
     LeverScraper, \
-    WorkdayScraper
+    WorkableScraper, WorkdayScraper
 from scrape.custom_scraper.ebay import EbayScraper
 from scrape.custom_scraper.pinterest import PinterestScraper
 
@@ -219,9 +219,9 @@ class TransactionNetworkServicesScraper(WorkdayScraper):
     start_url = 'https://tnsi.wd1.myworkdayjobs.com/Search'
     
     
-class VasionScraper(BambooHrScraper2):
+class VasionScraper(WorkableScraper):
     employer_name = 'Vasion'
-    start_url = 'https://printerlogic.bamboohr.com/jobs/'
+    start_url = 'https://apply.workable.com/vasion/'
     
     
 class VeevaScraper(LeverScraper):
@@ -363,72 +363,196 @@ class ZocdocScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'zocdoc'
     employer_name = 'Zocdoc'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=zocdoc'
+    
+    
+class AvettaScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'avetta'
+    employer_name = 'Avetta'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=avetta'
+    
+    
+class KoalaHealthScraper(LeverScraper):
+    employer_name = 'Koala Health'
+    start_url = 'https://jobs.lever.co/koalahealth'
+    
+    
+class CambiaHealthSolutionsScraper(WorkdayScraper):
+    employer_name = 'Cambia Health Solutions'
+    start_url = 'https://cambiahealth.wd1.myworkdayjobs.com/External'
+    job_department_data_automation_id = 'Job_Category'
+    job_department_form_data_automation_id = 'Job_CategoryCheckboxGroup'
+    
+    
+class AffirmScraper(GreenhouseScraper):
+    employer_name = 'Affirm'
+    start_url = 'https://boards.greenhouse.io/affirm'
+    
+    
+class AddeparScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'addepar1'
+    employer_name = 'Addepar'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=addepar1'
+    
+
+class WaymarkScraper(GreenhouseScraper):
+    employer_name = 'Waymark'
+    start_url = 'https://boards.greenhouse.io/waymark'
+    
+    
+class VivintScraper(WorkdayScraper):
+    employer_name = 'Vivint'
+    start_url = 'https://vivint.wd5.myworkdayjobs.com/vivintjobs'
+    
+    
+class FabricScraper(LeverScraper):
+    employer_name = 'fabric'
+    start_url = 'https://jobs.lever.co/fabric'
+    
+    
+class UnderdogFantasyScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'underdogfantasy'
+    employer_name = 'Underdog Fantasy'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=underdogfantasy'
+    
+
+class TixrScraper(LeverScraper):
+    employer_name = 'Tixr'
+    start_url = 'https://jobs.lever.co/Tixr'
+    
+    
+class Mach49Scraper(GreenhouseScraper):
+    employer_name = 'Mach49'
+    start_url = 'https://boards.greenhouse.io/mach49'
+    
+    
+class HouzzScraper(WorkdayScraper):
+    employer_name = 'Houzz'
+    start_url = 'https://houzz.wd5.myworkdayjobs.com/External'
+    
+    
+class AccessoScraper(LeverScraper):
+    employer_name = 'accesso'
+    start_url = 'https://jobs.lever.co/accesso'
+    
+    
+class SeedHealthScraper(GreenhouseScraper):
+    employer_name = 'Seed Health'
+    start_url = 'https://boards.greenhouse.io/seed'
+    
+
+class RoktScraper(WorkableScraper):
+    employer_name = 'Rokt'
+    start_url = 'https://apply.workable.com/rokt/'
+    
+    
+class ConsensusScraper(LeverScraper):
+    employer_name = 'Consensus'
+    start_url = 'https://jobs.lever.co/goconsensus'
+    
+    
+class LoopScraper(GreenhouseScraper):
+    employer_name = 'Loop'
+    start_url = 'https://boards.greenhouse.io/loop'
+    
+
+class LoopReturnsScraper(LeverScraper):
+    employer_name = 'Loop Returns'
+    start_url = 'https://jobs.lever.co/loopreturns/'
+    
+    
+class SentiLinkScraper(GreenhouseScraper):
+    employer_name = 'SentiLink'
+    start_url = 'https://boards.greenhouse.io/sentilink'
+    
+
+class GrayDigitalScraper(GreenhouseScraper):
+    employer_name = 'Gray Digital'
+    start_url = 'https://boards.greenhouse.io/graydigital'
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 # EbayScraper.employer_name: EbayScraper,
 # PinterestScraper.employer_name: PinterestScraper,
+# RoktScraper.employer_name: RoktScraper,
 all_scrapers = {
-    AngiScraper.employer_name: AngiScraper,
-    AnthropicScraper.employer_name: AnthropicScraper,
-    AtlassianScraper.employer_name: AtlassianScraper,
-    AtomicScraper.employer_name: AtomicScraper,
-    AttentiveScraper.employer_name: AttentiveScraper,
-    BenevityScraper.employer_name: BenevityScraper,
-    BrightwheelScraper.employer_name: BrightwheelScraper,
-    CHGHealthcareScraper.employer_name: CHGHealthcareScraper,
-    CircleScraper.employer_name: CircleScraper,
-    ClozdScraper.employer_name: ClozdScraper,
-    ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
-    CuldesacScraper.employer_name: CuldesacScraper,
-    DevotedHealthScraper.employer_name: DevotedHealthScraper,
-    ElsevierScraper.employer_name: ElsevierScraper,
-    EntrataScraper.employer_name: EntrataScraper,
-    EverCommerceScraper.employer_name: EverCommerceScraper,
-    FICOScraper.employer_name: FICOScraper,
-    ForwardScraper.employer_name: ForwardScraper,
-    GalileoScraper.employer_name: GalileoScraper,
-    GuildEducationScraper.employer_name: GuildEducationScraper,
-    HealthGorillaScraper.employer_name: HealthGorillaScraper,
-    HopperScraper.employer_name: HopperScraper,
-    InvenergyScraper.employer_name: InvenergyScraper,
-    KandjiScraper.employer_name: KandjiScraper,
-    KlarnaScraper.employer_name: KlarnaScraper,
-    LaticreteInternationalScraper.employer_name: LaticreteInternationalScraper,
-    LeanDataScraper.employer_name: LeanDataScraper,
-    LinktreeScraper.employer_name: LinktreeScraper,
-    LiveViewTechnologiesScraper.employer_name: LiveViewTechnologiesScraper,
-    LucidSoftwareScraper.employer_name: LucidSoftwareScraper,
-    MaterialSecurityScraper.employer_name: MaterialSecurityScraper,
-    MetabaseScraper.employer_name: MetabaseScraper,
-    MetronomeScraper.employer_name: MetronomeScraper,
-    MindbloomScraper.employer_name: MindbloomScraper,
-    NavaScraper.employer_name: NavaScraper,
-    NiceScraper.employer_name: NiceScraper,
-    NylasScraper.employer_name: NylasScraper,
-    PerpayScraper.employer_name: PerpayScraper,
-    PlusgradeScraper.employer_name: PlusgradeScraper,
-    ProofpointScraper.employer_name: ProofpointScraper,
-    RecursionScraper.employer_name: RecursionScraper,
-    RegrowScraper.employer_name: RegrowScraper,
-    RoScraper.employer_name: RoScraper,
-    SideScraper.employer_name: SideScraper,
-    StubHubScraper.employer_name: StubHubScraper,
-    TechcyteScraper.employer_name: TechcyteScraper,
-    TendoScraper.employer_name: TendoScraper,
-    TheMxGroupScraper.employer_name: TheMxGroupScraper,
-    TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
-    TwoULaundryScraper.employer_name: TwoULaundryScraper,
-    VasionScraper.employer_name: VasionScraper,
-    VeevaScraper.employer_name: VeevaScraper,
-    VerkadaScraper.employer_name: VerkadaScraper,
-    VestaTechScraper.employer_name: VestaTechScraper,
-    VirtaHealthScraper.employer_name: VirtaHealthScraper,
-    VivianHealthScraper.employer_name: VivianHealthScraper,
-    WaystarScraper.employer_name: WaystarScraper,
-    WealthsimpleScraper.employer_name: WealthsimpleScraper,
-    WhoopScraper.employer_name: WhoopScraper,
-    YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper,
-    ZelisScraper.employer_name: ZelisScraper,
-    ZocdocScraper.employer_name: ZocdocScraper
+    # AccessoScraper.employer_name: AccessoScraper,
+    # AddeparScraper.employer_name: AddeparScraper,
+    # AffirmScraper.employer_name: AffirmScraper,
+    # AngiScraper.employer_name: AngiScraper,
+    # AnthropicScraper.employer_name: AnthropicScraper,
+    # AtlassianScraper.employer_name: AtlassianScraper,
+    # AtomicScraper.employer_name: AtomicScraper,
+    # AttentiveScraper.employer_name: AttentiveScraper,
+    # AvettaScraper.employer_name: AvettaScraper,
+    # BenevityScraper.employer_name: BenevityScraper,
+    # BrightwheelScraper.employer_name: BrightwheelScraper,
+    # CambiaHealthSolutionsScraper.employer_name: CambiaHealthSolutionsScraper,
+    # CHGHealthcareScraper.employer_name: CHGHealthcareScraper,
+    # CircleScraper.employer_name: CircleScraper,
+    # ClozdScraper.employer_name: ClozdScraper,
+    # ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
+    ConsensusScraper.employer_name: ConsensusScraper,
+    # CuldesacScraper.employer_name: CuldesacScraper,
+    # DevotedHealthScraper.employer_name: DevotedHealthScraper,
+    # ElsevierScraper.employer_name: ElsevierScraper,
+    # EntrataScraper.employer_name: EntrataScraper,
+    # EverCommerceScraper.employer_name: EverCommerceScraper,
+    # FabricScraper.employer_name: FabricScraper,
+    # FICOScraper.employer_name: FICOScraper,
+    # ForwardScraper.employer_name: ForwardScraper,
+    # GalileoScraper.employer_name: GalileoScraper,
+    GrayDigitalScraper.employer_name: GrayDigitalScraper,
+    # GuildEducationScraper.employer_name: GuildEducationScraper,
+    # HealthGorillaScraper.employer_name: HealthGorillaScraper,
+    # HopperScraper.employer_name: HopperScraper,
+    # InvenergyScraper.employer_name: InvenergyScraper,
+    # KandjiScraper.employer_name: KandjiScraper,
+    # KlarnaScraper.employer_name: KlarnaScraper,
+    # KoalaHealthScraper.employer_name: KoalaHealthScraper,
+    # LaticreteInternationalScraper.employer_name: LaticreteInternationalScraper,
+    # LeanDataScraper.employer_name: LeanDataScraper,
+    # LinktreeScraper.employer_name: LinktreeScraper,
+    # LiveViewTechnologiesScraper.employer_name: LiveViewTechnologiesScraper,
+    LoopScraper.employer_name: LoopScraper,
+    LoopReturnsScraper.employer_name: LoopReturnsScraper,
+    # LucidSoftwareScraper.employer_name: LucidSoftwareScraper,
+    # Mach49Scraper.employer_name: Mach49Scraper,
+    # MaterialSecurityScraper.employer_name: MaterialSecurityScraper,
+    # MetabaseScraper.employer_name: MetabaseScraper,
+    # MetronomeScraper.employer_name: MetronomeScraper,
+    # MindbloomScraper.employer_name: MindbloomScraper,
+    # NavaScraper.employer_name: NavaScraper,
+    # NiceScraper.employer_name: NiceScraper,
+    # NylasScraper.employer_name: NylasScraper,
+    # PerpayScraper.employer_name: PerpayScraper,
+    # PlusgradeScraper.employer_name: PlusgradeScraper,
+    # ProofpointScraper.employer_name: ProofpointScraper,
+    # RecursionScraper.employer_name: RecursionScraper,
+    # RegrowScraper.employer_name: RegrowScraper,
+    # RoScraper.employer_name: RoScraper,
+    # SeedHealthScraper.employer_name: SeedHealthScraper,
+    SentiLinkScraper.employer_name: SentiLinkScraper,
+    # SideScraper.employer_name: SideScraper,
+    # StubHubScraper.employer_name: StubHubScraper,
+    # TechcyteScraper.employer_name: TechcyteScraper,
+    # TendoScraper.employer_name: TendoScraper,
+    # TheMxGroupScraper.employer_name: TheMxGroupScraper,
+    # TixrScraper.employer_name: TixrScraper,
+    # TransactionNetworkServicesScraper.employer_name: TransactionNetworkServicesScraper,
+    # TwoULaundryScraper.employer_name: TwoULaundryScraper,
+    # UnderdogFantasyScraper.employer_name: UnderdogFantasyScraper,
+    # VasionScraper.employer_name: VasionScraper,
+    # VeevaScraper.employer_name: VeevaScraper,
+    # VerkadaScraper.employer_name: VerkadaScraper,
+    # VestaTechScraper.employer_name: VestaTechScraper,
+    # VirtaHealthScraper.employer_name: VirtaHealthScraper,
+    # VivianHealthScraper.employer_name: VivianHealthScraper,
+    # VivintScraper.employer_name: VivintScraper,
+    # WaymarkScraper.employer_name: WaymarkScraper,
+    # WaystarScraper.employer_name: WaystarScraper,
+    # WealthsimpleScraper.employer_name: WealthsimpleScraper,
+    # WhoopScraper.employer_name: WhoopScraper,
+    # YoungLivingEssentialOilsScraper.employer_name: YoungLivingEssentialOilsScraper,
+    # ZelisScraper.employer_name: ZelisScraper,
+    # ZocdocScraper.employer_name: ZocdocScraper
 }

@@ -30,6 +30,7 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         'organization_type': employer.organization_type,
         'name': employer.employer_name,
         'logo_url': employer.logo.url if employer.logo else None,
+        'logo_square_88_url': employer.logo_square_88.url if employer.logo_square_88 else None,
         'size': employer.employer_size.size if employer.employer_size else None,
         'email_domains': employer.email_domains,
         'is_use_job_url': employer.is_use_job_url,
@@ -245,11 +246,6 @@ def get_serialized_employer_referral_request(referral_request: EmployerReferralR
         'employer_id': referral_request.employer_id,
         'email_subject': referral_request.email_subject,
         'email_body': referral_request.email_body,
-        'departments': [{'name': d.name, 'id': d.id} for d in referral_request.departments.all()],
-        'cities': [{'name': c.name, 'id': c.id} for c in referral_request.cities.all()],
-        'states': [{'name': s.name, 'id': s.id} for s in referral_request.states.all()],
-        'countries': [{'name': c.name, 'id': c.id} for c in referral_request.countries.all()],
-        'jobs': [{'title': j.job_title, 'id': j.id} for j in referral_request.jobs.all()]
     }
 
 
@@ -336,15 +332,4 @@ def get_serialized_employer_file_tag(tag: EmployerFileTag):
         'id': tag.id,
         'employer_id': tag.employer_id,
         'name': tag.name
-    }
-
-
-def get_serialized_employer_page(page: EmployerPage):
-    return {
-        'id': page.id,
-        'employer_id': page.employer_id,
-        'is_viewable': page.is_viewable,
-        'sections': [
-            get_serialized_content_item(ci) for ci in page.content_item.all()
-        ]
     }

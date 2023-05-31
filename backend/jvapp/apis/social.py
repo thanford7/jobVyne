@@ -1,7 +1,9 @@
+import json
 import math
 from collections import defaultdict
+from typing import Union
 
-from django.core.paginator import Paginator
+from django.contrib.gis.geos import Point
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
 from rest_framework import status
@@ -9,8 +11,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
-from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
-from jvapp.models import JobApplication, Message, PageView, REMOTE_TYPES
+from jvapp.models import JobApplication, Location, Message, PageView, REMOTE_TYPES
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.social import *
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
@@ -227,10 +228,7 @@ class SocialLinkFilterView(JobVyneAPIView):
         
         links = SocialLinkFilter.objects \
             .select_related('employer', 'owner') \
-            .prefetch_related(
-                'departments', 'cities', 'states', 'countries', 'jobs', 'tags',
-                app_prefetch, page_view_prefetch
-            ) \
+            .prefetch_related('jobs', 'tags', app_prefetch, page_view_prefetch) \
             .filter(link_filter_filter)
         
         if is_use_permissions:
@@ -250,6 +248,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     EMPLOYERS_PER_PAGE = 20
     
     def get(self, request, link_filter_id=None):
+        from jvapp.apis.job_subscription import EmployerJobSubscriptionView
         from jvapp.apis.employer import EmployerJobApplicationRequirementView, EmployerView  # Avoid circular import
         page_count = coerce_int(self.query_params.get('page_count', 1))
         employer_id = self.query_params.get('employer_id')
@@ -278,9 +277,9 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_jobs = {
                     'employer_id': job.employer_id,
                     'employer_name': job.employer.employer_name,
-                    'employer_logo': job.employer.logo.url if job.employer.logo else None,
+                    'employer_logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
                     'is_use_job_url': job.employer.is_use_job_url,
-                    'jobs': defaultdict(list)
+                    'jobs': defaultdict(lambda: defaultdict(list))
                 }
                 jobs_by_employer[job.employer_id] = employer_jobs
 
@@ -288,9 +287,10 @@ class SocialLinkJobsView(JobVyneAPIView):
             serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
                 job, application_requirements
             )
-            employer_jobs['jobs'][job.job_title].append(serialized_job)
+            job_department = job.job_department.name if job.job_department else None
+            employer_jobs['jobs'][job_department or 'General'][job.job_title].append(serialized_job)
             
-        jobs_by_employer = sorted(jobs_by_employer.values(), key=lambda x: x['employer_id'])
+        jobs_by_employer = list(jobs_by_employer.values())
         
         total_jobs = self.get_jobs_from_filter(employer_id=employer_id, filter_values={}).count()
         employer = EmployerView.get_employers(employer_id=employer_id)
@@ -309,23 +309,20 @@ class SocialLinkJobsView(JobVyneAPIView):
         })
     
     def get_filter_values_from_query_params(self):
-        filter_values = {}
-        if job_title := self.query_params.get('job_title'):
-            filter_values['job_title'] = job_title
-        if city_ids := self.query_params.getlist('city_ids[]'):
-            filter_values['city_ids'] = [int(city_id) for city_id in city_ids]
-        if state_ids := self.query_params.getlist('state_ids[]'):
-            filter_values['state_ids'] = [int(state_id) for state_id in state_ids]
-        if country_ids := self.query_params.getlist('country_ids[]'):
-            filter_values['country_ids'] = [int(country_id) for country_id in country_ids]
-        if department_ids := self.query_params.getlist('department_ids[]'):
-            filter_values['department_ids'] = [int(department_id) for department_id in department_ids]
+        filter_values = {
+            k: v for k, v in self.query_params.items() if k in ('search_regex',)
+        }
+        
+        if location := self.query_params.get('location'):
+            filter_values['location'] = json.loads(location)
         if job_ids := self.query_params.getlist('job_ids[]'):
             filter_values['job_ids'] = [int(job_id) for job_id in job_ids]
         if remote_type_bit := self.query_params.get('remote_type_bit'):
             filter_values['remote_type_bit'] = coerce_int(remote_type_bit)
         if minimum_salary := self.query_params.get('minimum_salary'):
             filter_values['minimum_salary'] = coerce_int(minimum_salary)
+        if range_miles := self.query_params.get('range_miles'):
+            filter_values['range_miles'] = int(range_miles)
         
         return filter_values
     
@@ -340,9 +337,11 @@ class SocialLinkJobsView(JobVyneAPIView):
     
     @staticmethod
     def get_filtered_jobs(
-        employer_id, department_ids=None, city_ids=None, state_ids=None, country_ids=None,
-        job_ids=None, job_title=None, remote_type_bit=None, minimum_salary=None
+        employer_id, location=None,
+        job_ids=None, search_regex=None, remote_type_bit=0, minimum_salary=None,
+        range_miles=None,
     ):
+        from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         
         job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
@@ -354,28 +353,42 @@ class SocialLinkJobsView(JobVyneAPIView):
         else:
             jobs_filter = Q(employer_id=employer_id)
         
-        if department_ids:
-            jobs_filter &= Q(job_department_id__in=department_ids)
-        if city_ids:
-            jobs_filter &= Q(locations__city_id__in=city_ids)
-        if state_ids:
-            jobs_filter &= Q(locations__state_id__in=state_ids)
-        if country_ids:
-            jobs_filter &= Q(locations__country_id__in=country_ids)
         if job_ids:
             jobs_filter &= Q(id__in=job_ids)
-        if job_title:
-            jobs_filter &= Q(job_title__iregex=f'^.*{job_title}.*$')
-        if remote_type_bit:
-            if remote_type_bit == REMOTE_TYPES.YES:
-                jobs_filter &= Q(locations__is_remote=True)
-            elif remote_type_bit == REMOTE_TYPES.NO:
-                jobs_filter &= Q(locations__is_remote=False)
+        if search_regex:
+            jobs_filter &= (Q(job_title__iregex=f'^.*{search_regex}.*$') | Q(employer__employer_name__iregex=f'^.*{search_regex}.*$'))
         if minimum_salary:
             # Some jobs have a salary floor but no ceiling so we check for both
             jobs_filter &= (Q(salary_ceiling__gte=minimum_salary) | Q(salary_floor__gte=minimum_salary))
+            
+        jobs_filter &= SocialLinkJobsView.get_location_filter(location, remote_type_bit, range_miles)
         
         return EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+    
+    @staticmethod
+    def get_location_filter(location_dict: Union[dict, None], remote_type_bit: int, range_miles: Union[int, None]):
+        location_filter = Q()
+        if location_dict and location_dict.get('city') and range_miles:
+            start_point = Location.get_geometry_point(location_dict['latitude'], location_dict['longitude'])
+            location_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
+        elif location_dict:
+            # If remote is allowed, we only want to filter on country, regardless of whether a state is set
+            if (state := location_dict['state']) and not remote_type_bit & REMOTE_TYPES.YES.value:
+                location_filter &= Q(locations__state__name=state)
+            elif country := location_dict['country']:
+                country_filter = Q(locations__country__name=country)
+                if remote_type_bit & REMOTE_TYPES.YES.value:
+                    # Some remote jobs don't have a country. In this case, we assume it's a global remote job
+                    country_filter |= Q(locations__country__name__isnull=True)
+                location_filter &= country_filter
+    
+        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.NO.value):
+            location_filter &= Q(locations__is_remote=False)
+    
+        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.YES.value):
+            location_filter &= Q(locations__is_remote=True)
+        
+        return location_filter
 
 
 class ShareSocialLinkView(JobVyneAPIView):

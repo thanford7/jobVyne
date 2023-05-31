@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import random
 import re
 import tempfile
 from datetime import timedelta
@@ -19,6 +20,45 @@ from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
+
+# ---- HEADER OPTIONS
+# ---- Note: Tried adding these to connection session. Requests end up being rejected with everything but User-Agent
+# 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+# 'Referer': 'https://www.google.com',
+# 'Accept-Language': 'en-US,en;q=0.9',
+# 'Accept-Encoding': 'gzip, deflate, br',
+# 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+# 'Connection': 'keep-alive',
+# 'Upgrade-Insecure-Requests': '1',
+# 'Sec-Fetch-Dest': 'document',
+# 'Sec-Fetch-Mode': 'navigate',
+# 'Sec-Fetch-Site': 'none',
+# 'Sec-Fetch-User': '?1',
+# 'Cache-Control': 'max-age=0',
+# 'Sec-Ch-Ua-Mobile': '?0'
+
+USER_AGENTS = [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13.4; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Linux i686; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.57',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.57'
+]
+
+
+def get_random_user_agent():
+    return random.choice(USER_AGENTS)
 
 
 def normalize_url(url):
@@ -46,8 +86,7 @@ class Scraper:
         self.playwright = playwright
         self.browser = browser
         self.session = ClientSession(headers={
-            'Referer': get_base_url(self.start_url),
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+            'User-Agent': get_random_user_agent()
         })
         self.skip_urls = skip_urls
         logger.info(f'scraper {self.session} created')
@@ -67,27 +106,27 @@ class Scraper:
         
         storage = get_file_storage_engine()
         employer_name = '_'.join(self.employer_name.split(' '))
-
+        
         screenshot_file_path = f'scraper_error/{employer_name}_screenshot_{timezone.now()}.png'
         screenshot = await page.screenshot(full_page=True)
         screenshot_file = tempfile.TemporaryFile()
         screenshot_file.write(screenshot)
         storage.save(screenshot_file_path, screenshot_file)
-
+        
         html_file_path = f'scraper_error/{employer_name}_page_{timezone.now()}.html'
         # This won't load if the error is caused by a page load issue
         page_content = await page.content()
         html_file = tempfile.TemporaryFile()
         html_file.write(bytes(page_content, 'utf-8'))
         storage.save(html_file_path, html_file)
-        
+    
     async def request_failure_logger(self, request):
         logger.info(f'REQUEST FAILED: {request.url} {request.failure}')
-        
+    
     def response_failure_logger(self, response):
         if response.status >= 400 and 'reddit' not in response.request.url:
             logger.info(f'RESPONSE ERROR: {response.status} {response.status_text} for {response.request.url}')
-
+    
     async def visit_page_with_retry(self, url, max_retries=4):
         # Some browser IPs may not work. If they don't we'll remove the browser and try another
         retries = 0
@@ -118,16 +157,17 @@ class Scraper:
                 error_pages.append(page)
                 error = e
                 retries += 1
-                logger.info(f'Exception reaching page "{url}". Trying to reload page (retry {retries} of {max_retries})')
+                logger.info(
+                    f'Exception reaching page "{url}". Trying to reload page (retry {retries} of {max_retries})')
                 if resp:
                     logger.info(f'Response: {resp.status} -- {resp.status_text}')
                 await asyncio.sleep(1)
-
+        
         await self.save_page_info(page)
-
+        
         for p in error_pages:
             await p.close()
-
+        
         raise error or ValueError(f'{str(e)} -- Exceeded max tries while trying to visit: "{url}"')
     
     async def scrape_jobs(self):
@@ -248,7 +288,7 @@ class Scraper:
         if self.IS_REMOVE_QUERY_PARAMS:
             url = url.split('?')[0]
         return url
-
+    
     def is_english(self, text):
         try:
             text.encode(encoding='utf-8').decode('ascii')
@@ -335,7 +375,7 @@ class Scraper:
             #             logo_url = logo.get('url') if logo else None
         
         return job_item
-    
+
 
 class BambooHrScraper(Scraper):
     """ There are two entirely different HTML structures on different BambooHR Sites
@@ -437,7 +477,7 @@ class BambooHrScraper2(Scraper):
         compensation_data = {}
         if compensation_text := job_detail_data.get('compensation'):
             compensation_data = parse_compensation_text(compensation_text)
-
+        
         compensation_data = merge_compensation_data(
             [description_compensation_data, compensation_data, standard_job_item.get_compensation_dict()]
         )
@@ -481,7 +521,7 @@ class GreenhouseScraper(Scraper):
                 )
         
         await self.close()
-        
+    
     def update_job_link(self, job_link):
         return job_link
     
@@ -495,11 +535,11 @@ class GreenhouseScraper(Scraper):
             return None
         job_description = html.xpath('//div[@id="content"]').get()
         description_compensation_data = parse_compensation_text(job_description)
-
+        
         compensation_data = merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
-
+        
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
@@ -526,7 +566,7 @@ class GreenhouseIframeScraper(GreenhouseScraper):
         link_values = parsed_url.groupdict()
         domain = self.GREENHOUSE_JOB_BOARD_DOMAIN or link_values["domain"]
         return f'https://boards.greenhouse.io/embed/job_app?for={domain}&token={link_values["job_id"]}'
-    
+
 
 class WorkdayScraper(Scraper):
     IS_JS_REQUIRED = True
@@ -734,7 +774,7 @@ class LeverScraper(Scraper):
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.start_url)
-
+        
         for department_section in html_dom.xpath('//div[@class="postings-wrapper"]//div[@class="postings-group"]'):
             job_links = set()
             department = department_section.xpath('.//div[contains(@class, "posting-category-title")]/text()').get()
@@ -742,7 +782,7 @@ class LeverScraper(Scraper):
             await self.add_job_links_to_queue(list(job_links), meta_data={'job_department': department})
         
         await self.close()
-        
+    
     def normalize_job_department(self, job_department):
         # Hook for child classes
         return job_department
@@ -759,9 +799,9 @@ class LeverScraper(Scraper):
         description = ''
         for section in description_sections:
             description += section
-
+        
         description_compensation_data = parse_compensation_text(description)
-
+        
         compensation_data = merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
@@ -783,7 +823,8 @@ class BreezyScraper(Scraper):
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.start_url)
-        await self.add_job_links_to_queue(list(html_dom.xpath('//div[@class="positions-container"]//li[has-class("position")]//a/@href').getall()))
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath('//div[@class="positions-container"]//li[has-class("position")]//a/@href').getall()))
         await self.close()
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
@@ -818,6 +859,66 @@ class BreezyScraper(Scraper):
             job_department=job_department,
             job_description=description,
             employment_type=employment_type,
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
+
+
+class WorkableScraper(Scraper):
+    IS_JS_REQUIRED = True
+    job_item_page_wait_sel = '[data-ui="job-description"]'
+    
+    async def scrape_jobs(self):
+        page = await self.get_starting_page()
+        # Make sure page data has loaded
+        try:
+            await self.wait_for_el(page, '#jobs')
+        except PlaywrightTimeoutError:
+            page = await self.get_starting_page()
+            await self.wait_for_el(page, '#jobs')
+        
+        # Remove any location filters
+        location_filter_sel = '[data-ui*="pill-location"] [data-ui="dismiss"]'
+        for location_filter in await page.locator(f'css={location_filter_sel}').all():
+            await location_filter.click()
+        
+        # Keep clicking the "show more" button until we have loaded all jobs
+        show_more_btn_sel = 'button[data-ui="load-more-button"]'
+        while await page.locator(f'css={show_more_btn_sel}').is_visible():
+            await page.locator(f'css={show_more_btn_sel}').scroll_into_view_if_needed()
+            await page.locator(f'css={show_more_btn_sel}').click()
+
+        html_dom = await self.get_page_html(page)
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath('//li[@data-ui="job"]//a/@href').getall()))
+        
+        await self.close()
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        job_description = html.xpath('//div[@data-ui="job-description"]').get()
+        job_requirements = html.xpath('//div[@data-ui="job-requirements"]').get()
+        job_benefits = html.xpath('//div[@data-ui="job-benefits"]').get()
+        description = ''
+        for section in [job_description, job_requirements, job_benefits]:
+            try:
+                description += section
+            except TypeError as e:
+                raise e
+        description_compensation_data = parse_compensation_text(description)
+        
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=html.xpath('//h1[@data-ui="job-title"]/text()').get(),
+            locations=[html.xpath('//*[@data-ui="job-location"]/text()').get()],
+            job_department=html.xpath('//*[@data-ui="job-department"]/text()').get(),
+            job_description=description,
+            employment_type=html.xpath('//*[@data-ui="job-type"]/text()').get(),
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
         )

@@ -36,6 +36,11 @@
         label="Permission groups"
         v-model="formDataSingle.permission_group_ids"
       />
+      <PasswordInput
+        v-if="isAdmin"
+        v-model="formDataSingle.password"
+        :is-validate="true"
+      />
     </q-form>
     <q-form ref="form" v-else>
       <SelectPermissionGroup
@@ -54,6 +59,7 @@
 
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import PasswordInput from 'components/inputs/PasswordInput.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
@@ -68,7 +74,8 @@ const FORM_DATE_SINGLE_TEMPLATE = {
   last_name: null,
   email: null,
   permission_group_ids: null,
-  employer_id: null
+  employer_id: null,
+  password: null
 }
 
 const FORM_DATE_MULTI_TEMPLATE = {
@@ -80,7 +87,7 @@ export default {
   name: 'DialogUser',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { SelectPermissionGroup, DialogBase, SelectEmployer },
+  components: { PasswordInput, SelectPermissionGroup, DialogBase, SelectEmployer },
   data () {
     return {
       user_ids: null,

@@ -10,7 +10,7 @@ from jvapp.models.user import PermissionName
 __all__ = (
     'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
-    'EmployerPage', 'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
+    'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
     'EmployerSlack'
 )
@@ -29,6 +29,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     organization_type = models.SmallIntegerField(default=ORG_TYPE_EMPLOYER)
     employer_name = models.CharField(max_length=150, unique=True)
     logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
+    logo_square_88 = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
     email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
     notification_email = models.CharField(max_length=50, null=True, blank=True)  # If present, an email will be sent to this address when a new application is created
@@ -295,11 +296,6 @@ class EmployerReferralRequest(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='referral_request')
     email_subject = models.CharField(max_length=255)
     email_body = models.TextField()
-    departments = models.ManyToManyField('JobDepartment')
-    cities = models.ManyToManyField('City')
-    states = models.ManyToManyField('State')
-    countries = models.ManyToManyField('Country')
-    jobs = models.ManyToManyField('EmployerJob')
 
     @classmethod
     def _jv_filter_perm_query(cls, user, query):
@@ -461,21 +457,6 @@ class EmployerFileTag(models.Model, JobVynePermissionsMixin):
     
     class Meta:
         unique_together = ('employer', 'name')
-    
-    def _jv_can_create(self, user):
-        return (
-            user.is_admin
-            or (
-                self.employer_id == user.employer_id
-                and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
-            )
-        )
-
-
-class EmployerPage(AuditFields, OwnerFields, JobVynePermissionsMixin):
-    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, related_name='profile_page', unique=True)
-    is_viewable = models.BooleanField(default=False)
-    content_item = models.ManyToManyField('ContentItem')
     
     def _jv_can_create(self, user):
         return (

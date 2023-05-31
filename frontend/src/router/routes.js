@@ -120,12 +120,6 @@ const routes = [
         component: () => import('pages/employee/DashboardPage.vue')
       },
       {
-        path: ':key(employee-links)',
-        name: 'employee-links',
-        meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/ReferralLinksPage.vue')
-      },
-      {
         path: ':key(employee-jobs)',
         name: 'employee-jobs',
         meta: { userTypeBits: USER_TYPES.Employee },
@@ -148,12 +142,6 @@ const routes = [
         name: 'employee-social-accounts',
         meta: { userTypeBits: USER_TYPES.Employee },
         component: () => import('pages/employee/social-accounts-page/SocialAccountsPage.vue')
-      },
-      {
-        path: ':key(employee-content)',
-        name: 'employee-content',
-        meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/ContentPage.vue')
       }
     ]
   },
@@ -210,18 +198,6 @@ const routes = [
         name: 'employer-user-management',
         meta: { userTypeBits: USER_TYPES.Employer },
         component: () => import('pages/employer/user-management-page/UserManagementPage.vue')
-      },
-      {
-        path: ':key(employer-profile-page)',
-        name: 'employer-profile-page',
-        meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/EmployerProfileCfgPage.vue')
-      },
-      {
-        path: ':key(employer-content)',
-        name: 'employer-content',
-        meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/ContentPage.vue')
       },
       {
         path: ':key(employer-settings)',

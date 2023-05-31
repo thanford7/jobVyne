@@ -15,8 +15,11 @@ def get_file_extension(file_url):
     return file_url.split('.')[-1]
 
 
-def get_file_name(file_url):
-    return file_url.split('/')[-1]
+def get_file_name(file_url, is_include_extension=True):
+    file_name = file_url.split('/')[-1]
+    if is_include_extension:
+        return file_name
+    return file_name.split('.')[0]
 
 
 def get_safe_file_path(file):

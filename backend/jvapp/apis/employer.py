@@ -2,6 +2,8 @@ from collections import defaultdict
 from functools import reduce
 from io import StringIO
 
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db.models import Count, F, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -11,7 +13,7 @@ from slack_sdk import WebClient
 
 from jobVyne import settings
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
-from jvapp.apis.geocoding import LocationParser
+from jvapp.apis.geocoding import LocationParser, get_raw_location
 from jvapp.apis.job import LocationView
 from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
 from jvapp.apis.notification import MessageGroupView
@@ -24,12 +26,12 @@ from jvapp.models.content import ContentItem
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
-    EmployerFileTag, EmployerPage
+    EmployerFileTag
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
-    get_serialized_employer_file_tag, get_serialized_employer_job, get_serialized_employer_page, \
+    get_serialized_employer_file_tag, get_serialized_employer_job, \
     get_serialized_employer_referral_request
 from jvapp.utils import csv
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
@@ -286,8 +288,7 @@ class EmployerBillingView(JobVyneAPIView):
         
         # Street address isn't important to normalize. We are just using the address to determine taxes
         location_text = f'{self.data["city"]}, {self.data["state"]}, {self.data["country"]} {self.data.get("postal_code")}'
-        location_parser = LocationParser()
-        raw_location = location_parser.get_raw_location(location_text)
+        raw_location = get_raw_location(location_text)
         if not raw_location:
             raise ValueError(f'Could not locate address for {location_text}')
         employer.street_address = self.data.get('street_address')
@@ -433,67 +434,10 @@ class EmployerReferralRequestView(JobVyneAPIView):
             'email_body': AttributeCfg(prop_func=lambda val: sanitize_html(val, is_email=True))
         })
         
-        if referral_request.id:
-            referral_request.departments.remove()
-            referral_request.cities.remove()
-            referral_request.states.remove()
-            referral_request.countries.remove()
-            referral_request.jobs.remove()
-        
         permission_type = PermissionTypes.EDIT.value if referral_request.id else PermissionTypes.CREATE.value
         referral_request.jv_check_permission(permission_type, user)
         referral_request.save()
         
-        if department_ids := data.get('department_ids'):
-            departments = []
-            department_model = referral_request.departments.through
-            for department_id in department_ids:
-                departments.append(department_model(
-                    employerreferralrequest_id=referral_request.id,
-                    jobdepartment_id=department_id
-                ))
-            department_model.objects.bulk_create(departments)
-        
-        if city_ids := data.get('city_ids'):
-            cities = []
-            city_model = referral_request.cities.through
-            for city_id in city_ids:
-                cities.append(city_model(
-                    employerreferralrequest_id=referral_request.id,
-                    city_id=city_id
-                ))
-            city_model.objects.bulk_create(cities)
-        
-        if state_ids := data.get('state_ids'):
-            states = []
-            state_model = referral_request.states.through
-            for state_id in state_ids:
-                states.append(state_model(
-                    employerreferralrequest_id=referral_request.id,
-                    state_id=state_id
-                ))
-            state_model.objects.bulk_create(states)
-        
-        if country_ids := data.get('country_ids'):
-            countries = []
-            country_model = referral_request.countries.through
-            for country_id in country_ids:
-                countries.append(country_model(
-                    employerreferralrequest_id=referral_request.id,
-                    country_id=country_id
-                ))
-            country_model.objects.bulk_create(countries)
-        
-        if job_ids := data.get('job_ids'):
-            jobs = []
-            job_model = referral_request.jobs.through
-            for job_id in job_ids:
-                jobs.append(job_model(
-                    employerreferralrequest_id=referral_request.id,
-                    employerjob_id=job_id
-                ))
-            job_model.objects.bulk_create(jobs)
-    
     @staticmethod
     def get_or_create_referral_request_message_thread(employer_id, referral_request):
         employer_message_group = MessageGroupView.get_or_create_employer_message_group(employer_id)
@@ -981,16 +925,16 @@ class EmployerBonusRuleView(JobVyneAPIView):
         rules = EmployerReferralBonusRule.objects \
             .select_related('bonus_currency') \
             .prefetch_related(
-            'include_departments',
-            'exclude_departments',
-            'include_cities',
-            'exclude_cities',
-            'include_states',
-            'exclude_states',
-            'include_countries',
-            'exclude_countries',
-            'modifier'
-        ) \
+                'include_departments',
+                'exclude_departments',
+                'include_cities',
+                'exclude_cities',
+                'include_states',
+                'exclude_states',
+                'include_countries',
+                'exclude_countries',
+                'modifier'
+            ) \
             .filter(filter)
         
         if is_use_permissions:
@@ -1235,6 +1179,15 @@ class EmployerUserView(JobVyneAPIView):
         
         def get_unique_permission_key(p):
             return p.user_id, p.employer_id, p.permission_group_id
+        
+        if len(users) == 1 and self.user.is_admin and (password := self.data.get('password')):
+            user = users[0]
+            try:
+                validate_password(password, user=user)
+            except ValidationError as e:
+                return get_error_response(f'Password doesn\'t meet requirements: {e}')
+            user.set_password(password)
+            user.save()
         
         while batchCount < len(users):
             user_employer_permissions_to_delete_filters = []
@@ -1518,70 +1471,6 @@ class EmployerFileTagView(JobVyneAPIView):
     @staticmethod
     def get_employer_file_tags(employer_id):
         return EmployerFileTag.objects.filter(employer_id=employer_id)
-
-
-class EmployerPageView(JobVyneAPIView):
-    permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
-    
-    def get(self, request):
-        if not (employer_id := self.query_params['employer_id']):
-            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
-        employer_page = self.get_employer_page(employer_id)
-        return Response(
-            status=status.HTTP_200_OK,
-            data=get_serialized_employer_page(employer_page) if employer_page else None
-        )
-    
-    @atomic
-    def put(self, request):
-        if not (employer_id := self.data['employer_id']):
-            return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
-        
-        employer_page = self.get_employer_page(employer_id)
-        if employer_page:
-            current_sections = {ci.id: ci for ci in employer_page.content_item.all()}
-        else:
-            employer_page = EmployerPage(employer_id=employer_id)
-            current_sections = {}
-        employer_page.is_viewable = self.data['is_viewable']
-        employer_page.jv_check_permission(PermissionTypes.EDIT.value, self.user)
-        employer_page.save()
-        
-        sections = self.data['sections']
-        for sectionIdx, sectionData in enumerate(sections):
-            section = None
-            if sectionId := sectionData.get('id'):
-                # Remove the section from the dict so we know it has been used
-                section = current_sections.pop(sectionId, None)
-            if not section:
-                section = ContentItem(type=sectionData['type'])
-            section.orderIdx = sectionIdx
-            section.header = sectionData['header']
-            section.config = sectionData.get('config')
-            item_parts = sectionData['item_parts']
-            for part in item_parts:
-                if html_content := part.get('html_content'):
-                    part['html_content'] = sanitize_html(html_content)
-            section.item_parts = item_parts
-            section.save()
-            employer_page.content_item.add(section)
-        
-        # Any sections still in the dict are not used and should be removed
-        for content_item_id, content_item in current_sections.items():
-            employer_page.content_item.remove(content_item_id)
-            content_item.delete()
-        
-        return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: 'Updated the profile page'
-        })
-    
-    @staticmethod
-    def get_employer_page(employer_id):
-        try:
-            return EmployerPage.objects.prefetch_related('content_item').get(employer_id=employer_id)
-        except EmployerPage.DoesNotExist:
-            return None
 
 
 class EmployerFromDomainView(JobVyneAPIView):

@@ -41,14 +41,12 @@
               </template>
             </q-input>
           </div>
-          <div class="col-md-4 col-12 q-pr-md-sm">
-            <SelectJobCity v-model="subscriptionFilter.cities" :is-emit-id="true" :is-all="true"/>
-          </div>
-          <div class="col-md-4 col-12 q-px-md-sm">
-            <SelectJobState v-model="subscriptionFilter.states" :is-emit-id="true" :is-all="true"/>
-          </div>
-          <div class="col-md-4 col-12 q-pl-md-sm">
-            <SelectJobCountry v-model="subscriptionFilter.countries" :is-emit-id="true" :is-all="true"/>
+          <div class="col-12 q-pr-md-sm">
+            <InputLocation
+              v-model:location="subscriptionFilter.locations"
+              v-model:range_miles="subscriptionFilter.range_miles"
+              :is-include-range="true" :is-multi="true"
+            />
           </div>
           <div class="col-md-4 col-12 q-pr-md-sm">
             <SelectRemote v-model="subscriptionFilter.remote_type_bit"/>
@@ -114,12 +112,7 @@
                 >
                   <b>Exclude: </b>&nbsp;{{ props.row.filters.exclude_job_title_regex }}
                 </q-chip>
-                <q-chip
-                  v-for="loc in locationUtil.getFormattedLocations(props.row.filters)"
-                  dense :color="loc.color" text-color="white" size="13px"
-                >
-                  {{ loc.name }}
-                </q-chip>
+                <LocationChip :locations="props.row.filters.locations" :is-dense="true"/>
                 <template v-if="props.row.filters.jobs?.length && props.row.filters.jobs?.length > 2">
                   <CustomTooltip :is_include_icon="false">
                     <template v-slot:content>
@@ -195,12 +188,11 @@
 import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogJobSubscription from 'components/dialogs/DialogJobSubscription.vue'
+import InputLocation from 'components/inputs/InputLocation.vue'
+import LocationChip from 'components/LocationChip.vue'
 import { useQuasar } from 'quasar'
 import locationUtil from 'src/utils/location.js'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
-import SelectJobCity from 'components/inputs/SelectJobCity.vue'
-import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
-import SelectJobState from 'components/inputs/SelectJobState.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
@@ -210,9 +202,8 @@ import { useEmployerStore } from 'stores/employer-store.js'
 const subscriptionFilterTemplate = {
   job_title_regex: null,
   exclude_job_title_regex: null,
-  cities: [],
-  states: [],
-  countries: [],
+  locations: null,
+  range_miles: 25,
   jobs: [],
   employers: [],
   remote_type_bit: null
@@ -226,12 +217,11 @@ const jobSubscriptionColumns = [
 export default {
   name: 'JobSubscriptionsSection',
   components: {
+    LocationChip,
+    InputLocation,
     CustomTooltip,
     SelectRemote,
     SelectEmployer,
-    SelectJobCountry,
-    SelectJobState,
-    SelectJobCity,
     CollapsableCard
   },
   data () {

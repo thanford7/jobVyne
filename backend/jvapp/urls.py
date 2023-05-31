@@ -4,6 +4,7 @@ from jvapp.apis import (
     admin, ats, auth, content, currency, data, email, employer, job_seeker, job, jobs, job_subscription,
     karma, message, notification, sales, slack, social, stripe, test, tracking, user
 )
+from jvapp.apis.geocoding import LocationSearchView
 
 urlpatterns = [
     # General Data
@@ -30,7 +31,6 @@ urlpatterns = [
     path('employer/job/department/', employer.EmployerJobDepartmentView.as_view()),
     path('employer/job/location/', employer.EmployerJobLocationView.as_view()),
     re_path('^employer/job-subscription/(?P<subscription_id>[0-9]+)?/?$', job_subscription.EmployerJobSubscriptionView.as_view()),
-    path('employer/page/', employer.EmployerPageView.as_view()),
     re_path('^employer/permission/(?P<auth_group_id>[0-9]+)?/?$', employer.EmployerAuthGroupView.as_view()),
     path('employer/referral/request/', employer.EmployerReferralRequestView.as_view()),
     re_path('^employer/slack/(?P<slack_cfg_id>[0-9]+)?/?$', employer.EmployerSlackView.as_view()),
@@ -117,6 +117,9 @@ urlpatterns = [
     # Email verification
     path('verify-email-generate/', user.UserEmailVerificationGenerateView.as_view()),
     path('verify-email/', user.UserEmailVerificationView.as_view()),
+    
+    # Google
+    path('search/location/', LocationSearchView.as_view()),
     
     # Sendgrid email
     path('sendgrid/webhooks/', email.SendgridWebhooksView.as_view()),

@@ -60,33 +60,6 @@
               :employer-id="employerId" :is-multi="true"
             />
           </BaseExpansionItem>
-          <BaseExpansionItem
-            :is-include-separator="false"
-            title="Job filters" class="content-expansion"
-          >
-            <template v-slot:header>
-              <CustomTooltip :is_include_space="true">
-                The unique link shared with each employee will include all jobs matching these filters.
-                If you wish to include all jobs, leave the filters blank.
-              </CustomTooltip>
-            </template>
-            <ErrorCallout ref="filteredJobsError" :error-text="filteredJobsErrorText"/>
-            <div>
-              <a :href="jobsExampleUrl" target="_blank" class="no-decoration">
-                <span class="text-gray-3">
-                  <q-icon name="launch"/>&nbsp;
-                </span>
-                View {{ dataUtil.pluralize('job', filteredJobs.length) }}
-              </a>
-            </div>
-            <div class="q-gutter-y-sm q-mt-sm">
-              <SelectJobDepartment v-model="jobFilters.department_ids" :is-emit-id="true"/>
-              <SelectJobCity v-model="jobFilters.city_ids" :is-emit-id="true"/>
-              <SelectJobState v-model="jobFilters.state_ids" :is-emit-id="true"/>
-              <SelectJobCountry v-model="jobFilters.country_ids" :is-emit-id="true"/>
-              <SelectJob v-model="jobFilters.job_ids" :employer-id="employerId"/>
-            </div>
-          </BaseExpansionItem>
         </div>
       </div>
     </q-form>
@@ -101,15 +74,9 @@ import ErrorCallout from 'components/ErrorCallout.vue'
 import dataUtil from 'src/utils/data.js'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import SelectEmployee from 'components/inputs/SelectEmployee.vue'
-import SelectJob from 'components/inputs/SelectJob.vue'
-import SelectJobCity from 'components/inputs/SelectJobCity.vue'
-import SelectJobCountry from 'components/inputs/SelectJobCountry.vue'
-import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
-import SelectJobState from 'components/inputs/SelectJobState.vue'
 import WysiwygEditor2 from 'components/inputs/WysiwygEditor2.vue'
 import emailUtil from 'src/utils/email.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
-import socialUtil from 'src/utils/social.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 
 export default {
@@ -120,11 +87,6 @@ export default {
     EmailPlaceholderTable,
     BaseExpansionItem,
     ErrorCallout,
-    SelectJob,
-    SelectJobCountry,
-    SelectJobState,
-    SelectJobCity,
-    SelectJobDepartment,
     DialogBase,
     WysiwygEditor2,
     CustomTooltip,
@@ -139,18 +101,8 @@ export default {
       emailSubject: '',
       emailBody: '',
       emailBodyErrorText: null,
-      filteredJobs: [],
-      filteredJobsErrorText: null,
-      filteredJobsCache: {},
       userFilters: {
         user_ids: null
-      },
-      jobFilters: {
-        department_ids: [],
-        city_ids: [],
-        state_ids: [],
-        country_ids: [],
-        job_ids: []
       },
       employerStore: null,
       dataUtil,
@@ -158,11 +110,6 @@ export default {
     }
   },
   computed: {
-    jobsExampleUrl () {
-      return socialUtil.getJobLinkUrl(
-        null, { filters: this.jobFilters, employerId: this.employerId }
-      )
-    },
     sendEmployeeCount () {
       if (this.userFilters.user_ids) {
         return this.userFilters.user_ids.length
@@ -172,17 +119,6 @@ export default {
     }
   },
   watch: {
-    jobFilters: {
-      async handler () {
-        await this.getFilteredJobs()
-        if (!this.filteredJobs.length) {
-          this.filteredJobsErrorText = 'Update or remove filters to make sure at least one job is available'
-        } else {
-          this.filteredJobsErrorText = null
-        }
-      },
-      deep: true
-    },
     emailBody () {
       if (!this.emailBody.includes(emailUtil.PLACEHOLDER_JOB_LINK.placeholder)) {
         this.emailBodyErrorText = 'The email message must include the jobs page link placeholder'
@@ -197,18 +133,6 @@ export default {
     addContent (content) {
       this.$refs.editor.insertContent(content)
     },
-    async getFilteredJobs () {
-      const params = { employer_id: this.employerId, ...this.jobFilters }
-      const cacheKey = JSON.stringify(params)
-      const cachedFilteredJobs = this.filteredJobsCache[cacheKey]
-      if (cachedFilteredJobs) {
-        this.filteredJobs = cachedFilteredJobs
-      } else {
-        const jobResp = await this.$api.get('employer/job/', { params })
-        this.filteredJobs = jobResp.data
-        this.filteredJobsCache[cacheKey] = jobResp.data
-      }
-    },
     async isValidForm () {
       const isValid = await this.$refs.form.validate()
       if (!isValid) {
@@ -218,10 +142,6 @@ export default {
         this.$refs.emailBodyError.shake()
         return false
       }
-      if (this.filteredJobsErrorText) {
-        this.$refs.filteredJobsError.shake()
-        return false
-      }
       return true
     },
     async sendRequest () {
@@ -229,7 +149,6 @@ export default {
         employer_id: this.employerId,
         email_subject: this.emailSubject,
         email_body: this.emailBody,
-        ...this.jobFilters,
         ...this.userFilters
       }
       await this.$api.post('employer/referral/request/', getAjaxFormData(formData))
@@ -240,7 +159,6 @@ export default {
   async mounted () {
     this.employerStore = useEmployerStore()
     await Promise.all([
-      this.getFilteredJobs(),
       this.employerStore.setEmployer(this.employerId),
       this.employerStore.setEmployees(this.employerId)
     ])

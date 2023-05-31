@@ -4,188 +4,10 @@
       <PageHeader title="Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div v-if="defaultReferralLink" class="col-12">
-          <BaseExpansionItem v-if="!hasCompletedChecklist" :is-include-separator="false">
-            <template v-slot:header>
-              <div class="text-h6">
-                Get started
-              </div>
-            </template>
-            <div class="q-mb-sm">
-              <i>
-                Referral bonuses can be worth thousands of dollars. Complete your profile setup in minutes.
-              </i>
-            </div>
-            <q-list dense>
-              <q-item class="bg-hover-gray-100">
-                <q-item-section>
-                  <div class="text-bold">
-                    <q-icon v-if="userEmployeeChecklist.is_email_verified" name="check_circle" color="positive"/>
-                    <q-icon v-else name="assignment" color="negative"/>
-                    Validate your email address
-                  </div>
-                  <ul v-if="!userEmployeeChecklist.is_email_verified" class="q-mb-none">
-                    <li>Go to your
-                      <a href="#"
-                         @click.prevent="$router.push({ name: 'profile', params: { key: 'profile' }, query: { tab: 'security' } })">
-                        account page
-                      </a>
-                    </li>
-                    <li>Click the "Send verification email" button for your primary email</li>
-                    <li>
-                      Open the email sent to your email address and click the button to "verify email".
-                      If you don't see the email, check your junk mail folder.
-                    </li>
-                  </ul>
-                </q-item-section>
-              </q-item>
-              <q-item v-if="!userEmployeeChecklist.is_email_employer_permitted" class="bg-hover-gray-100">
-                <q-item-section>
-                  <div class="text-bold">
-                    <q-icon v-if="userEmployeeChecklist.has_secondary_email" name="check_circle" color="positive"/>
-                    <q-icon v-else name="assignment" color="negative"/>
-                    Add your business email address
-                  </div>
-                  <ul v-if="!userEmployeeChecklist.has_secondary_email" class="q-mb-none">
-                    <li>Go to your
-                      <a href="#"
-                         @click.prevent="$router.push({ name: 'profile', params: { key: 'profile' } })">
-                        account page
-                      </a>
-                    </li>
-                    <li>Enter your business email</li>
-                    <li>
-                      Click the "Save" button.
-                    </li>
-                  </ul>
-                </q-item-section>
-              </q-item>
-              <q-item v-if="userEmployeeChecklist.has_secondary_email" class="bg-hover-gray-100">
-                <q-item-section>
-                  <div class="text-bold">
-                    <q-icon v-if="userEmployeeChecklist.is_business_email_verified" name="check_circle"
-                            color="positive"/>
-                    <q-icon v-else name="assignment" color="negative"/>
-                    Validate your business email address
-                  </div>
-                  <ul v-if="!userEmployeeChecklist.is_business_email_verified" class="q-mb-none">
-                    <li>Go to your
-                      <a href="#"
-                         @click.prevent="$router.push({ name: 'profile', params: { key: 'profile' }, query: { tab: 'security' } })">
-                        account page
-                      </a>
-                    </li>
-                    <li>Click the "Send verification email" button for your business email</li>
-                    <li>
-                      Open the email sent to your email address and click the button to "verify email".
-                      If you don't see the email, check your junk mail folder.
-                    </li>
-                  </ul>
-                </q-item-section>
-              </q-item>
-              <q-item class="bg-hover-gray-100">
-                <q-item-section>
-                  <div class="text-bold">
-                    <q-icon v-if="userEmployeeChecklist.has_connected_linkedin" name="check_circle" color="positive"/>
-                    <q-icon v-else name="assignment" color="negative"/>
-                    Connect your LinkedIn account
-                  </div>
-                  <ul v-if="!userEmployeeChecklist.has_connected_linkedin" class="q-mb-none">
-                    <li>Go to your
-                      <a href="#"
-                         @click.prevent="$router.push({ name: 'employee-social-accounts', params: { key: 'employee-social-accounts' } })">
-                        account page
-                      </a>
-                    </li>
-                    <li>Click the "Connect LinkedIn" button</li>
-                    <li>Follow the instructions from the LinkedIn page</li>
-                  </ul>
-                </q-item-section>
-              </q-item>
-              <q-item class="bg-hover-gray-100">
-                <q-item-section>
-                  <div class="text-bold">
-                    <q-icon v-if="userEmployeeChecklist.has_scheduled_auto_post" name="check_circle" color="positive"/>
-                    <q-icon v-else name="assignment" color="negative"/>
-                    Send your first LinkedIn post and schedule auto-post
-                  </div>
-                  <ul v-if="!userEmployeeChecklist.has_scheduled_auto_post" class="q-mb-none">
-                    <li>Go to your
-                      <a href="#"
-                         @click.prevent="$router.push({ name: 'employee-content', params: { key: 'employee-content' } })">
-                        Posts and Content page
-                      </a>
-                    </li>
-                    <li>Post using an employer template</li>
-                    <ul>
-                      <li>Click the "Employer Post Templates" tab to check if there are any post templates you can share</li>
-                      <li>
-                        If there is at least one template, click the
-                        <q-icon name="share"/>
-                        icon and complete the form. Make sure "auto-post" is turned on
-                      </li>
-                    </ul>
-                    <li>Or create your own post</li>
-                    <ul>
-                      <li>Click the "Posts" tab</li>
-                      <li>Click the "Create post" button and select "LinkedIn"</li>
-                      <li>Complete the form and make sure "auto-post" is turned on</li>
-                    </ul>
-                  </ul>
-                </q-item-section>
-              </q-item>
-              <q-item class="bg-hover-gray-100">
-                <q-item-section>
-                  <div class="text-bold">
-                    <q-icon v-if="userEmployeeChecklist.has_updated_profile" name="check_circle" color="positive"/>
-                    <q-icon v-else name="assignment" color="negative"/>
-                    Update your profile
-                  </div>
-                  <ul v-if="!userEmployeeChecklist.has_updated_profile" class="q-mb-none">
-                    <li>Go to your
-                      <a href="#"
-                         @click.prevent="$router.push({ name: 'employee-profile-page', params: { key: 'employee-profile-page' } })">
-                        profile page
-                      </a>
-                    </li>
-                    <li>Fill in the basic information</li>
-                    <li>Answer at least one profile question</li>
-                  </ul>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </BaseExpansionItem>
           <BaseExpansionItem :is-include-separator="false">
             <template v-slot:header>
               <div class="text-h6">
-                Quick links for
-                <CustomTooltip :is_include_icon="false">
-                  <template v-slot:content>
-                    <span style="text-decoration: underline">default referral</span>
-                  </template>
-                  <div class="border-bottom-1-gray-300 text-bold text-primary q-mb-sm">
-                    {{ dataUtil.pluralize('Open job', defaultReferralLink.jobs_count) }}
-                  </div>
-                  <div>
-                    <q-chip
-                      v-for="dept in defaultReferralLink.departments"
-                      dense color="blue-grey-7" text-color="white" size="13px"
-                    >
-                      {{ dept.name }}
-                    </q-chip>
-                    <q-chip v-if="!defaultReferralLink.departments.length" dense size="13px">
-                      Any department
-                    </q-chip>
-                    <q-chip
-                      v-for="loc in locationUtil.getFormattedLocations(defaultReferralLink)"
-                      dense :color="loc.color" text-color="white" size="13px"
-                    >
-                      {{ loc.name }}
-                    </q-chip>
-                    <q-chip v-if="!locationUtil.getFormattedLocations(defaultReferralLink).length" dense size="13px">
-                      Any location
-                    </q-chip>
-                  </div>
-                </CustomTooltip>
+                Quick referral links
               </div>
             </template>
             <div>
@@ -222,7 +44,6 @@
 
 <script>
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
-import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogImgCarousel from 'components/dialogs/DialogImgCarousel.vue'
 import PageHeader from 'components/PageHeader.vue'
 import ReferralLinkButtons from 'components/ReferralLinkButtons.vue'
@@ -242,7 +63,7 @@ import { useUserStore } from 'stores/user-store.js'
 
 export default {
   name: 'DashboardPage',
-  components: { ReferralLinkButtons, BaseExpansionItem, CustomTooltip, LinkPerformanceChart, EmployeeLeaderBoard, PageHeader },
+  components: { ReferralLinkButtons, BaseExpansionItem, LinkPerformanceChart, EmployeeLeaderBoard, PageHeader },
   data () {
     return {
       GROUPINGS,

@@ -1,10 +1,13 @@
 from django.db import models
 from django.db.models import Q
 
+from jvapp.apis.social import SocialLinkJobsView
 from jvapp.models import PermissionName, REMOTE_TYPES
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin, OwnerFields
 
 __all__ = ('EmployerJobSubscription',)
+
+from jvapp.serializers.location import get_serialized_location
 
 
 class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
@@ -12,9 +15,8 @@ class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin)
     is_approved = models.BooleanField(default=False)
     filter_job_title_regex = models.CharField(max_length=500, null=True, blank=True)
     filter_exclude_job_title_regex = models.CharField(max_length=500, null=True, blank=True)
-    filter_city = models.ManyToManyField('City')
-    filter_state = models.ManyToManyField('State')
-    filter_country = models.ManyToManyField('Country')
+    filter_location = models.ManyToManyField('Location')
+    filter_range_miles = models.SmallIntegerField(null=True, blank=True)
     filter_job = models.ManyToManyField('EmployerJob')
     filter_employer = models.ManyToManyField('Employer')
     filter_remote_type_bit = models.SmallIntegerField(null=True, blank=True)  # See REMOTE_TYPES
@@ -35,18 +37,25 @@ class EmployerJobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin)
             job_filter &= Q(job_title__iregex=f'^.*({self.filter_job_title_regex}).*$')
         if self.filter_exclude_job_title_regex:
             job_filter &= ~Q(job_title__iregex=f'^.*({self.filter_exclude_job_title_regex}).*$')
-        if city_ids := [c.id for c in self.filter_city.all()]:
-            job_filter &= Q(locations__city_id__in=city_ids)
-        if state_ids := [s.id for s in self.filter_state.all()]:
-            job_filter &= Q(locations__state_id__in=state_ids)
-        if country_ids := [c.id for c in self.filter_country.all()]:
-            job_filter &= Q(locations__country_id__in=country_ids)
         if job_ids := [j.id for j in self.filter_job.all()]:
             job_filter &= Q(id__in=job_ids)
         if employer_ids := [e.id for e in self.filter_employer.all()]:
             job_filter &= Q(employer_id__in=employer_ids)
-        if self.filter_remote_type_bit == REMOTE_TYPES.NO:
-            job_filter &= Q(locations__is_remote=False)
-        elif self.filter_remote_type_bit == REMOTE_TYPES.YES:
-            job_filter &= Q(locations__is_remote=True)
+            
+        location_dicts = [get_serialized_location(l) for l in self.filter_location.all()]
+        combined_location_filter = None
+        if location_dicts:
+            for location_dict in location_dicts:
+                location_filter = SocialLinkJobsView.get_location_filter(
+                    location_dict, self.filter_remote_type_bit or 0, self.filter_range_miles
+                )
+                if not combined_location_filter:
+                    combined_location_filter = location_filter
+                else:
+                    combined_location_filter |= location_filter
+        else:
+            combined_location_filter = SocialLinkJobsView.get_location_filter(
+                None, self.filter_remote_type_bit or 0, None
+            )
+        job_filter &= combined_location_filter
         return job_filter
