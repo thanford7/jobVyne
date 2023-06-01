@@ -1,18 +1,53 @@
 <template>
   <q-select
-    v-if="isLoaded"
-    filled map-options emit-value
+    ref="select"
+    filled use-input clearable
+    :multiple="isMulti" :use-chips="isMulti"
     :options="donationOrganizations"
-    option-value="id"
+    :loading="isLoading"
+    @input-value="getOrgsDebounceFn"
+    new-value-mode="add-unique"
+    option-value="ein"
     option-label="name"
     label="Donation organization"
+    hint="Search by name or category"
     lazy-rules
     :rules="rules"
-  />
+  >
+    <template v-slot:selected-item="scope">
+      <q-chip v-if="isMulti" clickable removable>
+        <span class="ellipsis" :title="scope.opt.name">{{ scope.opt.name }}</span>
+      </q-chip>
+      <span v-else class="ellipsis" :title="scope.opt.name">{{ scope.opt.name }}</span>
+    </template>
+    <template v-slot:no-option>
+      <q-item>
+        <q-item-section class="text-italic text-grey">
+          Begin typing...
+        </q-item-section>
+      </q-item>
+    </template>
+    <template v-slot:option="scope">
+      <q-item v-bind="scope.itemProps" class="border-bottom-1-gray-1">
+        <q-item-section avatar>
+          <q-img :src="scope.opt.logoUrl" alt="Organization logo"/>
+        </q-item-section>
+        <q-item-section>
+          <q-item-label>
+            {{ scope.opt.name }}
+            <a :href="scope.opt.profileUrl" target="_blank" @click.stop>
+              <q-icon name="open_in_new"/>
+            </a>
+          </q-item-label>
+          <q-item-label caption>{{ scope.opt.description || 'No description' }}</q-item-label>
+        </q-item-section>
+      </q-item>
+    </template>
+  </q-select>
 </template>
 
 <script>
-import { useKarmaStore } from 'stores/karma-store.js'
+import { debounce } from 'quasar'
 
 export default {
   name: 'SelectDonationOrganization',
@@ -33,22 +68,35 @@ export default {
         ]
       } else {
         return [
-          (val) => val || 'This field is required'
+          (val) => Boolean(val) || 'This field is required'
         ]
       }
     }
   },
   data () {
     return {
-      isLoaded: false,
-      donationOrganizations: null
+      isLoading: false,
+      donationOrganizations: null,
+      getOrgsDebounceFn: null
+    }
+  },
+  methods: {
+    async getOrgOptions (searchText) {
+      if (!searchText || !searchText.length) {
+        return
+      }
+      this.isLoading = true
+      const resp = await this.$api.get('search/donation-org/', {
+        params: { search_text: searchText }
+      })
+      this.donationOrganizations = resp.data
+      this.isLoading = false
+      this.$refs.select.refresh()
+      this.$refs.select.showPopup()
     }
   },
   async mounted () {
-    const karmaStore = useKarmaStore()
-    await karmaStore.setDonationOrganizations()
-    this.donationOrganizations = karmaStore.getDonationOrganizations()
-    this.isLoaded = true
+    this.getOrgsDebounceFn = debounce(this.getOrgOptions, 500)
   }
 }
 </script>

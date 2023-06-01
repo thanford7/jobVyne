@@ -9,6 +9,8 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, ALLOWED_UPLOADS_IMAGE, A
 
 
 class DonationOrganization(models.Model):
+    ein = models.CharField(max_length=10, unique=True, null=True, blank=True)
+    every_org_key = models.CharField(max_length=40, unique=True, null=True, blank=True)
     name = models.CharField(max_length=150, unique=True)
     logo = models.ImageField(upload_to='donation_organizations', null=True, blank=True)
     url_main = models.CharField(max_length=100, null=True, blank=True)

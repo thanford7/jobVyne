@@ -1,7 +1,7 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, email, employer, job_seeker, job, jobs, job_subscription,
+    admin, ats, auth, content, currency, data, donation_org, email, employer, job_seeker, job, jobs, job_subscription,
     karma, message, notification, sales, slack, social, stripe, test, tracking, user
 )
 from jvapp.apis.geocoding import LocationSearchView
@@ -120,6 +120,9 @@ urlpatterns = [
     
     # Google
     path('search/location/', LocationSearchView.as_view()),
+    
+    # Every.org
+    path('search/donation-org/', donation_org.DonationOrgSearchView.as_view()),
     
     # Sendgrid email
     path('sendgrid/webhooks/', email.SendgridWebhooksView.as_view()),

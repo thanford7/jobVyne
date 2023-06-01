@@ -9,7 +9,7 @@
       <div class="row">
         <div class="col-12">
           <SelectDonationOrganization
-            v-model="formData.donation_organization_id"
+            v-model="formData.org"
             :is-multi="false"
             :is-required="true"
           />
