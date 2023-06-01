@@ -474,6 +474,23 @@ class FoursquareScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'foursquare26'
     employer_name = 'Foursquare'
     start_url = 'https://boards.greenhouse.io/embed/job_board?for=foursquare26'
+    
+    
+class StashScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'stashinvest'
+    employer_name = 'Stash'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=stashinvest'
+    
+
+class NacelleScraper(GreenhouseScraper):
+    employer_name = 'Nacelle'
+    start_url = 'https://boards.greenhouse.io/nacelle'
+    
+    
+class CopilotIQScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'copilotiq'
+    employer_name = 'CopilotIQ'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=copilotiq'
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
@@ -498,6 +515,7 @@ all_scrapers = {
     ClozdScraper.employer_name: ClozdScraper,
     ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
     ConsensusScraper.employer_name: ConsensusScraper,
+    CopilotIQScraper.employer_name: CopilotIQScraper,
     CuldesacScraper.employer_name: CuldesacScraper,
     DevotedHealthScraper.employer_name: DevotedHealthScraper,
     ElsevierScraper.employer_name: ElsevierScraper,
@@ -528,6 +546,7 @@ all_scrapers = {
     MetabaseScraper.employer_name: MetabaseScraper,
     MetronomeScraper.employer_name: MetronomeScraper,
     MindbloomScraper.employer_name: MindbloomScraper,
+    NacelleScraper.employer_name: NacelleScraper,
     NavaScraper.employer_name: NavaScraper,
     NiceScraper.employer_name: NiceScraper,
     NylasScraper.employer_name: NylasScraper,
@@ -540,6 +559,7 @@ all_scrapers = {
     SeedHealthScraper.employer_name: SeedHealthScraper,
     SentiLinkScraper.employer_name: SentiLinkScraper,
     SideScraper.employer_name: SideScraper,
+    StashScraper.employer_name: StashScraper,
     StubHubScraper.employer_name: StubHubScraper,
     TechcyteScraper.employer_name: TechcyteScraper,
     TendoScraper.employer_name: TendoScraper,
