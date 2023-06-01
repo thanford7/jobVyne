@@ -468,6 +468,12 @@ class SentiLinkScraper(GreenhouseScraper):
 class GrayDigitalScraper(GreenhouseScraper):
     employer_name = 'Gray Digital'
     start_url = 'https://boards.greenhouse.io/graydigital'
+    
+    
+class FoursquareScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'foursquare26'
+    employer_name = 'Foursquare'
+    start_url = 'https://boards.greenhouse.io/embed/job_board?for=foursquare26'
 
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
@@ -491,7 +497,7 @@ all_scrapers = {
     # CircleScraper.employer_name: CircleScraper,
     # ClozdScraper.employer_name: ClozdScraper,
     # ClipboardHealthScraper.employer_name: ClipboardHealthScraper,
-    ConsensusScraper.employer_name: ConsensusScraper,
+    # ConsensusScraper.employer_name: ConsensusScraper,
     # CuldesacScraper.employer_name: CuldesacScraper,
     # DevotedHealthScraper.employer_name: DevotedHealthScraper,
     # ElsevierScraper.employer_name: ElsevierScraper,
@@ -500,8 +506,9 @@ all_scrapers = {
     # FabricScraper.employer_name: FabricScraper,
     # FICOScraper.employer_name: FICOScraper,
     # ForwardScraper.employer_name: ForwardScraper,
+    FoursquareScraper.employer_name: FoursquareScraper,
     # GalileoScraper.employer_name: GalileoScraper,
-    GrayDigitalScraper.employer_name: GrayDigitalScraper,
+    # GrayDigitalScraper.employer_name: GrayDigitalScraper,
     # GuildEducationScraper.employer_name: GuildEducationScraper,
     # HealthGorillaScraper.employer_name: HealthGorillaScraper,
     # HopperScraper.employer_name: HopperScraper,
@@ -513,8 +520,8 @@ all_scrapers = {
     # LeanDataScraper.employer_name: LeanDataScraper,
     # LinktreeScraper.employer_name: LinktreeScraper,
     # LiveViewTechnologiesScraper.employer_name: LiveViewTechnologiesScraper,
-    LoopScraper.employer_name: LoopScraper,
-    LoopReturnsScraper.employer_name: LoopReturnsScraper,
+    # LoopScraper.employer_name: LoopScraper,
+    # LoopReturnsScraper.employer_name: LoopReturnsScraper,
     # LucidSoftwareScraper.employer_name: LucidSoftwareScraper,
     # Mach49Scraper.employer_name: Mach49Scraper,
     # MaterialSecurityScraper.employer_name: MaterialSecurityScraper,
@@ -531,7 +538,7 @@ all_scrapers = {
     # RegrowScraper.employer_name: RegrowScraper,
     # RoScraper.employer_name: RoScraper,
     # SeedHealthScraper.employer_name: SeedHealthScraper,
-    SentiLinkScraper.employer_name: SentiLinkScraper,
+    # SentiLinkScraper.employer_name: SentiLinkScraper,
     # SideScraper.employer_name: SideScraper,
     # StubHubScraper.employer_name: StubHubScraper,
     # TechcyteScraper.employer_name: TechcyteScraper,
