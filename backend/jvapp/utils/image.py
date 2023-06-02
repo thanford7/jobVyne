@@ -1,6 +1,8 @@
 from tempfile import NamedTemporaryFile
+from urllib.request import urlopen
 
 from PIL import Image
+from django.core.files import File
 
 from jvapp.utils.file import get_file_extension
 
@@ -35,3 +37,12 @@ def resize_image_with_fill(image, width, height):
     background_file = NamedTemporaryFile()
     background.save(background_file, format=get_file_extension(image.url))
     return background_file
+
+
+def convert_url_to_image(image_url, file_name):
+    if not image_url:
+        return None
+    image = NamedTemporaryFile()
+    image.write(urlopen(image_url).read())
+    image.flush()
+    return File(image, name=file_name)

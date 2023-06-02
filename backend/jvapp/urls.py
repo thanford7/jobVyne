@@ -63,6 +63,7 @@ urlpatterns = [
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
     
     # Karma
+    path('karma/connection-donation-organization/', karma.UserRequestDonationOrgView.as_view()),
     path('karma/donation-organization/', karma.DonationOrganizationView.as_view()),
     path('karma/user/', karma.UserView.as_view()),
     path('karma/user-donation/', karma.UserDonationView.as_view()),

@@ -12,30 +12,32 @@
             v-model="formData.request_type"
           />
         </div>
-        <div class="col-12 q-my-sm">
+        <template v-if="formData.request_type === USER_REQUEST_TYPES.introduction.key">
+          <div class="col-12 q-my-sm">
           <span class="text-bold">
             Connector
           </span>
-          <CustomTooltip icon_size="22px">
-            This is the person that will be making the introduction
-          </CustomTooltip>
-        </div>
-        <div class="col-12">
-          <q-input
-            v-model="formData.connector_first_name"
-            label="First name" filled
-            lazy-rules
-            :rules="[
+            <CustomTooltip icon_size="22px">
+              This is the person that will be making the introduction
+            </CustomTooltip>
+          </div>
+          <div class="col-12">
+            <q-input
+              v-model="formData.connector_first_name"
+              label="First name" filled
+              lazy-rules
+              :rules="[
               (val) => val && val.length || 'First name is required'
             ]"
-          />
-        </div>
-        <div class="col-12">
-          <q-input
-            v-model="formData.connector_last_name"
-            label="Last name" filled
-          />
-        </div>
+            />
+          </div>
+          <div class="col-12">
+            <q-input
+              v-model="formData.connector_last_name"
+              label="Last name" filled
+            />
+          </div>
+        </template>
         <div class="col-12 q-my-sm">
           <span class="text-bold">
             Connection
@@ -77,6 +79,7 @@ import SelectUserRequestType from 'components/inputs/SelectUserRequestType.vue'
 import dataUtil from 'src/utils/data.js'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import InputLinkedIn from 'components/inputs/InputLinkedIn.vue'
+import { USER_REQUEST_TYPES } from 'src/utils/karma.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 
@@ -90,7 +93,8 @@ export default {
     return {
       formData: {},
       user: null,
-      dataUtil
+      dataUtil,
+      USER_REQUEST_TYPES
     }
   },
   methods: {

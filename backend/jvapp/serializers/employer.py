@@ -6,7 +6,6 @@ from django.utils import timezone
 from jvapp.models import Currency, JobVyneUser
 from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
-from jvapp.serializers.content import get_serialized_content_item
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.user import reduce_user_type_bits
 from jvapp.utils.data import get_list_intersection, obfuscate_string

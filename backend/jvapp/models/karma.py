@@ -14,7 +14,7 @@ class DonationOrganization(models.Model):
     name = models.CharField(max_length=150, unique=True)
     logo = models.ImageField(upload_to='donation_organizations', null=True, blank=True)
     url_main = models.CharField(max_length=100, null=True, blank=True)
-    url_donation = models.CharField(max_length=100, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
 
 
 class UserDonationOrganization(models.Model, JobVynePermissionsMixin):
@@ -61,8 +61,10 @@ class UserDonation(models.Model, JobVynePermissionsMixin):
     
     
 class UserRequest(AuditFields, JobVynePermissionsMixin):
+    # Keep in sync with USER_REQUEST_TYPES frontend
     class RequestType(Enum):
         INTRODUCTION = 'introduction'
+        CONNECT = 'connect'
 
     # Make ID random so people can't randomly guess
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -74,6 +76,7 @@ class UserRequest(AuditFields, JobVynePermissionsMixin):
     connection_linkedin_url = models.CharField(max_length=200, null=True, blank=True)
     connection_email = models.EmailField(null=True, blank=True)
     connection_phone_number = models.CharField(max_length=25, null=True, blank=True)
+    connection_donation_org = models.ForeignKey('DonationOrganization', on_delete=models.SET_NULL, null=True, blank=True)
     
     connector_first_name = models.CharField(max_length=150, null=True, blank=True)
     connector_last_name = models.CharField(max_length=150, null=True, blank=True)

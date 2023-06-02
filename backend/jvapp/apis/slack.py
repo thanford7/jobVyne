@@ -28,6 +28,7 @@ from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import WEEKDAY_BITS, get_datetime_format_or_none, get_datetime_minutes, get_dow_bit, \
     get_unix_datetime
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
+from jvapp.utils.image import convert_url_to_image
 from jvapp.utils.slack import raise_slack_exception_if_error
 
 logger = logging.getLogger(__name__)
@@ -64,12 +65,7 @@ class SlackBaseView(JobVyneAPIView):
     @staticmethod
     def get_profile_picture(slack_user_profile):
         profile_picture_url = slack_user_profile.get('image_512')
-        if not profile_picture_url:
-            return None
-        profile_picture = NamedTemporaryFile()
-        profile_picture.write(urlopen(profile_picture_url).read())
-        profile_picture.flush()
-        return profile_picture
+        return convert_url_to_image(profile_picture_url, 'slack_profile_512.png')
     
     @staticmethod
     def get_or_create_jobvyne_user(slack_user_profile, employer_id):
@@ -83,7 +79,7 @@ class SlackBaseView(JobVyneAPIView):
                 is_updated = True
             if (not user.profile_picture) and (
             profile_picture := SlackBaseView.get_profile_picture(slack_user_profile)):
-                user.profile_picture = File(profile_picture, name='slack_profile_512.png')
+                user.profile_picture = profile_picture
                 is_updated = True
             if is_updated:
                 user.save()
@@ -96,7 +92,7 @@ class SlackBaseView(JobVyneAPIView):
                 last_name=slack_user_profile['last_name'],
                 phone_number=slack_user_profile['phone'],
                 employer_id=employer_id,
-                profile_picture=File(profile_picture, name='slack_profile_512') if profile_picture else None
+                profile_picture=profile_picture
             )
         
         return user

@@ -260,6 +260,14 @@ const routes = [
         name: 'connect-request',
         meta: { isNoAuth: true, trackRoute: true },
         component: () => import('pages/karma/connection-request-page/ConnectionRequestPage.vue')
+      },
+      {
+        // This is a "fake" page. We need a route to catch the redirect after a user donates
+        // This route is redirected in router-guard.js
+        path: 'donation-confirm',
+        name: 'donation-confirm',
+        meta: {},
+        component: () => {}
       }
     ]
   },

@@ -8,7 +8,7 @@
     <q-form ref="form">
       <div class="row">
         <div class="col-12">
-          <SelectDonationOrganization
+          <SelectUserDonationOrganization
             v-model="formData.donation_organization_id"
             :is-multi="false"
             :is-required="true"
@@ -75,13 +75,13 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
-import SelectDonationOrganization from 'components/inputs/SelectDonationOrganization.vue'
+import SelectUserDonationOrganization from 'components/inputs/SelectUserDonationOrganization.vue'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 
 export default {
   name: 'DialogUserDonation',
-  components: { SelectDonationOrganization, DialogBase, MoneyInput, FileDisplayOrUpload, CustomTooltip },
+  components: { SelectUserDonationOrganization, DialogBase, MoneyInput, FileDisplayOrUpload, CustomTooltip },
   computed: {
     allowedFileExtensionsStr () {
       return fileUtil.getAllowedFileExtensionsStr([FILE_TYPES.IMAGE.key, FILE_TYPES.FILE.key])

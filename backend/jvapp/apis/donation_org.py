@@ -5,8 +5,7 @@ from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView
-
+from jvapp.apis._apiBase import JobVyneAPIView, get_error_response
 
 EVERY_ORG_URL = 'https://partners.every.org/v0.2/'
 
@@ -18,11 +17,11 @@ class DonationOrgSearchView(JobVyneAPIView):
         if not (search_text := self.query_params.get('search_text')):
             return Response(status=status.HTTP_200_OK, data=[])
         
-        organizations = self.get_raw_donation_org(search_text)
+        organizations = self.get_raw_donation_orgs(search_text)
         return Response(status=status.HTTP_200_OK, data=organizations)
     
     @staticmethod
-    def get_raw_donation_org(search_text):
+    def get_raw_donation_orgs(search_text):
         # https://docs.every.org/docs/endpoints/nonprofit-search
         
         # Request by organization name
@@ -41,3 +40,21 @@ class DonationOrgSearchView(JobVyneAPIView):
         
         return search_results['nonprofits'] + browse_results['nonprofits']
     
+    
+class DonationOrgView(JobVyneAPIView):
+    
+    def get(self, request):
+        if not (ein := self.query_params.get('ein')):
+            return get_error_response('An EIN is required')
+    
+        organization = self.get_raw_donation_org(ein)
+        return Response(status=status.HTTP_200_OK, data=organization)
+    
+    @staticmethod
+    def get_raw_donation_org(ein):
+        resp = requests.get(
+            f'{EVERY_ORG_URL}nonprofit/{ein}',
+            params={'apiKey': settings.EVERY_ORG_PUBLIC_KEY}
+        )
+        org = json.loads(resp.content)
+        return org['data']['nonprofit']

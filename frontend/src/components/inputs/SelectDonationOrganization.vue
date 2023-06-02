@@ -9,7 +9,7 @@
     new-value-mode="add-unique"
     option-value="ein"
     option-label="name"
-    label="Donation organization"
+    :label="label"
     hint="Search by name or category"
     lazy-rules
     :rules="rules"
@@ -56,6 +56,10 @@ export default {
     isRequired: {
       type: Boolean,
       default: false
+    },
+    label: {
+      type: [String, null],
+      default: 'Donation organization'
     }
   },
   computed: {
