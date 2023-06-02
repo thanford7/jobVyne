@@ -141,6 +141,7 @@ urlpatterns = [
     
     # Social auth
     path('social/slack/', auth.social_auth_slack),
+    path('social/calendly/', auth.social_auth_calendly),
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
     

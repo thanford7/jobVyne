@@ -144,6 +144,25 @@ def social_auth_slack(request):
 @ensure_csrf_cookie
 @api_view(http_method_names=['POST'])
 @permission_classes([AllowAny])
+def social_auth_calendly(request):
+    data = request.data
+    code = data.get('code', '').strip()
+    if not code:
+        return Response('An auth token is required', status=status.HTTP_400_BAD_REQUEST)
+    
+    state = data.get('state', '').strip()
+    if state != settings.AUTH_STATE:
+        return get_error_response('Request state is not the same as the callback state')
+    
+    access_token, social_response = get_access_token_from_code(OauthProviders.slack.value, code)
+    
+    user = request.user
+    return Response(status=status.HTTP_200_OK)
+
+@csrf_exempt
+@ensure_csrf_cookie
+@api_view(http_method_names=['POST'])
+@permission_classes([AllowAny])
 @psa()
 def social_auth(request, backend):
     """

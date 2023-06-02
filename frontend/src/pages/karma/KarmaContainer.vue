@@ -2,7 +2,7 @@
   <div>
     <KarmaSidebar v-model="isLeftDrawerOpen" :user="user"/>
     <q-page-container>
-      <q-page padding>
+      <q-page padding class="q-pa-md-lg q-pa-md">
         <KarmaHeader @toggleLeftDrawer="isLeftDrawerOpen = !isLeftDrawerOpen"/>
         <slot/>
       </q-page>

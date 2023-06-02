@@ -158,6 +158,7 @@ class UserView(JobVyneAPIView):
 
 
 class UserRequestView(JobVyneAPIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     
     def get(self, request):
         user_id = self.query_params.get('user_id')
@@ -172,6 +173,8 @@ class UserRequestView(JobVyneAPIView):
                 'user': {
                     'first_name': user_request.user.first_name,
                     'last_name': user_request.user.last_name,
+                    'email': user_request.user.email,
+                    'linkedin_url': user_request.user.linkedin_url,
                     'profile_picture_url': user_request.user.profile_picture.url if user_request.user.profile_picture else None
                 },
                 'donation_organizations': [

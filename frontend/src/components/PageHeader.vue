@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="row q-pb-sm border-bottom-2-gray-300">
+    <div class="q-pb-sm border-bottom-2-gray-300">
       <div v-if="billingBannerMsg" class="col-12">
         <q-banner rounded class="bg-warning">
           <q-icon name="warning" size="32px"/>
@@ -13,7 +13,7 @@
           to update your subscription.
         </q-banner>
       </div>
-      <div class="col-12">
+      <div>
         <div class="header" :class="(isIncludeLogo) ? 'header-logo' : ''">
           <div v-if="isIncludeLogo" class="flex flex-center q-py-sm">
             <img src="~assets/jobVyneLogo.png" alt="Logo" style="height: 40px; object-fit: scale-down">
@@ -32,12 +32,12 @@
           </div>
         </div>
       </div>
-      <div class="col-12">
+      <div>
         <p class="text-gray-500 q-mt-none">
           <slot/>
         </p>
       </div>
-      <div class="col-12">
+      <div>
         <slot name="bottom"/>
       </div>
     </div>
@@ -102,6 +102,9 @@ export default {
 
   &.header-logo {
     grid-template-columns: 25% 50% 25%;
+    @media (max-width: 767px) {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 767px) {

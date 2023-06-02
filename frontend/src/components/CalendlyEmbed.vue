@@ -1,10 +1,11 @@
 <template>
   <div ref="calendarContainer">
-    <div ref="calendar" class="calendly-inline-widget" style="min-width: 320px; height: 780px"></div>
+    <div ref="calendar" class="calendly-inline-widget" :style="(isDialog) ? 'min-width: 320px; height: 780px' : 'height: 780px'"></div>
   </div>
 </template>
 
 <script>
+import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import { loadScript } from 'src/utils/load-script.js'
 
@@ -15,16 +16,22 @@ export default {
   props: {
     firstName: [String, null],
     lastName: [String, null],
-    email: [String, null]
+    email: [String, null],
+    isDialog: Boolean,
+    calendlySlug: {
+      type: String,
+      default: '30min'
+    }
   },
   computed: {
     calendlyUrl () {
       return dataUtil.getUrlWithParams({
-        path: 'https://calendly.com/jobvyne/30min',
+        path: `https://calendly.com/jobvyne/${this.calendlySlug}`,
         addParams: [
           { key: 'hide_event_type_details', val: 1 },
           { key: 'name', val: dataUtil.getFullName(this.firstName, this.lastName) },
-          { key: 'email', val: this.email }
+          { key: 'email', val: this.email },
+          { key: 'primary_color', val: colorUtil.getPaletteColor('accent') }
         ]
       })
     }
@@ -35,6 +42,7 @@ export default {
       const calendar = document.createElement('iframe')
       calendar.id = `cal-${CALENDAR_ID}`
       calendar.setAttribute('src', this.calendlyUrl)
+      calendar.setAttribute('data-url', this.calendlyUrl)
       calendar.setAttribute('height', '100%')
       calendar.setAttribute('width', '100%')
       calendar.setAttribute('frameBorder', '0')

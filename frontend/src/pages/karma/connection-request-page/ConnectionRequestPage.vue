@@ -1,7 +1,7 @@
 <template>
   <KarmaContainer v-if="isLoaded">
     <div class="row">
-      <div class="col-12 col-md-6">
+      <div class="col-12 col-md-6 q-pa-sm">
         <p>
           Hi {{ userRequest.connection_first_name }},
         </p>
@@ -37,7 +37,8 @@
                 <q-radio ref="customDonationRadio" v-model="selectedDonationOrg" :val="customDonationSelectionKey"/>
               </q-item-section>
               <q-item-section avatar>
-                <q-img v-if="customDonationOrg" :src="customDonationOrg.logoUrl || customDonationOrg.logo_url" width="40px" alt="Organization logo"/>
+                <q-img v-if="customDonationOrg" :src="customDonationOrg.logoUrl || customDonationOrg.logo_url"
+                       width="40px" alt="Organization logo"/>
               </q-item-section>
               <q-item-section>
                 <SelectDonationOrganization
@@ -52,15 +53,34 @@
         <p>
           I will make the donation after we meet.
         </p>
-        <p>
+        <div>
           {{ user.first_name }}
-        </p>
+        </div>
+        <div>
+          <a :href="`mailto: ${user.email}`">{{ user.email }}</a>
+        </div>
+        <div v-if="user.linkedin_url">
+          <a :href="user.linkedin_url" target="_blank">{{ user.first_name }}'s LinkedIn</a>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 q-pa-sm">
+        <div class="text-h6 text-bold text-center q-pa-md">Schedule 30 minutes with me</div>
+        <div class="text-center">
+          <q-icon name="south" size="48px"/>
+        </div>
+        <CalendlyEmbed
+          :first-name="userRequest.connection_first_name"
+          :last-name="userRequest.connection_last_name"
+          :email="userRequest.connection_email"
+          calendly-slug="karma"
+        />
       </div>
     </div>
   </KarmaContainer>
 </template>
 
 <script>
+import CalendlyEmbed from 'components/CalendlyEmbed.vue'
 import SelectDonationOrganization from 'components/inputs/SelectDonationOrganization.vue'
 import KarmaContainer from 'pages/karma/KarmaContainer.vue'
 import { Loading, useMeta } from 'quasar'
@@ -71,7 +91,7 @@ import { useKarmaStore } from 'stores/karma-store.js'
 
 export default {
   name: 'ConnectionRequestPage',
-  components: { SelectDonationOrganization, KarmaContainer },
+  components: { CalendlyEmbed, SelectDonationOrganization, KarmaContainer },
   data () {
     return {
       isLoaded: false,
@@ -107,7 +127,7 @@ export default {
     },
     async updateSelectedDonationOrg () {
       const ein = this.getSelectedDonationOrgEin()
-      if (!ein || (ein === this.userRequest.connection_donation_org.ein)) {
+      if (!ein || (ein === this.userRequest.connection_donation_org?.ein)) {
         return
       }
       await this.saveSelectedDonationOrg(ein)
@@ -129,11 +149,13 @@ export default {
     this.userRequest = userRequestData.user_request
     this.user = userRequestData.user
     this.donationOrganizations = userRequestData.donation_organizations
-    if (this.donationOrganizations.map((org) => org.id).includes(this.userRequest.connection_donation_org.id)) {
-      this.selectedDonationOrg = this.userRequest.connection_donation_org.ein
-    } else {
-      this.customDonationOrg = this.userRequest.connection_donation_org
-      this.selectedDonationOrg = this.customDonationSelectionKey
+    if (this.userRequest.connection_donation_org) {
+      if (this.donationOrganizations.map((org) => org.id).includes(this.userRequest.connection_donation_org.id)) {
+        this.selectedDonationOrg = this.userRequest.connection_donation_org.ein
+      } else {
+        this.customDonationOrg = this.userRequest.connection_donation_org
+        this.selectedDonationOrg = this.customDonationSelectionKey
+      }
     }
     this.isLoaded = true
   },
