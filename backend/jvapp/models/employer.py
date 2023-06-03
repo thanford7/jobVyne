@@ -296,7 +296,7 @@ class JobTaxonomy(AuditFields):
         constraints = [
             # This is what we really want:
             # models.constraints.UniqueConstraint(fields=('job', 'taxonomy__tax_type'), name='job_unique_taxonomy')
-            # But this is the best we can do; we'll have to disallow multiple assignments on a single taxonomy some other way
+            # But this is the best we can do; we'll have to disallow multiple assignments on a single taxonomy type some other way
             models.constraints.UniqueConstraint(fields=('job', 'taxonomy'), name='job_unique_taxonomy'),
         ]
 
