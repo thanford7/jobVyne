@@ -72,3 +72,8 @@ class SocialLinkAdmin(admin.ModelAdmin):
 @admin.register(Country, State, City, Location)
 class LocationAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(TaxType, Taxonomy, JobTaxonomy)
+class TaxonomyAdmin(admin.ModelAdmin):
+    pass

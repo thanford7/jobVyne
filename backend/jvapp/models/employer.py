@@ -12,7 +12,8 @@ __all__ = (
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
-    'EmployerSlack'
+    'EmployerSlack',
+    'TaxType', 'Taxonomy', 'JobTaxonomy',
 )
 
 
@@ -267,8 +268,39 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
                 return True
             
         return False
-    
-    
+
+
+class TaxType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Taxonomy(models.Model):
+    tax_type = models.ForeignKey(TaxType, on_delete=models.PROTECT)
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        unique_together = ('tax_type', 'name')
+
+    def __str__(self):
+        return f'{self.tax_type}: {self.name}'
+
+
+class JobTaxonomy(AuditFields):
+    job = models.ForeignKey(EmployerJob, on_delete=models.PROTECT)
+    taxonomy = models.ForeignKey(Taxonomy, on_delete=models.PROTECT)
+
+    class Meta:
+        constraints = [
+            # This is what we really want:
+            # models.constraints.UniqueConstraint(fields=('job', 'taxonomy__tax_type'), name='job_unique_taxonomy')
+            # But this is the best we can do; we'll have to disallow multiple assignments on a single taxonomy some other way
+            models.constraints.UniqueConstraint(fields=('job', 'taxonomy'), name='job_unique_taxonomy'),
+        ]
+
+
 class EmployerJobApplicationRequirement(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='job_application_requirement')
     application_field = models.CharField(max_length=25)  # based on JobApplicationFields model

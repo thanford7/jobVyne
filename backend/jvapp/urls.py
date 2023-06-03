@@ -132,6 +132,9 @@ urlpatterns = [
     path('social/slack/', auth.social_auth_slack),
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
+
+    # Job classification
+    path('classify-jobs/', job.JobClassificationView.as_view()),
     
     # Test url
     path('test/email/', test.TestEmailView.as_view()),

@@ -1,8 +1,10 @@
+from itertools import groupby
+
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import JobDepartment, Location
+from jvapp.models import JobDepartment, Location, EmployerJob, Taxonomy
 from jvapp.serializers.location import get_serialized_location
 
 
@@ -43,3 +45,22 @@ class LocationView(JobVyneAPIView):
             'states': sorted(list(states.values()), key=lambda x: x['name']),
             'countries': sorted(list(countries.values()), key=lambda x: x['name'])
         }
+
+class JobClassificationView(JobVyneAPIView):
+    def get(self, request):
+        taxonomies = Taxonomy.objects.all().order_by('tax_type')
+        taxonomies_by_type = groupby(taxonomies, lambda t: t.tax_type)
+        jobs = EmployerJob.objects.filter()[:1]
+        return Response(status=status.HTTP_200_OK, data={
+            'to-classify': {
+                j.id: {
+                    'title': j.job_title,
+                    'description': j.job_description,
+                }
+                for j in jobs
+            },
+            'taxonomies': {
+                tax_type.name: [t.name for t in taxonomies]
+                for tax_type, taxonomies in taxonomies_by_type
+            },
+        })
