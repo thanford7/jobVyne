@@ -8,7 +8,7 @@ from playwright.async_api import async_playwright
 
 from jvapp.models import Employer, EmployerJob
 from scrape.base_scrapers import get_random_user_agent
-from scrape.employer_scrapers import all_scrapers
+from scrape.employer_scrapers import all_scrapers, test_scrapers
 from scrape.job_processor import JobProcessor
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,10 @@ async def launch_scraper(scraper_class, skip_urls):
     
 def run_job_scrapers(employer_names=None):
     if not employer_names:
-        scraper_classes = all_scrapers.values()
+        if settings.IS_LOCAL and test_scrapers:
+            scraper_classes = test_scrapers.values()
+        else:
+            scraper_classes = all_scrapers.values()
     else:
         scraper_classes = [all_scrapers[employer_name] for employer_name in employer_names]
 

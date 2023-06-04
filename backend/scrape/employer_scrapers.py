@@ -1,10 +1,13 @@
 import re
 
-from scrape.base_scrapers import BambooHrScraper, BambooHrScraper2, BreezyScraper, GreenhouseIframeScraper, \
+from scrape.base_scrapers import BambooHrScraper, BreezyScraper, GreenhouseIframeScraper, \
     GreenhouseScraper, \
     LeverScraper, \
     WorkableScraper, WorkdayScraper
+from scrape.custom_scraper.ancestry import AncestryScraper
+from scrape.custom_scraper.coinbase import CoinbaseScraper
 from scrape.custom_scraper.ebay import EbayScraper
+from scrape.custom_scraper.packsize import PacksizeScraper
 from scrape.custom_scraper.pinterest import PinterestScraper
 
 
@@ -26,7 +29,6 @@ class AtomicScraper(LeverScraper):
 class BenevityScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'benevity'
     employer_name = 'Benevity'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=benevity&b=https%3A%2F%2Fbenevity.com%2Fcareers'
 
 
 class BlueOriginScraper(WorkdayScraper):
@@ -84,7 +86,6 @@ class ForwardScraper(LeverScraper):
 class HealthGorillaScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'healthgorilla'
     employer_name = 'Health Gorilla'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=healthgorilla&b=https%3A%2F%2Fwww.healthgorilla.com%2Fhome%2Fcompany%2Fcareers%2Fjob-openings'
     
     
 class HopperScraper(LeverScraper):
@@ -112,13 +113,11 @@ class KandjiScraper(LeverScraper):
 class GalileoScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'galileo'
     employer_name = 'Galileo'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=galileo'
 
 
 class GuildEducationScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'guild'
     employer_name = 'Guild Education'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=guild&b=https%3A%2F%2Fwww.guild.com%2Fopen-positions-at-guild'
 
 
 class LaticreteInternationalScraper(WorkdayScraper):
@@ -159,7 +158,6 @@ class NavaScraper(LeverScraper):
 class NiceScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'nice'
     employer_name = 'Nice'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=nice'
 
 
 class NylasScraper(GreenhouseScraper):
@@ -180,7 +178,6 @@ class ProofpointScraper(WorkdayScraper):
 class RecursionScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'recursionpharmaceuticals'
     employer_name = 'Recursion'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=recursionpharmaceuticals&b=https%3A%2F%2Fwww.recursion.com%2Fcareers'
 
 
 class RegrowScraper(LeverScraper):
@@ -211,7 +208,6 @@ class TendoScraper(LeverScraper):
 class TheMxGroupScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'themxgroup'
     employer_name = 'The MX Group'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=themxgroup&b=https%3A%2F%2Fwww.themxgroup.com%2Fcareers%2Fjob-openings%2F'
 
         
 class TransactionNetworkServicesScraper(WorkdayScraper):
@@ -246,7 +242,6 @@ class VestaTechScraper(LeverScraper):
 class VirtaHealthScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'virtahealth'
     employer_name = 'Virta Health'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=virtahealth'
     
     
 class VivianHealthScraper(GreenhouseScraper):
@@ -362,13 +357,11 @@ class TwoULaundryScraper(BreezyScraper):
 class ZocdocScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'zocdoc'
     employer_name = 'Zocdoc'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=zocdoc'
     
     
 class AvettaScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'avetta'
     employer_name = 'Avetta'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=avetta'
     
     
 class KoalaHealthScraper(LeverScraper):
@@ -391,7 +384,6 @@ class AffirmScraper(GreenhouseScraper):
 class AddeparScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'addepar1'
     employer_name = 'Addepar'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=addepar1'
     
 
 class WaymarkScraper(GreenhouseScraper):
@@ -412,7 +404,6 @@ class FabricScraper(LeverScraper):
 class UnderdogFantasyScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'underdogfantasy'
     employer_name = 'Underdog Fantasy'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=underdogfantasy'
     
 
 class TixrScraper(LeverScraper):
@@ -473,13 +464,11 @@ class GrayDigitalScraper(GreenhouseScraper):
 class FoursquareScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'foursquare26'
     employer_name = 'Foursquare'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=foursquare26'
     
     
 class StashScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'stashinvest'
     employer_name = 'Stash'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=stashinvest'
     
 
 class NacelleScraper(GreenhouseScraper):
@@ -490,14 +479,37 @@ class NacelleScraper(GreenhouseScraper):
 class CopilotIQScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = 'copilotiq'
     employer_name = 'CopilotIQ'
-    start_url = 'https://boards.greenhouse.io/embed/job_board?for=copilotiq'
+    
+    
+class OmadaHealthScraper(GreenhouseScraper):
+    employer_name = 'Omada Health'
+    start_url = 'https://boards.greenhouse.io/omadahealth'
+    
+    
+class WeaveHQScraper(GreenhouseScraper):
+    employer_name = 'Weave HQ'
+    start_url = 'https://boards.greenhouse.io/weavehq'
+    
 
+class One800ContactsScraper(GreenhouseIframeScraper):
+    GREENHOUSE_JOB_BOARD_DOMAIN = '1800contacts'
+    employer_name = '1-800 Contacts'
     
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 # EbayScraper.employer_name: EbayScraper,
 # PinterestScraper.employer_name: PinterestScraper,
-# RoktScraper.employer_name: RoktScraper,
+# CoinbaseScraper.employer_name: CoinbaseScraper
+test_scrapers = {
+}
+
+
 all_scrapers = {
+    PacksizeScraper.employer_name: PacksizeScraper,
+    One800ContactsScraper.employer_name: One800ContactsScraper,
+    AncestryScraper.employer_name: AncestryScraper,
+    WeaveHQScraper.employer_name: WeaveHQScraper,
+    RoktScraper.employer_name: RoktScraper,
+    OmadaHealthScraper.employer_name: OmadaHealthScraper,
     AccessoScraper.employer_name: AccessoScraper,
     AddeparScraper.employer_name: AddeparScraper,
     AffirmScraper.employer_name: AffirmScraper,

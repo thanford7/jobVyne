@@ -8,13 +8,14 @@ from datetime import timedelta
 from json import JSONDecodeError
 from urllib.parse import unquote
 
+import requests
 from aiohttp import ClientSession
 from django.utils import timezone
 from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 
 from jvapp.utils.data import capitalize, coerce_float, get_base_url
-from jvapp.utils.datetime import get_datetime_or_none
+from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 from jvapp.utils.file import get_file_storage_engine
 from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from scrape.job_processor import JobItem
@@ -375,6 +376,10 @@ class Scraper:
             #             logo_url = logo.get('url') if logo else None
         
         return job_item
+    
+    # Override
+    def get_start_url(self):
+        return self.start_url
 
 
 class BambooHrScraper(Scraper):
@@ -501,7 +506,7 @@ class GreenhouseScraper(Scraper):
     job_item_page_wait_sel = '#header'
     
     async def scrape_jobs(self):
-        html_dom = await self.get_html_from_url(self.start_url)
+        html_dom = await self.get_html_from_url(self.get_start_url())
         
         for department_section in html_dom.xpath('//section[@class="level-0"]'):
             department = department_section.xpath('.//h3/text()').get() or department_section.xpath(
@@ -530,6 +535,9 @@ class GreenhouseScraper(Scraper):
         if location:
             location = location.strip()
         standard_job_item = self.get_google_standard_job_item(html)
+        if not standard_job_item:
+            logger.info('Unable to parse JobItem from document. No standard job data (ld+json).')
+            return None
         if not any((location, standard_job_item.locations)):
             logger.info('Unable to parse JobItem from document. No location found.')
             return None
@@ -557,6 +565,9 @@ class GreenhouseIframeScraper(GreenhouseScraper):
     TEST_REDIRECT = False
     GREENHOUSE_JOB_BOARD_DOMAIN = None
     job_item_page_wait_sel = None
+    
+    def get_start_url(self):
+        return f'https://boards.greenhouse.io/embed/job_board?for={self.GREENHOUSE_JOB_BOARD_DOMAIN}'
     
     def update_job_link(self, job_link):
         # https://boards.greenhouse.io/embed/job_app?for=healthgorilla&token=4840862004
@@ -865,40 +876,52 @@ class BreezyScraper(Scraper):
 
 
 class WorkableScraper(Scraper):
-    IS_JS_REQUIRED = True
-    job_item_page_wait_sel = '[data-ui="job-description"]'
+    EMPLOYER_KEY = 'rokt'
+    BASE_FILTER_DATA = {
+        'department': [],
+        'location': [],
+        'query': [],
+        'remote': [],
+        'worktype': []
+    }
     
     async def scrape_jobs(self):
-        page = await self.get_starting_page()
-        # Make sure page data has loaded
-        try:
-            await self.wait_for_el(page, '#jobs')
-        except PlaywrightTimeoutError:
-            page = await self.get_starting_page()
-            await self.wait_for_el(page, '#jobs')
-        
-        # Remove any location filters
-        location_filter_sel = '[data-ui*="pill-location"] [data-ui="dismiss"]'
-        for location_filter in await page.locator(f'css={location_filter_sel}').all():
-            await location_filter.click()
-        
-        # Keep clicking the "show more" button until we have loaded all jobs
-        show_more_btn_sel = 'button[data-ui="load-more-button"]'
-        while await page.locator(f'css={show_more_btn_sel}').is_visible():
-            await page.locator(f'css={show_more_btn_sel}').scroll_into_view_if_needed()
-            await page.locator(f'css={show_more_btn_sel}').click()
-
-        html_dom = await self.get_page_html(page)
-        await self.add_job_links_to_queue(
-            list(html_dom.xpath('//li[@data-ui="job"]//a/@href').getall()))
+        has_more = True
+        next_page_key = None
+        jobs = []
+        while has_more:
+            jobs_list, next_page_key = self.get_jobs(next_page_key=next_page_key)
+            jobs += jobs_list
+            has_more = bool(next_page_key)
+            
+        for job in jobs:
+            await self.add_job_links_to_queue(self.get_job_link(job), meta_data={'job_shortcode': job['shortcode']})
         
         await self.close()
+        
+    def get_job_link(self, job_data):
+        return f'https://apply.workable.com/{self.EMPLOYER_KEY}/j/{job_data["shortcode"]}/'
     
-    def get_job_data_from_html(self, html, job_url=None, job_department=None):
-        standard_job_item = self.get_google_standard_job_item(html)
-        job_description = html.xpath('//div[@data-ui="job-description"]').get()
-        job_requirements = html.xpath('//div[@data-ui="job-requirements"]').get()
-        job_benefits = html.xpath('//div[@data-ui="job-benefits"]').get()
+    def get_jobs(self, next_page_key=None):
+        request_data = {**self.BASE_FILTER_DATA}
+        if next_page_key:
+            request_data['token'] = next_page_key
+        jobs_resp = requests.post(
+            f'https://apply.workable.com/api/v3/accounts/{self.EMPLOYER_KEY}/jobs',
+            data=request_data
+        )
+        jobs_data = json.loads(jobs_resp.content)
+        return jobs_data['results'], jobs_data.get('nextPage')
+    
+    def get_raw_job_data(self, job_shortcode):
+        job_resp = requests.get(f'https://apply.workable.com/api/v2/accounts/{self.EMPLOYER_KEY}/jobs/{job_shortcode}')
+        return json.loads(job_resp.content)
+        
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_shortcode=None):
+        job_data = self.get_raw_job_data(job_shortcode)
+        job_description = job_data['description']
+        job_requirements = job_data['requirements']
+        job_benefits = job_data['benefits']
         description = ''
         for section in [job_description, job_requirements, job_benefits]:
             try:
@@ -906,19 +929,19 @@ class WorkableScraper(Scraper):
             except TypeError as e:
                 raise e
         description_compensation_data = parse_compensation_text(description)
-        
-        compensation_data = merge_compensation_data(
-            [description_compensation_data, standard_job_item.get_compensation_dict()]
-        )
+        location_data = job_data['location']
+        location_text = ', '.join([location_data['city'], location_data['region'], location_data['country']])
+        if job_data['remote']:
+            location_text = f'Remote: {location_text}'
         
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
-            job_title=html.xpath('//h1[@data-ui="job-title"]/text()').get(),
-            locations=[html.xpath('//*[@data-ui="job-location"]/text()').get()],
-            job_department=html.xpath('//*[@data-ui="job-department"]/text()').get(),
+            job_title=job_data['title'],
+            locations=[location_text],
+            job_department=job_data['department'][0],
             job_description=description,
-            employment_type=html.xpath('//*[@data-ui="job-type"]/text()').get(),
-            first_posted_date=standard_job_item.first_posted_date,
-            **compensation_data
+            employment_type=job_data['type'],
+            first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['published'], as_date=True)),
+            **description_compensation_data
         )
