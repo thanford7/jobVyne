@@ -13,8 +13,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             sql=[
-                'DROP INDEX jvapp_userdonation_donation_amount_curr_c0320d8c_fk_jvapp_cur ON jvapp_userdonation;'
-                'ALTER TABLE jvapp_userdonation ADD CONSTRAINT jvapp_userdonation_donation_amount_curr_c0320d8c_fk_jvapp_cur foreign key (donation_amount_currency_id) references jvapp_currency (name);'
+                'ALTER TABLE jvapp_userdonation DROP FOREIGN KEY jvapp_userdonation_donation_amount_curr_c0320d8c_fk_jvapp_cur;'
             ],
         ),
     ]
