@@ -131,8 +131,8 @@ class LeanDataScraper(LeverScraper):
 
 
 class LiveViewTechnologiesScraper(BambooHrScraper):
+    EMPLOYER_KEY = 'lvt'
     employer_name = 'LiveView Technologies'
-    start_url = 'https://lvt.bamboohr.com/careers'
 
 
 class LucidSoftwareScraper(GreenhouseScraper):
@@ -196,8 +196,8 @@ class StubHubScraper(LeverScraper):
 
         
 class TechcyteScraper(BambooHrScraper):
+    EMPLOYER_KEY = 'techcyte'
     employer_name = 'Techcyte'
-    start_url = 'https://techcyte.bamboohr.com/careers'
     
     
 class TendoScraper(LeverScraper):

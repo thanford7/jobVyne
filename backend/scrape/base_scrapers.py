@@ -385,58 +385,59 @@ class Scraper:
 class BambooHrScraper(Scraper):
     """ There are two entirely different HTML structures on different BambooHR Sites
     """
+    EMPLOYER_KEY = None
     IS_JS_REQUIRED = True
-    job_item_page_wait_sel = '.jss-e8'
+    job_item_page_wait_sel = '.fab-Card'
     
     async def scrape_jobs(self):
-        page = await self.get_starting_page()
+        jobs = self.get_jobs()
+        for job in jobs:
+            await self.add_job_links_to_queue(self.get_job_url(job), meta_data={'job_id': job['id']})
+        await self.close()
         
-        # Make sure page data has loaded
-        try:
-            await self.wait_for_el(page, '.jss-e8')
-        except PlaywrightTimeoutError:
-            page = await self.get_starting_page()
-            await self.wait_for_el(page, '.jss-e8')
+    def get_job_url(self, job):
+        return f'https://{self.EMPLOYER_KEY}.bamboohr.com/careers/{job["id"]}'
         
-        html_dom = await self.get_page_html(page)
-        # html_dom = await self.get_html_from_url(self.start_url)
-        await self.add_job_links_to_queue(html_dom.xpath('//div[@class="jss-e8"]//ul//a/@href').getall())
-        await self.close(page=page)
+    def get_job_data(self, job_id):
+        job_resp = requests.get(f'https://{self.EMPLOYER_KEY}.bamboohr.com/careers/{job_id}/detail')
+        job = json.loads(job_resp.content)
+        return job['result']['jobOpening']
+        
+    def get_jobs(self):
+        jobs_resp = requests.get(f'https://{self.EMPLOYER_KEY}.bamboohr.com/careers/list')
+        jobs = json.loads(jobs_resp.content)
+        return jobs['result']
     
-    def get_job_data_from_html(self, html, job_url=None, **kwargs):
-        job_data = html.xpath('//div[contains(@class, "jss-e8")]')
-        job_details = html.xpath('//div[contains(@class, "jss-e73")]//p/text()').getall()
-        job_detail_data = {}
-        content_key = None
-        for content_item in job_details:
-            if not content_item:
-                continue
-            if not content_key:
-                content_key = content_item.lower()
-            else:
-                job_detail_data[content_key] = content_item
-                content_key = None
-        
+    def get_job_data_from_html(self, html, job_url=None, job_id=None, **kwargs):
+        job_data = self.get_job_data(job_id)
         standard_job_item = self.get_google_standard_job_item(html)
-        job_description = job_data.xpath('//div[contains(@class, "jss-e21")]').get()
+        job_description = job_data['description']
         description_compensation_data = parse_compensation_text(job_description)
         compensation_data = {}
-        if compensation_text := job_detail_data.get('compensation'):
+        if compensation_text := job_data.get('compensation'):
             compensation_data = parse_compensation_text(compensation_text)
         
         compensation_data = merge_compensation_data(
             [description_compensation_data, compensation_data, standard_job_item.get_compensation_dict()]
         )
+        location_data = job_data['location']
+        location = ', '.join([
+            location_data.get('city') or '',
+            location_data.get('state') or '',
+            location_data.get('addressCountry') or ''
+        ])
+        if job_data['isRemote']:
+            location = 'Remote: ' + location
         
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
-            job_title=job_data.xpath('//h2[contains(@class, "jss-e18")]/text()').get(),
-            locations=[job_data.xpath('//span[contains(@class, "jss-e19")]/text()').get()],
-            job_department=job_detail_data.get('department', self.DEFAULT_JOB_DEPARTMENT),
+            job_title=job_data['jobOpeningName'],
+            locations=[location],
+            job_department=job_data.get('departmentLabel', self.DEFAULT_JOB_DEPARTMENT),
             job_description=job_description,
-            employment_type=job_detail_data.get('employment type', self.DEFAULT_EMPLOYMENT_TYPE),
-            first_posted_date=standard_job_item.first_posted_date,
+            employment_type=job_data.get('employmentStatusLabel', self.DEFAULT_EMPLOYMENT_TYPE),
+            first_posted_date=standard_job_item.first_posted_date or job_data.get('datePosted'),
             **compensation_data
         )
 
