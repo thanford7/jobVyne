@@ -15,18 +15,19 @@ from jobVyne import settings
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.geocoding import LocationParser, get_raw_location
 from jvapp.apis.job import LocationView
-from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
+from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.notification import MessageGroupView
-from jvapp.apis.social import SocialLinkFilterView, SocialLinkJobsView
+from jvapp.apis.social import SocialLinkView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
-from jvapp.models import JobApplication, MessageThread, MessageThreadContext, SocialLinkFilter
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.content import ContentItem
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
     EmployerFileTag
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.social import SocialLink
+from jvapp.models.tracking import MessageThread, MessageThreadContext
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerOrReadOnlyPermission, IsAdminOrEmployerPermission
 from jvapp.serializers.employer import get_serialized_auth_group, get_serialized_employer, \
@@ -124,7 +125,7 @@ class EmployerView(JobVyneAPIView):
     @staticmethod
     def get_employer_account_owner(employer):
         return next((employee for employee in employer.employee.all() if employee.is_employer_owner), None)
-
+    
 
 class EmployerAtsView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
@@ -368,23 +369,23 @@ class EmployerReferralRequestView(JobVyneAPIView):
             referral_request.employer_id,
             referral_request
         )
+        referral_links = {
+            rl.owner_id: rl for rl in
+            SocialLinkView.get_or_create_employee_referral_links(recipients, referral_request.employer)
+        }
         for idx, recipient in enumerate(recipients):
-            link_data = {'owner_id': recipient.id, **data}
-            link_filter, is_duplicate = SocialLinkFilterView.create_or_update_link_filter(
-                SocialLinkFilter(), link_data, user=user
-            )
-            
+            referral_link = referral_links[recipient.id]
             email_body = referral_request.email_body
             
-            job_link = link_filter.get_link_url()
+            referral_link_url = referral_link.get_link_url()
             email_body = email_body.replace(
                 ContentPlaceholders.JOB_LINK.value,
-                job_link
+                referral_link_url
             )
             
             # Jobs are the same regardless of recipient so we only need to fetch them once
             if idx == 0:
-                jobs = SocialLinkJobsView.get_jobs_from_filter(link_filter=link_filter)
+                jobs = SocialLinkJobsView.get_jobs_from_social_link(referral_link)
                 if not jobs:
                     return 'No jobs were provided'
                 job_titles = list({j.job_title for j in jobs})
@@ -706,7 +707,7 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
         if not (employer_id := self.query_params.get('employer_id')):
             return get_error_response('An employer ID is required')
         
-        application_requirements = self.get_application_requirements(employer_id=employer_id)
+        application_requirements = self.get_application_requirements(employer_ids=[employer_id])
         return Response(
             status=status.HTTP_200_OK,
             data=self.get_consolidated_application_requirements(application_requirements)
@@ -753,9 +754,9 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_application_requirements(employer_id=None, job=None):
-        assert employer_id or job
-        application_requirement_filter = Q(employer_id=employer_id or job.employer_id)
+    def get_application_requirements(employer_ids=None, job=None):
+        assert employer_ids or job
+        application_requirement_filter = Q(employer_id__in=employer_ids or [job.employer_id])
         if job:
             application_requirement_filter &= (
                     Q(filter_jobs__id=job.id) | Q(filter_departments__id=job.job_department_id)
@@ -1113,6 +1114,7 @@ class EmployerUserView(JobVyneAPIView):
     def post(self, request):
         user, is_new = UserView.get_or_create_user(self.user, self.data)
         employer_id = self.data['employer_id']
+        employer = Employer.objects.get(id=employer_id)
         if not user.employer_id:
             user.employer_id = employer_id
             user.save()
@@ -1139,16 +1141,12 @@ class EmployerUserView(JobVyneAPIView):
         )
         user.user_type_bits = user_type_bits
         user.save()
-        user_primary_referral_link = SocialLinkFilter.objects.filter(owner=user, is_primary=True)
-        if not user_primary_referral_link:
-            raise Exception(
-                'An error occurred while creating a new employer user. No primary referral link was created.')
-        user_primary_referral_link = user_primary_referral_link[0]
+        referral_link = SocialLinkView.get_or_create_employee_referral_links([user], employer)
         
         uid = get_uid_from_user(user)
         token = generate_user_token(user, 'email')
         reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
-        job_referral_url = user_primary_referral_link.get_link_url()
+        job_referral_url = referral_link.get_link_url()
         employer = user.employer
         send_django_email(
             'Welcome to JobVyne!',
@@ -1503,8 +1501,8 @@ class EmployerJobDepartmentView(JobVyneAPIView):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
-        job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
+        job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+        job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
         # Include both subscribed jobs and those owned by the employer
         if job_subscription_filter:
             job_subscription_filter |= Q(employer_id=employer_id)
@@ -1531,8 +1529,8 @@ class EmployerJobLocationView(JobVyneAPIView):
         if not (employer_id := self.query_params.get('employer_id')):
             return Response('An employer ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
-        job_subscription_filter = EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions)
+        job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+        job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
         # Include both subscribed jobs and those owned by the employer
         if job_subscription_filter:
             job_subscription_filter |= Q(employer_id=employer_id)

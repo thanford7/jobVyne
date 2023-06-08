@@ -91,7 +91,12 @@ export default {
   },
   methods: {
     async saveExternalApplication (job) {
-      window.open(job.application_url, '_blank')
+      const jobUrl = dataUtil.getUrlWithParams({
+        isExcludeExistingParams: false,
+        addParams: [{ key: 'utm_source', val: 'jobvyne' }],
+        path: job.application_url
+      })
+      window.open(jobUrl, '_blank')
       await this.$api.post('job-application/external/', getAjaxFormData({
         job_id: job.id,
         filter_id: this.$route.params.filterId,

@@ -17,7 +17,6 @@
 import dataUtil from 'src/utils/data.js'
 import userTypeUtil, {
   USER_TYPE_ADMIN,
-  USER_TYPE_INFLUENCER,
   USER_TYPES
 } from 'src/utils/user-types'
 
@@ -37,7 +36,7 @@ export default {
     },
     allowedUserTypes: {
       type: Array,
-      default: Object.keys(USER_TYPES).filter((ut) => ![USER_TYPE_ADMIN, USER_TYPE_INFLUENCER].includes(ut))
+      default: Object.keys(USER_TYPES).filter((ut) => ![USER_TYPE_ADMIN].includes(ut))
     }
   },
   computed: {

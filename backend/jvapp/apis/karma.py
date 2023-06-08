@@ -7,9 +7,9 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response, get_warning_response
 from jvapp.apis.donation_org import DonationOrgView
-from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.karma import DonationOrganization, UserDonation, UserDonationOrganization, UserRequest
+from jvapp.models.user import JobVyneUser
 from jvapp.serializers.karma import get_serialized_donation_organization, get_serialized_user_donation, \
     get_serialized_user_request
 from jvapp.utils.data import AttributeCfg, set_object_attributes

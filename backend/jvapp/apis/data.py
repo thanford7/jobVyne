@@ -9,7 +9,9 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import JobApplication, JobVyneUser, MessageThreadContext, PageView, UserApplicationReview
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.tracking import MessageThreadContext, PageView
+from jvapp.models.user import JobVyneUser, UserApplicationReview
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.tracking import get_serialized_message
 from jvapp.utils.data import coerce_bool, coerce_int

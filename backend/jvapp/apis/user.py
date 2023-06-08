@@ -14,8 +14,9 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
     get_warning_response
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import Employer, SocialPost
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.content import SocialPost
+from jvapp.models.employer import Employer
 from jvapp.models.user import JobVyneUser, UserApplicationReview, UserEmployeeProfileQuestion, \
     UserEmployeeProfileResponse, UserFile, \
     UserSocialCredential, \

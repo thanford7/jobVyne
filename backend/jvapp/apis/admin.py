@@ -13,8 +13,8 @@ from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
 from jvapp.apis.job_seeker import ApplicationView
 from jvapp.apis.user import UserView
 from jvapp.management.commands.ats_data_pull import save_ats_data
-from jvapp.models import Employer, EmployerAts, EmployerAuthGroup, EmployerSubscription, JobVyneUser, \
-    UserEmployerPermissionGroup
+from jvapp.models.employer import Employer, EmployerAts, EmployerAuthGroup, EmployerSubscription
+from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.job_seeker import base_application_serializer

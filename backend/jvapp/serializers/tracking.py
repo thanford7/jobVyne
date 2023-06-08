@@ -1,4 +1,4 @@
-from jvapp.models import Message
+from jvapp.models.tracking import Message
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.file import get_file_name
 

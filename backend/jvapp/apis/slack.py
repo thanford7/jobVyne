@@ -3,11 +3,8 @@ import hmac
 import json
 import logging
 from datetime import timedelta
-from tempfile import NamedTemporaryFile
-from urllib.request import urlopen
 
 from django.conf import settings
-from django.core.files import File
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -19,10 +16,12 @@ from slack_sdk import WebClient
 from jobVyne.multiPartJsonParser import RawFormParser
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.employer import EmployerJobView, EmployerSlackView
-from jvapp.apis.job_subscription import EmployerJobSubscriptionJobView, EmployerJobSubscriptionView
-from jvapp.apis.social import SocialLinkFilterView
-from jvapp.models import EmployerSlack, JobVyneUser, PermissionName, SocialLinkFilter
+from jvapp.apis.job_subscription import JobSubscriptionView
+from jvapp.apis.social import SocialLinkView
 from jvapp.models.content import JobPost
+from jvapp.models.employer import EmployerSlack
+from jvapp.models.social import SocialLink
+from jvapp.models.user import JobVyneUser, PermissionName
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import WEEKDAY_BITS, get_datetime_format_or_none, get_datetime_minutes, get_dow_bit, \
@@ -198,8 +197,8 @@ class SlackJobsMessageView(SlackBaseView):
         jobs_filter = Q(employer_id=employer_id)
         
         # Get job subscriptions
-        job_subscriptions = EmployerJobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
-        if job_subscription_filter := EmployerJobSubscriptionJobView.get_combined_job_subscription_filter(job_subscriptions):
+        job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+        if job_subscription_filter := JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions):
             jobs_filter = (jobs_filter | job_subscription_filter)
 
         # Only post recent jobs
@@ -231,11 +230,7 @@ class SlackJobsMessageView(SlackBaseView):
         ]
         
         for job in jobs:
-            job_link = SocialLinkFilter()
-            job_link, _ = SocialLinkFilterView.create_or_update_link_filter(job_link, {
-                'employer_id': employer.id,
-                'job_ids': [job.id]
-            })
+            job_link = SocialLinkView.get_or_create_single_job_link(job, employer_id=employer.id)
             job_info = {
                 'type': 'section',
                 'fields': [
@@ -289,8 +284,8 @@ class SlackJobsMessageView(SlackBaseView):
             # }
             blocks.append(job_info)
         
-        general_job_link = SocialLinkFilter()
-        general_job_link, _ = SocialLinkFilterView.create_or_update_link_filter(general_job_link, {
+        general_job_link = SocialLink()
+        general_job_link = SocialLinkView.create_or_update_link(general_job_link, {
             'employer_id': employer.id,
             'name': 'Slack bot'
         })
@@ -388,8 +383,8 @@ class SlackReferralsMessageView(SlackBaseView):
             {'type': 'divider'},
         ]
 
-        job_link = SocialLinkFilter()
-        job_link, _ = SocialLinkFilterView.create_or_update_link_filter(job_link, {
+        job_link = SocialLink()
+        job_link = SocialLinkView.create_or_update_link(job_link, {
             'employer_id': slack_cfg.employer_id,
             'job_ids': [job.id]
         })
@@ -485,8 +480,8 @@ class SlackWebhookInboundView(SlackExternalBaseView):
         slack_user_profile = SlackBaseView.get_user_profile(data['user']['id'], slack_client)
         user = SlackBaseView.get_or_create_jobvyne_user(slack_user_profile, slack_cfg.employer_id)
         job = EmployerJobView.get_employer_jobs(employer_job_id=button_data['job_id'])
-        job_referral_link = SocialLinkFilter()
-        job_referral_link, _ = SocialLinkFilterView.create_or_update_link_filter(job_referral_link, {
+        job_referral_link = SocialLink()
+        job_referral_link = SocialLinkView.create_or_update_link(job_referral_link, {
             'owner_id': user.id,
             'employer_id': slack_cfg.employer_id,
             'job_ids': [job.id]

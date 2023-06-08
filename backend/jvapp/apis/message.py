@@ -7,8 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio.rest import Client
 
-from jvapp.models import MessageRecipient
-
+from jvapp.models.tracking import MessageRecipient
 
 account_sid = os.environ['TWILIO_ACCOUNT_SID']
 auth_token = os.environ['TWILIO_AUTH_TOKEN']

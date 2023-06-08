@@ -98,7 +98,7 @@ export default {
       ]
     },
     socialLinks () {
-      return this.socialStore.getSocialLinkFilters(this.authStore.propUser.id).map((link) => {
+      return this.socialStore.getSocialLinks({ userId: this.authStore.propUser.id }).map((link) => {
         link.platformName = this.platformName
         return link
       })
@@ -107,10 +107,10 @@ export default {
   async mounted () {
     await this.authStore.setUser().then(() => {
       return Promise.all([
-        this.socialStore.setSocialLinkFilters(this.authStore.propUser.id)
+        this.socialStore.setSocialLinks({ userId: this.authStore.propUser.id })
       ])
     })
-    this.socialLinks = this.socialStore.getSocialLinkFilters(this.authStore.propUser.id).map((link) => {
+    this.socialLinks = this.socialStore.getSocialLinks({ userId: this.authStore.propUser.id }).map((link) => {
       return Object.assign(dataUtil.deepCopy(link), { platformName: this.platformName })
     })
 

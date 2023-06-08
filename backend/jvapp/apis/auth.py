@@ -21,9 +21,9 @@ from social_django.utils import load_strategy, psa
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.user import UserView
-from jvapp.models import EmployerSlack, JobVyneUser
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.user import UserSocialCredential
+from jvapp.models.employer import EmployerSlack
+from jvapp.models.user import JobVyneUser, UserSocialCredential
 from jvapp.serializers.user import get_serialized_user
 from jvapp.utils.oauth import OauthProviders, get_access_token_from_code, OAUTH_CFGS
 

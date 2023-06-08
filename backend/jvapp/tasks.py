@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 
 from jobVyne.celery import app as celery_app
 from jvapp.apis.ats import get_ats_api
-from jvapp.models import EmployerAts
+from jvapp.models.employer import EmployerAts
 from scrape.scraper import run_job_scrapers
 
 logger = get_task_logger(__name__)

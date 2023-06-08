@@ -121,6 +121,12 @@ class PagePermissionsUtil {
             key: 'influencer-dashboard',
             label: 'Dashboard',
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
+          },
+          {
+            icon: 'dvr',
+            key: 'influencer-jobs',
+            label: 'Job boards',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           }
         ]
       },

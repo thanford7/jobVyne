@@ -8,6 +8,8 @@ from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO, 
 
 __all__ = ('ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
 
+from jvapp.models.user import PermissionName
+
 
 def get_post_upload_location(instance, filename):
     if instance.social_post.user_id:
@@ -50,7 +52,6 @@ class SocialContentItem(models.Model, JobVynePermissionsMixin):
         return query.filter(filter)
     
     def _jv_can_create(self, user):
-        from jvapp.models import PermissionName  # Avoid circular import
         return (
             user.is_admin
             or (
@@ -72,7 +73,7 @@ class SocialPost(AuditFields, JobVynePermissionsMixin):
     social_platform = models.ForeignKey('SocialPlatform', on_delete=models.PROTECT)
     original_post = models.ForeignKey('SocialPost', null=True, blank=True, on_delete=models.SET_NULL, related_name='child_post')
     post_credentials = models.ManyToManyField('UserSocialCredential')
-    link_filter = models.ForeignKey('SocialLinkFilter', null=True, blank=True, on_delete=models.SET_NULL)
+    link_filter = models.ForeignKey('SocialLink', null=True, blank=True, on_delete=models.SET_NULL)
     is_auto_post = models.BooleanField(default=False)
     auto_start_dt = models.DateTimeField(null=True, blank=True)
     auto_weeks_between = models.SmallIntegerField(null=True, blank=True)
@@ -90,7 +91,6 @@ class SocialPost(AuditFields, JobVynePermissionsMixin):
         return query.filter(filter)
 
     def _jv_can_create(self, user):
-        from jvapp.models import PermissionName  # Avoid circular import
         return (
             user.is_admin
             or (

@@ -10,8 +10,12 @@ from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from jvapp.models import *
-from jvapp.models.user import StandardPermissionGroups
+from jvapp.models.currency import Currency
+from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJob, EmployerPermission, \
+    EmployerReferralBonusRule, EmployerReferralBonusRuleModifier, JobDepartment
+from jvapp.models.location import City, Country, Location, State
+from jvapp.models.social import SocialLink
+from jvapp.models.user import JobVyneUser, StandardPermissionGroups, UserEmployerPermissionGroup
 
 
 class BaseTestCase(TestCase):
@@ -269,7 +273,7 @@ class BaseTestCase(TestCase):
     
     def create_social_link(self, owner, is_default=False, employer_id=None, cities=None, states=None, countries=None,
                            departments=None):
-        social_link = SocialLinkFilter(
+        social_link = SocialLink(
             is_default=is_default,
             owner=owner,
             employer_id=employer_id or owner.employer_id

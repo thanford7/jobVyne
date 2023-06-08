@@ -142,7 +142,6 @@
                     :jobs-by-employer="jobsByEmployer"
                     :applications="applications"
                     :job-application="jobApplication"
-                    :has-job-subscription="hasJobSubscription"
                     :job-pages-count="jobPagesCount"
                     @openApplication="openApplication($event)"
                   />
@@ -263,7 +262,6 @@ export default {
       employer: null,
       profile: null,
       isLoaded: false,
-      hasJobSubscription: false,
       isActiveEmployer: null,
       isActiveEmployee: null,
       jobApplication: null,
@@ -376,14 +374,12 @@ export default {
         owner_id: ownerId,
         is_active_employee: isActiveEmployee,
         filter_values: filterValues,
-        total_employer_job_count: totalEmployerJobCount,
-        has_job_subscription: hasJobSubscription
+        total_employer_job_count: totalEmployerJobCount
       } = resp.data
 
       if (isFirstLoad) {
         Object.assign(this.jobFilters, filterValues)
       }
-      this.hasJobSubscription = hasJobSubscription
       this.totalEmployerJobCount = totalEmployerJobCount
       if (!isExample) {
         await Promise.all([

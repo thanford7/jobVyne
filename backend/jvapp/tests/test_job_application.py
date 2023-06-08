@@ -6,7 +6,9 @@ from django.db.models import Q
 from django.utils import timezone
 
 from jvapp.apis.notification import BaseMessageView
-from jvapp.models import EmployerJob, JobApplication, REMOTE_TYPES
+from jvapp.models.employer import EmployerJob
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.location import REMOTE_TYPES
 from jvapp.models.tracking import MessageGroup
 from jvapp.tests.base import BaseTestCase
 

@@ -1,8 +1,8 @@
-from jvapp.models import Message, MessageRecipient, MessageThread
+__all__ = ['get_serialized_social_platform', 'get_serialized_social_link']
+
 from jvapp.models.social import *
-
-__all__ = ['get_serialized_social_platform', 'get_serialized_social_link_filter']
-
+from jvapp.models.tracking import Message, MessageRecipient, MessageThread
+from jvapp.serializers.job_subscription import get_serialized_job_subscription
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -16,7 +16,7 @@ def get_serialized_social_platform(social_platform: SocialPlatform):
     }
 
 
-def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_performance=False):
+def get_serialized_social_link(link_filter: SocialLink, is_include_performance=False):
     data = {
         'id': link_filter.id,
         'owner_id': link_filter.owner_id,
@@ -24,8 +24,7 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         'employer_id': link_filter.employer_id,
         'link_name': link_filter.name,
         'is_default': link_filter.is_default,
-        'jobs': [{'title': j.job_title, 'id': j.id} for j in link_filter.jobs.all()],
-        'tags': [{'name': tag.tag_name, 'id': tag.id} for tag in link_filter.tags.all()]
+        'job_subscriptions': [get_serialized_job_subscription(js) for js in link_filter.job_subscriptions.all()],
     }
     
     if is_include_performance:
@@ -46,13 +45,6 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
         }
     
     return data
-
-
-def get_serialized_link_tag(link_tag: SocialLinkTag):
-    return {
-        'id': link_tag.id,
-        'tag_name': link_tag.tag_name
-    }
 
 
 def get_serialized_message(message: Message, is_include_recipients=True):

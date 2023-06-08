@@ -5,7 +5,6 @@ from django.db import models
 
 from jvapp.models._customDjangoField import LowercaseCharField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
-from jvapp.models.user import PermissionName
 
 __all__ = (
     'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
@@ -14,6 +13,8 @@ __all__ = (
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
     'EmployerSlack'
 )
+
+from jvapp.models.user import PermissionName
 
 
 def get_employer_upload_location(instance, filename):

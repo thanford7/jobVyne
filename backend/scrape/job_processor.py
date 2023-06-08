@@ -5,7 +5,7 @@ from typing import Union
 from django.utils import timezone
 
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import EmployerJob, JobDepartment
+from jvapp.models.employer import EmployerJob, JobDepartment
 from jvapp.utils.sanitize import sanitize_html
 
 

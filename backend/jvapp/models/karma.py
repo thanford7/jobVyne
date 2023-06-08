@@ -4,8 +4,8 @@ from enum import Enum
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from jvapp.models import get_user_upload_location
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, ALLOWED_UPLOADS_IMAGE, AuditFields, JobVynePermissionsMixin
+from jvapp.utils.file import get_user_upload_location
 
 
 class DonationOrganization(models.Model):

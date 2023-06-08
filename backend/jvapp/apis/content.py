@@ -14,8 +14,10 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.auth import get_refreshed_access_token
 from jvapp.apis.social import SocialLinkJobsView
-from jvapp.models import EmployerFile, SocialContentItem, SocialPost, SocialPostAudit, SocialPostFile, UserFile
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.content import SocialContentItem, SocialPost, SocialPostAudit, SocialPostFile
+from jvapp.models.employer import EmployerFile
+from jvapp.models.user import UserFile
 from jvapp.serializers.content import get_serialized_social_post
 from jvapp.utils.data import AttributeCfg, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
@@ -401,7 +403,7 @@ class ShareSocialPostView(JobVyneAPIView):
         # Filter posts based on auto_weeks_between and add in jobs for each post
         # TODO: get_jobs_from_filter is very inefficient need to figure out better approach
         auto_posts = [
-            {'post': ap, 'jobs': SocialLinkJobsView.get_jobs_from_filter(link_filter=ap.link_filter)}
+            {'post': ap, 'jobs': SocialLinkJobsView.get_jobs_from_social_link(ap.link_filter)}
             for ap in auto_posts if ShareSocialPostView.is_auto_post_week(ap, target_dt)
         ]
         

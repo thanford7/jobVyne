@@ -3,7 +3,8 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
-from jvapp.models import JobApplication, PageView
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.tracking import PageView
 
 
 def update_platforms(apps, schema_editor):

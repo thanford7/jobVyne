@@ -12,7 +12,7 @@
             </template>
             <div>
               <div class="text-small q-mb-sm">Click icon to copy link</div>
-              <ReferralLinkButtons :social-link-filter="defaultReferralLink"/>
+              <ReferralLinkButtons :social-link="defaultReferralLink"/>
             </div>
           </BaseExpansionItem>
         </div>
@@ -79,7 +79,7 @@ export default {
   },
   computed: {
     defaultReferralLink () {
-      const referralLinks = this.socialStore.getSocialLinkFilters(this.user.id)
+      const referralLinks = this.socialStore.getSocialLinks({ userId: this.user.id })
       return referralLinks.find((link) => link.is_default)
     },
     hasCompletedChecklist () {
@@ -120,7 +120,7 @@ export default {
     Loading.show()
     return authStore.setUser().then(() => {
       return Promise.all([
-        socialStore.setSocialLinkFilters(authStore.propUser.id),
+        socialStore.setSocialLinks({ userId: authStore.propUser.id }),
         userStore.setUserEmployeeChecklist(authStore.propUser.id)
       ])
     }).finally(() => Loading.hide())

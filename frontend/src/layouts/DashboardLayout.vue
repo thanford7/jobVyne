@@ -4,7 +4,7 @@
     <q-drawer
       v-if="!utilStore.isUnderBreakPoint('md')"
       :breakpoint="0"
-      :width="250"
+      :width="300"
       side="left"
       show-if-above
       :mini="!isLeftDrawerOpen"

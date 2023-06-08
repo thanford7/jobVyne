@@ -1,3 +1,4 @@
+__all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
 from django.core.files import File
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
@@ -5,15 +6,13 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from jvapp.apis.job_seeker import ApplicationTemplateView
-from jvapp.apis.social import SocialLinkFilterView
-from jvapp.models import EmployerAuthGroup, JobApplication, JobApplicationTemplate, JobVyneUser, SocialLinkFilter, \
-    UserEmployerPermissionGroup
-from jvapp.models.employer import Employer, EmployerJobApplicationRequirement, is_default_auth_group
-
-__all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
-
+from jvapp.apis.job_subscription import JobSubscriptionView
+from jvapp.apis.social import SocialLinkView
+from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobApplicationRequirement, is_default_auth_group
+from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
+from jvapp.models.social import SocialLink
+from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.utils.file import get_file_extension, get_file_name
-
 from jvapp.utils.image import resize_image_with_fill
 
 
@@ -78,25 +77,6 @@ def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
                 )
 
     UserEmployerPermissionGroup.objects.bulk_create(groups_to_add, ignore_conflicts=True)
-    
-
-@receiver(post_save, sender=JobVyneUser)
-def generate_primary_social_link(sender, instance, *args, **kwargs):
-    # User must be associated with an employer to have a social link
-    if not instance.employer_id:
-        return
-    
-    try:
-        # Check if primary link already exists
-        SocialLinkFilter.objects.get(owner_id=instance.id, is_primary=True)
-    except SocialLinkFilter.DoesNotExist:
-        SocialLinkFilterView.create_or_update_link_filter(
-            SocialLinkFilter(is_primary=True), {
-                'owner_id': instance.id,
-                'employer_id': instance.employer_id,
-                'is_default': True
-            }
-        )
 
        
 @receiver(post_save, sender=JobVyneUser)
@@ -178,3 +158,16 @@ def generate_logo_sizes(sender, instance, created, *args, **kwargs):
         instance.logo_square_88 = File(new_image, name=f'{file_name}_square_88.{file_extension}')
         instance.save()
         new_image.close()
+
+
+@receiver(post_save, sender=Employer)
+def create_employer_job_board(sender, instance, created, *args, **kwargs):
+    if created:
+        link = SocialLink(
+            is_default=True, name='Main Job Board', employer_id=instance.id
+        )
+        link.save()
+        # If this is an employer then, they should only be subscribed to their jobs
+        if instance.organization_type & Employer.ORG_TYPE_EMPLOYER:
+            employer_subscription = JobSubscriptionView.get_or_create_employer_subscription(instance.id)
+            link.job_subscriptions.add(employer_subscription.id)

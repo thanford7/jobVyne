@@ -185,7 +185,7 @@ export default {
       authStore.setUser(),
       this.employerStore.setEmployer(this.job.employer_id)
     ])
-    this.socialLink = await socialStore.getOrCreateSocialLinkFilter({
+    this.socialLink = await socialStore.getOrCreateSocialLink({
       owner_id: authStore.propUser.id,
       employer_id: this.job.employer_id,
       job_ids: [this.job.id],

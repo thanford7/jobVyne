@@ -155,6 +155,12 @@ const routes = [
         name: 'influencer-dashboard',
         meta: { userTypeBits: USER_TYPES.Influencer },
         component: () => import('pages/DashboardPage.vue')
+      },
+      {
+        path: 'jobs',
+        name: 'influencer-jobs',
+        meta: { userTypeBits: USER_TYPES.Influencer },
+        component: () => import('pages/influencer/JobBoardsPage.vue')
       }
     ]
   },

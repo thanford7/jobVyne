@@ -28,7 +28,7 @@ export default {
   name: 'ReferralLinkButtons',
   components: { CustomTooltip },
   props: {
-    socialLinkFilter: Object
+    socialLink: Object
   },
   data () {
     return {

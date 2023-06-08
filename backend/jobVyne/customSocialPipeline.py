@@ -4,8 +4,7 @@ from social_core.backends.google import GoogleOAuth2
 from social_core.backends.linkedin import LinkedinOAuth2
 
 from jvapp.apis.auth import get_token_expiration_dt, update_all_social_creds
-from jvapp.models import JobVyneUser
-from jvapp.models.user import UserSocialCredential
+from jvapp.models.user import JobVyneUser, UserSocialCredential
 
 USER_FIELDS = ['username', 'email', 'user_type_bits']
 

@@ -75,7 +75,6 @@ export default {
     jobsByEmployer: Object,
     applications: Array,
     jobApplication: [Object, null],
-    hasJobSubscription: Boolean,
     jobPagesCount: Number
   },
   components: {

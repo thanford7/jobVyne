@@ -1,4 +1,4 @@
-from jvapp.models import EmployerReferralBonusRuleModifier
+from jvapp.models.employer import EmployerReferralBonusRuleModifier
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.tests.base import BaseTestCase
 

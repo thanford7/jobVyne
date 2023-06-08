@@ -1,11 +1,13 @@
-from jvapp.models.job_subscription import EmployerJobSubscription
+from jvapp.models.job_subscription import JobSubscription
 from jvapp.serializers.location import get_serialized_location
 
 
-def get_serialized_job_subscription(job_subscription: EmployerJobSubscription):
+def get_serialized_job_subscription(job_subscription: JobSubscription):
     return {
         'id': job_subscription.id,
         'employer_id': job_subscription.employer_id,
+        'is_single_employer': job_subscription.is_single_employer,
+        'title': job_subscription.title,
         'filters': {
             'job_title_regex': job_subscription.filter_job_title_regex,
             'exclude_job_title_regex': job_subscription.filter_exclude_job_title_regex,

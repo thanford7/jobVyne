@@ -13,7 +13,7 @@ class PageView(models.Model, JobVynePermissionsMixin):
     # page
     relative_url = models.CharField(max_length=100)
     social_link_filter = models.ForeignKey(
-        'SocialLinkFilter', on_delete=models.CASCADE, null=True, blank=True, related_name='page_view'
+        'SocialLink', on_delete=models.CASCADE, null=True, blank=True, related_name='page_view'
     )
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     

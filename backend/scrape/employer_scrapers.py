@@ -495,15 +495,73 @@ class One800ContactsScraper(GreenhouseIframeScraper):
     GREENHOUSE_JOB_BOARD_DOMAIN = '1800contacts'
     employer_name = '1-800 Contacts'
     
+    
+class GoatGroupScraper(GreenhouseScraper):
+    employer_name = 'Goat Group'
+    start_url = 'https://boards.greenhouse.io/goatgroup'
+    
+    
+class NorthAmericanBancardScraper(WorkdayScraper):
+    employer_name = 'North American Bancard'
+    start_url = 'https://nabancard.wd1.myworkdayjobs.com/nab'
+    
+    
+class BeamBenefitsScraper(LeverScraper):
+    employer_name = 'Beam Benefits'
+    start_url = 'https://jobs.lever.co/beam'
+    
+    
+class CollectiveHealthScraper(GreenhouseIframeScraper):
+    employer_name = 'Collective Health'
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'collectivehealth'
+    
+    
+class ZenBusinessScraper(LeverScraper):
+    employer_name = 'ZenBusiness'
+    start_url = 'https://jobs.lever.co/zenbusiness'
+    
+
+class IntegrityMarketingScraper(WorkdayScraper):
+    employer_name = 'Integriy Marketing'
+    start_url = 'https://integritymarketing.wd1.myworkdayjobs.com/Integrity'
+    
+    
+class BeyondIdentityScraper(GreenhouseIframeScraper):
+    employer_name = 'Beyond Identity'
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'beyondidentity'
+    
+    
+class EnableScraper(LeverScraper):
+    employer_name = 'Enable'
+    start_url = 'https://jobs.lever.co/enable'
+    
+    
+class DoorDashScraper(GreenhouseIframeScraper):
+    employer_name = 'DoorDash'
+    GREENHOUSE_JOB_BOARD_DOMAIN = 'doordash'
+    
+    
+class SnackpassScraper(GreenhouseScraper):
+    employer_name = 'Snackpass'
+    start_url = 'https://boards.greenhouse.io/snackpass'
+    
+    
 # BlueOriginScraper.employer_name: BlueOriginScraper,
 # EbayScraper.employer_name: EbayScraper,
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
 test_scrapers = {
+    NorthAmericanBancardScraper.employer_name: NorthAmericanBancardScraper,
+    BeamBenefitsScraper.employer_name: BeamBenefitsScraper,
+    CollectiveHealthScraper.employer_name: CollectiveHealthScraper,
+    ZenBusinessScraper.employer_name: ZenBusinessScraper,
+    IntegrityMarketingScraper.employer_name: IntegrityMarketingScraper,
+    BeyondIdentityScraper.employer_name: BeyondIdentityScraper
 }
 
 
 all_scrapers = {
+    GoatGroupScraper.employer_name: GoatGroupScraper,
     PacksizeScraper.employer_name: PacksizeScraper,
     One800ContactsScraper.employer_name: One800ContactsScraper,
     AncestryScraper.employer_name: AncestryScraper,

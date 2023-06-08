@@ -2,7 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import JobDepartment, Location
+from jvapp.models.employer import JobDepartment
+from jvapp.models.location import Location
 from jvapp.serializers.location import get_serialized_location
 
 

@@ -1,13 +1,12 @@
+__all__ = ('JobApplication', 'JobApplicationTemplate')
 from enum import Enum
 
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q
 
-from jvapp.models.user import get_user_upload_location
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePermissionsMixin
-
-__all__ = ('JobApplication', 'JobApplicationTemplate')
+from jvapp.utils.file import get_user_upload_location
 
 
 # NOTE: Keep field names in sync with EmployerJobApplicationRequirement.application_field
@@ -71,7 +70,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link_filter = models.ForeignKey(
-        'SocialLinkFilter', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
+        'SocialLink', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
     )
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     employer_job = models.ForeignKey(

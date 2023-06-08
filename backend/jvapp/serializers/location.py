@@ -1,4 +1,4 @@
-from jvapp.models import Location
+from jvapp.models.location import Location
 
 
 def get_serialized_location(location: Location):

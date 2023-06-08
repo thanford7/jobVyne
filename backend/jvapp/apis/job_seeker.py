@@ -14,10 +14,12 @@ from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.notification import MessageGroupView, NotificationPreferenceKey, UserNotificationPreferenceView
 from jvapp.apis.user import UserView
-from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext, SocialPlatform
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.employer import EmployerAts
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
-from jvapp.models.user import UserEmployerCandidate
+from jvapp.models.social import SocialPlatform
+from jvapp.models.tracking import MessageThread, MessageThreadContext
+from jvapp.models.user import JobVyneUser, UserEmployerCandidate
 from jvapp.permissions.general import IsAuthenticatedOrPost
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application

@@ -7,6 +7,15 @@ from jobVyne.customStorage import OverwriteStorage
 from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO
 
 
+def get_user_upload_location(instance, filename):
+    if hasattr(instance, 'user_id') and instance.user:
+        email = instance.user.email
+    else:
+        email = instance.email
+    
+    return f'user/{email}/{filename}'
+
+
 def get_file_storage_engine():
     return OverwriteStorage() if settings.IS_LOCAL else S3Boto3Storage()
 

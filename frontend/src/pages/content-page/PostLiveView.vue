@@ -144,7 +144,7 @@ export default {
     await this.authStore.setUser().then(() => {
       return Promise.all([
         this.employerStore.setEmployer(this.authStore.propUser.employer_id),
-        this.socialStore.setSocialLinkFilters(this.authStore.propUser.id)
+        this.socialStore.setSocialLinks({ userId: this.authStore.propUser.id })
       ])
     })
     this.user = this.authStore.propUser

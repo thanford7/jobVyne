@@ -1,3 +1,9 @@
+__all__ = (
+    'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
+    'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate',
+    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion', 'UserNotificationPreference',
+    'UserApplicationReview'
+)
 from collections import defaultdict
 from enum import Enum, IntEnum
 
@@ -11,29 +17,12 @@ from django.utils import crypto, timezone
 from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
-
-
-__all__ = (
-    'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
-    'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate',
-    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion', 'UserNotificationPreference',
-    'UserApplicationReview'
-)
-
 from jvapp.utils.email import get_domain_from_email
+from jvapp.utils.file import get_user_upload_location
 
 
 def generate_password():
     return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')
-
-
-def get_user_upload_location(instance, filename):
-    if hasattr(instance, 'user_id') and instance.user:
-        email = instance.user.email
-    else:
-        email = instance.email
-    
-    return f'user/{email}/{filename}'
 
 
 # Keep in sync with frontend user-types
@@ -74,7 +63,7 @@ class CustomUserManager(BaseUserManager):
         """
         Create and save a User with the given email and password.
         """
-        from jvapp.models import Employer  # Avoid circular import
+        from jvapp.models.employer import Employer
         from jvapp.apis.employer import EmployerSubscriptionView
         
         if not email:

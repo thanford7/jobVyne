@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from playwright.async_api import async_playwright
 
-from jvapp.models import Employer, EmployerJob
+from jvapp.models.employer import Employer, EmployerJob
 from scrape.base_scrapers import get_random_user_agent
 from scrape.employer_scrapers import all_scrapers, test_scrapers
 from scrape.job_processor import JobProcessor

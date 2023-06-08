@@ -17,6 +17,18 @@
           />
         </template>
         <template v-slot:body>
+          <div class="col-12">
+            <q-input
+              v-model="subscriptionFilter.title"
+              filled label="Subscription title"
+            >
+              <template v-slot:after>
+                <CustomTooltip>
+                  Used to summarize what this job subscription is for (e.g. "Remote Product Managers")
+                </CustomTooltip>
+              </template>
+            </q-input>
+          </div>
           <div class="col-md-6 col-12 q-pr-md-sm">
             <q-input
               v-model="subscriptionFilter.job_title_regex"
@@ -67,7 +79,7 @@
       >
         <template v-slot:header="props">
           <q-tr :props="props">
-            <q-th auto-width>
+            <q-th auto-width class="text-left">
               Actions
             </q-th>
             <q-th
@@ -83,16 +95,24 @@
         <template v-slot:body="props">
           <q-tr :props="props">
             <q-td auto-width>
-              <q-btn
-                outline round dense icon="edit" color="primary"
-                class="q-mr-xs"
-                @click="openEditJobSubscription(props.row)"
-              />
-              <q-btn
-                outline round dense icon="delete" color="negative"
-                class="q-mr-xs"
-                @click="deleteJobSubscription(props.row)"
-              />
+              <template v-if="!props.row.is_single_employer">
+                <q-btn
+                  outline round dense icon="edit" color="primary"
+                  class="q-mr-xs"
+                  @click="openEditJobSubscription(props.row)"
+                />
+                <q-btn
+                  outline round dense icon="delete" color="negative"
+                  class="q-mr-xs"
+                  @click="deleteJobSubscription(props.row)"
+                />
+              </template>
+              <CustomTooltip v-else :is_include_icon="false">
+                <template v-slot:content>
+                  <q-chip icon="lock">Employee referral</q-chip>
+                </template>
+                This is your employer's jobs. You may be eligible for a referral bonus by posting these jobs.
+              </CustomTooltip>
             </q-td>
             <q-td
               v-for="col in props.cols"
@@ -100,77 +120,7 @@
               :props="props"
             >
               <template v-if="col.name === 'filters'">
-                <q-chip
-                  v-if="props.row.filters.job_title_regex"
-                  dense size="13px"
-                >
-                  <b>Include: </b>&nbsp;{{ props.row.filters.job_title_regex }}
-                </q-chip>
-                <q-chip
-                  v-if="props.row.filters.exclude_job_title_regex"
-                  dense size="13px"
-                >
-                  <b>Exclude: </b>&nbsp;{{ props.row.filters.exclude_job_title_regex }}
-                </q-chip>
-                <LocationChip :locations="props.row.filters.locations" :is-dense="true"/>
-                <template v-if="props.row.filters.jobs?.length && props.row.filters.jobs?.length > 2">
-                  <CustomTooltip :is_include_icon="false">
-                    <template v-slot:content>
-                      <q-chip dense color="grey-8" text-color="white" size="13px">
-                        Multiple jobs
-                      </q-chip>
-                    </template>
-                    <ul>
-                      <li v-for="job in props.row.filters.jobs">
-                        {{ job.title }}
-                      </li>
-                    </ul>
-                  </CustomTooltip>
-                </template>
-                <template v-else>
-                  <q-chip
-                    v-for="job in props.row.filters.jobs"
-                    dense color="grey-8" text-color="white" size="13px"
-                  >
-                    {{ job.title }}
-                  </q-chip>
-                </template>
-                <template v-if="props.row.filters.employers?.length && props.row.filters.employers?.length > 2">
-                  <CustomTooltip :is_include_icon="false">
-                    <template v-slot:content>
-                      <q-chip dense color="grey-8" text-color="white" size="13px">
-                        Multiple employers
-                      </q-chip>
-                    </template>
-                    <ul>
-                      <li v-for="employer in props.row.filters.employers">
-                        {{ employer.name }}
-                      </li>
-                    </ul>
-                  </CustomTooltip>
-                </template>
-                <template v-else>
-                  <q-chip
-                    v-for="employer in props.row.filters.employers"
-                    dense color="grey-8" text-color="white" size="13px"
-                  >
-                    {{ employer.name }}
-                  </q-chip>
-                </template>
-                <template v-if="props.row.filters.remote_type_bit">
-                  <q-chip
-                    v-if="props.row.filters.remote_type_bit === locationUtil.REMOTE_TYPE_TRUE"
-                    dense color="grey-8" text-color="white" size="13px"
-                  >
-                    Remote only
-                  </q-chip>
-                  <q-chip
-                    v-else
-                    dense color="grey-8" text-color="white" size="13px"
-                  >
-                    On-site only
-                  </q-chip>
-                </template>
+                <JobSubscriptionInfo :job-subscription="props.row"/>
               </template>
               <template v-else-if="col.name === 'job_count'">
                 {{ col.value }}
@@ -189,7 +139,7 @@ import CollapsableCard from 'components/CollapsableCard.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogJobSubscription from 'components/dialogs/DialogJobSubscription.vue'
 import InputLocation from 'components/inputs/InputLocation.vue'
-import LocationChip from 'components/LocationChip.vue'
+import JobSubscriptionInfo from 'pages/employer/jobs-page/JobSubscriptionInfo.vue'
 import { useQuasar } from 'quasar'
 import locationUtil from 'src/utils/location.js'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
@@ -197,7 +147,7 @@ import SelectRemote from 'components/inputs/SelectRemote.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
-import { useEmployerStore } from 'stores/employer-store.js'
+import { useJobSubscriptionStore } from 'stores/job-subscription-store.js'
 
 const subscriptionFilterTemplate = {
   job_title_regex: null,
@@ -210,6 +160,7 @@ const subscriptionFilterTemplate = {
 }
 
 const jobSubscriptionColumns = [
+  { name: 'title', field: 'title', align: 'left', label: 'Title', sortable: true },
   { name: 'filters', field: 'filters', align: 'left', label: 'Filters' },
   { name: 'job_count', field: 'job_count', align: 'left', label: 'Job count', sortable: true }
 ]
@@ -217,12 +168,15 @@ const jobSubscriptionColumns = [
 export default {
   name: 'JobSubscriptionsSection',
   components: {
-    LocationChip,
     InputLocation,
     CustomTooltip,
+    JobSubscriptionInfo,
     SelectRemote,
     SelectEmployer,
     CollapsableCard
+  },
+  props: {
+    isEmployer: Boolean
   },
   data () {
     return {
@@ -235,9 +189,10 @@ export default {
     }
   },
   methods: {
-    async updateJobSubscriptions (isForce) {
-      await this.employerStore.setEmployerJobSubscription(this.user.employer_id, isForce)
-      this.jobSubscriptions = this.employerStore.getEmployerJobSubscription(this.user.employer_id)
+    async updateJobSubscriptions (isForceRefresh) {
+      const params = (this.isEmployer) ? { employerId: this.user.employer_id } : { userId: this.user.id }
+      await this.jobSubscriptionStore.setJobSubscription({ ...params, isForceRefresh })
+      this.jobSubscriptions = this.jobSubscriptionStore.getJobSubscription(params)
     },
     openEditJobSubscription (jobSubscription) {
       return this.q.dialog({
@@ -253,15 +208,16 @@ export default {
         'Are you sure you want to delete this job subscription?',
         {
           okFn: async () => {
-            await this.$api.delete(`employer/job-subscription/${jobSubscription.id}`)
+            await this.$api.delete(`job-subscription/${jobSubscription.id}`)
             await this.updateJobSubscriptions(true)
           }
         }
       )
     },
     async saveJobSubscription () {
-      await this.$api.post('employer/job-subscription/', getAjaxFormData({
+      await this.$api.post('job-subscription/', getAjaxFormData({
         employer_id: this.user.employer_id,
+        user_id: this.user.id,
         ...this.subscriptionFilter
       }))
       this.subscriptionFilter = { ...subscriptionFilterTemplate }
@@ -273,11 +229,11 @@ export default {
     this.isLoaded = true
   },
   setup () {
-    const employerStore = useEmployerStore()
+    const jobSubscriptionStore = useJobSubscriptionStore()
     const authStore = useAuthStore()
     const { user } = storeToRefs(authStore)
 
-    return { employerStore, authStore, user, q: useQuasar() }
+    return { jobSubscriptionStore, authStore, user, q: useQuasar() }
   }
 }
 </script>

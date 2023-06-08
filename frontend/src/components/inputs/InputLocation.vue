@@ -41,7 +41,7 @@
       v-if="isAllowRange"
       :model-value="range_miles"
       @update:model-value="$emit('update:range_miles', $event)"
-      filled map-options
+      filled map-options emit-value
       label="Within distance"
       :options="[{ val: 10 }, { val: 25 }, { val: 50 }, { val: 100 }]"
       :option-label="(dist) => `${dist.val} miles`"
