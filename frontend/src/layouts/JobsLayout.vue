@@ -33,7 +33,7 @@
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
-            <q-tab v-if="isActiveEmployee &&  isShowEmployeeProfile" id="jv-tab-me" name="me"
+            <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me"
                    :label="`About ${profile?.first_name}`"/>
           </q-tabs>
         </ResponsiveWidth>
@@ -71,7 +71,7 @@
           <q-tab-panel name="jobs" style="position: relative">
             <div class="row justify-center">
               <ResponsiveWidth>
-                <div v-if="isActiveEmployer" class="row">
+                <div class="row">
                   <div v-if="!user || dataUtil.isEmpty(user)" class="col-12 q-mb-md">
                     <q-card flat class="border-4-info">
                       <q-card-section class="text-center text-bold">
@@ -154,30 +154,10 @@
                     class="q-mt-md"
                   />
                 </div>
-                <div v-else class="row justify-center items-center" style="height: 50vh">
-                  <div class="col-6">
-                    <q-card class="bg-primary text-white">
-                      <q-card-section class="flex justify-center">
-                        <q-icon name="power_off" size="80px"/>
-                      </q-card-section>
-                      <q-card-section>
-                        <div class="text-h6 text-center">
-                          {{ employer.name }} no longer has an active JobVyne account. If you wish to
-                          view and apply for jobs, please visit their
-                          <a v-if="employer.company_jobs_page_url" :href="employer.company_jobs_page_url"
-                             target="_blank" class="text-white">
-                            jobs page
-                          </a>
-                          <span v-else>jobs page</span>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-                </div>
               </ResponsiveWidth>
             </div>
           </q-tab-panel>
-          <q-tab-panel name="me" v-if="isActiveEmployee && isShowEmployeeProfile" class="q-pa-none">
+          <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
             <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
               <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
                 <div class="flex items-center">
@@ -262,8 +242,6 @@ export default {
       employer: null,
       profile: null,
       isLoaded: false,
-      isActiveEmployer: null,
-      isActiveEmployee: null,
       jobApplication: null,
       jobPagesCount: null,
       jobFilters: {},
@@ -327,10 +305,12 @@ export default {
     },
     getJobApplicationById (jobId) {
       for (const employer of this.jobsByEmployer) {
-        for (const jobs of Object.values(employer.jobs)) {
-          for (const job of jobs) {
-            if (job.id === jobId) {
-              return job
+        for (const jobPositions of Object.values(employer.jobs)) {
+          for (const jobs of Object.values(jobPositions)) {
+            for (const job of jobs) {
+              if (job.id === jobId) {
+                return job
+              }
             }
           }
         }
@@ -372,7 +352,6 @@ export default {
         employer,
         total_page_count: totalPageCount,
         owner_id: ownerId,
-        is_active_employee: isActiveEmployee,
         filter_values: filterValues,
         total_employer_job_count: totalEmployerJobCount
       } = resp.data
@@ -383,19 +362,13 @@ export default {
       this.totalEmployerJobCount = totalEmployerJobCount
       if (!isExample) {
         await Promise.all([
-          this.employerStore.setEmployerSubscription(employer.id),
           this.authStore.setApplications(this.user)
         ])
         if (ownerId) {
           await this.userStore.setUserProfile(ownerId)
         }
-        const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
-        this.isActiveEmployer = isActiveEmployer
-        this.isActiveEmployee = isActiveEmployee
         this.profile = storeToRefs(this.userStore).userProfile
       } else {
-        this.isActiveEmployer = true
-        this.isActiveEmployee = true
         if (this.$route.params.ownerId) {
           await this.userStore.setUserProfile(this.$route.params.ownerId)
           this.profile = this.userStore.userProfile
@@ -403,7 +376,7 @@ export default {
           this.profile = null
         }
       }
-      this.jobsByEmployer = (this.isActiveEmployer && this.isActiveEmployee) ? jobsByEmployer : []
+      this.jobsByEmployer = jobsByEmployer || []
       this.employer = employer
 
       this.jobPagesCount = totalPageCount

@@ -66,6 +66,7 @@ export default {
   background-color: rgba(0, 0, 0, 0);
   width: 100%;
   font-family: inherit;
+  font-size: 16px;
 
   & input {
     background-color: rgba(0, 0, 0, 0);

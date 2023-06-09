@@ -10,14 +10,13 @@
         indicator-color="primary"
         align="left"
         narrow-indicator
-        @click="updateTab"
       >
-        <q-tab name="subscription" label="Job Subscriptions"/>
+        <q-tab v-if="!isEmployerOrgType" name="subscription" label="Job Subscriptions"/>
         <q-tab name="jobBoard" label="Job Boards"/>
-        <q-tab name="employer" label="Employers"/>
+        <q-tab v-if="!isEmployerOrgType" name="employer" label="Employers"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
-        <q-tab-panel name="subscription">
+        <q-tab-panel v-if="!isEmployerOrgType" name="subscription">
           <div class="row q-gutter-y-md">
             <div class="col-12 callout-card">
               Job subscriptions can be used to add jobs to job boards. For example, you can "subscribe" to
@@ -25,18 +24,18 @@
               subscription.
             </div>
             <div class="col-12">
-              <JobSubscriptionsSection :is-employer="false"/>
+              <JobSubscriptionsSection :is-employer="true"/>
             </div>
           </div>
         </q-tab-panel>
         <q-tab-panel name="jobBoard">
           <div class="row q-gutter-y-md">
             <div class="col-12">
-              <JobBoardTable/>
+              <JobBoardTable :is-employer="true"/>
             </div>
           </div>
         </q-tab-panel>
-        <q-tab-panel name="employer">
+        <q-tab-panel v-if="!isEmployerOrgType" name="employer">
           <EmployerSection/>
         </q-tab-panel>
       </q-tab-panels>
@@ -46,63 +45,61 @@
 
 <script>
 import PageHeader from 'components/PageHeader.vue'
-import JobBoardTable from 'pages/employer/job-boards-page/JobBoardTable.vue'
 import EmployerSection from 'pages/employer/jobs-page/EmployerSection.vue'
+import JobBoardTable from 'pages/employer/job-boards-page/JobBoardTable.vue'
 import JobSubscriptionsSection from 'pages/employer/jobs-page/JobSubscriptionsSection.vue'
-import { Loading, useMeta } from 'quasar'
-import dataUtil from 'src/utils/data.js'
+import { storeToRefs } from 'pinia/dist/pinia'
+import { Loading, useMeta, useQuasar } from 'quasar'
+import employerTypeUtil from 'src/utils/employer-types.js'
+import locationUtil from 'src/utils/location.js'
 import { useAuthStore } from 'stores/auth-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
-  name: 'JobsPage',
-  components: {
-    JobBoardTable,
-    EmployerSection,
-    JobSubscriptionsSection,
-    PageHeader
-  },
+  name: 'JobLinksPage',
+  components: { JobBoardTable, PageHeader, JobSubscriptionsSection, EmployerSection },
   data () {
+    const isEmployerOrgType = employerTypeUtil.isTypeEmployer(this.employer.organization_type)
     return {
-      tab: 'subscription'
-    }
-  },
-  methods: {
-    updateTab () {
-      // Need to use full path instead of updating the query because vue router doesn't pick up
-      // the mutation and doesn't update the url
-      const fullPath = dataUtil.getUrlWithParams({
-        addParams: [{ key: 'tab', val: this.tab }],
-        deleteParams: ['tab']
-      })
-      this.$router.push(fullPath)
-    }
-  },
-  watch: {
-    $route: {
-      handler () {
-        this.tab = this.$route.query.tab
-      },
-      deep: true
+      tab: this.$route.query.tab || ((isEmployerOrgType) ? 'jobBoard' : 'subscription'),
+      isEmployerOrgType,
+      employerTypeUtil,
+      locationUtil
     }
   },
   preFetch () {
     const authStore = useAuthStore()
+    const employerStore = useEmployerStore()
     Loading.show()
 
-    return authStore.setUser().finally(() => {
+    return authStore.setUser().then(() => {
+      return Promise.all([
+        employerStore.setEmployer(authStore.propUser.employer_id),
+        employerStore.setEmployerReferralRequests(authStore.propUser.employer_id)
+      ])
+    }).finally(() => {
       Loading.hide()
     })
   },
   setup () {
     const globalStore = useGlobalStore()
+    const authStore = useAuthStore()
+    const employerStore = useEmployerStore()
+    const { user } = storeToRefs(authStore)
 
-    const pageTitle = 'Jobs'
+    const pageTitle = 'Job boards'
     const metaData = {
       title: pageTitle,
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
+    return {
+      user,
+      employer: employerStore.getEmployer(authStore.propUser.employer_id),
+      employerStore,
+      q: useQuasar()
+    }
   }
 }
 </script>

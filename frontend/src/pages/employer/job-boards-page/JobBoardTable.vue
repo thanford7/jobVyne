@@ -125,9 +125,13 @@ export default {
       })
     },
     openJobLinkDialog (jobLink) {
+      const componentProps = { jobLink }
+      if (this.isEmployer) {
+        componentProps.employerId = this.user.employer_id
+      }
       return this.q.dialog({
         component: DialogJobLink,
-        componentProps: { employerId: this.user.employer_id, jobLink }
+        componentProps
       }).onOk(async () => {
         await this.setSocialLinks(true)
       })

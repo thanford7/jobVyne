@@ -1,6 +1,6 @@
 <template>
   <div v-if="isLoaded">
-    <div v-for="socialLink in socialUtil.getSocialLinks(socialStore.platforms, socialLinkFilter)"
+    <div v-for="socialLink in socialUtil.getSocialLinks(socialStore.platforms, socialLink)"
          style="display: inline-block">
       <template v-if="socialLink.is_displayed">
         <CustomTooltip :is_include_icon="false">

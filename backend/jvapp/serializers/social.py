@@ -16,19 +16,20 @@ def get_serialized_social_platform(social_platform: SocialPlatform):
     }
 
 
-def get_serialized_social_link(link_filter: SocialLink, is_include_performance=False):
+def get_serialized_social_link(link: SocialLink, is_include_performance=False):
     data = {
-        'id': link_filter.id,
-        'owner_id': link_filter.owner_id,
-        'employer_name': link_filter.employer.employer_name,
-        'employer_id': link_filter.employer_id,
-        'link_name': link_filter.name,
-        'is_default': link_filter.is_default,
-        'job_subscriptions': [get_serialized_job_subscription(js) for js in link_filter.job_subscriptions.all()],
+        'id': link.id,
+        'owner_id': link.owner_id,
+        'employer_name': link.employer.employer_name if link.employer else None,
+        'employer_id': link.employer_id,
+        'link_name': link.name,
+        'is_default': link.is_default,
+        'is_employee_referral': link.is_employee_referral,
+        'job_subscriptions': [get_serialized_job_subscription(js) for js in link.job_subscriptions.all()],
     }
     
     if is_include_performance:
-        views = link_filter.page_view.all()
+        views = link.page_view.all()
         unique_views = {view.ip_address for view in views}
         data['performance'] = {
             'views': {
@@ -41,7 +42,7 @@ def get_serialized_social_link(link_filter: SocialLink, is_include_performance=F
                 'last_name': app.last_name,
                 'job_title': app.employer_job.job_title,
                 'apply_dt': get_datetime_format_or_none(app.created_dt)
-            } for app in link_filter.job_application.all()]
+            } for app in link.job_application.all()]
         }
     
     return data

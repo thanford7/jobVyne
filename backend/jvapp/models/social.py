@@ -27,11 +27,11 @@ class SocialLink(AuditFields, JobVynePermissionsMixin):
     # The default social link filter is used to auto-populate forms
     is_default = models.BooleanField(default=False, blank=True)
     is_archived = models.BooleanField(default=False, blank=True)
-    name = models.CharField(max_length=30, null=True, blank=True)
+    name = models.CharField(max_length=250, null=True, blank=True)
     # If no owner, this is an employer owned link
     # If owner and employer, this is an employee referral link
     owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True)
-    employer = models.ForeignKey('Employer', on_delete=models.CASCADE)
+    employer = models.ForeignKey('Employer', on_delete=models.CASCADE, null=True, blank=True)
     job_subscriptions = models.ManyToManyField('JobSubscription')
     
     class Meta:
@@ -78,4 +78,12 @@ class SocialLink(AuditFields, JobVynePermissionsMixin):
             link += f'?platform={platform_name}'
         
         return link
+    
+    @property
+    def is_employee_referral(self):
+        job_subscriptions = self.job_subscriptions.all()
+        if len(job_subscriptions) != 1:
+            return False
+        job_subscription = job_subscriptions[0]
+        return self.owner_id and self.employer_id and job_subscription.is_employer_subscription
     

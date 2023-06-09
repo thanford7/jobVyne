@@ -188,10 +188,16 @@ const routes = [
         component: () => import('pages/employer/job-add-page/JobAddPage.vue')
       },
       {
-        path: ':key(employer-job-links)',
-        name: 'employer-job-links',
+        path: ':key(employer-job-boards)',
+        name: 'employer-job-boards',
         meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/job-links-page/JobLinksPage.vue')
+        component: () => import('pages/employer/job-boards-page/JobBoardsPage.vue')
+      },
+      {
+        path: ':key(employer-referrals)',
+        name: 'employer-referrals',
+        meta: { userTypeBits: USER_TYPES.Employer },
+        component: () => import('pages/employer/referrals-page/ReferralsPage.vue')
       },
       {
         path: ':key(employer-applications)',

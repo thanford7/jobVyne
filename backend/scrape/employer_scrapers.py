@@ -504,6 +504,7 @@ class GoatGroupScraper(GreenhouseScraper):
 class NorthAmericanBancardScraper(WorkdayScraper):
     employer_name = 'North American Bancard'
     start_url = 'https://nabancard.wd1.myworkdayjobs.com/nab'
+    has_job_departments = False
     
     
 class BeamBenefitsScraper(LeverScraper):
@@ -524,6 +525,7 @@ class ZenBusinessScraper(LeverScraper):
 class IntegrityMarketingScraper(WorkdayScraper):
     employer_name = 'Integriy Marketing'
     start_url = 'https://integritymarketing.wd1.myworkdayjobs.com/Integrity'
+    has_job_departments = False
     
     
 class BeyondIdentityScraper(GreenhouseIframeScraper):
@@ -551,16 +553,19 @@ class SnackpassScraper(GreenhouseScraper):
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
 test_scrapers = {
-    NorthAmericanBancardScraper.employer_name: NorthAmericanBancardScraper,
-    BeamBenefitsScraper.employer_name: BeamBenefitsScraper,
-    CollectiveHealthScraper.employer_name: CollectiveHealthScraper,
-    ZenBusinessScraper.employer_name: ZenBusinessScraper,
-    IntegrityMarketingScraper.employer_name: IntegrityMarketingScraper,
-    BeyondIdentityScraper.employer_name: BeyondIdentityScraper
 }
 
 
 all_scrapers = {
+    DoorDashScraper.employer_name: DoorDashScraper,
+    BeyondIdentityScraper.employer_name: BeyondIdentityScraper,
+    IntegrityMarketingScraper.employer_name: IntegrityMarketingScraper,
+    NorthAmericanBancardScraper.employer_name: NorthAmericanBancardScraper,
+    SnackpassScraper.employer_name: SnackpassScraper,
+    EnableScraper.employer_name: EnableScraper,
+    BeamBenefitsScraper.employer_name: BeamBenefitsScraper,
+    CollectiveHealthScraper.employer_name: CollectiveHealthScraper,
+    ZenBusinessScraper.employer_name: ZenBusinessScraper,
     GoatGroupScraper.employer_name: GoatGroupScraper,
     PacksizeScraper.employer_name: PacksizeScraper,
     One800ContactsScraper.employer_name: One800ContactsScraper,

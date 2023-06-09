@@ -247,12 +247,17 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         if not any((self.salary_floor, self.salary_ceiling)):
             return 'Unknown'
         salary_symbol = self.salary_currency.symbol if self.salary_currency else '$'
-        salary_text = f'{salary_symbol}{self.salary_floor}'
+        salary_text = f'{salary_symbol}{self.get_formatted_salary(self.salary_floor)}'
         if self.salary_ceiling and (self.salary_floor != self.salary_ceiling):
-            salary_text += f' - {salary_symbol}{self.salary_ceiling}'
+            salary_text += f' - {salary_symbol}{self.get_formatted_salary(self.salary_ceiling)}'
         if self.salary_interval:
             salary_text += f' per {self.salary_interval}'
         return salary_text
+    
+    def get_formatted_salary(self, salary: float):
+        if int(salary) == salary:
+            salary = int(salary)
+        return f'{salary:,}'
         
     @staticmethod
     def generate_job_key(job_title, location_ids: tuple):

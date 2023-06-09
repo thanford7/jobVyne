@@ -25,10 +25,8 @@
       </span>
     </div>
     <div v-if="fileUrl && isAllowFileUpdate">
-      <div class="q-gutter-sm">
-        <q-radio v-model="isUpload" :val="true" :label="`Upload new ${label}`"/>
-        <q-radio v-model="isUpload" :val="false" :label="`Use current ${label}`"/>
-      </div>
+      <q-radio v-model="isUpload" :val="true" :label="`Upload new ${label}`" class="text-small"/>
+      <q-radio v-model="isUpload" :val="false" :label="`Use current ${label}`" class="text-small"/>
     </div>
   </div>
 </template>

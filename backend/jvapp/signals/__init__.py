@@ -56,6 +56,12 @@ def add_owner_fields(sender, instance, *args, **kwargs):
     
     
 @receiver(post_save, sender=JobVyneUser)
+def create_employee_referral_link(sender, instance, *args, **kwargs):
+    if instance.employer_id:
+        SocialLinkView.get_or_create_employee_referral_links([instance], instance.employer)
+
+    
+@receiver(post_save, sender=JobVyneUser)
 def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
     # Only set permission groups if the user is associated with an employer
     if not instance.employer_id:

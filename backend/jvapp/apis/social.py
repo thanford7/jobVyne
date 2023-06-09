@@ -135,7 +135,7 @@ class SocialLinkView(JobVyneAPIView):
     @staticmethod
     def get_or_create_single_job_link(job, owner_id=None, employer_id=None):
         from jvapp.apis.job_subscription import JobSubscriptionView
-        job_subscription = JobSubscriptionView.get_or_create_single_job_subscription(job)
+        job_subscription = JobSubscriptionView.get_or_create_single_job_subscription(job.id)
         link_filter = Q(job_subscriptions__id=job_subscription.id)
         if owner_id:
             link_filter &= Q(owner_id=owner_id)
@@ -292,34 +292,35 @@ class SocialLinkJobsView(JobVyneAPIView):
             )
         
         jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter)
-        employer_ids = {j.employer_id for j in jobs}
-        application_requirements = EmployerJobApplicationRequirementView.get_application_requirements(employer_ids=employer_ids)
-        application_requirements_by_employer = defaultdict(list)
-        for requirement in application_requirements:
-            application_requirements_by_employer[requirement.employer_id].append(requirement)
-            
-        consolidated_app_requirements_by_employer = {}
-        for employer_id, employer_requirements in application_requirements_by_employer.items():
-            consolidated_app_requirements_by_employer[employer_id] = EmployerJobApplicationRequirementView.get_consolidated_application_requirements(employer_requirements)
-        
         jobs_by_employer = {}
-        for job in jobs:
-            if not (employer_jobs := jobs_by_employer.get(job.employer_id)):
-                employer_jobs = {
-                    'employer_id': job.employer_id,
-                    'employer_name': job.employer.employer_name,
-                    'employer_logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
-                    'is_use_job_url': job.employer.is_use_job_url,
-                    'jobs': defaultdict(lambda: defaultdict(list))
-                }
-                jobs_by_employer[job.employer_id] = employer_jobs
+        if jobs:
+            employer_ids = {j.employer_id for j in jobs}
+            application_requirements = EmployerJobApplicationRequirementView.get_application_requirements(employer_ids=employer_ids)
+            application_requirements_by_employer = defaultdict(list)
+            for requirement in application_requirements:
+                application_requirements_by_employer[requirement.employer_id].append(requirement)
+                
+            consolidated_app_requirements_by_employer = {}
+            for employer_id, employer_requirements in application_requirements_by_employer.items():
+                consolidated_app_requirements_by_employer[employer_id] = EmployerJobApplicationRequirementView.get_consolidated_application_requirements(employer_requirements)
             
-            serialized_job = get_serialized_employer_job(job)
-            serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
-                job, consolidated_app_requirements_by_employer[job.employer_id]
-            )
-            job_department = job.job_department.name if job.job_department else None
-            employer_jobs['jobs'][job_department or 'General'][job.job_title].append(serialized_job)
+            for job in jobs:
+                if not (employer_jobs := jobs_by_employer.get(job.employer_id)):
+                    employer_jobs = {
+                        'employer_id': job.employer_id,
+                        'employer_name': job.employer.employer_name,
+                        'employer_logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
+                        'is_use_job_url': job.employer.is_use_job_url,
+                        'jobs': defaultdict(lambda: defaultdict(list))
+                    }
+                    jobs_by_employer[job.employer_id] = employer_jobs
+                
+                serialized_job = get_serialized_employer_job(job)
+                serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
+                    job, consolidated_app_requirements_by_employer[job.employer_id]
+                )
+                job_department = job.job_department.name if job.job_department else None
+                employer_jobs['jobs'][job_department or 'General'][job.job_title].append(serialized_job)
         
         jobs_by_employer = list(jobs_by_employer.values())
         
@@ -327,7 +328,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             total_jobs = self.get_jobs_from_social_link(link).count()
         else:
             total_jobs = len(jobs)
-        employer = EmployerView.get_employers(employer_id=main_employer_id)
+        employer = EmployerView.get_employers(employer_id=main_employer_id) if main_employer_id else None
         start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
         
         return Response(status=status.HTTP_200_OK, data={
@@ -336,9 +337,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             'jobs_by_employer': jobs_by_employer[
                 start_employer_job_idx:start_employer_job_idx + self.EMPLOYERS_PER_PAGE
             ],
-            'employer': get_serialized_employer(employer),
+            'employer': get_serialized_employer(employer) if employer else None,
             'owner_id': link.owner_id if link else None,
-            'is_active_employee': link.owner.is_active_employee if (link and link.owner) else True,
             'filter_values': filter_values or {}
         })
     

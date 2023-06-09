@@ -17,7 +17,7 @@
                 (val) => (val && val.length <= 30) || 'Max length is 30 characters'
               ]"
           />
-          <SelectJobSubscription v-model="jobSubscriptions" :is-employer="isEmployer"/>
+          <SelectJobSubscription v-if="!isEmployerOrgType" v-model="jobSubscriptions" :is-employer="isEmployer"/>
         </div>
       </div>
     </q-form>
@@ -29,8 +29,11 @@ import SelectJobSubscription from 'components/inputs/SelectJobSubscription.vue'
 import dataUtil from 'src/utils/data.js'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
+import employerTypeUtil from 'src/utils/employer-types.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
+import { useJobSubscriptionStore } from 'stores/job-subscription-store.js'
 import { useSocialStore } from 'stores/social-store.js'
 
 export default {
@@ -47,6 +50,7 @@ export default {
   },
   data () {
     return {
+      isEmployerOrgType: false,
       linkName: null,
       jobSubscriptions: [],
       filteredJobs: [],
@@ -90,6 +94,22 @@ export default {
     const { user } = storeToRefs(authStore)
     this.user = user
     this.socialStore = useSocialStore()
+    if (this.employerId) {
+      const employerStore = useEmployerStore()
+      await employerStore.setEmployer(this.employerId)
+      const employer = employerStore.getEmployer(this.employerId)
+      if (employerTypeUtil.isTypeEmployer(employer.organization_type)) {
+        this.isEmployerOrgType = true
+        const jobSubscriptionStore = useJobSubscriptionStore()
+        const params = { employerId: this.user.employer_id }
+        await jobSubscriptionStore.setJobSubscription(params)
+        const jobSubscriptions = jobSubscriptionStore.getJobSubscription(params)
+        const employerSubscription = jobSubscriptions.filter((js) => js.is_single_employer).map((js) => js.id)
+        if (!this.jobLink) {
+          this.jobSubscriptions = employerSubscription
+        }
+      }
+    }
     if (this.jobLink) {
       this.linkName = this.jobLink.link_name
       this.jobSubscriptions = this.jobLink.job_subscriptions

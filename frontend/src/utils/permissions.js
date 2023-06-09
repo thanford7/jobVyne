@@ -1,3 +1,4 @@
+import employerTypeUtil from 'src/utils/employer-types.js'
 import { USER_TYPE_EMPLOYER, USER_TYPES } from 'src/utils/user-types.js'
 import dataUtil from 'src/utils/data.js'
 
@@ -147,9 +148,31 @@ class PagePermissionsUtil {
             key: 'employer-jobs',
             label: 'Jobs',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedViewFn: isUserEmployerFn,
-            isPermittedFn: (permissionGroups, permissions) => {
-              return isUserEmployerFn(permissionGroups, permissions) && permissions.includes(this.PERMISSION_NAMES.MANAGE_REFERRAL_BONUSES)
+            isPermittedViewFn: (permissionGroups, permissions, orgTypeBit) => {
+              return isUserEmployerFn(permissionGroups, permissions) && employerTypeUtil.isTypeEmployer(orgTypeBit)
+            },
+            isPermittedFn: (permissionGroups, permissions, orgTypeBit) => {
+              return (
+                isUserEmployerFn(permissionGroups, permissions) &&
+                permissions.includes(this.PERMISSION_NAMES.MANAGE_REFERRAL_BONUSES) &&
+                employerTypeUtil.isTypeEmployer(orgTypeBit)
+              )
+            }
+          },
+          {
+            icon: 'person_add',
+            key: 'employer-referrals',
+            label: 'Employee Referrals',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+            isPermittedViewFn: (permissionGroups, permissions, orgTypeBit) => {
+              return isUserEmployerFn(permissionGroups, permissions) && employerTypeUtil.isTypeEmployer(orgTypeBit)
+            },
+            isPermittedFn: (permissionGroups, permissions, orgTypeBit) => {
+              return (
+                isUserEmployerFn(permissionGroups, permissions) &&
+                permissions.includes(this.PERMISSION_NAMES.MANAGE_REFERRAL_BONUSES) &&
+                employerTypeUtil.isTypeEmployer(orgTypeBit)
+              )
             }
           },
           // TODO: Still in development
@@ -162,9 +185,9 @@ class PagePermissionsUtil {
           //   isPermittedFn: isUserEmployerFn
           // },
           {
-            icon: 'link',
-            key: 'employer-job-links',
-            label: 'Job Links',
+            icon: 'dvr',
+            key: 'employer-job-boards',
+            label: 'Job Boards',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
             isPermittedFn: isUserEmployerFn
           },
@@ -242,11 +265,11 @@ class PagePermissionsUtil {
 
     const userPermissions = this.getAllUserPermissions(user)
     const userPermissionGroups = this.getAllApprovedUserPermissionGroups(user)
-    const canEdit = !isPermittedFn || isPermittedFn(userPermissionGroups, userPermissions)
+    const canEdit = !isPermittedFn || isPermittedFn(userPermissionGroups, userPermissions, user.employer_org_type)
     const canView = (
       canEdit ||
       (!isPermittedFn && !isPermittedViewFn) ||
-      (isPermittedViewFn && isPermittedViewFn(userPermissionGroups, userPermissions))
+      (isPermittedViewFn && isPermittedViewFn(userPermissionGroups, userPermissions, user.employer_org_type))
     )
     return { canView, canEdit }
   }

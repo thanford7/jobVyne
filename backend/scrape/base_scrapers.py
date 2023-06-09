@@ -13,6 +13,7 @@ from aiohttp import ClientSession
 from django.utils import timezone
 from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
+from playwright.async_api import expect
 
 from jvapp.utils.data import capitalize, coerce_float, get_base_url
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
@@ -533,8 +534,7 @@ class GreenhouseScraper(Scraper):
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         location = html.xpath('//div[@id="header"]//div[@class="location"]/text()').get()
-        if location:
-            location = location.strip()
+        locations = self.process_location_text(location)
         standard_job_item = self.get_google_standard_job_item(html)
         if not standard_job_item:
             logger.info('Unable to parse JobItem from document. No standard job data (ld+json).')
@@ -553,13 +553,18 @@ class GreenhouseScraper(Scraper):
             employer_name=self.employer_name,
             application_url=job_url,
             job_title=html.xpath('//div[@id="header"]//h1/text()').get() or standard_job_item.job_title,
-            locations=[location] if location else standard_job_item.locations,
+            locations=locations if locations else standard_job_item.locations,
             job_department=job_department or standard_job_item.job_department,
             job_description=job_description or standard_job_item.job_description,
             employment_type=standard_job_item.employment_type,
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
         )
+    
+    def process_location_text(self, location_text):
+        if not location_text:
+            return None
+        return [l for l in [location.strip() for location in location_text.split(';')] if l]
 
 
 class GreenhouseIframeScraper(GreenhouseScraper):
@@ -585,42 +590,52 @@ class WorkdayScraper(Scraper):
     job_department_data_automation_id = 'jobFamilyGroup'
     job_department_form_data_automation_id = 'jobFamilyGroupCheckboxGroup'
     job_item_page_wait_sel = '[data-automation-id="jobPostingHeader"]'
+    has_job_departments = True
     
     MAX_PAGE_LOAD_WAIT_SECONDS = 5
     
     async def scrape_jobs(self):
         page = await self.get_starting_page()
         # Make sure page data has loaded
+        page_container_sel = 'section[data-automation-id="jobResults"] [data-automation-id="jobFoundText"]'
+        page_load_sel = '[data-automation-id="searchingForJobs"]'
         try:
-            await self.wait_for_el(page, 'section[data-automation-id="jobResults"]')
+            await self.wait_for_el(page, page_container_sel)
+            await expect(page.locator(page_load_sel)).to_have_count(0)
         except PlaywrightTimeoutError:
             page = await self.get_starting_page()
-            await self.wait_for_el(page, 'section[data-automation-id="jobResults"]')
+            await self.wait_for_el(page, page_container_sel)
+            await expect(page.locator(page_load_sel)).to_have_count(0)
         
-        job_departments = await self.get_job_departments(page)
+        if self.has_job_departments:
+            job_departments = await self.get_job_departments(page)
+        else:
+            job_departments = [('General', 'NA')]
         
         # Iterate through each department and grab all jobs
         last_page_job_href = None
         for selector_idx, (job_department_name, job_quantity) in enumerate(job_departments):
             logger.info(f'Starting processing for: {job_department_name} | Expected quantity <{job_quantity}>')
-            await self.select_job_department(page, selector_idx)
+            if self.has_job_departments:
+                await self.select_job_department(page, selector_idx)
             html_dom = await self.get_page_html(page)
             
             # Make sure jobs are refreshed
-            page_load_wait_seconds = 0
-            while (
-                    (not self.is_job_quantity_match(html_dom, job_quantity))
-                    or (last_page_job_href and last_page_job_href == self.get_first_job_href(html_dom))
-            ) and page_load_wait_seconds < self.MAX_PAGE_LOAD_WAIT_SECONDS:
-                logger.info(f'Waiting for page to load: {page.url}')
-                await asyncio.sleep(1)
-                html_dom = await self.get_page_html(page)
-                page_load_wait_seconds += 1
-            
-            # If the page is taking this long to load, something is wrong
-            if page_load_wait_seconds == self.MAX_PAGE_LOAD_WAIT_SECONDS:
-                logger.info(f'Waited {page_load_wait_seconds} seconds for page to load. Terminating')
-                break
+            if self.has_job_departments:
+                page_load_wait_seconds = 0
+                while (
+                        (not self.is_job_quantity_match(html_dom, job_quantity))
+                        or (last_page_job_href and last_page_job_href == self.get_first_job_href(html_dom))
+                ) and page_load_wait_seconds < self.MAX_PAGE_LOAD_WAIT_SECONDS:
+                    logger.info(f'Waiting for page to load: {page.url}')
+                    await asyncio.sleep(1)
+                    html_dom = await self.get_page_html(page)
+                    page_load_wait_seconds += 1
+                
+                # If the page is taking this long to load, something is wrong
+                if page_load_wait_seconds == self.MAX_PAGE_LOAD_WAIT_SECONDS:
+                    logger.info(f'Waited {page_load_wait_seconds} seconds for page to load. Terminating')
+                    break
             
             # Parse jobs for each page
             is_started = False
@@ -639,7 +654,7 @@ class WorkdayScraper(Scraper):
                     if not has_page_loaded:
                         logger.warning('Page load failure. Skipping scraping for the rest of this department\'s jobs')
                         break
-                job_links = html_dom.css('section[data-automation-id="jobResults"] a::attr(href)').extract()
+                job_links = html_dom.xpath('//section[@data-automation-id="jobResults"]//a/@href').getall()
                 await self.add_job_links_to_queue(job_links, meta_data={'job_department': job_department_name})
                 
                 last_page_job_href = self.get_first_job_href(html_dom)

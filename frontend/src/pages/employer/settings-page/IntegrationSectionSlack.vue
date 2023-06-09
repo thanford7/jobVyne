@@ -25,7 +25,7 @@
     </div>
     <div v-if="slackData?.oauth_key" class="col-12">
       <q-form ref="slackForm" class="q-gutter-y-sm">
-        <q-card flat bordered>
+        <q-card v-if="!isEmployerOrgType" flat bordered>
           <q-card-section>
             <div class="row">
               <div class="col-12">
@@ -105,7 +105,7 @@
             </div>
           </q-card-section>
         </q-card>
-        <q-card flat bordered>
+        <q-card v-if="isEmployerOrgType" flat bordered>
           <q-card-section>
             <div class="row">
               <div class="col-12">
@@ -154,7 +154,8 @@ export default {
   name: 'IntegrationSectionSlack',
   components: { AuthSocialButton, InputTime, CustomTooltip, SelectDayOfWeek, SelectSlackChannel },
   props: {
-    slackData: [Object, null]
+    slackData: [Object, null],
+    isEmployerOrgType: Boolean
   },
   data () {
     return {
