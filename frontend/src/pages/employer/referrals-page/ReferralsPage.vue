@@ -76,7 +76,7 @@
 <script>
 import DialogShareJobLink from 'components/dialogs/DialogShareJobLink.vue'
 import PageHeader from 'components/PageHeader.vue'
-import { storeToRefs } from 'pinia/dist/pinia.js'
+import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import dateTimeUtil from 'src/utils/datetime.js'
 import locationUtil from 'src/utils/location.js'

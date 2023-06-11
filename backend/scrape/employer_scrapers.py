@@ -1,6 +1,8 @@
 import re
 
-from scrape.base_scrapers import BambooHrScraper, BreezyScraper, GreenhouseIframeScraper, \
+from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
+
+from scrape.base_scrapers import AshbyHQScraper, BambooHrScraper, BreezyScraper, GreenhouseIframeScraper, \
     GreenhouseScraper, \
     LeverScraper, \
     WorkableScraper, WorkdayScraper
@@ -13,121 +15,126 @@ from scrape.custom_scraper.pinterest import PinterestScraper
 
 class AngiScraper(GreenhouseScraper):
     employer_name = 'Angi'
-    start_url = 'https://boards.greenhouse.io/angi'
+    EMPLOYER_KEY = 'angi'
     
     
 class AtlassianScraper(LeverScraper):
     employer_name = 'Atlassian'
-    start_url = 'https://jobs.lever.co/atlassian'
+    EMPLOYER_KEY = 'atlassian'
     
     
 class AtomicScraper(LeverScraper):
     employer_name = 'Atomic'
-    start_url = 'https://jobs.lever.co/atomic'
+    EMPLOYER_KEY = 'atomic'
 
 
 class BenevityScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'benevity'
+    EMPLOYER_KEY = 'benevity'
     employer_name = 'Benevity'
 
 
 class BlueOriginScraper(WorkdayScraper):
     employer_name = 'Blue Origin'
-    start_url = 'https://blueorigin.wd5.myworkdayjobs.com/BlueOrigin'
+    start_url = 'https://blueorigin.wd5.myworkdayjobs.com/BlueOrigin/'
     
     
 class CHGHealthcareScraper(WorkdayScraper):
     employer_name = 'CHG Healthcare'
-    start_url = 'https://chghealthcare.wd1.myworkdayjobs.com/External'
+    start_url = 'https://chghealthcare.wd1.myworkdayjobs.com/External/'
     job_department_data_automation_id = 'jobFamily'
     job_department_form_data_automation_id = 'jobFamilyCheckboxGroup'
     
     
 class CircleScraper(GreenhouseScraper):
     employer_name = 'Circle'
-    start_url = 'https://boards.greenhouse.io/circle'
+    EMPLOYER_KEY = 'circle'
     
     
 class ClipboardHealthScraper(GreenhouseScraper):
     employer_name = 'Clipboard Health'
-    start_url = 'https://boards.greenhouse.io/clipboardhealth'
+    EMPLOYER_KEY = 'clipboardhealth'
     
     
 class ClozdScraper(LeverScraper):
     employer_name = 'Clozd'
-    start_url = 'https://jobs.lever.co/Clozd'
+    EMPLOYER_KEY = 'Clozd'
     
     
 class DevotedHealthScraper(WorkdayScraper):
     employer_name = 'Devoted Health'
-    start_url = 'https://devoted.wd1.myworkdayjobs.com/Devoted'
+    start_url = 'https://devoted.wd1.myworkdayjobs.com/Devoted/'
     
     
 class EntrataScraper(LeverScraper):
     employer_name = 'Entrata'
-    start_url = 'https://jobs.lever.co/entrata'
+    EMPLOYER_KEY = 'entrata'
 
 
 class EverCommerceScraper(WorkdayScraper):
     employer_name = 'EverCommerce'
-    start_url = 'https://evercommerce.wd1.myworkdayjobs.com/EverCommerce_Careers'
+    start_url = 'https://evercommerce.wd1.myworkdayjobs.com/EverCommerce_Careers/'
     
     
 class FICOScraper(WorkdayScraper):
     employer_name = 'FICO'
-    start_url = 'https://fico.wd1.myworkdayjobs.com/External'
+    start_url = 'https://fico.wd1.myworkdayjobs.com/External/'
     
     
 class ForwardScraper(LeverScraper):
     employer_name = 'Forward'
-    start_url = 'https://jobs.lever.co/goforward'
+    EMPLOYER_KEY = 'goforward'
     
     
 class HealthGorillaScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'healthgorilla'
+    EMPLOYER_KEY = 'healthgorilla'
     employer_name = 'Health Gorilla'
     
     
 class HopperScraper(LeverScraper):
     employer_name = 'Hopper'
-    start_url = 'https://jobs.lever.co/hopper'
+    EMPLOYER_KEY = 'hopper'
 
 
 class InvenergyScraper(WorkdayScraper):
     employer_name = 'Invenergy'
-    start_url = 'https://invenergyllc.wd1.myworkdayjobs.com/invenergycareers'
+    start_url = 'https://invenergyllc.wd1.myworkdayjobs.com/invenergycareers/'
     job_department_data_automation_id = 'Department / Area-expand'
     job_department_form_data_automation_id = 'Department / Area-checkboxgroup'
     
     async def open_job_department_menu(self, page):
-        await page.locator('css=[data-automation-id="more"]').click()
+        try:
+            await page.locator('css=[data-automation-id="more"]').click()
+        except PlaywrightTimeoutError:
+            # Try again
+            await self.reload_page(page)
+            await page.locator('css=[data-automation-id="more"]').click()
         await page.locator('css=[data-automation-id="Department / Area-header"]').click()
         await self.wait_for_el(page, 'div[data-automation-id="Department / Area-checkboxgroup"] label')
         
         
 class KandjiScraper(LeverScraper):
     employer_name = 'Kandji'
-    start_url = 'https://jobs.lever.co/kandji'
-        
+    EMPLOYER_KEY = 'kandji'
+    
 
 class GalileoScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'galileo'
+    EMPLOYER_KEY = 'galileo'
     employer_name = 'Galileo'
 
 
 class GuildEducationScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'guild'
+    EMPLOYER_KEY = 'guild'
     employer_name = 'Guild Education'
 
 
 class LaticreteInternationalScraper(WorkdayScraper):
     employer_name = 'LATICRETE International'
-    start_url = 'https://laticrete.wd1.myworkdayjobs.com/laticreteinternational'
+    start_url = 'https://laticrete.wd1.myworkdayjobs.com/laticreteinternational/'
     
     
 class LeanDataScraper(LeverScraper):
     employer_name = 'Lean Data'
-    start_url = 'https://jobs.lever.co/leandatainc'
+    EMPLOYER_KEY = 'leandatainc'
 
 
 class LiveViewTechnologiesScraper(BambooHrScraper):
@@ -137,62 +144,62 @@ class LiveViewTechnologiesScraper(BambooHrScraper):
 
 class LucidSoftwareScraper(GreenhouseScraper):
     employer_name = 'Lucid Software'
-    start_url = 'https://boards.greenhouse.io/lucidsoftware'
+    EMPLOYER_KEY = 'lucidsoftware'
     
     
 class MetabaseScraper(LeverScraper):
     employer_name = 'Metabase'
-    start_url = 'https://jobs.lever.co/metabase'
+    EMPLOYER_KEY = 'metabase'
     
     
 class MindbloomScraper(LeverScraper):
     employer_name = 'Mindbloom'
-    start_url = 'https://jobs.lever.co/mindbloom'
+    EMPLOYER_KEY = 'mindbloom'
     
     
 class NavaScraper(LeverScraper):
     employer_name = 'Nava'
-    start_url = 'https://jobs.lever.co/nava'
+    EMPLOYER_KEY = 'nava'
     
     
 class NiceScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'nice'
+    EMPLOYER_KEY = 'nice'
     employer_name = 'Nice'
 
 
 class NylasScraper(GreenhouseScraper):
     employer_name = 'Nylas'
-    start_url = 'https://boards.greenhouse.io/nylas'
+    EMPLOYER_KEY = 'nylas'
     
     
 class PerpayScraper(LeverScraper):
     employer_name = 'Perpay'
-    start_url = 'https://jobs.lever.co/perpay'
+    EMPLOYER_KEY = 'perpay'
     
     
 class ProofpointScraper(WorkdayScraper):
     employer_name = 'Proofpoint'
-    start_url = 'https://proofpoint.wd5.myworkdayjobs.com/ProofpointCareers'
+    start_url = 'https://proofpoint.wd5.myworkdayjobs.com/ProofpointCareers/'
 
 
 class RecursionScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'recursionpharmaceuticals'
+    EMPLOYER_KEY = 'recursionpharmaceuticals'
     employer_name = 'Recursion'
 
 
 class RegrowScraper(LeverScraper):
     employer_name = 'Regrow'
-    start_url = 'https://jobs.lever.co/regrow.ag'
+    EMPLOYER_KEY = 'regrow.ag'
     
     
 class RoScraper(LeverScraper):
     employer_name = 'Ro'
-    start_url = 'https://jobs.lever.co/ro'
+    EMPLOYER_KEY = 'ro'
     
     
 class StubHubScraper(LeverScraper):
     employer_name = 'StubHub'
-    start_url = 'https://jobs.lever.co/StubHubHoldings'
+    EMPLOYER_KEY = 'StubHubHoldings'
 
         
 class TechcyteScraper(BambooHrScraper):
@@ -202,27 +209,27 @@ class TechcyteScraper(BambooHrScraper):
     
 class TendoScraper(LeverScraper):
     employer_name = 'Tendo'
-    start_url = 'https://jobs.lever.co/tendo'
+    EMPLOYER_KEY = 'tendo'
     
     
 class TheMxGroupScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'themxgroup'
+    EMPLOYER_KEY = 'themxgroup'
     employer_name = 'The MX Group'
 
         
 class TransactionNetworkServicesScraper(WorkdayScraper):
     employer_name = 'Transaction Network Services'
-    start_url = 'https://tnsi.wd1.myworkdayjobs.com/Search'
+    start_url = 'https://tnsi.wd1.myworkdayjobs.com/Search/'
     
     
 class VasionScraper(WorkableScraper):
     employer_name = 'Vasion'
-    start_url = 'https://apply.workable.com/vasion/'
+    EMPLOYER_KEY = 'vasion'
     
     
 class VeevaScraper(LeverScraper):
     employer_name = 'Veeva'
-    start_url = 'https://jobs.lever.co/veeva/'
+    EMPLOYER_KEY = 'veeva'
     
     def normalize_job_department(self, job_department):
         job_department_parts = re.split('[-–]', job_department)
@@ -231,122 +238,122 @@ class VeevaScraper(LeverScraper):
     
 class VerkadaScraper(LeverScraper):
     employer_name = 'Verkada'
-    start_url = 'https://jobs.lever.co/verkada/'
+    EMPLOYER_KEY = 'verkada'
     
     
 class VestaTechScraper(LeverScraper):
     employer_name = 'Vesta Tech'
-    start_url = 'https://jobs.lever.co/vesta-tech'
+    EMPLOYER_KEY = 'vesta-tech'
     
     
-class VirtaHealthScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'virtahealth'
+class VirtaHealthScraper(AshbyHQScraper):
+    EMPLOYER_KEY = 'virtahealth'
     employer_name = 'Virta Health'
     
     
 class VivianHealthScraper(GreenhouseScraper):
     employer_name = 'Vivian Health'
-    start_url = 'https://boards.greenhouse.io/vivian'
+    EMPLOYER_KEY = 'vivian'
     
     
 class WaystarScraper(WorkdayScraper):
     employer_name = 'Waystar'
-    start_url = 'https://waystar.wd1.myworkdayjobs.com/Waystar'
+    start_url = 'https://waystar.wd1.myworkdayjobs.com/Waystar/'
     
     
 class YoungLivingEssentialOilsScraper(WorkdayScraper):
     employer_name = 'Young Living Essential Oils'
-    start_url = 'https://youngliving.wd5.myworkdayjobs.com/YLEO'
+    start_url = 'https://youngliving.wd5.myworkdayjobs.com/YLEO/'
     
     
 class ZelisScraper(WorkdayScraper):
     employer_name = 'Zelis'
-    start_url = 'https://zelis.wd1.myworkdayjobs.com/ZelisCareers'
+    start_url = 'https://zelis.wd1.myworkdayjobs.com/ZelisCareers/'
     
     
 class SideScraper(LeverScraper):
     employer_name = 'Side'
-    start_url = 'https://jobs.lever.co/sideinc'
+    EMPLOYER_KEY = 'sideinc'
     
     
 class CuldesacScraper(LeverScraper):
     employer_name = 'Culdesac'
-    start_url = 'https://jobs.lever.co/culdesac'
+    EMPLOYER_KEY = 'culdesac'
     
     
 class MetronomeScraper(LeverScraper):
     employer_name = 'Metronome'
-    start_url = 'https://jobs.lever.co/getmetronome'
+    EMPLOYER_KEY = 'getmetronome'
     
     
 class KlarnaScraper(LeverScraper):
     employer_name = 'Klarna'
-    start_url = 'https://jobs.lever.co/klarna'
+    EMPLOYER_KEY = 'klarna'
     
     
 class CoformaScraper(LeverScraper):
     employer_name = 'Coforma'
-    start_url = 'https://jobs.lever.co/coforma'
+    EMPLOYER_KEY = 'coforma'
     
     
 class BrightwheelScraper(LeverScraper):
     employer_name = 'Brightwheel'
-    start_url = 'https://jobs.lever.co/brightwheel'
+    EMPLOYER_KEY = 'brightwheel'
     
     
 class MaterialSecurityScraper(LeverScraper):
     employer_name = 'Material Security'
-    start_url = 'https://jobs.lever.co/MaterialSecurity'
+    EMPLOYER_KEY = 'MaterialSecurity'
     
     
 class WhoopScraper(LeverScraper):
     employer_name = 'Whoop'
-    start_url = 'https://jobs.lever.co/whoop'
+    EMPLOYER_KEY = 'whoop'
     
     
 class AttentiveScraper(LeverScraper):
     employer_name = 'Attentive'
-    start_url = 'https://jobs.lever.co/attentive'
+    EMPLOYER_KEY = 'attentive'
     
     
 class WealthsimpleScraper(LeverScraper):
     employer_name = 'Wealthsimple'
-    start_url = 'https://jobs.lever.co/wealthsimple'
+    EMPLOYER_KEY = 'wealthsimple'
     
     
 class FanaticsScraper(LeverScraper):
     employer_name = 'Fanatics'
-    start_url = 'https://jobs.lever.co/fanatics'
+    EMPLOYER_KEY = 'fanatics'
     
     
 class PlusgradeScraper(LeverScraper):
     employer_name = 'Plusgrade'
-    start_url = 'https://jobs.lever.co/plusgrade'
+    EMPLOYER_KEY = 'plusgrade'
     
     
 class LinktreeScraper(LeverScraper):
     employer_name = 'Linktree'
-    start_url = 'https://jobs.lever.co/linktree'
+    EMPLOYER_KEY = 'linktree'
     
     
 class KickstarterScraper(LeverScraper):
     employer_name = 'Kickstarter'
-    start_url = 'https://jobs.lever.co/kickstarter'
+    EMPLOYER_KEY = 'kickstarter'
     
     
 class AnthropicScraper(LeverScraper):
     employer_name = 'Anthropic'
-    start_url = 'https://jobs.lever.co/Anthropic'
+    EMPLOYER_KEY = 'Anthropic'
     
     
 class ElsevierScraper(WorkdayScraper):
     employer_name = 'Elsevier'
-    start_url = 'https://relx.wd3.myworkdayjobs.com/ElsevierJobs'
+    start_url = 'https://relx.wd3.myworkdayjobs.com/ElsevierJobs/'
     
     
 class OverjetScraper(GreenhouseScraper):
     employer_name = 'Overjet'
-    start_url = 'https://boards.greenhouse.io/overjet'
+    EMPLOYER_KEY = 'overjet'
     
     
 class TwoULaundryScraper(BreezyScraper):
@@ -355,200 +362,200 @@ class TwoULaundryScraper(BreezyScraper):
     
     
 class ZocdocScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'zocdoc'
+    EMPLOYER_KEY = 'zocdoc'
     employer_name = 'Zocdoc'
     
     
 class AvettaScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'avetta'
+    EMPLOYER_KEY = 'avetta'
     employer_name = 'Avetta'
     
     
 class KoalaHealthScraper(LeverScraper):
     employer_name = 'Koala Health'
-    start_url = 'https://jobs.lever.co/koalahealth'
+    EMPLOYER_KEY = 'koalahealth'
     
     
 class CambiaHealthSolutionsScraper(WorkdayScraper):
     employer_name = 'Cambia Health Solutions'
-    start_url = 'https://cambiahealth.wd1.myworkdayjobs.com/External'
+    start_url = 'https://cambiahealth.wd1.myworkdayjobs.com/External/'
     job_department_data_automation_id = 'Job_Category'
     job_department_form_data_automation_id = 'Job_CategoryCheckboxGroup'
     
     
 class AffirmScraper(GreenhouseScraper):
     employer_name = 'Affirm'
-    start_url = 'https://boards.greenhouse.io/affirm'
+    EMPLOYER_KEY = 'affirm'
     
     
 class AddeparScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'addepar1'
+    EMPLOYER_KEY = 'addepar1'
     employer_name = 'Addepar'
     
 
 class WaymarkScraper(GreenhouseScraper):
     employer_name = 'Waymark'
-    start_url = 'https://boards.greenhouse.io/waymark'
+    EMPLOYER_KEY = 'waymark'
     
     
 class VivintScraper(WorkdayScraper):
     employer_name = 'Vivint'
-    start_url = 'https://vivint.wd5.myworkdayjobs.com/vivintjobs'
+    start_url = 'https://vivint.wd5.myworkdayjobs.com/vivintjobs/'
+    has_job_departments = False
     
     
 class FabricScraper(LeverScraper):
     employer_name = 'fabric'
-    start_url = 'https://jobs.lever.co/fabric'
+    EMPLOYER_KEY = 'fabric'
     
     
 class UnderdogFantasyScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'underdogfantasy'
+    EMPLOYER_KEY = 'underdogfantasy'
     employer_name = 'Underdog Fantasy'
     
 
 class TixrScraper(LeverScraper):
     employer_name = 'Tixr'
-    start_url = 'https://jobs.lever.co/Tixr'
+    EMPLOYER_KEY = 'Tixr'
     
     
 class Mach49Scraper(GreenhouseScraper):
     employer_name = 'Mach49'
-    start_url = 'https://boards.greenhouse.io/mach49'
+    EMPLOYER_KEY = 'mach49'
     
     
 class HouzzScraper(WorkdayScraper):
     employer_name = 'Houzz'
-    start_url = 'https://houzz.wd5.myworkdayjobs.com/External'
+    start_url = 'https://houzz.wd5.myworkdayjobs.com/External/'
     
     
 class AccessoScraper(LeverScraper):
     employer_name = 'accesso'
-    start_url = 'https://jobs.lever.co/accesso'
+    EMPLOYER_KEY = 'accesso'
     
     
 class SeedHealthScraper(GreenhouseScraper):
     employer_name = 'Seed Health'
-    start_url = 'https://boards.greenhouse.io/seed'
+    EMPLOYER_KEY = 'seed'
     
 
 class RoktScraper(WorkableScraper):
     employer_name = 'Rokt'
-    start_url = 'https://apply.workable.com/rokt/'
+    EMPLOYER_KEY = 'rokt'
     
     
 class ConsensusScraper(LeverScraper):
     employer_name = 'Consensus'
-    start_url = 'https://jobs.lever.co/goconsensus'
+    EMPLOYER_KEY = 'goconsensus'
     
     
 class LoopScraper(GreenhouseScraper):
     employer_name = 'Loop'
-    start_url = 'https://boards.greenhouse.io/loop'
+    EMPLOYER_KEY = 'loop'
     
 
 class LoopReturnsScraper(LeverScraper):
     employer_name = 'Loop Returns'
-    start_url = 'https://jobs.lever.co/loopreturns/'
+    EMPLOYER_KEY = 'loopreturns'
     
     
 class SentiLinkScraper(GreenhouseScraper):
     employer_name = 'SentiLink'
-    start_url = 'https://boards.greenhouse.io/sentilink'
+    EMPLOYER_KEY = 'sentilink'
     
 
 class GrayDigitalScraper(GreenhouseScraper):
     employer_name = 'Gray Digital'
-    start_url = 'https://boards.greenhouse.io/graydigital'
+    EMPLOYER_KEY = 'graydigital'
     
     
 class FoursquareScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'foursquare26'
+    EMPLOYER_KEY = 'foursquare26'
     employer_name = 'Foursquare'
     
     
 class StashScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'stashinvest'
+    EMPLOYER_KEY = 'stashinvest'
     employer_name = 'Stash'
     
 
 class NacelleScraper(GreenhouseScraper):
     employer_name = 'Nacelle'
-    start_url = 'https://boards.greenhouse.io/nacelle'
+    EMPLOYER_KEY = 'nacelle'
     
     
 class CopilotIQScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'copilotiq'
+    EMPLOYER_KEY = 'copilotiq'
     employer_name = 'CopilotIQ'
     
     
 class OmadaHealthScraper(GreenhouseScraper):
     employer_name = 'Omada Health'
-    start_url = 'https://boards.greenhouse.io/omadahealth'
+    EMPLOYER_KEY = 'omadahealth'
     
     
 class WeaveHQScraper(GreenhouseScraper):
     employer_name = 'Weave HQ'
-    start_url = 'https://boards.greenhouse.io/weavehq'
+    EMPLOYER_KEY = 'weavehq'
     
 
 class One800ContactsScraper(GreenhouseIframeScraper):
-    GREENHOUSE_JOB_BOARD_DOMAIN = '1800contacts'
+    EMPLOYER_KEY = '1800contacts'
     employer_name = '1-800 Contacts'
     
     
 class GoatGroupScraper(GreenhouseScraper):
     employer_name = 'Goat Group'
-    start_url = 'https://boards.greenhouse.io/goatgroup'
+    EMPLOYER_KEY = 'goatgroup'
     
     
 class NorthAmericanBancardScraper(WorkdayScraper):
     employer_name = 'North American Bancard'
-    start_url = 'https://nabancard.wd1.myworkdayjobs.com/nab'
+    start_url = 'https://nabancard.wd1.myworkdayjobs.com/nab/'
     has_job_departments = False
     
     
 class BeamBenefitsScraper(LeverScraper):
     employer_name = 'Beam Benefits'
-    start_url = 'https://jobs.lever.co/beam'
+    EMPLOYER_KEY = 'beam'
     
     
 class CollectiveHealthScraper(GreenhouseIframeScraper):
     employer_name = 'Collective Health'
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'collectivehealth'
+    EMPLOYER_KEY = 'collectivehealth'
     
     
 class ZenBusinessScraper(LeverScraper):
     employer_name = 'ZenBusiness'
-    start_url = 'https://jobs.lever.co/zenbusiness'
+    EMPLOYER_KEY = 'zenbusiness'
     
 
 class IntegrityMarketingScraper(WorkdayScraper):
     employer_name = 'Integriy Marketing'
-    start_url = 'https://integritymarketing.wd1.myworkdayjobs.com/Integrity'
+    start_url = 'https://integritymarketing.wd1.myworkdayjobs.com/Integrity/'
     has_job_departments = False
     
     
 class BeyondIdentityScraper(GreenhouseIframeScraper):
     employer_name = 'Beyond Identity'
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'beyondidentity'
+    EMPLOYER_KEY = 'beyondidentity'
     
     
 class EnableScraper(LeverScraper):
     employer_name = 'Enable'
-    start_url = 'https://jobs.lever.co/enable'
+    EMPLOYER_KEY = 'enable'
     
     
 class DoorDashScraper(GreenhouseIframeScraper):
     employer_name = 'DoorDash'
-    GREENHOUSE_JOB_BOARD_DOMAIN = 'doordash'
+    EMPLOYER_KEY = 'doordash'
     
     
 class SnackpassScraper(GreenhouseScraper):
     employer_name = 'Snackpass'
-    start_url = 'https://boards.greenhouse.io/snackpass'
+    EMPLOYER_KEY = 'snackpass'
     
     
-# BlueOriginScraper.employer_name: BlueOriginScraper,
 # EbayScraper.employer_name: EbayScraper,
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
@@ -557,6 +564,7 @@ test_scrapers = {
 
 
 all_scrapers = {
+    BlueOriginScraper.employer_name: BlueOriginScraper,
     DoorDashScraper.employer_name: DoorDashScraper,
     BeyondIdentityScraper.employer_name: BeyondIdentityScraper,
     IntegrityMarketingScraper.employer_name: IntegrityMarketingScraper,
