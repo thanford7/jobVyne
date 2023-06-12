@@ -610,7 +610,7 @@ class BobsledScraper(GreenhouseIframeScraper):
     
 class RouteScraper(GreenhouseIframeScraper):
     employer_name = 'Route'
-    EMPLOYER_KEY = 'routelogo'
+    EMPLOYER_KEY = 'route'
     
     
 class WeirScraper(WorkdayScraper):
@@ -635,6 +635,7 @@ class WeirScraper(WorkdayScraper):
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
 test_scrapers = {
+    TwoULaundryScraper.employer_name: TwoULaundryScraper
 }
 
 

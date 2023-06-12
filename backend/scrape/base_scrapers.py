@@ -23,21 +23,21 @@ from scrape.job_processor import JobItem
 
 logger = logging.getLogger(__name__)
 
-# ---- HEADER OPTIONS
-# ---- Note: Tried adding these to connection session. Requests end up being rejected with everything but User-Agent
-# 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
-# 'Referer': 'https://www.google.com',
-# 'Accept-Language': 'en-US,en;q=0.9',
-# 'Accept-Encoding': 'gzip, deflate, br',
-# 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-# 'Connection': 'keep-alive',
-# 'Upgrade-Insecure-Requests': '1',
-# 'Sec-Fetch-Dest': 'document',
-# 'Sec-Fetch-Mode': 'navigate',
-# 'Sec-Fetch-Site': 'none',
-# 'Sec-Fetch-User': '?1',
-# 'Cache-Control': 'max-age=0',
-# 'Sec-Ch-Ua-Mobile': '?0'
+# ---- Note: Most ATSs don't require all of these
+ADVANCED_REQUEST_HEADERS = {
+    'Referer': 'https://www.google.com',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Cache-Control': 'max-age=0',
+    'Sec-Ch-Ua-Mobile': '?0'
+}
 
 USER_AGENTS = [
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
@@ -69,6 +69,7 @@ def normalize_url(url):
 
 
 class Scraper:
+    USE_ADVANCED_HEADERS = False
     MAX_CONCURRENT_PAGES = 10
     IS_JS_REQUIRED = False
     DEFAULT_JOB_DEPARTMENT = 'General'
@@ -88,9 +89,12 @@ class Scraper:
         self.queue = asyncio.Queue()
         self.playwright = playwright
         self.browser = browser
-        self.session = ClientSession(headers={
+        headers = {
             'User-Agent': get_random_user_agent()
-        })
+        }
+        if self.USE_ADVANCED_HEADERS:
+            headers = {**headers, **ADVANCED_REQUEST_HEADERS}
+        self.session = ClientSession(headers=headers)
         self.skip_urls = skip_urls
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
@@ -395,15 +399,15 @@ class BambooHrScraper(Scraper):
         for job in jobs:
             await self.add_job_links_to_queue(self.get_job_url(job), meta_data={'job_id': job['id']})
         await self.close()
-        
+    
     def get_job_url(self, job):
         return f'https://{self.EMPLOYER_KEY}.bamboohr.com/careers/{job["id"]}'
-        
+    
     def get_job_data(self, job_id):
         job_resp = requests.get(f'https://{self.EMPLOYER_KEY}.bamboohr.com/careers/{job_id}/detail')
         job = json.loads(job_resp.content)
         return job['result']['jobOpening']
-        
+    
     def get_jobs(self):
         jobs_resp = requests.get(f'https://{self.EMPLOYER_KEY}.bamboohr.com/careers/list')
         jobs = json.loads(jobs_resp.content)
@@ -810,7 +814,7 @@ class LeverScraper(Scraper):
             await self.add_job_links_to_queue(list(job_links), meta_data={'job_department': department})
         
         await self.close()
-        
+    
     def get_start_url(self):
         return f'https://jobs.lever.co/{self.EMPLOYER_KEY}/'
     
@@ -851,13 +855,14 @@ class LeverScraper(Scraper):
 
 
 class BreezyScraper(Scraper):
+    USE_ADVANCED_HEADERS = True
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.get_start_url())
         await self.add_job_links_to_queue(
             list(html_dom.xpath('//div[@class="positions-container"]//li[has-class("position")]//a/@href').getall()))
         await self.close()
-        
+    
     def get_start_url(self):
         return f'https://{self.EMPLOYER_KEY}.breezy.hr/'
     
@@ -915,12 +920,12 @@ class WorkableScraper(Scraper):
             jobs_list, next_page_key = self.get_jobs(next_page_key=next_page_key)
             jobs += jobs_list
             has_more = bool(next_page_key)
-            
+        
         for job in jobs:
             await self.add_job_links_to_queue(self.get_job_link(job), meta_data={'job_shortcode': job['shortcode']})
         
         await self.close()
-        
+    
     def get_job_link(self, job_data):
         return f'https://apply.workable.com/{self.EMPLOYER_KEY}/j/{job_data["shortcode"]}/'
     
@@ -938,7 +943,7 @@ class WorkableScraper(Scraper):
     def get_raw_job_data(self, job_shortcode):
         job_resp = requests.get(f'https://apply.workable.com/api/v2/accounts/{self.EMPLOYER_KEY}/jobs/{job_shortcode}')
         return json.loads(job_resp.content)
-        
+    
     def get_job_data_from_html(self, html, job_url=None, job_department=None, job_shortcode=None):
         job_data = self.get_raw_job_data(job_shortcode)
         job_description = job_data['description']
@@ -975,20 +980,20 @@ class AshbyHQScraper(Scraper):
     
     async def scrape_jobs(self):
         page = await self.get_starting_page()
-    
+        
         # Make sure page data has loaded
         try:
             await self.wait_for_el(page, '[class*="_departments"]')
         except PlaywrightTimeoutError:
             page = await self.get_starting_page()
             await self.wait_for_el(page, '[class*="_departments"]')
-    
+        
         html_dom = await self.get_page_html(page)
         
         await self.add_job_links_to_queue(
             list(html_dom.xpath('//div[contains(@class, "ashby-job-posting-brief-list")]//a/@href').getall()))
         await self.close()
-        
+    
     def get_start_url(self):
         return f'https://jobs.ashbyhq.com/{self.EMPLOYER_KEY}/'
     
@@ -1003,8 +1008,7 @@ class AshbyHQScraper(Scraper):
                 job_details['employment_type'] = job_detail.xpath('.//p/text()').get()
             elif job_detail_name == 'department':
                 job_details['department'] = ' - '.join(job_detail.xpath('.//p/span/text()').getall())
-                
-            
+        
         description = html.xpath('//div[contains(@class, "_descriptionText")]').get()
         description_compensation_data = parse_compensation_text(description)
         
@@ -1023,8 +1027,8 @@ class AshbyHQScraper(Scraper):
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
         )
-    
-    
+
+
 class UltiProScraper(Scraper):
     IS_REMOVE_QUERY_PARAMS = False
     TEST_REDIRECT = False
@@ -1046,7 +1050,7 @@ class UltiProScraper(Scraper):
         while is_more:
             await page.locator('css=#LoadMoreJobs').click()
             is_more = await page.locator('css=#LoadMoreJobs').is_visible()
-
+        
         html_dom = await self.get_page_html(page)
         
         await self.add_job_links_to_queue(
@@ -1077,7 +1081,8 @@ class SmartRecruitersScraper(Scraper):
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.get_start_url())
-        await self.add_job_links_to_queue(list(html_dom.xpath('//div[contains(@class, "openings-body")]//a/@href').getall()))
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath('//div[contains(@class, "openings-body")]//a/@href').getall()))
         await self.close()
     
     def get_start_url(self):
@@ -1092,11 +1097,11 @@ class SmartRecruitersScraper(Scraper):
         remote_type = location_html.xpath('./@workplacetype').get()
         if remote_type == 'remote':
             location_text = f'Remote: {location_text}'
-            
+        
         posted_date = html.xpath('//meta[@itemprop="datePosted"]/@content').get()
         if posted_date:
             posted_date = get_datetime_format_or_none(get_datetime_or_none(posted_date, as_date=True))
-            
+        
         job_details = job_data_html.xpath('.//li[@class="job-detail"]/text()').getall()
         job_department = None
         # TODO: Make sure this works for multiple smartrecruiters employers
@@ -1124,14 +1129,14 @@ class PaylocityScraper(Scraper):
     
     async def scrape_jobs(self):
         page = await self.get_starting_page()
-    
+        
         # Make sure page data has loaded
         try:
             await self.wait_for_el(page, '.jobs-list')
         except PlaywrightTimeoutError:
             page = await self.get_starting_page()
             await self.wait_for_el(page, '.jobs-list')
-    
+        
         html_dom = await self.get_page_html(page)
         
         await self.add_job_links_to_queue(
@@ -1144,11 +1149,11 @@ class PaylocityScraper(Scraper):
             return None
         job_description = standard_job_item.job_description
         description_compensation_data = parse_compensation_text(job_description)
-    
+        
         compensation_data = merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
-    
+        
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
@@ -1179,11 +1184,11 @@ class ApplicantProScraper(Scraper):
             return None
         job_description = standard_job_item.job_description
         description_compensation_data = parse_compensation_text(job_description)
-    
+        
         compensation_data = merge_compensation_data(
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
-    
+        
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
@@ -1205,7 +1210,7 @@ class StandardScraper(Scraper):
         await self.add_job_links_to_queue(
             list(html_dom.xpath(self.jobs_xpath_sel).getall()))
         await self.close()
-        
+    
     async def get_html(self):
         return await self.get_html_from_url(self.get_start_url())
     
@@ -1241,12 +1246,12 @@ class StandardJsScraper(StandardScraper):
     async def get_html(self):
         page = await self.get_starting_page()
         html = await self.get_page_html(page)
-    
+        
         # Make sure page data has loaded
         try:
             await self.wait_for_el(page, self.main_page_wait_sel)
         except PlaywrightTimeoutError:
             page = await self.get_starting_page()
             await self.wait_for_el(page, self.main_page_wait_sel)
-    
+        
         return await self.get_page_html(page)
