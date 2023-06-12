@@ -857,6 +857,9 @@ class BreezyScraper(Scraper):
         await self.add_job_links_to_queue(
             list(html_dom.xpath('//div[@class="positions-container"]//li[has-class("position")]//a/@href').getall()))
         await self.close()
+        
+    def get_start_url(self):
+        return f'https://{self.EMPLOYER_KEY}.breezy.hr/'
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         standard_job_item = self.get_google_standard_job_item(html)
@@ -1020,3 +1023,230 @@ class AshbyHQScraper(Scraper):
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
         )
+    
+    
+class UltiProScraper(Scraper):
+    IS_REMOVE_QUERY_PARAMS = False
+    TEST_REDIRECT = False
+    IS_JS_REQUIRED = True
+    job_item_page_wait_sel = '[data-automation="opportunity-title"]'
+    
+    async def scrape_jobs(self):
+        page = await self.get_starting_page()
+        
+        # Make sure page data has loaded
+        try:
+            await self.wait_for_el(page, '#Opportunities')
+        except PlaywrightTimeoutError:
+            page = await self.get_starting_page()
+            await self.wait_for_el(page, '#Opportunities')
+        
+        # Load all jobs
+        is_more = await page.locator('css=#LoadMoreJobs').is_visible()
+        while is_more:
+            await page.locator('css=#LoadMoreJobs').click()
+            is_more = await page.locator('css=#LoadMoreJobs').is_visible()
+
+        html_dom = await self.get_page_html(page)
+        
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath('//a[@data-automation="job-title"]/@href').getall()))
+        await self.close()
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        # Ultipro doesn't have the ld+json standard
+        description = html.xpath('//*[@data-automation="job-description"]').get()
+        description_compensation_data = parse_compensation_text(description)
+        posted_date = html.xpath('//*[@data-automation="job-posted-date"]/text()').get()
+        if posted_date:
+            posted_date = get_datetime_format_or_none(get_datetime_or_none(posted_date, as_date=True))
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=html.xpath('//*[@data-automation="opportunity-title"]/text()').get(),
+            locations=[html.xpath('//*[@data-automation="city-state-zip-country-label"]/text()').get()],
+            job_department=html.xpath('//*[@data-automation="job-category"]/text()').get(),
+            job_description=description,
+            employment_type=html.xpath('//*[@data-automation="JobFullTime"]/text()').get(),
+            first_posted_date=posted_date,
+            **description_compensation_data
+        )
+
+
+class SmartRecruitersScraper(Scraper):
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html_from_url(self.get_start_url())
+        await self.add_job_links_to_queue(list(html_dom.xpath('//div[contains(@class, "openings-body")]//a/@href').getall()))
+        await self.close()
+    
+    def get_start_url(self):
+        return f'https://careers.smartrecruiters.com/{self.EMPLOYER_KEY}/'
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        job_data_html = html.xpath('//main[contains(@class, "jobad-main")]')
+        job_description = job_data_html.xpath('.//div[@itemprop="description"]').get()
+        description_compensation_data = parse_compensation_text(job_description)
+        location_html = job_data_html.xpath('.//spl-job-location')
+        location_text = location_html.xpath('./@formattedaddress').get()
+        remote_type = location_html.xpath('./@workplacetype').get()
+        if remote_type == 'remote':
+            location_text = f'Remote: {location_text}'
+            
+        posted_date = html.xpath('//meta[@itemprop="datePosted"]/@content').get()
+        if posted_date:
+            posted_date = get_datetime_format_or_none(get_datetime_or_none(posted_date, as_date=True))
+            
+        job_details = job_data_html.xpath('.//li[@class="job-detail"]/text()').getall()
+        job_department = None
+        # TODO: Make sure this works for multiple smartrecruiters employers
+        for job_detail in job_details:
+            if 'department' in job_detail.lower():
+                job_department = job_detail.replace('Department:', '').strip()
+                break
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data_html.xpath('.//h1[@class="job-title"]/text()').get(),
+            locations=[location_text],
+            job_department=job_department,
+            job_description=job_description,
+            employment_type=job_data_html.xpath('.//li[@itemprop="employmentType"]/text()').get(),
+            first_posted_date=posted_date,
+            **description_compensation_data
+        )
+
+
+class PaylocityScraper(Scraper):
+    IS_JS_REQUIRED = True
+    job_item_page_wait_sel = '.job-preview-header'
+    
+    async def scrape_jobs(self):
+        page = await self.get_starting_page()
+    
+        # Make sure page data has loaded
+        try:
+            await self.wait_for_el(page, '.jobs-list')
+        except PlaywrightTimeoutError:
+            page = await self.get_starting_page()
+            await self.wait_for_el(page, '.jobs-list')
+    
+        html_dom = await self.get_page_html(page)
+        
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath('//div[contains(@class, "job-listing-job-item")]//a/@href').getall()))
+        await self.close()
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        if not standard_job_item:
+            return None
+        job_description = standard_job_item.job_description
+        description_compensation_data = parse_compensation_text(job_description)
+    
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+    
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=standard_job_item.job_title,
+            locations=standard_job_item.locations,
+            job_department=standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=standard_job_item.job_description,
+            employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
+
+
+class ApplicantProScraper(Scraper):
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html_from_url(self.get_start_url())
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath('//div[@id="job_listings"]//a/@href').getall()))
+        await self.close()
+    
+    def get_start_url(self):
+        return f'https://{self.EMPLOYER_KEY}.applicantpro.com/jobs/'
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        if not standard_job_item:
+            return None
+        job_description = standard_job_item.job_description
+        description_compensation_data = parse_compensation_text(job_description)
+    
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+    
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=standard_job_item.job_title,
+            locations=standard_job_item.locations,
+            job_department=standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=standard_job_item.job_description,
+            employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
+
+
+class StandardScraper(Scraper):
+    jobs_xpath_sel = None
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html()
+        await self.add_job_links_to_queue(
+            list(html_dom.xpath(self.jobs_xpath_sel).getall()))
+        await self.close()
+        
+    async def get_html(self):
+        return await self.get_html_from_url(self.get_start_url())
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        if not standard_job_item:
+            return None
+        job_description = standard_job_item.job_description
+        description_compensation_data = parse_compensation_text(job_description)
+        
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=standard_job_item.job_title,
+            locations=standard_job_item.locations,
+            job_department=standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=standard_job_item.job_description,
+            employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
+
+
+class StandardJsScraper(StandardScraper):
+    IS_JS_REQUIRED = True
+    main_page_wait_sel = None  # Per employer scraper
+    job_item_page_wait_sel = None  # Per employer scraper
+    
+    async def get_html(self):
+        page = await self.get_starting_page()
+        html = await self.get_page_html(page)
+    
+        # Make sure page data has loaded
+        try:
+            await self.wait_for_el(page, self.main_page_wait_sel)
+        except PlaywrightTimeoutError:
+            page = await self.get_starting_page()
+            await self.wait_for_el(page, self.main_page_wait_sel)
+    
+        return await self.get_page_html(page)

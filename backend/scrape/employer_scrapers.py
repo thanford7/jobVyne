@@ -2,10 +2,12 @@ import re
 
 from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
 
-from scrape.base_scrapers import AshbyHQScraper, BambooHrScraper, BreezyScraper, GreenhouseIframeScraper, \
+from scrape.base_scrapers import ApplicantProScraper, AshbyHQScraper, BambooHrScraper, BreezyScraper, \
+    GreenhouseIframeScraper, \
     GreenhouseScraper, \
     LeverScraper, \
-    WorkableScraper, WorkdayScraper
+    PaylocityScraper, SmartRecruitersScraper, StandardJsScraper, StandardScraper, UltiProScraper, WorkableScraper, \
+    WorkdayScraper
 from scrape.custom_scraper.ancestry import AncestryScraper
 from scrape.custom_scraper.coinbase import CoinbaseScraper
 from scrape.custom_scraper.ebay import EbayScraper
@@ -358,7 +360,7 @@ class OverjetScraper(GreenhouseScraper):
     
 class TwoULaundryScraper(BreezyScraper):
     employer_name = '2ULaundry'
-    start_url = 'https://2ulaundry.breezy.hr/'
+    EMPLOYER_KEY = '2ulaundry'
     
     
 class ZocdocScraper(GreenhouseIframeScraper):
@@ -556,6 +558,79 @@ class SnackpassScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'snackpass'
     
     
+class GunterGroupScraper(GreenhouseScraper):
+    employer_name = 'The Gunter Group'
+    EMPLOYER_KEY = 'guntergroup'
+    
+    
+class BigDConstructionScraper(UltiProScraper):
+    employer_name = 'Big-D Construction'
+    start_url = 'https://recruiting2.ultipro.com/BIG1005BGDC/JobBoard/a1b85713-c4d6-4da4-98fa-9080a291bd18/'
+    
+    
+class CricutScraper(SmartRecruitersScraper):
+    employer_name = 'Cricut'
+    EMPLOYER_KEY = 'Cricut'
+    
+
+class StriderTechnologiesScraper(GreenhouseScraper):
+    employer_name = 'Strider Technologies'
+    EMPLOYER_KEY = 'stridertechnologies'
+    
+    
+class KodiakCakesScraper(GreenhouseScraper):
+    employer_name = 'Kodiak Cakes'
+    EMPLOYER_KEY = 'kodiakcakes'
+    
+    
+class SalesRabbitScraper(BreezyScraper):
+    employer_name = 'SalesRabbit'
+    EMPLOYER_KEY = 'salesrabbit'
+    
+    
+class NerdUnitedScraper(PaylocityScraper):
+    employer_name = 'Nerd United'
+    start_url = 'https://recruiting.paylocity.com/recruiting/jobs/All/9e9935d0-3f49-4c1b-a11d-8d44bbc026cf/Nerd-United-DAO-LLC'
+    
+    
+class SkullCandyScraper(ApplicantProScraper):
+    employer_name = 'Skullcandy'
+    EMPLOYER_KEY = 'skullcandy'
+    
+
+class FLSmidthScraper(WorkdayScraper):
+    employer_name = 'FLSmidth'
+    start_url = 'https://flsmidth.wd3.myworkdayjobs.com/FLS_Global/'
+    
+    
+class BobsledScraper(GreenhouseIframeScraper):
+    employer_name = 'Bobsled'
+    EMPLOYER_KEY = 'bobsledinc'
+    
+    
+class RouteScraper(GreenhouseIframeScraper):
+    employer_name = 'Route'
+    EMPLOYER_KEY = 'routelogo'
+    
+    
+class WeirScraper(WorkdayScraper):
+    employer_name = 'Weir'
+    start_url = 'https://weir.wd3.myworkdayjobs.com/Weir_External_Careers'
+    job_department_form_data_automation_id = 'Job Family-checkboxgroup'
+    
+    async def open_job_department_menu(self, page):
+        await page.locator('css=button[data-automation-id="more"]').click()
+        await page.locator('css=button[data-automation-id="Job Family-expand"]').click()
+        await self.wait_for_el(
+            page, f'div[data-automation-id="{self.job_department_form_data_automation_id}"] label'
+        )
+        
+
+# TODO: Build a new scraper for PhenomPeople ats
+# class AdobeScraper():
+#     employer_name = 'Adobe'
+#     start_url = 'https://careers.adobe.com/us/en/c/'
+
 # EbayScraper.employer_name: EbayScraper,
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
@@ -564,6 +639,18 @@ test_scrapers = {
 
 
 all_scrapers = {
+    WeirScraper.employer_name: WeirScraper,
+    RouteScraper.employer_name: RouteScraper,
+    BobsledScraper.employer_name: BobsledScraper,
+    FLSmidthScraper.employer_name: FLSmidthScraper,
+    SkullCandyScraper.employer_name: SkullCandyScraper,
+    NerdUnitedScraper.employer_name: NerdUnitedScraper,
+    StriderTechnologiesScraper.employer_name: StriderTechnologiesScraper,
+    KodiakCakesScraper.employer_name: KodiakCakesScraper,
+    SalesRabbitScraper.employer_name: SalesRabbitScraper,
+    CricutScraper.employer_name: CricutScraper,
+    BigDConstructionScraper.employer_name: BigDConstructionScraper,
+    GunterGroupScraper.employer_name: GunterGroupScraper,
     BlueOriginScraper.employer_name: BlueOriginScraper,
     DoorDashScraper.employer_name: DoorDashScraper,
     BeyondIdentityScraper.employer_name: BeyondIdentityScraper,

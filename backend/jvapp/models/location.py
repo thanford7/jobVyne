@@ -67,7 +67,7 @@ SRID = 4326
 
 
 class Location(models.Model):
-    text = models.CharField(max_length=100, null=True, blank=True)  # Raw text
+    text = models.CharField(max_length=200, null=True, blank=True)  # Raw text
     is_remote = models.BooleanField(null=True, blank=True)
     city = models.ForeignKey(City, null=True, blank=True, on_delete=models.SET_NULL)
     state = models.ForeignKey(State, null=True, blank=True, on_delete=models.SET_NULL)
@@ -91,6 +91,6 @@ class Location(models.Model):
 
 # Store results of geocoding lookup for efficiency and to avoid charges
 class LocationLookup(models.Model):
-    text = models.CharField(max_length=100, unique=True)
+    text = models.CharField(max_length=200, unique=True)
     location = models.ForeignKey('Location', on_delete=models.CASCADE)
     raw_result = models.JSONField(null=True, blank=True)
