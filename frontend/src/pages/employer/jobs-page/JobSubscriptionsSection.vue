@@ -216,8 +216,8 @@ export default {
     },
     async saveJobSubscription () {
       await this.$api.post('job-subscription/', getAjaxFormData({
-        employer_id: this.user.employer_id,
-        user_id: this.user.id,
+        employer_id: (this.isEmployer) ? this.user.employer_id : null,
+        user_id: (this.isEmployer) ? null : this.user.id,
         ...this.subscriptionFilter
       }))
       this.subscriptionFilter = { ...subscriptionFilterTemplate }

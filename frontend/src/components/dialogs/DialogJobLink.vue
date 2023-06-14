@@ -1,7 +1,7 @@
 <template>
   <DialogBase
-    base-title-text="Create job board"
-    primary-button-text="Save"
+    :base-title-text="(jobLink) ? 'Update job board' : 'Create job board'"
+    :primary-button-text="(jobLink) ? 'Update' : 'Save'"
     :is-valid-form-fn="isValidForm"
     @ok="saveLink"
   >
@@ -17,7 +17,7 @@
                 (val) => (val && val.length <= 30) || 'Max length is 30 characters'
               ]"
           />
-          <SelectJobSubscription v-if="!isEmployerOrgType" v-model="jobSubscriptions" :is-employer="isEmployer"/>
+          <SelectJobSubscription v-if="!isEmployerOrgType" v-model="jobSubscriptionIds" :is-employer="isEmployer"/>
         </div>
       </div>
     </q-form>
@@ -52,7 +52,7 @@ export default {
     return {
       isEmployerOrgType: false,
       linkName: null,
-      jobSubscriptions: [],
+      jobSubscriptionIds: [],
       filteredJobs: [],
       user: null,
       socialStore: null,
@@ -69,10 +69,10 @@ export default {
       return await this.$refs.form.validate()
     },
     async saveLink () {
-      const data = Object.assign({}, this.linkFilters, {
+      const data = Object.assign({}, {
         employer_id: this.employerId,
         link_name: this.linkName,
-        job_subscriptions: this.jobSubscriptions
+        job_subscription_ids: this.jobSubscriptionIds
       })
       if (!this.employerId) {
         data.owner_id = this.user.id
@@ -106,13 +106,13 @@ export default {
         const jobSubscriptions = jobSubscriptionStore.getJobSubscription(params)
         const employerSubscription = jobSubscriptions.filter((js) => js.is_single_employer).map((js) => js.id)
         if (!this.jobLink) {
-          this.jobSubscriptions = employerSubscription
+          this.jobSubscriptionIds = employerSubscription.id
         }
       }
     }
     if (this.jobLink) {
       this.linkName = this.jobLink.link_name
-      this.jobSubscriptions = this.jobLink.job_subscriptions
+      this.jobSubscriptionIds = this.jobLink.job_subscriptions.map((js) => js.id)
     }
   }
 }

@@ -195,8 +195,8 @@ class SocialLinkView(JobVyneAPIView):
                 existing_link.is_default = False
                 existing_link.save()
         
-        if job_subscriptions := data.get('job_subscriptions'):
-            link.job_subscriptions.set(job_subscriptions)
+        if job_subscription_ids := data.get('job_subscription_ids'):
+            link.job_subscriptions.set(job_subscription_ids)
         
         return link
     
