@@ -114,6 +114,7 @@
                               <MoneyInput
                                 v-model:money-value="jobFilters.minimum_salary"
                                 v-model:currency-name="jobFilters.currency"
+                                :is-include-currency-selection="false"
                                 label="Minimum salary"
                               />
                             </div>
