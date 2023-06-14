@@ -1,4 +1,3 @@
-
 class EmployerTypeUtil {
   constructor () {
     // Keep in sync with backend employer model
