@@ -37,7 +37,7 @@ class PageTrackView(APIView):
             meta = request.META
             page_view = PageView()
             page_view.relative_url = request.data['relative_url']
-            page_view.social_link_filter_id = request.data.get('filter_id')
+            page_view.social_link_id = request.data.get('filter_id')
             params = request.data.get('query') or {}
             if platform_name := params.get('platform'):
                 try:

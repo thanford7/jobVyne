@@ -138,10 +138,10 @@ const routes = [
         component: () => import('pages/employee/ProfilePage.vue')
       },
       {
-        path: ':key(employee-social-accounts)',
-        name: 'employee-social-accounts',
+        path: ':key(employee-social)',
+        name: 'employee-social',
         meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/social-accounts-page/SocialAccountsPage.vue')
+        component: () => import('pages/employee/social-page/SocialPage.vue')
       }
     ]
   },
@@ -161,6 +161,12 @@ const routes = [
         name: 'influencer-jobs',
         meta: { userTypeBits: USER_TYPES.Influencer },
         component: () => import('pages/influencer/JobBoardsPage.vue')
+      },
+      {
+        path: ':key(influencer-social)',
+        name: 'influencer-social',
+        meta: { userTypeBits: USER_TYPES.Influencer },
+        component: () => import('pages/influencer/social-page/SocialPage.vue')
       }
     ]
   },

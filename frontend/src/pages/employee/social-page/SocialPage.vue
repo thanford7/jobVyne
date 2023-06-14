@@ -1,10 +1,8 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader title="Social accounts">
-        Connecting your social accounts allows you to save content and use "pre-packaged"
-        content from your employer which can be pushed to your social accounts with one
-        button click.
+      <PageHeader title="Social sharing">
+        Connect your social accounts to automatically post jobs.
       </PageHeader>
       <SocialAccountsTable :exclude-platforms="[socialUtil.SOCIAL_KEY_GOOGLE]"/>
     </div>
@@ -13,13 +11,13 @@
 
 <script>
 import PageHeader from 'components/PageHeader.vue'
-import SocialAccountsTable from 'pages/employee/social-accounts-page/SocialAccountsTable.vue'
+import SocialAccountsTable from 'pages/employee/social-page/SocialAccountsTable.vue'
 import { useMeta } from 'quasar'
 import socialUtil from 'src/utils/social.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 export default {
-  name: 'SocialAccountsPage',
+  name: 'SocialPage',
   components: { SocialAccountsTable, PageHeader },
   data () {
     return {
@@ -38,7 +36,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>

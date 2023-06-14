@@ -118,7 +118,7 @@ export default {
       openConfirmDialog(this.q, 'Are you sure you want to delete this job board? The link will still continue to work, but it will no longer be displayed in reports', {
         okFn: async () => {
           await this.$api.delete('social-link/', {
-            data: getAjaxFormData({ link_filter_id: jobLinkId })
+            data: getAjaxFormData({ social_link_id: jobLinkId })
           })
           await this.setSocialLinks(true)
         }

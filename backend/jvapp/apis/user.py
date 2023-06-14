@@ -357,7 +357,7 @@ class UserJobApplicationReviewView(JobVyneAPIView):
         if user_id:
             review_filter &= Q(user_id=user_id)
         reviews = UserApplicationReview.objects\
-            .select_related('application', 'application__employer_job', 'application__social_link_filter')\
+            .select_related('application', 'application__employer_job', 'application__social_link')\
             .filter(review_filter)
         reviews = UserApplicationReview.jv_filter_perm(user, reviews)
         if application_review_id:

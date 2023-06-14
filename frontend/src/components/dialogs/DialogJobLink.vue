@@ -80,7 +80,7 @@ export default {
       let requestMethod = this.$api.post
       if (this?.jobLink?.id) {
         requestMethod = this.$api.put
-        data.link_filter_id = this.jobLink.id
+        data.social_link_id = this.jobLink.id
       }
       await requestMethod('social-link/', getAjaxFormData(data))
       const params = (this.employerId) ? { employerId: this.employerId } : { userId: this.user.id }

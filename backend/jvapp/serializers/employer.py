@@ -171,10 +171,12 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
         'salary_floor': employer_job.salary_floor,
         'salary_ceiling': employer_job.salary_ceiling,
         'salary_interval': employer_job.salary_interval,
+        'salary_text': employer_job.salary_text,
         'referral_bonus': employer_job.referral_bonus,
         'referral_bonus_currency': get_serialized_currency(employer_job.referral_bonus_currency),
         'employment_type': employer_job.employment_type,
         'locations': [get_serialized_location(l) for l in employer_job.locations.all()],
+        'locations_text': employer_job.locations_text,
         'job_source': 'website' if employer_job.is_scraped else ('ats' if employer_job.ats_job_key else 'manual')
     }
     

@@ -3,10 +3,12 @@ __all__ = ('SocialPlatformView', 'SocialLinkView', 'SocialLinkJobsView', 'ShareS
 import json
 import math
 from collections import defaultdict
+from datetime import timedelta
 from typing import Union
 
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -46,14 +48,14 @@ class SocialLinkView(JobVyneAPIView):
                 raise ValueError('You must provide an ID, owner ID, or employer ID')
             
             data = []
-            for link_filter in self.get_link(self.user, link_filter=q_filter):
-                serialized_link_filter = get_serialized_social_link(link_filter, is_include_performance=True)
+            for social_link in self.get_link(self.user, social_link_filter=q_filter):
+                serialized_link = get_serialized_social_link(social_link, is_include_performance=True)
                 # Only fetch job count for specific user because a database call
-                # is required per link_filter and is not performant
+                # is required per social_link and is not performant
                 if owner_id:
-                    serialized_link_filter['jobs_count'] = len(
-                        SocialLinkJobsView.get_jobs_from_social_link(link_filter))
-                data.append(serialized_link_filter)
+                    serialized_link['jobs_count'] = len(
+                        SocialLinkJobsView.get_jobs_from_social_link(social_link))
+                data.append(serialized_link)
         
         return Response(status=status.HTTP_200_OK, data=data)
     
@@ -63,7 +65,7 @@ class SocialLinkView(JobVyneAPIView):
         is_get_or_create = self.data.get('is_get_or_create')
         if is_get_or_create:
             data = {
-                'link_filter': get_serialized_social_link(new_link)
+                'social_link': get_serialized_social_link(new_link)
             }
         else:
             # Sometimes we want to silently get or create a link (e.g. when a user is sharing an individual job)
@@ -74,9 +76,9 @@ class SocialLinkView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data=data)
     
     def put(self, request):
-        if not (link_filter_id := self.data.get('link_filter_id')):
+        if not (social_link_id := self.data.get('social_link_id')):
             return Response('A link filter ID is required', status=status.HTTP_400_BAD_REQUEST)
-        link = self.get_link(self.user, link_id=link_filter_id)
+        link = self.get_link(self.user, link_id=social_link_id)
         self.create_or_update_link(link, self.data, self.user)
         
         # Need to refetch to get associated objects
@@ -86,12 +88,12 @@ class SocialLinkView(JobVyneAPIView):
     
     @atomic
     def delete(self, request):
-        link_filter_id = self.data.get('link_filter_id')
-        link_filter_ids = [link_filter_id] if link_filter_id else self.data.get('link_filter_ids')
-        if not link_filter_ids:
+        social_link_id = self.data.get('social_link_id')
+        social_link_ids = [social_link_id] if social_link_id else self.data.get('social_link_ids')
+        if not social_link_ids:
             return Response('A link filter ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        links = self.get_link(self.user, link_filter=Q(id__in=link_filter_ids))
+        links = self.get_link(self.user, social_link_filter=Q(id__in=social_link_ids))
         for link in links:
             link.jv_check_permission(PermissionTypes.DELETE.value, self.user)
             link.is_archived = True
@@ -136,14 +138,14 @@ class SocialLinkView(JobVyneAPIView):
     def get_or_create_single_job_link(job, owner_id=None, employer_id=None):
         from jvapp.apis.job_subscription import JobSubscriptionView
         job_subscription = JobSubscriptionView.get_or_create_single_job_subscription(job.id)
-        link_filter = Q(job_subscriptions__id=job_subscription.id)
+        social_link = Q(job_subscriptions__id=job_subscription.id)
         if owner_id:
-            link_filter &= Q(owner_id=owner_id)
+            social_link &= Q(owner_id=owner_id)
         elif employer_id:
-            link_filter &= Q(employer_id=employer_id)
+            social_link &= Q(employer_id=employer_id)
         social_link = next((
             link for link in
-            SocialLinkView.get_link(None, link_filter=link_filter, is_use_permissions=False)
+            SocialLinkView.get_link(None, social_link_filter=social_link, is_use_permissions=False)
             if len(link.job_subscriptions.all()) == 1
         ), None)
         if not social_link:
@@ -185,7 +187,7 @@ class SocialLinkView(JobVyneAPIView):
         if link.is_default:
             existing_default_links = SocialLinkView.get_link(
                 user,
-                link_filter=Q(owner_id=link.owner_id) & Q(employer_id=link.employer_id) & Q(is_default=True) & ~Q(
+                social_link_filter=Q(owner_id=link.owner_id) & Q(employer_id=link.employer_id) & Q(is_default=True) & ~Q(
                     id=link.id),
                 is_use_permissions=False
             )
@@ -200,12 +202,12 @@ class SocialLinkView(JobVyneAPIView):
     
     @staticmethod
     def get_link(
-            user, link_id=None, link_filter=None, start_dt=None, end_dt=None, is_use_permissions=True
+            user, link_id=None, social_link_filter=None, start_dt=None, end_dt=None, is_use_permissions=True
     ):
         if link_id:
-            link_filter = Q(id=link_id)
-        elif (not link_id) and link_filter:
-            link_filter &= Q(is_archived=False)
+            social_link_filter = Q(id=link_id)
+        elif (not link_id) and social_link_filter:
+            social_link_filter &= Q(is_archived=False)
         
         app_filter = Q()
         view_filter = Q()
@@ -239,7 +241,7 @@ class SocialLinkView(JobVyneAPIView):
                 app_prefetch,
                 page_view_prefetch
             ) \
-            .filter(link_filter)
+            .filter(social_link_filter)
         
         if is_use_permissions:
             links = SocialLink.jv_filter_perm(user, links)
@@ -393,6 +395,78 @@ class SocialLinkJobsView(JobVyneAPIView):
             location_filter &= Q(locations__is_remote=True)
         
         return location_filter
+    
+    
+class SocialLinkPostJobsView(JobVyneAPIView):
+    
+    JOB_LOOKBACK_DAYS = 60
+    MAX_JOBS = 10
+    
+    def get(self, request):
+        max_jobs = self.query_params.get('max_job_count') or self.MAX_JOBS
+        employer_id = self.query_params.get('employer_id')
+        user_id = self.query_params.get('user_id')
+        if not any((employer_id, user_id)):
+            raise ValueError('An employer ID or user ID is required')
+        
+        job_subscriptions = None
+        if social_link_id := self.query_params.get('social_link_id'):
+            social_link = SocialLinkView.get_link(self.user, link_id=social_link_id)
+            job_subscriptions = social_link.job_subscriptions.all()
+        
+        jobs = self.get_jobs_for_post(
+            max_jobs,
+            self.query_params['social_channel'],
+            employer_id=employer_id,
+            user_id=user_id,
+            job_subscriptions=job_subscriptions
+        )
+        
+        return Response(status=status.HTTP_200_OK, data=[
+            get_serialized_employer_job(j) for j in jobs
+        ])
+
+    @staticmethod
+    def get_jobs_for_post(max_job_count, social_channel, employer_id=None, user_id=None, job_subscriptions=None):
+        from jvapp.apis.employer import EmployerJobView
+        from jvapp.apis.job_subscription import JobSubscriptionView
+        
+        if not any((employer_id, user_id)):
+            raise ValueError('An employer ID or user ID is required')
+        
+        # Get job subscriptions
+        if not job_subscriptions:
+            if user_id:
+                job_subscriptions = JobSubscriptionView.get_job_subscriptions(user_id=user_id)
+                jobs_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
+                if not jobs_filter:
+                    raise ValueError('User does not have any job subscriptions')
+            else:
+                jobs_filter = Q(employer_id=employer_id)
+                job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=employer_id)
+                if job_subscription_filter := JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions):
+                    jobs_filter = (jobs_filter | job_subscription_filter)
+        else:
+            jobs_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
+    
+        # Only post recent jobs
+        jobs_filter &= Q(open_date__gte=timezone.now().date() - timedelta(days=SocialLinkPostJobsView.JOB_LOOKBACK_DAYS))
+    
+        # Don't post jobs that have already been posted
+        job_post_filter = Q(job_post__channel=social_channel)
+        if user_id:
+            job_post_filter &= Q(job_post__user_id=user_id)
+        else:
+            job_post_filter &= Q(job_post__employer_id=employer_id)
+        jobs_filter &= ~job_post_filter
+    
+        # Make sure we only use one post for a given job title
+        # Some employers create a separate post for each location for a specific job
+        jobs = {(job.employer_id, job.job_title): job for job in
+                EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)}
+        jobs = list(jobs.values())
+    
+        return jobs[:max_job_count]
 
 
 class ShareSocialLinkView(JobVyneAPIView):

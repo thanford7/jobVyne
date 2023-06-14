@@ -69,7 +69,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
         ARCHIVED = 'archived'
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
-    social_link_filter = models.ForeignKey(
+    social_link = models.ForeignKey(
         'SocialLink', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
     )
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
@@ -117,7 +117,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
             applier_filter |= Q(email=user.email)
             
         employer_filter = Q(employer_job__employer_id=user.employer_id)
-        referrer_filter = Q(social_link_filter__owner_id=user.id)
+        referrer_filter = Q(social_link__owner_id=user.id)
         filter = applier_filter | referrer_filter
         if user.is_employer:
             filter |= employer_filter

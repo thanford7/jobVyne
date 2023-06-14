@@ -192,7 +192,7 @@ def generate_bonus_rule_modifier(
         return modifier
     
     
-def generate_job_application(social_link_filter, job, platform):
+def generate_job_application(social_link, job, platform):
     first_name = names.get_first_name()
     last_name = names.get_last_name()
     email = fake.ascii_free_email()
@@ -204,7 +204,7 @@ def generate_job_application(social_link_filter, job, platform):
             last_name=last_name,
             email=email,
             linkedin_url=f'https://www.linkedin.com/in/{first_name}-{last_name}/',
-            social_link_filter=social_link_filter,
+            social_link=social_link,
             platform=platform,
             employer_job=job,
             created_dt=application_dt,
@@ -224,7 +224,7 @@ def generate_page_view(social_link, platform, access_dt=None):
     state = state.split('/')[-1].replace('_', ' ')
     page_view = PageView(
         relative_url=f'social-link/{social_link.id}/',
-        social_link_filter=social_link,
+        social_link=social_link,
         platform=platform,
         ip_address=ip_address,
         access_dt=access_dt or fake.date_time_between(current_dt - timedelta(days=7), current_dt).replace(tzinfo=pytz.UTC),
@@ -340,8 +340,8 @@ def create_recurring_data():
     platforms = list(SocialPlatform.objects.all())
     for employer in employers:
         users = JobVyneUser.objects.filter(employer=employer)
-        social_link_filters = SocialLink.objects.filter(owner_id__in=[u.id for u in users])
-        for social_link in social_link_filters:
+        social_links = SocialLink.objects.filter(owner_id__in=[u.id for u in users])
+        for social_link in social_links:
             jobs = SocialLinkJobsView.get_jobs_from_social_link(social_link)
             if not jobs:
                 continue

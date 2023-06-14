@@ -69,11 +69,9 @@ class SocialPost(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', null=True, blank=True, on_delete=models.CASCADE, related_name='social_post')
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.CASCADE, related_name='social_post')
     content = models.TextField()
-    formatted_content = models.TextField()
-    social_platform = models.ForeignKey('SocialPlatform', on_delete=models.PROTECT)
     original_post = models.ForeignKey('SocialPost', null=True, blank=True, on_delete=models.SET_NULL, related_name='child_post')
     post_credentials = models.ManyToManyField('UserSocialCredential')
-    link_filter = models.ForeignKey('SocialLink', null=True, blank=True, on_delete=models.SET_NULL)
+    social_link = models.ForeignKey('SocialLink', null=True, blank=True, on_delete=models.SET_NULL)
     is_auto_post = models.BooleanField(default=False)
     auto_start_dt = models.DateTimeField(null=True, blank=True)
     auto_weeks_between = models.SmallIntegerField(null=True, blank=True)
@@ -111,6 +109,7 @@ class SocialPostFile(models.Model):
 
 class SocialPostAudit(models.Model):
     social_post = models.ForeignKey('SocialPost', on_delete=models.CASCADE, related_name='audit')
+    formatted_content = models.TextField()
     email = models.EmailField()
     platform = models.CharField(max_length=20)
     posted_dt = models.DateTimeField()
@@ -124,11 +123,13 @@ class JobPost(AuditFields):
     once. Differs from SocialPost because here we are tracking individual jobs whereas a social
     post includes a referral link which may show the same job multiple times
     """
+    # Keep in sync with SocialUtil
     class PostChannel(Enum):
         # Sent to professional orgs for candidates to apply to jobs
         SLACK_JOB = 'slack-job'
         # Sent to employees to ask them to refer for a specific job
         SLACK_EMPLOYEE_REFERRAL = 'slack-employee-referral'
+        LINKEDIN_JOB = 'linkedin-job'
     
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, null=True, blank=True, related_name='job_post')
     user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True, related_name='job_post')

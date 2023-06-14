@@ -59,11 +59,11 @@ class SocialLink(AuditFields, JobVynePermissionsMixin):
         if user.is_admin:
             return query
         
-        link_filter = Q(owner_id=user.id)
+        social_link = Q(owner_id=user.id)
         if user.is_employer:
-            link_filter |= (Q(employer_id=user.employer_id) & Q(owner_id__isnull=True))
+            social_link |= (Q(employer_id=user.employer_id) & Q(owner_id__isnull=True))
         
-        return query.filter(link_filter)
+        return query.filter(social_link)
     
     def _jv_can_create(self, user):
         return any((

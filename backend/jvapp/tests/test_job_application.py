@@ -20,7 +20,7 @@ class JobApplicationTestCase(BaseTestCase):
         job_infos = self._get_jobs_from_social_link(page_count=1)
         self.assertEqual(len(self.jobs), len(job_infos))
     
-    def test_get_jobs_from_link_filter(self):
+    def test_get_jobs_from_social_link(self):
         search_title = 'Engineer'
         job_infos = self._get_jobs_from_social_link(search_regex=search_title)
         self.assertLess(len(job_infos), len(self.jobs))

@@ -5,7 +5,9 @@
       <div class="justify-center row" style="position: relative">
         <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
           <q-toolbar-title shrink>
-            <img :src="employer?.logo_url" alt="Logo"
+            <img v-if="employer?.logo_url" :src="employer.logo_url" alt="Logo"
+                 style="max-height: 40px; max-width: 120px; object-fit: scale-down">
+            <img v-else src="~assets/jobVyneLogo.png" alt="Logo"
                  style="max-height: 40px; max-width: 120px; object-fit: scale-down">
           </q-toolbar-title>
         </q-toolbar>
@@ -75,7 +77,7 @@
                   <div v-if="!user || dataUtil.isEmpty(user)" class="col-12 q-mb-md">
                     <q-card flat class="border-4-info">
                       <q-card-section class="text-center text-bold">
-                        Want to auto-fill and track all your job applications?
+                        Want to track all your job applications?
                         <a href="#" @click.prevent="openLoginModal(false)">Login</a>
                         or <a href="#" @click.prevent="openLoginModal(true)">create an account</a>
                       </q-card-section>

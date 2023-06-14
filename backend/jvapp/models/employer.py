@@ -228,7 +228,8 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         location_ids.sort()
         return self.generate_job_key(self.job_title, tuple(location_ids))
     
-    def get_locations_text(self):
+    @property
+    def locations_text(self):
         job_locations_text = ''
         for idx, job_location in enumerate(self.locations.all()):
             if idx == 0:
@@ -243,7 +244,8 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         
         return job_locations_text
     
-    def get_salary_text(self):
+    @property
+    def salary_text(self):
         if not any((self.salary_floor, self.salary_ceiling)):
             return 'Unknown'
         salary_symbol = self.salary_currency.symbol if self.salary_currency else '$'

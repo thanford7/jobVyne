@@ -107,8 +107,8 @@ class PagePermissionsUtil {
           },
           {
             icon: 'share',
-            key: 'employee-social-accounts',
-            label: 'Social Accounts'
+            key: 'employee-social',
+            label: 'Social Sharing'
           }
         ]
       },
@@ -127,6 +127,12 @@ class PagePermissionsUtil {
             icon: 'dvr',
             key: 'influencer-jobs',
             label: 'Job boards',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
+          },
+          {
+            icon: 'share',
+            key: 'influencer-social',
+            label: 'Social Sharing',
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           }
         ]

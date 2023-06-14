@@ -343,7 +343,7 @@ class UserApplicationReview(AuditFields, JobVynePermissionsMixin):
 
     def _jv_can_create(self, user):
         return any([
-            user.id == self.application.social_link_filter.owner_id,
+            user.id == self.application.social_link.owner_id,
             user.is_employer and (user.employer_id == self.application.employer_job.employer_id)
         ])
     

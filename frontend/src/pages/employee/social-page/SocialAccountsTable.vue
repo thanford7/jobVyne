@@ -1,5 +1,5 @@
 <template>
-  <div class="row q-mt-md q-gutter-y-md">
+  <div class="row q-gutter-y-md">
     <div class="col-12 q-gutter-sm">
       <AuthSocialButton
         v-for="platform in allowedPlatforms"

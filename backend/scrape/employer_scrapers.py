@@ -635,7 +635,6 @@ class WeirScraper(WorkdayScraper):
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
 test_scrapers = {
-    TwoULaundryScraper.employer_name: TwoULaundryScraper
 }
 
 

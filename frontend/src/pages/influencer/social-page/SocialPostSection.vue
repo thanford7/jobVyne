@@ -1,16 +1,14 @@
 <template>
-  <div v-if="isLoaded" class="q-gutter-y-md">
-    <CollapsableCard title="Post filters" :is-dense="true">
+  <div v-if="isLoaded" class="q-gutter-md">
+    <q-btn label="Create post" color="primary" @click="openSocialPostDialog()"/>
+    <CollapsableCard v-if="isEmployer" title="Post filters" :is-dense="true">
       <template v-slot:body>
         <div class="col-12 q-pa-sm">
           <div class="row q-gutter-y-sm">
-            <div class="col-12 col-md-6 q-pr-md-sm">
-              <SelectPlatform v-model="postFilter.platforms" :is-multi="true"/>
-            </div>
-            <div class="col-12 col-md-6 q-pl-md-sm">
+            <div class="col-12">
               <DateRangeSelector v-model="postFilter.dateRange" placeholder="Post date"/>
             </div>
-            <div v-if="isEmployees" class="col-12 col-md-6 q-pr-md-sm">
+            <div v-if="isEmployees" class="col-12">
               <SelectEmployee v-model="postFilter.employee_ids" :employer-id="user.employer_id"/>
             </div>
           </div>
@@ -24,7 +22,8 @@
       <div v-for="post in socialPosts" class="col-12 col-md-6 q-px-sm h-100">
         <CollapsableCard class="h-100" :can-collapse="false">
           <template v-slot:header-left>
-            <img :src="post.platform.logo" alt="Social platform logo" style="max-height: 32px">
+            <img v-for="platform in post.post_platforms" :src="socialUtil.getPlatformLogo({ provider: platform })"
+                 alt="Social platform logo" style="max-height: 24px">
             <div class="row q-ml-md">
               <div class="col-12">
                 <div class="text-h6 text-h6--mobile">
@@ -33,42 +32,27 @@
                 </div>
               </div>
               <div class="col-12 text-small text-grey-8" style="margin-top: -6px;">
-                Created at {{ dateTimeUtil.getDateTime(post.created_dt) }}
+                <span v-if="getLatestPostDt(post)">
+                  Last posted on {{ getLatestPostDt(post) }}
+                </span>
+                <span v-else>
+                  <q-icon name="warning"/>
+                  Not posted yet
+                </span>
               </div>
             </div>
-          </template>
-          <template v-slot:header>
-            <q-btn
-              v-if="isUserView"
-              outline dense icon="share" text-color="grey-8" label="Share or edit"
-              class="q-mr-sm"
-              @click="openSharePostDialog(post)"
-            />
-            <q-btn v-if="isEditable" outline dense icon="delete" text-color="negative" @click="deletePost(post)"/>
           </template>
           <template v-slot:body>
             <div class="w-100">
               <div class="q-mb-xs border-bottom-1-gray-100">
                 <div class="q-pa-sm">
-                  <div style="display: inline-block;">
-                    <q-btn
-                      v-if="!isEmployer"
-                      dense ripple unelevated icon="content_copy"
-                      size="sm"
-                      @click="dataUtil.copyText(post.formatted_content)"
-                    >
-                      Copy post text
-                    </q-btn>
-                  </div>
-                  <div class="q-ml-sm" style="display: inline-block;">
-                    <q-btn
-                      dense ripple unelevated icon="content_copy"
-                      size="sm"
-                      @click="dataUtil.copyText(post.content)"
-                    >
-                      Copy post template text
-                    </q-btn>
-                  </div>
+                  <q-btn
+                    v-if="isUserView"
+                    outline dense icon="share" text-color="grey-8" label="Share or edit"
+                    class="q-mr-sm"
+                    @click="openSocialPostDialog(post)"
+                  />
+                  <q-btn v-if="isEditable" outline dense icon="delete" text-color="negative" @click="deletePost(post)"/>
                   <q-btn
                     v-for="file in post.files"
                     dense ripple unelevated icon="file_download"
@@ -80,46 +64,34 @@
                   </q-btn>
                 </div>
               </div>
-              <div class="q-pa-md" style="white-space: pre-line;">
-                <div class="row">
-                  <div class="col-12 col-md-8 q-pr-md-sm">
-                    {{ post.formatted_content }}
-                    <div v-for="file in post.files" class="q-mt-lg">
-                      <img
-                        v-if="fileUtil.isImage(file.url)"
-                        :src="file.url" :alt="file.title"
-                        style="max-height: 150px; max-width: 100%;"
-                      >
-                      <video
-                        v-if="fileUtil.isVideo(file.url)"
-                        style="max-height: 150px; max-width: 100%;"
-                      >
-                        <source :src="file.url">
-                      </video>
-                    </div>
+              <div class="row q-pa-sm" style="white-space: pre-line;">
+                <div
+                  class="col-12"
+                  :class="(isEmployer) ? 'col-md-8 q-pr-md-sm' : ''"
+                >
+                  {{ post.content }}
+                  <div v-for="file in post.files" class="q-mt-lg">
+                    <img
+                      v-if="fileUtil.isImage(file.url)"
+                      :src="file.url" :alt="file.title"
+                      style="max-height: 150px; max-width: 100%;"
+                    >
+                    <video
+                      v-if="fileUtil.isVideo(file.url)"
+                      style="max-height: 150px; max-width: 100%;"
+                    >
+                      <source :src="file.url">
+                    </video>
                   </div>
-                  <div class="col-12 col-md-4 q-pl-md-sm border-left-1-gray-100">
-                    <template v-if="isEmployer">
-                      <div class="text-h5">{{ post.child_posts_count }}</div>
-                      <div class="text-grey-7">Employee {{ dataUtil.pluralize('post', post.child_posts_count, false) }}</div>
-                    </template>
-                    <template v-else>
-                      <div class="text-bold">
-                        Post history
-                        <CustomTooltip icon_size="16px">
-                          This shows which platforms you posted to and at what time
-                        </CustomTooltip>
-                      </div>
-                      <ul v-if="post.posts.length">
-                        <li v-for="postItem in post.posts" class="text-small">
-                          Posted on {{ dateTimeUtil.getDateTime(postItem.posted_dt) }} from
-                          {{ postItem.email }} account
-                        </li>
-                      </ul>
-                      <div v-else class="text-small q-mt-sm">
-                        Content has not been posted
-                      </div>
-                    </template>
+                </div>
+                <div
+                  v-if="isEmployer"
+                  class="col-12 col-md-4 q-pl-md-sm border-left-1-gray-100"
+                >
+                  <div class="text-h5">{{ post.child_posts_count }}</div>
+                  <div class="text-grey-7">Employee {{
+                      dataUtil.pluralize('post', post.child_posts_count, false)
+                    }}
                   </div>
                 </div>
               </div>
@@ -140,21 +112,21 @@
 
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
-import CustomTooltip from 'components/CustomTooltip.vue'
-import DialogShareSocialPost, { loadDialogShareSocialPostFn } from 'components/dialogs/DialogShareSocialPost.vue'
+import DialogShareSocialPost from 'components/dialogs/DialogShareSocialPost.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
 import SelectEmployee from 'components/inputs/SelectEmployee.vue'
-import SelectPlatform from 'components/inputs/SelectPlatform.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import fileUtil from 'src/utils/file.js'
 import { openConfirmDialog } from 'src/utils/requests.js'
+import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useContentStore } from 'stores/content-store.js'
 
 export default {
-  name: 'SocialPostsSection',
+  name: 'SocialPostSection',
   props: {
     isEmployer: Boolean,
     isUserView: {
@@ -163,7 +135,7 @@ export default {
     },
     isEditable: Boolean
   },
-  components: { SelectEmployee, CollapsableCard, CustomTooltip, SelectPlatform, DateRangeSelector },
+  components: { SelectEmployee, CollapsableCard, DateRangeSelector },
   data () {
     return {
       isLoaded: false,
@@ -172,7 +144,8 @@ export default {
       pageNumber: 1,
       dataUtil,
       dateTimeUtil,
-      fileUtil
+      fileUtil,
+      socialUtil
     }
   },
   computed: {
@@ -212,6 +185,14 @@ export default {
     }
   },
   methods: {
+    getLatestPostDt (post) {
+      if (!post.posts.length) {
+        return null
+      }
+      const postDateTimes = post.posts.map((p) => p.posted_dt)
+      postDateTimes.sort(dateTimeUtil.sortDatesFn)
+      return dateTimeUtil.getDateTime(postDateTimes[0])
+    },
     getSocialPostFilterParams () {
       const filterParams = {}
       const startDate = this.postFilter?.dateRange?.from
@@ -253,9 +234,8 @@ export default {
         }
       })
     },
-    async openSharePostDialog (post) {
-      await loadDialogShareSocialPostFn()
-      return this.q.dialog({
+    openSocialPostDialog (post) {
+      this.q.dialog({
         component: DialogShareSocialPost,
         componentProps: { post }
       }).onOk(() => {
@@ -263,18 +243,18 @@ export default {
       })
     }
   },
+  async mounted () {
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
+    this.user = user
+    await this.setSocialPosts()
+    this.isLoaded = true
+  },
   setup () {
     return {
-      authStore: useAuthStore(),
       contentStore: useContentStore(),
       q: useQuasar()
     }
-  },
-  async mounted () {
-    await this.authStore.setUser()
-    this.user = this.authStore.propUser
-    await this.setSocialPosts()
-    this.isLoaded = true
   }
 }
 </script>

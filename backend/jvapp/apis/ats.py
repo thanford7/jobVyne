@@ -122,7 +122,7 @@ class BaseAts:
         pass
     
     def get_referrer_name_from_application(self, application):
-        referrer = application.social_link_filter.owner
+        referrer = application.social_link.owner
         return f'{referrer.first_name} {referrer.last_name}'
     
     def get_job_title_from_application(self, application):

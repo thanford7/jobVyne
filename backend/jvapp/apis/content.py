@@ -13,9 +13,9 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.auth import get_refreshed_access_token
-from jvapp.apis.social import SocialLinkJobsView
+from jvapp.apis.social import SocialLinkJobsView, SocialLinkPostJobsView, SocialLinkView
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.content import SocialContentItem, SocialPost, SocialPostAudit, SocialPostFile
+from jvapp.models.content import JobPost, SocialContentItem, SocialPost, SocialPostAudit, SocialPostFile
 from jvapp.models.employer import EmployerFile
 from jvapp.models.user import UserFile
 from jvapp.serializers.content import get_serialized_social_post
@@ -28,6 +28,9 @@ from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
 def _get_url(text):
     url_match = re.search('https://\S+', text, re.IGNORECASE)
     return url_match.group(0) if url_match else None
+
+
+MAX_JOBS_TO_POST = 10
 
 
 class SocialContentItemView(JobVyneAPIView):
@@ -139,8 +142,6 @@ class SocialPostView(JobVyneAPIView):
                 add_filters &= Q(created_dt__gte=get_datetime_or_none(start_date))
             if end_date := filter_params.get('end_date'):
                 add_filters &= Q(created_dt__lte=get_datetime_or_none(end_date))
-            if platform_ids := filter_params.get('platform_ids'):
-                add_filters &= Q(social_platform_id__in=platform_ids)
             if employee_ids := filter_params.get('employee_ids'):
                 add_filters &= Q(user_id__in=employee_ids)
             filter &= add_filters
@@ -153,19 +154,24 @@ class SocialPostView(JobVyneAPIView):
         })
     
     @atomic
-    def post(self, request):
+    def put(self, request):
+        post_id = self.data.get('post_id')
         employer_id = self.data.get('employer_id')
         user_id = self.data.get('user_id')
         if not any([employer_id, user_id]):
             return Response('An employer ID or user ID is required', status=status.HTTP_400_BAD_REQUEST)
         
-        post = SocialPost(
-            employer_id=employer_id,
-            user_id=user_id
-        )
-        self.update_social_post(self.user, post, self.data)
+        if post_id:
+            post = self.get_social_posts(self.user, post_id=post_id)
+        else:
+            post = SocialPost(
+                employer_id=employer_id,
+                user_id=user_id
+            )
+        post = self.update_social_post(self.user, post, self.data)
         SocialContentItemView.create_social_content_item(employer_id, user_id, self.data['content'], self.user)
-        ShareSocialPostView.post_to_accounts(post)
+        if self.data.get('is_post_now'):
+            ShareSocialPostView.post_to_accounts(post)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Post created'
         })
@@ -184,13 +190,11 @@ class SocialPostView(JobVyneAPIView):
     def update_social_post(user, post, data):
         set_object_attributes(post, data, {
             'content': None,
-            'formatted_content': None,
-            'social_platform_id': AttributeCfg(form_name='platform_id'),
             'is_auto_post': None,
             'auto_weeks_between': None,
             'auto_start_dt': None,
             'auto_day_of_week': None,
-            'link_filter_id': None
+            'social_link_id': None
         })
         
         permission_type = PermissionTypes.EDIT.value if post.id else PermissionTypes.CREATE.value
@@ -198,9 +202,7 @@ class SocialPostView(JobVyneAPIView):
         post.save()
 
         # Clear any credentials for social accounts and add the new ones
-        post.post_credentials.clear()
-        for cred_id in data.get('post_account_ids', []):
-            post.post_credentials.add(cred_id)
+        post.post_credentials.set(data.get('post_account_ids', []))
         
         file = None
         if employer_file_id := data.get('employer_file_id'):
@@ -226,7 +228,7 @@ class SocialPostView(JobVyneAPIView):
             filter = Q(id=post_id)
         
         posts = SocialPost.objects \
-            .select_related('user', 'employer', 'social_platform', 'link_filter', 'link_filter__employer') \
+            .select_related('user', 'employer', 'social_link', 'social_link__employer') \
             .prefetch_related('file', 'audit', 'child_post', 'post_credentials') \
             .filter(filter)
         posts = SocialPost.jv_filter_perm(user, posts)
@@ -238,26 +240,30 @@ class SocialPostView(JobVyneAPIView):
         return posts
     
     @staticmethod
-    def get_formatted_content(post, jobs):
+    def get_formatted_content(post, jobs, platform_name):
         formatted_content = ''
         if not post.content:
             return formatted_content
         
         formatted_content = post.content.replace(
             ContentPlaceholders.EMPLOYER_NAME.value,
-            post.link_filter.employer.employer_name
+            post.social_link.employer.employer_name if post.social_link.employer else ''
         )
         
-        job_link = post.link_filter.get_link_url(platform_name=post.social_platform.name)
+        job_link = post.social_link.get_link_url()
         formatted_content = formatted_content.replace(
             ContentPlaceholders.JOB_LINK.value,
             job_link
         )
-        job_titles = list({j.job_title for j in jobs})
-        job_titles.sort()
-        jobs_list = '\n'.join([f'- {job_title}' for job_title in job_titles[:5]])
-        if len(job_titles) > 5:
-            jobs_list += '\n- And more jobs viewable on the website'
+        
+        jobs_list = '\n\n'.join([(
+                f'🏢 Employer: {job.employer.employer_name}\n'
+                f'💼 Job: {job.job_title}\n'
+                f'📍 Locations: {job.locations_text}\n'
+                f'💰 Salary: {job.salary_text}\n'
+                f'🔗 Apply: {SocialLinkView.get_or_create_single_job_link(job, owner_id=post.user_id, employer_id=post.employer_id).get_link_url(platform_name=platform_name)}'
+            ) for job in jobs
+        ])
 
         formatted_content = formatted_content.replace(
             ContentPlaceholders.JOBS_LIST.value,
@@ -288,20 +294,18 @@ class ShareSocialPostView(JobVyneAPIView):
     @staticmethod
     def update_common_post_attributes(post, data):
         set_object_attributes(post, data, {
-            'formatted_content': None,
             'is_auto_post': None,
             'auto_weeks_between': None,
             'auto_start_dt': None,
             'auto_day_of_week': None,
-            'link_filter_id': None
+            'social_link_id': None
         })
     
     @staticmethod
     @atomic
     def create_or_update_post(user, post_id, data):
         post = SocialPostView.get_social_posts(user, post_id=post_id)
-        if (owner_id := data.get('owner_id')) and (not data.get('formatted_content')):
-            raise ValueError('You must provide formatted content when copying a social post')
+        owner_id = data.get('owner_id')
     
         # Copy a post template that an employer created and assign it to the user that is posting
         is_new = bool(owner_id)
@@ -309,7 +313,6 @@ class ShareSocialPostView(JobVyneAPIView):
             new_post = SocialPost(
                 user_id=owner_id,
                 content=post.content,
-                social_platform=post.social_platform,
                 original_post=post  # Allows us to track how many employees shared an employer's post
             )
             ShareSocialPostView.update_common_post_attributes(new_post, data)
@@ -340,33 +343,37 @@ class ShareSocialPostView(JobVyneAPIView):
         errors = []
         successful_posts = 0
         file = next((f for f in post.file.all()), None)
+        post_accounts = ShareSocialPostView.get_post_accounts(post)
     
-        for post_account in post.post_credentials.all():
-            platform_name = OAUTH_CFGS[post_account.provider]['name']
-            args = [post.user, post_account.access_token, post.formatted_content]
+        for post_account in post_accounts:
+            post_account_credential = post_account['credential']
+            platform_name = OAUTH_CFGS[post_account_credential.provider]['name']
+            formatted_content = SocialPostView.get_formatted_content(post, post_account['jobs'], platform_name)
+            args = [post.user, post_account_credential.access_token, formatted_content]
             kwargs = {'post_file': file.file if file else None}
             resp = None
-            if post_account.provider == 'linkedin-oauth2':
+            if post_account_credential.provider == 'linkedin-oauth2':
                 if is_catch_errors:
                     try:
                         resp = ShareSocialPostView.post_to_linkedin(*args, **kwargs)
                     # We want to be very permissive to make sure an issue with one account doesn't prevent other posts to go out
                     except:
-                        errors.append(f'(User ID = ${post.user_id}) Issue with post to {platform_name} with email {post_account.email}')
+                        errors.append(f'(User ID = ${post.user_id}) Issue with post to {platform_name} with email {post_account_credential.email}')
                         continue
                 else:
                     resp = ShareSocialPostView.post_to_linkedin(*args, **kwargs)
             
             status = None if not resp else resp.get('status')
             if status and (status >= 300 or status < 200):
-                errorText = f'(User ID = ${post.user_id}) Issue with post to {platform_name} with email {post_account.email}. {resp["status"]}: '
+                errorText = f'(User ID = ${post.user_id}) Issue with post to {platform_name} with email {post_account_credential.email}. {resp["status"]}: '
                 if msg := resp.get('message'):
                     errorText += msg
                 errors.append(errorText)
             elif resp:
                 SocialPostAudit(
                     social_post=post,
-                    email=post_account.email,
+                    formatted_content=formatted_content,
+                    email=post_account_credential.email,
                     platform=platform_name,
                     posted_dt=timezone.now()
                 ).save()
@@ -386,45 +393,61 @@ class ShareSocialPostView(JobVyneAPIView):
             return ['Auto-posts have been disabled in the configuration settings'], 0
         
         auto_posts = SocialPost.objects\
-            .select_related('link_filter') \
-            .prefetch_related('file', 'post_credentials') \
+            .select_related(
+                'social_link'
+            ) \
+            .prefetch_related(
+                'file',
+                'post_credentials',
+                'social_link__job_subscriptions',
+                'social_link__job_subscriptions__filter_job',
+                'social_link__job_subscriptions__filter_employer',
+                'social_link__job_subscriptions__filter_location',
+                'social_link__job_subscriptions__filter_location__city',
+                'social_link__job_subscriptions__filter_location__state',
+                'social_link__job_subscriptions__filter_location__country',
+            ) \
             .annotate(auto_post_minute=ExtractMinute('auto_start_dt')) \
             .annotate(auto_post_hour=ExtractHour('auto_start_dt')) \
             .annotate(auto_post_dow=ExtractIsoWeekDay('auto_start_dt') - 1) \
             .filter(
                 is_auto_post=True,
-                link_filter__isnull=False,
+                social_link__isnull=False,
                 auto_post_dow=target_dt.weekday(),
                 auto_post_minute=target_dt.minute,
                 auto_post_hour=target_dt.hour,
                 auto_start_dt__lte=target_dt
             )
         
-        # Filter posts based on auto_weeks_between and add in jobs for each post
-        # TODO: get_jobs_from_filter is very inefficient need to figure out better approach
-        auto_posts = [
-            {'post': ap, 'jobs': SocialLinkJobsView.get_jobs_from_social_link(ap.link_filter)}
-            for ap in auto_posts if ShareSocialPostView.is_auto_post_week(ap, target_dt)
-        ]
-        
-        # Filter out posts with no available jobs
-        auto_posts = [ap for ap in auto_posts if ap['jobs']]
-        
-        # Format the post content
-        for post_data in auto_posts:
-            post_data['post'].formatted_content = SocialPostView.get_formatted_content(post_data['post'], post_data['jobs'])
-        
-        SocialPost.objects.bulk_update([p['post'] for p in auto_posts], ['formatted_content'])
+        auto_posts = [ap for ap in auto_posts if ShareSocialPostView.is_auto_post_week(ap, target_dt)]
         
         # Send the post
         errors = []
         successful_posts = 0
-        for post_data in auto_posts:
-            new_errors, new_successful_posts = ShareSocialPostView.post_to_accounts(post_data['post'], is_catch_errors=True)
+        for post in auto_posts:
+            new_errors, new_successful_posts = ShareSocialPostView.post_to_accounts(post, is_catch_errors=True)
             errors += new_errors
             successful_posts += new_successful_posts
         
         return errors, successful_posts
+    
+    @staticmethod
+    def get_post_accounts(post):
+        post_accounts = [
+            {
+                'credential': post_cred,
+                'jobs': SocialLinkPostJobsView.get_jobs_for_post(
+                    MAX_JOBS_TO_POST,
+                    ShareSocialPostView.get_post_channel_by_provider(post_cred.provider),
+                    user_id=post.user_id,
+                    employer_id=post.employer_id,
+                    job_subscriptions=post.social_link.job_subscriptions.all()
+                )
+            } for post_cred in post.post_credentials.all()
+        ]
+    
+        # Filter out post accounts with no available jobs
+        return [pa for pa in post_accounts if pa['jobs']]
     
     @staticmethod
     def get_linkedin_profile(access_token):
@@ -525,3 +548,10 @@ class ShareSocialPostView(JobVyneAPIView):
         )
         
         return post_response.json()
+
+    @staticmethod
+    def get_post_channel_by_provider(provider_name):
+        if provider_name == OauthProviders.linkedin.value:
+            return JobPost.PostChannel.LINKEDIN_JOB.value
+        # Note: Will add more as we build more integrations
+        return None

@@ -27,15 +27,19 @@ def parse_compensation_text(text, salary_interval='year'):
     currency_match = re.search(f'({currency_pattern})\s', text)
     first_match = False
     compensation_data = {'salary_interval': salary_interval}
-    for compensation_match in compensation_matches:
+    for idx, compensation_match in enumerate(compensation_matches):
         currency_symbol = compensation_match.group('currency') or ''
         currency_symbol = currency_symbol.strip()
         if not (currency_symbol or first_match):
             continue
-        salary = get_salary_from_match(compensation_match)
+
+        has_thousand_marker = False
+        if (idx + 1) < len(compensation_matches):
+            has_thousand_marker = is_next_match_thousand_marker(compensation_match, compensation_matches[idx + 1])
+        salary = get_salary_from_match(compensation_match, has_thousand_marker=has_thousand_marker)
         # Some monetary matches may be for things like company valuations. Avoid using
         # erroneous values for salary
-        bad_salary_floor = 1000 if salary_interval == 'year' else 1
+        bad_salary_floor = 10000 if salary_interval == 'year' else 1
         if (salary < bad_salary_floor) or (salary > 500000):
             continue
         if not first_match:
@@ -57,11 +61,19 @@ def parse_compensation_text(text, salary_interval='year'):
     return {**compensation_data_template}
 
 
-def get_salary_from_match(match):
+def get_salary_from_match(match, has_thousand_marker=False):
     salary = float(match.group('first_numbers') + (match.group('second_numbers') or ''))
-    if match.group('thousand_marker'):
+    if match.group('thousand_marker') or has_thousand_marker:
         salary *= 1000
     return salary
+
+
+def is_next_match_thousand_marker(first_match, second_match):
+    # Example $170-220K
+    is_close_character_distance = first_match.end() >= (second_match.start() - 4)
+    if not is_close_character_distance:
+        return False
+    return bool(second_match.group('thousand_marker'))
 
 
 def merge_compensation_data(compensation_data_sets: list):

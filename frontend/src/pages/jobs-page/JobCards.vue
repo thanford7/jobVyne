@@ -96,7 +96,7 @@ export default {
       return dataUtil.isEmpty(this.jobsByEmployer)
     },
     isSingleEmployer () {
-      return this.jobsByEmployer.length === 1 && employerTypeUtil.isTypeEmployer(this.employer.organization_type)
+      return this.jobsByEmployer.length === 1 && employerTypeUtil.isTypeEmployer(this.employer?.organization_type)
     }
   },
   methods: {

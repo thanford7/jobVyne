@@ -8,7 +8,7 @@
           platform you post to.
         </CustomTooltip>
       </div>
-      <div class="q-pa-sm" style="white-space: pre-line;">
+      <div class="q-pa-sm" style="white-space: pre-line; max-height: 250px; overflow-x: scroll">
         <span v-if="formattedContent.length">
           {{ formattedContent }}
         </span>
@@ -40,6 +40,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data.js'
 import emailUtil from 'src/utils/email.js'
 import fileUtil from 'src/utils/file.js'
@@ -52,6 +53,8 @@ export default {
   name: 'PostLiveView',
   components: { CustomTooltip },
   props: {
+    isEmployer: Boolean,
+    socialLink: [Object, null],
     content: [String, null],
     file: [Object, null],
     maxCharCount: [Number, null],
@@ -63,38 +66,28 @@ export default {
   data () {
     return {
       isLoaded: false,
-      authStore: null,
-      employerStore: null,
-      socialStore: null,
+      employer: null,
       user: null,
-      jobTitles: [],
+      jobs: [],
+      socialStore: null,
       fileUtil
     }
   },
   computed: {
-    employer () {
-      if (!this.user) {
-        return {}
-      }
-      return this.employerStore.getEmployer(this.user.employer_id)
-    },
     formattedContent () {
       if (!this.content) {
         return ''
       }
       let formattedContent = this.content
-        .replaceAll(emailUtil.PLACEHOLDER_EMPLOYER_NAME.placeholder, this.employer.name)
-      if (this.jobLink) {
-        const jobLinkUrl = socialUtil.getJobLinkUrl(this.jobLink, { platform: this.jobLink.platformName })
+        .replaceAll(emailUtil.PLACEHOLDER_EMPLOYER_NAME.placeholder, this.employer?.name)
+      if (this.socialLink) {
+        const jobLinkUrl = socialUtil.getJobLinkUrl(this.socialLink)
 
-        let formattedJobTitles = this.jobTitles.slice(0, 5).map((j) => `- ${j}`).join('\n')
-        if (this.jobTitles.length > 5) {
-          formattedJobTitles += '\n- And more jobs viewable on the website'
-        }
+        const formattedJobs = this.jobs.map((j) => `🏢 Employer: ${j.employer_name}\n💼 Job: ${j.job_title}\n📍 Locations: ${j.locations_text}\n💰 Salary: ${j.salary_text}\n🔗 Apply: ${jobLinkUrl}`).join('\n\n')
 
         formattedContent = formattedContent
           .replaceAll(emailUtil.PLACEHOLDER_JOB_LINK.placeholder, jobLinkUrl)
-          .replaceAll(emailUtil.PLACEHOLDER_JOBS_LIST.placeholder, formattedJobTitles)
+          .replaceAll(emailUtil.PLACEHOLDER_JOBS_LIST.placeholder, formattedJobs)
       }
       return formattedContent
     },
@@ -110,45 +103,34 @@ export default {
     }
   },
   watch: {
-    jobLink () {
-      this.setJobsFromLink()
+    socialLink () {
+      this.setJobsFromLink(false)
     },
     formattedContent () {
       this.$emit('content-update', this.formattedContent)
     }
   },
   methods: {
-    async setJobsFromLink () {
-      if (!this.jobLink) {
-        this.jobTitles = []
+    async setJobsFromLink (isForceRefresh) {
+      if (!this.socialLink) {
         return
       }
-      const resp = await this.$api.get(`social-link-jobs/${this.jobLink.id}`)
-      const jobsByEmployer = resp.data.jobs_by_employer
-      console.log(jobsByEmployer)
-      this.jobTitles = jobsByEmployer.reduce((allJobTitles, employer) => {
-        const jobTitles = Object.values(employer.jobs).reduce((allEmployerJobTitles, employerJobsByDept) => {
-          allEmployerJobTitles = [...allEmployerJobTitles, ...Object.keys(employerJobsByDept)]
-          return allEmployerJobTitles
-        }, [])
-        allJobTitles = [...allJobTitles, ...jobTitles]
-        return allJobTitles
-      }, [])
-      this.jobTitles.sort()
+      const params = (this.isEmployer) ? { employerId: this.user.employer_id } : { userId: this.user.id }
+      params.isForceRefresh = isForceRefresh
+      params.socialLinkId = this.socialLink.id
+      params.socialChannel = socialUtil.SOCIAL_CHANNEL_LINKEDIN_JOB // The channel doesn't matter since this is just showing an example
+      await this.socialStore.setSocialLinkPostJobs(params)
+      this.jobs = this.socialStore.getSocialLinkPostJobs(params)
     }
   },
   async mounted () {
-    this.authStore = useAuthStore()
-    this.employerStore = useEmployerStore()
+    const { user } = storeToRefs(useAuthStore())
+    const employerStore = useEmployerStore()
     this.socialStore = useSocialStore()
-    await this.authStore.setUser().then(() => {
-      return Promise.all([
-        this.employerStore.setEmployer(this.authStore.propUser.employer_id),
-        this.socialStore.setSocialLinks({ userId: this.authStore.propUser.id })
-      ])
-    })
-    this.user = this.authStore.propUser
-    await this.setJobsFromLink()
+    await employerStore.setEmployer(user.employer_id)
+    this.employer = employerStore.getEmployer(user.employer_id)
+    this.user = user
+    await this.setJobsFromLink(false)
     this.isLoaded = true
   }
 }

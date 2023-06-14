@@ -1,5 +1,4 @@
 from jvapp.models.content import *
-from jvapp.serializers.social import get_serialized_social_platform
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -20,11 +19,12 @@ def get_serialized_social_post(social_post: SocialPost):
         'user_name': social_post.user.full_name if social_post.user else None,
         'employer_id': social_post.employer_id,
         'content': social_post.content,
-        'formatted_content': social_post.formatted_content,
-        'platform': get_serialized_social_platform(social_post.social_platform),
         'files': [{'id': f.id, 'url': f.file.url, 'title': f.file.name} for f in social_post.file.all()],
         'posts': [{
-            'email': a.email, 'platform': a.platform, 'posted_dt': get_datetime_format_or_none(a.posted_dt)
+            'email': a.email,
+            'platform': a.platform,
+            'formatted_content': a.formatted_content,
+            'posted_dt': get_datetime_format_or_none(a.posted_dt)
         } for a in social_post.audit.all()],
         'child_posts_count': social_post.child_post.count(),
         'created_dt': get_datetime_format_or_none(social_post.created_dt),
@@ -33,5 +33,6 @@ def get_serialized_social_post(social_post: SocialPost):
         'auto_weeks_between': social_post.auto_weeks_between,
         'auto_day_of_week': social_post.auto_day_of_week,
         'post_account_ids': [pc.id for pc in social_post.post_credentials.all()],
-        'link_filter_id': social_post.link_filter_id
+        'post_platforms': {pc.provider for pc in social_post.post_credentials.all()},
+        'social_link_id': social_post.social_link_id
     }

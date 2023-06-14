@@ -117,6 +117,9 @@ export const useSocialAuthStore = defineStore('social-auth', {
     async setUserSocialCredentials () {
       const resp = await this.$api.get('user/social-credentials/')
       this.socialCredentials = resp.data
+    },
+    getUserSocialCredentials () {
+      return this.socialCredentials || {}
     }
   }
 })

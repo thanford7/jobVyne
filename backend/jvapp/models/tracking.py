@@ -12,7 +12,7 @@ __all__ = ('PageView', 'Message', 'MessageRecipient', 'MessageAttachment', 'Mess
 class PageView(models.Model, JobVynePermissionsMixin):
     # page
     relative_url = models.CharField(max_length=100)
-    social_link_filter = models.ForeignKey(
+    social_link = models.ForeignKey(
         'SocialLink', on_delete=models.CASCADE, null=True, blank=True, related_name='page_view'
     )
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
@@ -45,9 +45,9 @@ class PageView(models.Model, JobVynePermissionsMixin):
         if user.is_admin:
             return query
     
-        filter = Q(social_link_filter__owner_id=user.id)
+        filter = Q(social_link__owner_id=user.id)
         if user.is_employer:
-            filter |= Q(social_link_filter__employer_id=user.employer_id)
+            filter |= Q(social_link__employer_id=user.employer_id)
     
         return query.filter(filter)
     

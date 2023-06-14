@@ -51,6 +51,7 @@ urlpatterns = [
     path('social-link/share/', social.ShareSocialLinkView.as_view()),
     re_path('^social-link/(?P<link_id>\S+)?/?$', social.SocialLinkView.as_view()),
     re_path('^social-link-jobs/(?P<link_id>\S+)?/?$', social.SocialLinkJobsView.as_view()),
+    path('social-link-post-jobs/', social.SocialLinkPostJobsView.as_view()),
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
