@@ -1170,6 +1170,7 @@ test_scrapers = {
     # InovalonScraper.employer_name: InovalonScraper,
     # SproutSocialScraper.employer_name: SproutSocialScraper,
     # ManticoreGamesScraper.employer_name: ManticoreGamesScraper,
+    BenevityScraper.employer_name: BenevityScraper,
 }
 
 

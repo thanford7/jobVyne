@@ -581,7 +581,7 @@ class GreenhouseScraper(Scraper):
             return [l for l in [location.strip() for location in location_text.split(';')] if l]
         elif 'or ' in location_text:
             return [l for l in [location.strip() for location in location_text.split('or ')] if l]
-        return location_text.strip()
+        return [location_text.strip()]
 
 
 class GreenhouseIframeScraper(GreenhouseScraper):
