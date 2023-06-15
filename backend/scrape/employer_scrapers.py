@@ -43,7 +43,7 @@ class BlueOriginScraper(WorkdayScraper):
 class CHGHealthcareScraper(WorkdayScraper):
     employer_name = 'CHG Healthcare'
     start_url = 'https://chghealthcare.wd1.myworkdayjobs.com/External/'
-    job_department_data_automation_id = 'jobFamily'
+    job_department_menu_data_automation_id = 'jobFamily'
     job_department_form_data_automation_id = 'jobFamilyCheckboxGroup'
     
     
@@ -100,7 +100,7 @@ class HopperScraper(LeverScraper):
 class InvenergyScraper(WorkdayScraper):
     employer_name = 'Invenergy'
     start_url = 'https://invenergyllc.wd1.myworkdayjobs.com/invenergycareers/'
-    job_department_data_automation_id = 'Department / Area-expand'
+    job_department_menu_data_automation_id = 'Department / Area-expand'
     job_department_form_data_automation_id = 'Department / Area-checkboxgroup'
     
     async def open_job_department_menu(self, page):
@@ -381,7 +381,7 @@ class KoalaHealthScraper(LeverScraper):
 class CambiaHealthSolutionsScraper(WorkdayScraper):
     employer_name = 'Cambia Health Solutions'
     start_url = 'https://cambiahealth.wd1.myworkdayjobs.com/External/'
-    job_department_data_automation_id = 'Job_Category'
+    job_department_menu_data_automation_id = 'Job_Category'
     job_department_form_data_automation_id = 'Job_CategoryCheckboxGroup'
     
     
@@ -1053,7 +1053,7 @@ class ExponentialScraper(AshbyHQScraper):
     EMPLOYER_KEY = 'exponential'
     
     
-class SproutSocialScraper(GreenhouseIframeScraper):
+class SproutSocialScraper(GreenhouseScraper):
     employer_name = 'Sprout Social'
     EMPLOYER_KEY = 'sproutsocial'
     
@@ -1154,6 +1154,15 @@ class CloseScraper(LeverScraper):
 class CodeOrgScraper(GreenhouseScraper):
     employer_name = 'Code.org'
     EMPLOYER_KEY = 'codeorg'
+    
+    
+class PluralsightScraper(WorkdayScraper):
+    employer_name = 'Pluralsight'
+    start_url = 'https://pluralsight.wd1.myworkdayjobs.com/en-US/Careers/'
+    # Not all departments are categorized so we don't want to miss any
+    has_job_departments = False
+    # job_department_menu_data_automation_id = 'jobCategory'
+    # job_department_form_data_automation_id = 'jobCategoryCheckboxGroup'
 
 
 # TODO: Build a new scraper for PhenomPeople ats
@@ -1165,16 +1174,16 @@ class CodeOrgScraper(GreenhouseScraper):
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
 test_scrapers = {
-    # IoGlobalScraper.employer_name: IoGlobalScraper,
-    # AirbnbScraper.employer_name: AirbnbScraper,
     # InovalonScraper.employer_name: InovalonScraper,
     # SproutSocialScraper.employer_name: SproutSocialScraper,
     # ManticoreGamesScraper.employer_name: ManticoreGamesScraper,
-    BenevityScraper.employer_name: BenevityScraper,
 }
 
 
 all_scrapers = {
+    IoGlobalScraper.employer_name: IoGlobalScraper,
+    AirbnbScraper.employer_name: AirbnbScraper,
+    PluralsightScraper.employer_name: PluralsightScraper,
     MedelyScraper.employer_name: MedelyScraper,
     EquipmentShareScraper.employer_name: EquipmentShareScraper,
     AffinityScraper.employer_name: AffinityScraper,

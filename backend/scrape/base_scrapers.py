@@ -95,8 +95,8 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        # self.skip_urls = skip_urls
-        self.skip_urls = []
+        self.skip_urls = skip_urls
+        # self.skip_urls = []
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
@@ -627,7 +627,7 @@ class GreenhouseApiScraper(GreenhouseScraper):
 
 class WorkdayScraper(Scraper):
     IS_JS_REQUIRED = True
-    job_department_data_automation_id = 'jobFamilyGroup'
+    job_department_menu_data_automation_id = 'jobFamilyGroup'
     job_department_form_data_automation_id = 'jobFamilyGroupCheckboxGroup'
     job_item_page_wait_sel = '[data-automation-id="jobPostingHeader"]'
     has_job_departments = True
@@ -778,7 +778,7 @@ class WorkdayScraper(Scraper):
         return page_load_wait_seconds != self.MAX_PAGE_LOAD_WAIT_SECONDS, html_dom
     
     async def open_job_department_menu(self, page):
-        await page.locator(f'css=button[data-automation-id="{self.job_department_data_automation_id}"]').click()
+        await page.locator(f'css=button[data-automation-id="{self.job_department_menu_data_automation_id}"]').click()
         await self.wait_for_el(
             page,
             f'div[data-automation-id="{self.job_department_form_data_automation_id}"] label'
@@ -1003,18 +1003,31 @@ class WorkableScraper(Scraper):
             except TypeError as e:
                 raise e
         description_compensation_data = parse_compensation_text(description)
-        location_data = job_data['location']
-        location_parts = [location_data['city'], location_data['region'], location_data['country']]
-        location_text = ', '.join([p for p in location_parts if p])
-        if job_data['remote']:
-            location_text = f'Remote: {location_text}'
+        location_data = job_data.get('location')
+        is_remote = job_data['remote']
+        if (not location_data) and is_remote:
+            location_text = 'Remote'
+        elif location_data:
+            location_parts = [location_data['city'], location_data['region'], location_data['country']]
+            location_text = ', '.join([p for p in location_parts if p])
+            if job_data['remote']:
+                location_text = f'Remote: {location_text}'
+        else:
+            logger.info('Unable to parse JobItem from document. No location provided.')
+            return None
+        
+        job_department = job_data['department']
+        if job_department:
+            job_department = job_department[0]
+        else:
+            job_department = self.DEFAULT_JOB_DEPARTMENT
         
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
             job_title=job_data['title'],
             locations=[location_text],
-            job_department=job_data['department'][0],
+            job_department=job_department,
             job_description=description,
             employment_type=job_data.get('type') or self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['published'], as_date=True)),
