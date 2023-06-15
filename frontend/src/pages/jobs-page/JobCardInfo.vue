@@ -93,7 +93,7 @@ export default {
     async saveExternalApplication (job) {
       const jobUrl = dataUtil.getUrlWithParams({
         isExcludeExistingParams: false,
-        addParams: [{ key: 'utm_source', val: 'jobvyne' }],
+        addParams: [{ key: 'utm_source', val: 'jobvyne' }, { key: 'ref', val: 'jobvyne' }],
         path: job.application_url
       })
       window.open(jobUrl, '_blank')

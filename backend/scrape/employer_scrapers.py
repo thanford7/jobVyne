@@ -625,6 +625,231 @@ class WeirScraper(WorkdayScraper):
             page, f'div[data-automation-id="{self.job_department_form_data_automation_id}"] label'
         )
         
+        
+class MedelyScraper(AshbyHQScraper):
+    employer_name = 'Medely'
+    EMPLOYER_KEY = 'medely'
+    
+    
+class PearlHealthScraper(GreenhouseScraper):
+    employer_name = 'Pearl Health'
+    EMPLOYER_KEY = 'pearlhealth'
+    
+    
+class NorthSpyreScraper(GreenhouseScraper):
+    employer_name = 'Northspyre'
+    EMPLOYER_KEY = 'northspyre'
+    
+    
+class OutdoorsyScraper(WorkableScraper):
+    employer_name = 'Outdoorsy'
+    EMPLOYER_KEY = 'outdoorsy'
+    
+    
+class MadhiveScraper(GreenhouseScraper):
+    employer_name = 'Madhive'
+    EMPLOYER_KEY = 'madhive'
+    
+    
+class GlossGeniusScraper(GreenhouseScraper):
+    employer_name = 'GlossGenius'
+    EMPLOYER_KEY = 'glossgenius'
+    
+    
+class GatherScraper(GreenhouseScraper):
+    employer_name = 'Gather'
+    EMPLOYER_KEY = 'gather'
+    
+    
+class WaabiScraper(LeverScraper):
+    employer_name = 'Waabi'
+    EMPLOYER_KEY = 'waabi'
+    
+    
+class MemoraHealthScraper(GreenhouseScraper):
+    employer_name = 'Memora Health'
+    EMPLOYER_KEY = 'memorahealth'
+    
+    
+class LeafLinkScraper(GreenhouseScraper):
+    employer_name = 'LeafLink'
+    EMPLOYER_KEY = 'leaflink'
+    
+    
+class RewindScraper(LeverScraper):
+    employer_name = 'Rewind'
+    EMPLOYER_KEY = 'rewind.ai'
+    
+    
+class HungryrootScraper(GreenhouseScraper):
+    employer_name = 'Hungryroot'
+    EMPLOYER_KEY = 'hungryroot'
+    
+    
+class PulleyScraper(AshbyHQScraper):
+    employer_name = 'Pulley'
+    EMPLOYER_KEY = 'Pulley'
+    
+    
+class BoulevardScraper(GreenhouseScraper):
+    employer_name = 'Boulevard'
+    EMPLOYER_KEY = 'boulevard'
+    
+    
+class PostScraper(AshbyHQScraper):
+    employer_name = 'Post'
+    EMPLOYER_KEY = 'Post'
+    
+    
+class NautilusLabsScraper(GreenhouseIframeScraper):
+    employer_name = 'Nautilus Labs'
+    EMPLOYER_KEY = 'nautiluslabs'
+    
+
+class DatabookScraper(GreenhouseScraper):
+    employer_name = 'Databook'
+    EMPLOYER_KEY = 'databook'
+    
+    
+class NexlaScraper(GreenhouseScraper):
+    employer_name = 'Nexla'
+    EMPLOYER_KEY = 'nexla'
+    
+    
+class PollyScraper(LeverScraper):
+    employer_name = 'Polly'
+    EMPLOYER_KEY = 'pollyex'
+    
+    
+class AdaScraper(LeverScraper):
+    employer_name = 'Ada'
+    EMPLOYER_KEY = 'ada'
+    
+    
+class ValimailScraper(GreenhouseScraper):
+    employer_name = 'Valimail'
+    EMPLOYER_KEY = 'valimailinc'
+    
+    
+class ClimateAiScraper(LeverScraper):
+    employer_name = 'ClimateAi'
+    EMPLOYER_KEY = 'climateai'
+    
+    
+class KintsugiScraper(GreenhouseScraper):
+    employer_name = 'Kintsugi'
+    EMPLOYER_KEY = 'kintsugi'
+    
+    
+class CrossBorderSolutionsScraper(GreenhouseScraper):
+    employer_name = 'CrossBorder Solutions'
+    EMPLOYER_KEY = 'crossbordersolutions'
+    
+    
+class PointScraper(GreenhouseIframeScraper):
+    employer_name = 'Point'
+    EMPLOYER_KEY = 'pointdigitalfinance'
+    
+    
+class TetraScienceScraper(WorkableScraper):
+    employer_name = 'TetraScience'
+    EMPLOYER_KEY = 'tetrascience'
+    
+    
+class OutriderScraper(LeverScraper):
+    employer_name = 'Outrider'
+    EMPLOYER_KEY = 'outrider'
+    
+    
+class ReforgeScraper(GreenhouseScraper):
+    employer_name = 'Reforge'
+    EMPLOYER_KEY = 'reforge'
+    
+    
+class AtoBScraper(LeverScraper):
+    employer_name = 'AtoB'
+    EMPLOYER_KEY = 'atob'
+    
+    
+class TrunkScraper(LeverScraper):
+    employer_name = 'Trunk'
+    EMPLOYER_KEY = 'trunkio'
+    
+    
+class HelmAiScraper(LeverScraper):
+    employer_name = 'Helm.ai'
+    EMPLOYER_KEY = 'helm'
+    
+    
+class RayaScraper(LeverScraper):
+    employer_name = 'Raya'
+    EMPLOYER_KEY = 'raya'
+    
+    
+class SquareScraper(SmartRecruitersScraper):
+    employer_name = 'Square'
+    EMPLOYER_KEY = 'Square'
+    
+    
+class ServiceTitanScraper(WorkdayScraper):
+    employer_name = 'ServiceTitan'
+    start_url = 'https://servicetitan.wd1.myworkdayjobs.com/en-US/ServiceTitan/'
+    
+    
+class GrowTherapyScraper(GreenhouseScraper):
+    employer_name = 'Grow Therapy'
+    EMPLOYER_KEY = 'growtherapy'
+    
+    
+class GitHubScraper(GreenhouseScraper):
+    employer_name = 'GitHub'
+    EMPLOYER_KEY = 'github'
+    
+    
+class BintiScraper(GreenhouseScraper):
+    employer_name = 'Binti'
+    EMPLOYER_KEY = 'binti'
+    
+    
+class WhatnotScraper(GreenhouseScraper):
+    employer_name = 'Whatnot'
+    EMPLOYER_KEY = 'whatnot'
+    
+    
+class VarsityTutorsScraper(GreenhouseScraper):
+    employer_name = 'Varsity Tutors'
+    EMPLOYER_KEY = 'varsitytutors'
+    
+
+class ServiceNowScraper(SmartRecruitersScraper):
+    employer_name = 'ServiceNow'
+    EMPLOYER_KEY = 'ServiceNow'
+    
+    
+class AutodeskScraper(WorkdayScraper):
+    employer_name = 'Autodesk'
+    start_url = 'https://autodesk.wd1.myworkdayjobs.com/en-US/Ext/'
+    
+
+class CruiseScraper(GreenhouseIframeScraper):
+    employer_name = 'Cruise'
+    EMPLOYER_KEY = 'cruise'
+    
+    
+class HelloFreshScraper(GreenhouseIframeScraper):
+    employer_name = 'HelloFresh'
+    EMPLOYER_KEY = 'hellofresh'
+    
+    
+class OsmindScraper(LeverScraper):
+    employer_name = 'Osmind'
+    EMPLOYER_KEY = 'Osmind'
+    
+    
+class IncludedHealthScraper(LeverScraper):
+    employer_name = 'Included Health'
+    EMPLOYER_KEY = 'includedhealth'
+    
 
 # TODO: Build a new scraper for PhenomPeople ats
 # class AdobeScraper():
@@ -635,10 +860,55 @@ class WeirScraper(WorkdayScraper):
 # PinterestScraper.employer_name: PinterestScraper,
 # CoinbaseScraper.employer_name: CoinbaseScraper
 test_scrapers = {
+    # HelloFreshScraper.employer_name: HelloFreshScraper,
 }
 
 
 all_scrapers = {
+    VarsityTutorsScraper.employer_name: VarsityTutorsScraper,
+    ServiceNowScraper.employer_name: ServiceNowScraper,
+    AutodeskScraper.employer_name: AutodeskScraper,
+    CruiseScraper.employer_name: CruiseScraper,
+    OsmindScraper.employer_name: OsmindScraper,
+    IncludedHealthScraper.employer_name: IncludedHealthScraper,
+    ClimateAiScraper.employer_name: ClimateAiScraper,
+    TetraScienceScraper.employer_name: TetraScienceScraper,
+    OutdoorsyScraper.employer_name: OutdoorsyScraper,
+    NautilusLabsScraper.employer_name: NautilusLabsScraper,
+    ServiceTitanScraper.employer_name: ServiceTitanScraper,
+    GrowTherapyScraper.employer_name: GrowTherapyScraper,
+    GitHubScraper.employer_name: GitHubScraper,
+    BintiScraper.employer_name: BintiScraper,
+    WhatnotScraper.employer_name: WhatnotScraper,
+    OutriderScraper.employer_name: OutriderScraper,
+    ReforgeScraper.employer_name: ReforgeScraper,
+    AtoBScraper.employer_name: AtoBScraper,
+    TrunkScraper.employer_name: TrunkScraper,
+    HelmAiScraper.employer_name: HelmAiScraper,
+    RayaScraper.employer_name: RayaScraper,
+    SquareScraper.employer_name: SquareScraper,
+    KintsugiScraper.employer_name: KintsugiScraper,
+    CrossBorderSolutionsScraper.employer_name: CrossBorderSolutionsScraper,
+    PointScraper.employer_name: PointScraper,
+    DatabookScraper.employer_name: DatabookScraper,
+    NexlaScraper.employer_name: NexlaScraper,
+    PollyScraper.employer_name: PollyScraper,
+    AdaScraper.employer_name: AdaScraper,
+    ValimailScraper.employer_name: ValimailScraper,
+    MadhiveScraper.employer_name: MadhiveScraper,
+    GlossGeniusScraper.employer_name: GlossGeniusScraper,
+    GatherScraper.employer_name: GatherScraper,
+    WaabiScraper.employer_name: WaabiScraper,
+    MemoraHealthScraper.employer_name: MemoraHealthScraper,
+    LeafLinkScraper.employer_name: LeafLinkScraper,
+    RewindScraper.employer_name: RewindScraper,
+    HungryrootScraper.employer_name: HungryrootScraper,
+    PulleyScraper.employer_name: PulleyScraper,
+    BoulevardScraper.employer_name: BoulevardScraper,
+    PostScraper.employer_name: PostScraper,
+    PearlHealthScraper.employer_name: PearlHealthScraper,
+    NorthSpyreScraper.employer_name: NorthSpyreScraper,
+    MedelyScraper.employer_name: MedelyScraper,
     WeirScraper.employer_name: WeirScraper,
     RouteScraper.employer_name: RouteScraper,
     BobsledScraper.employer_name: BobsledScraper,

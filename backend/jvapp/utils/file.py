@@ -21,6 +21,8 @@ def get_file_storage_engine():
 
 
 def get_file_extension(file_url):
+    if '.' not in file_url:
+        return 'png'
     return file_url.split('.')[-1]
 
 

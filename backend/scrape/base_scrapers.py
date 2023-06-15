@@ -15,7 +15,7 @@ from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import expect
 
-from jvapp.utils.data import capitalize, coerce_float, get_base_url
+from jvapp.utils.data import capitalize, coerce_float, get_base_url, get_website_domain_from_url
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 from jvapp.utils.file import get_file_storage_engine
 from jvapp.utils.money import merge_compensation_data, parse_compensation_text
@@ -372,15 +372,14 @@ class Scraper:
                         if interval:
                             job_item.salary_interval = interval.lower()
             
-            # Can be used to get company logo instead of manually adding
-            # company_data = job_data.get('@graph')
-            # if company_data:
-            #     for datum in standard_job_data:
-            #         datum_type = datum.get('@type')
-            #         if datum_type == 'Organization':
-            #             logo = datum.get('logo')
-            #             logo_url = logo.get('url') if logo else None
-        
+                #Can be used to get company logo instead of manually adding
+                company_data = job_data.get('hiringOrganization')
+                if company_data:
+                    job_item.logo_url = company_data.get('logo')
+                    if website_url := company_data.get('sameAs'):
+                        website_domain = get_website_domain_from_url(website_url)
+                        job_item.website_domain = website_domain
+                    
         return job_item
     
     # Override
@@ -443,6 +442,8 @@ class BambooHrScraper(Scraper):
             job_description=job_description,
             employment_type=job_data.get('employmentStatusLabel', self.DEFAULT_EMPLOYMENT_TYPE),
             first_posted_date=standard_job_item.first_posted_date or job_data.get('datePosted'),
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 
@@ -501,6 +502,8 @@ class BambooHrScraper2(Scraper):
             job_description=job_description,
             employment_type=job_detail_data.get('employment type', self.DEFAULT_EMPLOYMENT_TYPE),
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 
@@ -564,6 +567,8 @@ class GreenhouseScraper(Scraper):
             job_description=job_description or standard_job_item.job_description,
             employment_type=standard_job_item.employment_type,
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
     
@@ -713,6 +718,8 @@ class WorkdayScraper(Scraper):
             employment_type=standard_job_item.employment_type or self.strip_or_none(
                 job_data.xpath('.//*[@data-automation-id="time"]/dl/dd/text()').get()),
             first_posted_date=standard_job_item.first_posted_date or posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
     
@@ -826,7 +833,13 @@ class LeverScraper(Scraper):
         standard_job_item = self.get_google_standard_job_item(html)
         headline = html.xpath('//div[@class="posting-headline"]')
         location = html.xpath('//div[contains(@class, "location")]/text()').get().replace('/', '').strip()
-        employment_type = html.xpath('//div[contains(@class, "commitment")]/text()').get()
+        employment_type_options = [
+            html.xpath('//div[contains(@class, "commitment")]/text()').get(),
+            standard_job_item.employment_type,
+            self.DEFAULT_EMPLOYMENT_TYPE
+        ]
+        # The employer is probably using the commitment field incorrectly if the length is greater than 30
+        employment_type = [et for et in employment_type_options if et and len(et) <= 30][0]
         employment_type = employment_type.replace('/', '').strip() if employment_type else None
         description_wrapper = html.xpath('//div[@class="content"]//div[contains(@class, "section-wrapper")][2]')
         description_sections = description_wrapper.xpath(
@@ -850,6 +863,8 @@ class LeverScraper(Scraper):
             job_description=description,
             employment_type=employment_type,
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 
@@ -899,6 +914,8 @@ class BreezyScraper(Scraper):
             job_description=description,
             employment_type=employment_type,
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 
@@ -957,7 +974,8 @@ class WorkableScraper(Scraper):
                 raise e
         description_compensation_data = parse_compensation_text(description)
         location_data = job_data['location']
-        location_text = ', '.join([location_data['city'], location_data['region'], location_data['country']])
+        location_parts = [location_data['city'], location_data['region'], location_data['country']]
+        location_text = ', '.join([p for p in location_parts if p])
         if job_data['remote']:
             location_text = f'Remote: {location_text}'
         
@@ -968,7 +986,7 @@ class WorkableScraper(Scraper):
             locations=[location_text],
             job_department=job_data['department'][0],
             job_description=description,
-            employment_type=job_data['type'],
+            employment_type=job_data.get('type') or self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['published'], as_date=True)),
             **description_compensation_data
         )
@@ -1000,6 +1018,7 @@ class AshbyHQScraper(Scraper):
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         standard_job_item = self.get_google_standard_job_item(html)
         job_details = {}
+        compensation_text_data = {}
         for job_detail in html.xpath('//div[contains(@class, "ashby-job-posting-left-pane")]/div'):
             job_detail_name = job_detail.xpath('.//h2[contains(@class, "_heading")]/text()').get().strip().lower()
             if job_detail_name == 'location':
@@ -1008,12 +1027,15 @@ class AshbyHQScraper(Scraper):
                 job_details['employment_type'] = job_detail.xpath('.//p/text()').get()
             elif job_detail_name == 'department':
                 job_details['department'] = ' - '.join(job_detail.xpath('.//p/span/text()').getall())
+            elif job_detail_name == 'compensation':
+                compensation_text = job_detail.xpath('.//span[contains(@class, "_compensationTierSummary")]/text()').get()
+                compensation_text_data = parse_compensation_text(compensation_text)
         
         description = html.xpath('//div[contains(@class, "_descriptionText")]').get()
         description_compensation_data = parse_compensation_text(description)
         
         compensation_data = merge_compensation_data(
-            [description_compensation_data, standard_job_item.get_compensation_dict()]
+            [compensation_text_data, description_compensation_data, standard_job_item.get_compensation_dict()]
         )
         
         return JobItem(
@@ -1025,6 +1047,8 @@ class AshbyHQScraper(Scraper):
             job_description=description,
             employment_type=job_details['employment_type'],
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 
@@ -1163,6 +1187,8 @@ class PaylocityScraper(Scraper):
             job_description=standard_job_item.job_description,
             employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 
@@ -1198,6 +1224,8 @@ class ApplicantProScraper(Scraper):
             job_description=standard_job_item.job_description,
             employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 
@@ -1234,6 +1262,8 @@ class StandardScraper(Scraper):
             job_description=standard_job_item.job_description,
             employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
             **compensation_data
         )
 

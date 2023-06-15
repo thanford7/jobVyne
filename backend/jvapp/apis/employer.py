@@ -4,7 +4,7 @@ from io import StringIO
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -101,6 +101,12 @@ class EmployerView(JobVyneAPIView):
         if employer_id:
             employer_filter = Q(id=employer_id)
         
+        default_job_board_prefetch = Prefetch(
+            'sociallink_set',
+            queryset=SocialLink.objects.filter(is_default=True),
+            to_attr='default_job_board'
+        )
+        
         employers = Employer.objects \
             .select_related('employer_size', 'default_bonus_currency') \
             .prefetch_related(
@@ -110,7 +116,8 @@ class EmployerView(JobVyneAPIView):
                 'employee__employer_permission_group__permission_group',
                 'employee__employer_permission_group__permission_group__permissions',
                 'ats_cfg',
-                'slack_cfg'
+                'slack_cfg',
+                default_job_board_prefetch
             ) \
             .filter(employer_filter) \
             .annotate(employee_count=Count('employee'))
