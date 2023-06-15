@@ -95,7 +95,8 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        self.skip_urls = skip_urls
+        # self.skip_urls = skip_urls
+        self.skip_urls = []
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
@@ -544,6 +545,7 @@ class GreenhouseScraper(Scraper):
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         location = html.xpath('//div[@id="header"]//div[@class="location"]/text()').get()
         locations = self.process_location_text(location)
+        print(f'Locations: {locations}')
         standard_job_item = self.get_google_standard_job_item(html)
         if not standard_job_item:
             logger.info('Unable to parse JobItem from document. No standard job data (ld+json).')
@@ -575,7 +577,11 @@ class GreenhouseScraper(Scraper):
     def process_location_text(self, location_text):
         if not location_text:
             return None
-        return [l for l in [location.strip() for location in location_text.split(';')] if l]
+        if ';' in location_text:
+            return [l for l in [location.strip() for location in location_text.split(';')] if l]
+        elif 'or ' in location_text:
+            return [l for l in [location.strip() for location in location_text.split('or ')] if l]
+        return location_text.strip()
 
 
 class GreenhouseIframeScraper(GreenhouseScraper):
@@ -593,6 +599,30 @@ class GreenhouseIframeScraper(GreenhouseScraper):
         link_values = parsed_url.groupdict()
         domain = self.EMPLOYER_KEY or link_values["domain"]
         return f'https://boards.greenhouse.io/embed/job_app?for={domain}&token={link_values["job_id"]}'
+
+    
+class GreenhouseApiScraper(GreenhouseScraper):
+    """Some employers don't enable an iframe embed so we have to resort to using the API instead
+    """
+    IS_REMOVE_QUERY_PARAMS = False
+    
+    async def scrape_jobs(self):
+        jobs_list = self.get_jobs()
+        
+        for job in jobs_list:
+            await self.add_job_links_to_queue(job['absolute_url'])
+        
+        await self.close()
+    
+    def get_jobs(self):
+        request_data = {'content': True}
+        jobs_resp = requests.get(
+            f'https://api.greenhouse.io/v1/boards/{self.EMPLOYER_KEY}/jobs',
+            params=request_data
+        )
+        jobs_data = json.loads(jobs_resp.content)
+        return jobs_data['jobs']
+    
 
 
 class WorkdayScraper(Scraper):
