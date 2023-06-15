@@ -272,6 +272,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
 
 class TaxType(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    # allow_multiple = models.BooleanField()  # TODO: Implement in bucketize_jobs
 
     def __str__(self):
         return self.name
@@ -289,8 +290,9 @@ class Taxonomy(models.Model):
 
 
 class JobTaxonomy(AuditFields):
-    job = models.ForeignKey(EmployerJob, on_delete=models.PROTECT)
+    job = models.ForeignKey(EmployerJob, on_delete=models.PROTECT)  # Related name?
     taxonomy = models.ForeignKey(Taxonomy, on_delete=models.PROTECT)
+    # aiPrompt = models.ForeignKey
 
     class Meta:
         constraints = [
@@ -299,6 +301,11 @@ class JobTaxonomy(AuditFields):
             # But this is the best we can do; we'll have to disallow multiple assignments on a single taxonomy type some other way
             models.constraints.UniqueConstraint(fields=('job', 'taxonomy'), name='job_unique_taxonomy'),
         ]
+
+# TODO: Implement model and use in prediction
+# class AiPrompt():
+#     '''An AI prompt'''
+#     pass
 
 
 class EmployerJobApplicationRequirement(AuditFields, JobVynePermissionsMixin):
