@@ -1328,3 +1328,7 @@ class StandardJsScraper(StandardScraper):
             await self.wait_for_el(page, self.main_page_wait_sel)
         
         return await self.get_page_html(page)
+
+
+# TODO: JazzHR Scraper
+# https://blavity.applytojob.com/
