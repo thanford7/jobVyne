@@ -102,7 +102,8 @@ class JobProcessor:
         
         job_item.job_description = sanitize_html(job_item.job_description)
         job_item.employment_type = job_item.employment_type or self.default_employment_type
-        
+        if job_item.locations and (not isinstance(job_item.locations, list)):
+            job_item.locations = [job_item.locations]
         locations = [
             self.location_parser.get_location(self.add_remote_to_location(loc, job_item.job_title))
             for loc in set(job_item.locations)
