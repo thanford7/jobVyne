@@ -9,10 +9,8 @@ from scrape.base_scrapers import ApplicantProScraper, AshbyHQScraper, BambooHrSc
     PaylocityScraper, SmartRecruitersScraper, StandardJsScraper, StandardScraper, UltiProScraper, WorkableScraper, \
     WorkdayScraper
 from scrape.custom_scraper.ancestry import AncestryScraper
-from scrape.custom_scraper.coinbase import CoinbaseScraper
 from scrape.custom_scraper.ebay import EbayScraper
 from scrape.custom_scraper.packsize import PacksizeScraper
-from scrape.custom_scraper.pinterest import PinterestScraper
 
 
 class AngiScraper(GreenhouseScraper):
@@ -363,7 +361,7 @@ class TwoULaundryScraper(BreezyScraper):
     EMPLOYER_KEY = '2ulaundry'
     
     
-class ZocdocScraper(GreenhouseIframeScraper):
+class ZocdocScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'zocdoc'
     employer_name = 'Zocdoc'
     
@@ -1033,7 +1031,7 @@ class DivvyHomesScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'divvyhomes'
     
 
-class ManticoreGamesScraper(GreenhouseIframeScraper):
+class ManticoreGamesScraper(GreenhouseApiScraper):
     employer_name = 'Manticore Games'
     EMPLOYER_KEY = 'manticoregames'
     
@@ -1053,7 +1051,7 @@ class ExponentialScraper(AshbyHQScraper):
     EMPLOYER_KEY = 'exponential'
     
     
-class SproutSocialScraper(GreenhouseScraper):
+class SproutSocialScraper(GreenhouseApiScraper):
     employer_name = 'Sprout Social'
     EMPLOYER_KEY = 'sproutsocial'
     
@@ -1068,7 +1066,7 @@ class HandshakeScraper(GreenhouseIframeScraper):
     EMPLOYER_KEY = 'joinhandshake'
     
     
-class InovalonScraper(GreenhouseIframeScraper):
+class InovalonScraper(GreenhouseApiScraper):
     employer_name = 'Inovalon'
     EMPLOYER_KEY = 'inovalon'
     
@@ -1170,7 +1168,7 @@ class IseeScraper(LeverScraper):
     EMPLOYER_KEY = 'isee'
     
     
-class MediaMathScraper(GreenhouseIframeScraper):
+class MediaMathScraper(GreenhouseApiScraper):
     employer_name = 'MediaMath'
     EMPLOYER_KEY = 'mediamath'
     
@@ -1185,7 +1183,7 @@ class FigmaScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'figma'
     
     
-class LatchScraper(GreenhouseIframeScraper):
+class LatchScraper(GreenhouseApiScraper):
     employer_name = 'Latch'
     EMPLOYER_KEY = 'LATCH'
     
@@ -1246,7 +1244,7 @@ class BlockchainsScraper(GreenhouseIframeScraper):
     EMPLOYER_KEY = 'blockchainsmanagementinc'
     
     
-class CollibraScraper(GreenhouseIframeScraper):
+class CollibraScraper(GreenhouseApiScraper):
     employer_name = 'Collibra'
     EMPLOYER_KEY = 'collibra'
     
@@ -1271,7 +1269,7 @@ class GrindrScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'grindr'
 
  
-class ZuoraScraper(GreenhouseScraper):
+class ZuoraScraper(GreenhouseApiScraper):
     employer_name = 'Zuora'
     EMPLOYER_KEY = 'zuora'
     
@@ -1286,12 +1284,12 @@ class WeightsAndBiasesScraper(LeverScraper):
     EMPLOYER_KEY = 'wandb'
     
     
-class CloudflareScraper(GreenhouseScraper):
+class CloudflareScraper(GreenhouseApiScraper):
     employer_name = 'Cloudflare'
     EMPLOYER_KEY = 'cloudflare'
     
     
-class MapboxScraper(GreenhouseScraper):
+class MapboxScraper(GreenhouseApiScraper):
     employer_name = 'Mapbox'
     EMPLOYER_KEY = 'mapbox'
     
@@ -1321,7 +1319,7 @@ class MavenScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'mavenclinic'
     
     
-class PhantomScraper(GreenhouseScraper):
+class PhantomScraper(GreenhouseApiScraper):
     employer_name = 'Phantom'
     EMPLOYER_KEY = 'phantom45'
     
@@ -1331,7 +1329,7 @@ class CriblScraper(GreenhouseIframeScraper):
     EMPLOYER_KEY = 'cribl'
     
     
-class PaxosScraper(GreenhouseScraper):
+class PaxosScraper(GreenhouseApiScraper):
     employer_name = 'Paxos'
     EMPLOYER_KEY = 'joinpaxos'
     
@@ -1350,6 +1348,21 @@ class FastlyScraper(GreenhouseIframeScraper):
     employer_name = 'Fastly'
     EMPLOYER_KEY = 'fastly'
     
+    
+class PinterestScraper(GreenhouseIframeScraper):
+    employer_name = 'Pinterest'
+    EMPLOYER_KEY = 'pinterest'
+    
+    
+class CoinbaseScraper(GreenhouseApiScraper):
+    employer_name = 'Coinbase'
+    EMPLOYER_KEY = 'coinbase'
+    
+    
+class RobinhoodScraper(GreenhouseIframeScraper):
+    employer_name = 'Robinhood'
+    EMPLOYER_KEY = 'robinhood'
+    
 
 # TODO: Build a new scraper for PhenomPeople ats
 # class AdobeScraper():
@@ -1357,24 +1370,25 @@ class FastlyScraper(GreenhouseIframeScraper):
 #     start_url = 'https://careers.adobe.com/us/en/c/'
 
 # EbayScraper.employer_name: EbayScraper,
-# PinterestScraper.employer_name: PinterestScraper,
-# CoinbaseScraper.employer_name: CoinbaseScraper
 test_scrapers = {
-    # PaxosScraper.employer_name: PaxosScraper,
-    # PhantomScraper.employer_name: PhantomScraper,
-    # MapboxScraper.employer_name: MapboxScraper,
-    # CloudflareScraper.employer_name: CloudflareScraper,
-    # ZuoraScraper.employer_name: ZuoraScraper,
-    # CollibraScraper.employer_name: CollibraScraper,
-    # LatchScraper.employer_name: LatchScraper,
-    # MediaMathScraper.employer_name: MediaMathScraper,
-    # InovalonScraper.employer_name: InovalonScraper,
-    # SproutSocialScraper.employer_name: SproutSocialScraper,
-    # ManticoreGamesScraper.employer_name: ManticoreGamesScraper,
 }
 
 
 all_scrapers = {
+    RobinhoodScraper.employer_name: RobinhoodScraper,
+    CoinbaseScraper.employer_name: CoinbaseScraper,
+    PinterestScraper.employer_name: PinterestScraper,
+    InovalonScraper.employer_name: InovalonScraper,
+    SproutSocialScraper.employer_name: SproutSocialScraper,
+    ManticoreGamesScraper.employer_name: ManticoreGamesScraper,
+    CollibraScraper.employer_name: CollibraScraper,
+    LatchScraper.employer_name: LatchScraper,
+    MediaMathScraper.employer_name: MediaMathScraper,
+    ZuoraScraper.employer_name: ZuoraScraper,
+    CloudflareScraper.employer_name: CloudflareScraper,
+    MapboxScraper.employer_name: MapboxScraper,
+    PhantomScraper.employer_name: PhantomScraper,
+    PaxosScraper.employer_name: PaxosScraper,
     FastlyScraper.employer_name: FastlyScraper,
     ModernHealthScraper.employer_name: ModernHealthScraper,
     QualcommScraper.employer_name: QualcommScraper,

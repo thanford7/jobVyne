@@ -1,4 +1,5 @@
 import asyncio
+import html as html_parser
 import json
 import logging
 import random
@@ -15,7 +16,7 @@ from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import expect
 
-from jvapp.utils.data import capitalize, coerce_float, get_base_url, get_website_domain_from_url
+from jvapp.utils.data import capitalize, coerce_float, coerce_int, get_base_url, get_website_domain_from_url
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 from jvapp.utils.file import get_file_storage_engine
 from jvapp.utils.money import merge_compensation_data, parse_compensation_text
@@ -72,6 +73,7 @@ class Scraper:
     USE_ADVANCED_HEADERS = False
     MAX_CONCURRENT_PAGES = 10
     IS_JS_REQUIRED = False
+    IS_API = False
     DEFAULT_JOB_DEPARTMENT = 'General'
     DEFAULT_EMPLOYMENT_TYPE = 'Full Time'
     TEST_REDIRECT = True
@@ -95,8 +97,8 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        self.skip_urls = skip_urls
-        # self.skip_urls = []
+        # self.skip_urls = skip_urls
+        self.skip_urls = []
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
@@ -202,7 +204,9 @@ class Scraper:
             url, meta_data = await self.queue.get()
             current_page = self.job_page_count = self.job_page_count + 1
             logger.info(f'Fetching new job page ({current_page}): {url}')
-            if self.IS_JS_REQUIRED:
+            if self.IS_API:
+                page_html = None
+            elif self.IS_JS_REQUIRED:
                 page = await self.visit_page_with_retry(url)
                 if self.job_item_page_wait_sel:
                     page = await self.wait_for_el(page, self.job_item_page_wait_sel, max_retries=2)
@@ -542,7 +546,7 @@ class GreenhouseScraper(Scraper):
     def get_start_url(self):
         return f'https://boards.greenhouse.io/{self.EMPLOYER_KEY}/'
     
-    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, api_data=None):
         location = html.xpath('//div[@id="header"]//div[@class="location"]/text()').get()
         locations = self.process_location_text(location)
         print(f'Locations: {locations}')
@@ -605,24 +609,73 @@ class GreenhouseApiScraper(GreenhouseScraper):
     """Some employers don't enable an iframe embed so we have to resort to using the API instead
     """
     IS_REMOVE_QUERY_PARAMS = False
+    IS_API = True
     
     async def scrape_jobs(self):
         jobs_list = self.get_jobs()
         
         for job in jobs_list:
-            await self.add_job_links_to_queue(job['absolute_url'])
+            await self.add_job_links_to_queue(job['absolute_url'], meta_data={'job_id': job['id']})
         
         await self.close()
     
     def get_jobs(self):
-        request_data = {'content': True}
         jobs_resp = requests.get(
             f'https://api.greenhouse.io/v1/boards/{self.EMPLOYER_KEY}/jobs',
-            params=request_data
+            params={'content': True}
         )
         jobs_data = json.loads(jobs_resp.content)
         return jobs_data['jobs']
     
+    def get_job_data(self, job_id):
+        job_resp = requests.get(
+            f'https://boards-api.greenhouse.io/v1/boards/{self.EMPLOYER_KEY}/jobs/{job_id}',
+            params={'pay_transparency': True}
+        )
+        return json.loads(job_resp.content)
+        
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None):
+        job_data = self.get_job_data(job_id)
+        pay_ranges = [
+            {
+                'salary_floor': coerce_int(range['min_cents']) / 60,
+                'salary_ceiling': coerce_int(range['max_cents']) / 60,
+                'currency': range['currency_type']
+            } for range in job_data.get('pay_input_ranges') or []
+        ]
+        
+        compensation_data = {
+            'salary_currency': None,
+            'salary_floor': None,
+            'salary_ceiling': None,
+            'salary_interval': None
+        }
+        if pay_ranges:
+            compensation_data = {
+                'salary_currency': pay_ranges[0]['currency'],
+                'salary_floor': min([pr['salary_floor'] for pr in pay_ranges]),
+                'salary_ceiling': max([pr['salary_ceiling'] for pr in pay_ranges]),
+                'salary_interval': 'year'
+            }
+        
+        job_description = html_parser.unescape(job_data['content'])
+        description_compensation_data = parse_compensation_text(job_description)
+
+        compensation_data = merge_compensation_data(
+            [compensation_data, description_compensation_data]
+        )
+
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data['title'],
+            locations=[o['location'] or o['name'] for o in job_data['offices']],
+            job_department=job_data['departments'][0]['name'] if job_data['departments'] else self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description,
+            employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['updated_at'], as_date=True)),
+            **compensation_data
+        )
 
 
 class WorkdayScraper(Scraper):
@@ -951,6 +1004,7 @@ class BreezyScraper(Scraper):
 
 
 class WorkableScraper(Scraper):
+    IS_API = True
     BASE_FILTER_DATA = {
         'department': [],
         'location': [],
@@ -1318,7 +1372,6 @@ class StandardJsScraper(StandardScraper):
     
     async def get_html(self):
         page = await self.get_starting_page()
-        html = await self.get_page_html(page)
         
         # Make sure page data has loaded
         try:
