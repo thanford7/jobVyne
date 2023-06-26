@@ -9,8 +9,11 @@ def ask(prompt, model='text-curie-001'):
     resp = openai.Completion.create(
         model=model,
         prompt=prompt,
-        temperature=0.1,
-        max_tokens=30,
+        temperature=1,
+        max_tokens=87,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
     )
     print(resp)
     return resp['choices'][0]['text']
