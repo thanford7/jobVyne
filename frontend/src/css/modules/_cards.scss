@@ -5,3 +5,10 @@
     box-shadow: 0 0 5px 2px $primary;
   }
 }
+
+.callout-card {
+  padding: 16px;
+  background-color: $gray-100;
+  border: 1px solid $gray-300;
+  border-radius: 6px;
+}

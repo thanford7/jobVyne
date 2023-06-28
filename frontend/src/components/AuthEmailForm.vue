@@ -1,45 +1,33 @@
 <template>
   <q-form
-    @submit="login"
-    class="q-gutter-xs"
+    @submit.prevent="login()"
   >
-    <q-input
-      filled
-      v-model="email"
-      label="Email *"
-      lazy-rules
-      :rules="[ val => val && val.length > 0 && isGoodEmail(val) || 'Please enter a valid email']"
-    />
+    <EmailInput v-model="email"/>
+    <PasswordInput v-model="password" :is-validate="isCreate"/>
 
-    <q-input
-      v-model="password"
-      filled
-      :type="isPwdShown ? 'text' : 'password'"
-      label="Password *"
-    >
-      <template v-slot:append>
-        <q-icon
-          :name="isPwdShown ? 'visibility' : 'visibility_off'"
-          class="cursor-pointer"
-          @click="isPwdShown = !isPwdShown"
-        />
-      </template>
-    </q-input>
-
-    <div class="q-mt-md">
-      <q-btn :label="(isCreate) ? createText : loginText" type="submit" ripple color="accent" class="w-100"/>
+    <div class="q-mt-sm">
+      <q-btn
+        :label="(isCreate) ? createText : loginText"
+        type="submit" ripple
+        :style="styleOverride"
+        class="w-100 jv-login-btn"
+      />
     </div>
   </q-form>
 </template>
 
 <script>
+import EmailInput from 'components/inputs/EmailInput.vue'
+import PasswordInput from 'components/inputs/PasswordInput.vue'
+import colorUtil from 'src/utils/color.js'
 import formUtil from 'src/utils/form'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store'
 import { getAjaxFormData } from 'src/utils/requests'
-import { USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthEmailForm',
+  components: { EmailInput, PasswordInput },
   data () {
     return {
       createText: 'Create account',
@@ -59,23 +47,47 @@ export default {
       default: null
     },
     userTypeBit: {
-      type: Number,
-      default: USER_TYPES.Employee
+      type: [Number, null]
+    },
+    userProps: {
+      type: [Object, null]
+    },
+    redirectPageUrl: {
+      type: [String, null]
+    },
+    styleOverride: {
+      type: Object,
+      default: () => {
+        const backgroundColor = colorUtil.getPaletteColor('accent')
+        return { backgroundColor, color: colorUtil.getInvertedColor(backgroundColor) }
+      }
     }
   },
   methods: {
     isGoodEmail: formUtil.isGoodEmail,
     async login () {
-      const user = {
+      const userData = {
         email: this.email,
         password: this.password
       }
-      await this.$api.post('auth/login/', getAjaxFormData(user))
+      if (this.isCreate) {
+        userData.user_type_bits = this.userTypeBit
+        if (this.userProps) {
+          Object.assign(userData, this.userProps)
+        }
+        await this.$api.post('user/', getAjaxFormData(userData))
+      }
+      await this.$api.post('auth/login/', getAjaxFormData(userData))
+      await this.authStore.setUser(true)
       if (this.$route.name === 'login') {
-        this.$router.push('/dashboard')
+        await this.$router.push(
+          this.redirectPageUrl || pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser)
+        )
       } else {
+        // User logged in from a dialog so redirect back to the page they were on
         this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })
       }
+      this.$global.$emit('login')
     },
     setEmail () {
       if (!this.email && this.defaultEmail) {
@@ -87,8 +99,8 @@ export default {
     this.$api.get('auth/login-set-cookie/')
   },
   setup () {
-    const store = useAuthStore()
-    return { store }
+    const authStore = useAuthStore()
+    return { authStore }
   },
   mounted () {
     this.setEmail()

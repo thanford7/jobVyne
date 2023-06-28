@@ -1,10 +1,15 @@
 <template>
   <DialogBase
-    :title-text="titleText"
+    :base-title-text="titleText"
     :primary-button-text="(!this.user_ids) ? 'Create' : 'Update'"
     @ok="saveUser"
   >
-    <div v-if="isSingle">
+    <q-form ref="form" v-if="isSingle">
+      <SelectEmployer
+        v-if="isAdmin"
+        v-model="formDataSingle.employer_id" :is-multi="false"
+        :rules="[ val => val || 'Employer is required']"
+      />
       <q-input
         filled
         v-model="formDataSingle.first_name"
@@ -31,8 +36,13 @@
         label="Permission groups"
         v-model="formDataSingle.permission_group_ids"
       />
-    </div>
-    <div v-else>
+      <PasswordInput
+        v-if="isAdmin"
+        v-model="formDataSingle.password"
+        :is-validate="true"
+      />
+    </q-form>
+    <q-form ref="form" v-else>
       <SelectPermissionGroup
         v-model="formDataMulti.add_permission_group_ids"
         label="Add permission groups"
@@ -43,12 +53,15 @@
         label="Remove permission groups"
         :rules-override="[val => !hasAddRemoveOverlap || 'Remove permissions can\'t overlap with those in the add permissions selection',]"
       />
-    </div>
+    </q-form>
   </DialogBase>
 </template>
 
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
+import PasswordInput from 'components/inputs/PasswordInput.vue'
+import SelectEmployer from 'components/inputs/SelectEmployer.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
 import { useEmployerStore } from 'stores/employer-store'
@@ -60,7 +73,9 @@ const FORM_DATE_SINGLE_TEMPLATE = {
   first_name: null,
   last_name: null,
   email: null,
-  permission_group_ids: null
+  permission_group_ids: null,
+  employer_id: null,
+  password: null
 }
 
 const FORM_DATE_MULTI_TEMPLATE = {
@@ -72,7 +87,7 @@ export default {
   name: 'DialogUser',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { SelectPermissionGroup, DialogBase },
+  components: { PasswordInput, SelectPermissionGroup, DialogBase, SelectEmployer },
   data () {
     return {
       user_ids: null,
@@ -86,11 +101,10 @@ export default {
   props: {
     users: {
       type: [Array, Object] // Users can be plural (Array) or singular (Object)
-    }
-  },
-  watch: {
-    formDataSingle (newVal) {
-      console.log(newVal)
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -113,11 +127,20 @@ export default {
   },
   methods: {
     async saveUser () {
+      const isValid = await this.$refs.form.validate()
+      if (!isValid) {
+        return
+      }
       const ajaxFn = (this.user_ids) ? this.$api.put : this.$api.post
-      const data = (this.user_ids) ? { user_ids: this.user_ids } : { employer_id: this.authStore.user.employer_id }
+      const data = {}
+      if (this.user_ids) {
+        data.user_ids = this.user_ids
+      }
       Object.assign(data, (this.isSingle) ? this.formDataSingle : this.formDataMulti)
+      if (!this.isAdmin) {
+        data.employer_id = this.user.employer_id
+      }
       await ajaxFn('employer/user/', getAjaxFormData(data))
-      this.employerStore.setEmployer(this.authStore.user.employer_id, true)
       this.$emit('ok')
     }
   },
@@ -126,7 +149,13 @@ export default {
     return employerStore.setEmployerPermissions()
   },
   setup () {
-    return { authStore: useAuthStore(), employerStore: useEmployerStore() }
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
+    return {
+      authStore,
+      employerStore: useEmployerStore(),
+      user
+    }
   },
   mounted () {
     // Clear out the forms
@@ -137,8 +166,8 @@ export default {
     if (dataUtil.isObject(this.users) || this?.users?.length === 1) {
       const user = Array.isArray(this.users) ? this.users[0] : this.users
       this.user_ids = [user.id]
-      Object.assign(this.formDataSingle, dataUtil.pick(user, ['first_name', 'last_name', 'email']))
-      this.formDataSingle.permission_group_ids = user.permission_groups.map((pg) => pg.id)
+      Object.assign(this.formDataSingle, dataUtil.pick(user, ['first_name', 'last_name', 'email', 'employer_id']))
+      this.formDataSingle.permission_group_ids = (user.employer_id) ? user.permission_groups_by_employer[user.employer_id].map((pg) => pg.id) : []
       this.isSingle = true
     } else if (this.users && this.users.length) { // Multiple users
       this.user_ids = this.users.map((user) => user.id)
@@ -150,7 +179,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>

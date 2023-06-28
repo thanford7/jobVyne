@@ -1,62 +1,106 @@
-import { useUtilStore } from 'stores/utility-store'
+import messagesUtil, { msgTypes } from 'src/utils/messages.js'
 import clone from 'just-clone'
 import pluralize from 'pluralize'
 
 class DataUtil {
-  formatCurrency (val) {
-    const formatter = new Intl.NumberFormat('en-US', {
+  formatCurrency (val, currencyCfg = {}) {
+    const formatCfg = Object.assign({
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0, // (this suffices for whole numbers, but will print 2500.10 as $2,500.1)
       maximumFractionDigits: 0 // (causes 2500.99 to be printed as $2,501)
-    })
+    }, currencyCfg)
+
+    if (!formatCfg.currency) {
+      formatCfg.currency = 'USD'
+    }
+
+    const formatter = new Intl.NumberFormat('en-US', formatCfg)
 
     return formatter.format(val)
   }
 
-  getSalaryRange (salaryFloor, salaryCeiling) {
+  getSalaryRange (salaryFloor, salaryCeiling, salaryInterval = 'year') {
     if (!salaryFloor && !salaryCeiling) {
       return null
     }
-    if (salaryFloor && salaryCeiling) {
-      return `${this.formatCurrency(salaryFloor)}-${this.formatCurrency(salaryCeiling)}`
+    let salaryRange = ''
+    if (salaryFloor && salaryCeiling && salaryFloor !== salaryCeiling) {
+      salaryRange = `${this.formatCurrency(salaryFloor)}-${this.formatCurrency(salaryCeiling)}`
+    } else if (salaryFloor) {
+      salaryRange = this.formatCurrency(salaryFloor)
+    } else {
+      salaryRange = this.formatCurrency(salaryCeiling)
     }
-    if (salaryFloor) {
-      return this.formatCurrency(salaryFloor)
-    }
-    return this.formatCurrency(salaryCeiling)
+    return `${salaryRange} per ${salaryInterval || 'year'}`
   }
 
-  copyText (e) {
-    const utilStore = useUtilStore()
-    const targetEl = e.currentTarget
-    const copyTargetEl = targetEl.closest('div').querySelector('.copy-target')
-    const text = copyTargetEl.innerText || copyTargetEl.value
-    const copyMsgId = utilStore.getNewElId()
+  getBitsFromList (bitList) {
+    if (!Array.isArray(bitList)) {
+      return bitList
+    }
+    return bitList.reduce((allBits, bit) => {
+      allBits |= bit
+      return allBits
+    }, 0)
+  }
+
+  getBoolean (val) {
+    if (typeof val === 'boolean') {
+      return val
+    } else if (dataUtil.isNil(val)) {
+      return false
+    } else if (Array.isArray(val)) {
+      return Boolean(val.length)
+    } else if (dataUtil.isObject(val)) {
+      return !dataUtil.isEmpty(val)
+    } else if (dataUtil.isString(val)) {
+      if (val.toLowerCase() === 'true') {
+        return true
+      }
+      if (val.toLowerCase() === 'false') {
+        return false
+      }
+      const numberVal = Number(val)
+      if (!isNaN(numberVal)) {
+        return Boolean(numberVal)
+      }
+      return Boolean(val.length)
+    }
+
+    return Boolean(val)
+  }
+
+  getFullName (firstName, lastName) {
+    if (!firstName && !lastName) {
+      return null
+    } else if (firstName && !lastName) {
+      return firstName
+    } else if (!firstName && lastName) {
+      return lastName
+    } else {
+      return `${firstName} ${lastName}`
+    }
+  }
+
+  roundTo (number, roundNumber) {
+    return Math.ceil(number / roundNumber) * roundNumber
+  }
+
+  copyText (text) {
     navigator.clipboard.writeText(text).then(
       () => {
-        targetEl.parentNode.insertAdjacentHTML(
-          'beforeend',
-          `<span id="${copyMsgId}" class="text-positive text-small"> Copied successfully</span>`
+        messagesUtil.addMsg(
+          'Copied successfully',
+          Object.assign({}, msgTypes.SUCCESS, { timeout: 3000 })
         )
       }, () => {
-        targetEl.parentNode.insertAdjacentHTML(
-          'beforeend',
-          `<span id="${copyMsgId}" class="text-negative text-small"> Copy failed. Please copy manually</span>`
+        messagesUtil.addMsg(
+          'Copy failed. Please copy manually',
+          Object.assign({}, msgTypes.ERROR, { timeout: 3000 })
         )
       }
     )
-    setTimeout(() => {
-      document.getElementById(copyMsgId).remove()
-    }, 3000)
-  }
-
-  getFileNameFromUrl (fileUrl) {
-    if (!fileUrl) {
-      return null
-    }
-    const [fileName] = fileUrl.split('/').slice(-1)
-    return fileName
   }
 
   getUrlWithoutQueryParams () {
@@ -156,83 +200,6 @@ class DataUtil {
     }
   }
 
-  handleAjaxError (error) {
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      const data = error.response.data
-      if (!data.includes('DOCTYPE')) {
-        console.log(error.response.data)
-      }
-      console.log(error.response.status)
-      console.log(error.response.headers)
-    } else if (error.request) {
-      // The request was made but no response was received
-      // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-      // http.ClientRequest in node.js
-      console.log(error.request)
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.log('Error', error.message)
-    }
-    console.log(error.config)
-  }
-
-  /**
-   * We can't add meta data directly onto file objects and order is not guaranteed when pairing files with
-   * their respective meta data. To handle this, file objects and file meta data are processed into a dictionary
-   * where the lookup value is based on the file object's name. This is the only "unique" key that the file object
-   * possesses. It is possible for a file object to have the same name as another, so duplicate file names should
-   * be guarded against when testing for good form data
-   * @param files {Object|Array} Values are objects which contain meta data and a file
-   * @param metaDataKey {string} The dictionary key which all meta data is assigned to
-   * @param dataKey {string} The dictionary key which all file objects are assigned
-   * @param fileKey {string} The dictionary key to get the file from each respective file object
-   * @returns {Object}
-   */
-  getFileFormatForAjaxRequest (files, metaDataKey, dataKey, fileKey) {
-    if (!Array.isArray(files)) {
-      files = Object.values(files)
-    }
-    files = files.filter((file) => !this.isNil(file[fileKey]))
-    return {
-      [metaDataKey]: files.map((file) => {
-        return Object.assign(
-          this.omit(file, [fileKey]),
-          { fileKey: this.isString(file[fileKey]) ? null : file[fileKey].name }
-        )
-      }),
-      [dataKey]: files.map((file) => file[fileKey])
-    }
-  }
-
-  getFileType (fileName) {
-    if (!fileName) {
-      return null
-    }
-    const [fileType] = fileName.split('.').slice(-1)
-    return fileType
-  }
-
-  /**
-   * This ensures Vue picks up changes (opposed to plain old assignment)
-   * @param object: The object to be updated
-   * @param newObjectData: The new object data. Any keys in the object that are not in newObjectData will be deleted
-   */
-  updateObjectInPlace (object, newObjectData) {
-    Object.assign(object, newObjectData)
-
-    // Make sure there aren't any keys that used to be present, but should be removed
-    if (dataUtil.isObject(newObjectData) && dataUtil.isObject(object)) {
-      const newKeys = Object.keys(newObjectData)
-      Object.keys(object).forEach((key) => {
-        if (!newKeys.includes(key)) {
-          delete object[key]
-        }
-      })
-    }
-  }
-
   capitalize (string, isLowercaseRest = true) {
     if (!string) {
       return ''
@@ -319,6 +286,8 @@ class DataUtil {
   getForceArray (val) {
     if (Array.isArray(val)) {
       return val
+    } else if (val) {
+      return [val]
     }
     return []
   }
@@ -340,6 +309,13 @@ class DataUtil {
       return []
     }
     return array1.filter(value => array2.includes(value))
+  }
+
+  getArrayWithValuesOrNone (array) {
+    if (!array || !array.length) {
+      return null
+    }
+    return array
   }
 
   getFromArrayOrNone (array, idx) {
@@ -368,7 +344,11 @@ class DataUtil {
     }, {})
   }
 
-  isArraysEqual (a, b) {
+  isBetween (number, lowerBound, upperBound) {
+    return number >= lowerBound && number <= upperBound
+  }
+
+  isArraysEqual (a, b, isCheckOrder = false) {
     if (a === b) return true
     if (a === null || b === null) return false
     if (!Array.isArray(a) || !Array.isArray(b)) return false
@@ -377,8 +357,11 @@ class DataUtil {
     // Copy before sorting so other elements aren't effected
     a = [...a]
     b = [...b]
-    a.sort()
-    a.sort()
+
+    if (!isCheckOrder) {
+      a.sort()
+      b.sort()
+    }
 
     for (let i = 0; i < a.length; ++i) {
       if (a[i] !== b[i]) return false
@@ -386,12 +369,16 @@ class DataUtil {
     return true
   }
 
+  isDeepEqual (a, b) {
+    return JSON.stringify(a) === JSON.stringify(b)
+  }
+
   isEmpty (obj) {
     return [Object, Array].includes((obj || {}).constructor) && !Object.entries((obj || {})).length
   }
 
   isEmptyOrNil (val) {
-    return this.isNil(val) || this.isEmpty(val)
+    return this.isNil(val) || this.isEmpty(val) || (val instanceof String && !val.length)
   }
 
   isObject (val) {
@@ -438,11 +425,37 @@ class DataUtil {
     return visibleEls[0].el
   }
 
-  removeItemFromList (targetList, itemFindFn) {
-    const listIdx = targetList.findIndex(itemFindFn)
+  mergeDeep (target, ...sources) {
+    if (!sources.length) return target
+    const source = sources.shift()
+
+    if (this.isObject(target) && this.isObject(source)) {
+      for (const key in source) {
+        if (this.isObject(source[key])) {
+          if (!target[key]) Object.assign(target, { [key]: {} })
+          this.mergeDeep(target[key], source[key])
+        } else {
+          Object.assign(target, { [key]: source[key] })
+        }
+      }
+    }
+
+    return this.mergeDeep(target, ...sources)
+  }
+
+  /**
+   * @param targetList: The list that the item should be removed from
+   * @param itemFindFn: (Optional) The function to find the item.
+   * @param listIdx: (Optional) The index of the item to be removed.
+   */
+  removeItemFromList (targetList, { itemFindFn, listIdx }) {
+    listIdx = this.isNil(listIdx) ? targetList.findIndex(itemFindFn) : listIdx
+    let item = null
     if (listIdx !== -1) {
+      item = targetList[listIdx]
       targetList.splice(listIdx, 1)
     }
+    return item
   }
 
   /**
@@ -517,7 +530,7 @@ class DataUtil {
     }, 0)
   }
 
-  truncateText (text, charCount, isWholeWord = true) {
+  truncateText (text, charCount, { isWholeWord = true, truncateChar = '...' } = {}) {
     if (!text) {
       return ''
     }
@@ -527,10 +540,13 @@ class DataUtil {
     let truncatedText = ''
     let endOfWord = false
     // eslint-disable-next-line no-unmodified-loop-condition
-    while (currentCharCount < charCount && (!isWholeWord || endOfWord)) {
-      truncatedText += text.slice(currentCharCount)
-      endOfWord = (currentCharCount + 1 === charCount) || text.slice(currentCharCount + 1).match(/\s/)
+    while (currentCharCount < charCount || (isWholeWord && !endOfWord)) {
+      truncatedText = text.slice(0, currentCharCount + 1)
+      endOfWord = currentCharCount === text.length || text.slice(currentCharCount + 1, currentCharCount + 2).match(/\s/)
       currentCharCount++
+    }
+    if (truncatedText.length < text.length) {
+      truncatedText = truncatedText + truncateChar
     }
     return truncatedText
   }

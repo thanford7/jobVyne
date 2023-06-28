@@ -1,30 +1,31 @@
 <template>
-  <div>
-    <q-btn
-      type="div"
-      class="w-100 btn-bordered"
-      ripple
-      :flat="true"
-      :unelevated="true"
-      @click="redirectAuthUrl('facebook')"
-    >
-      <q-icon id="facebook-logo" name="fa-brands fa-facebook-square"/>
-      &nbsp;{{ (isCreate) ? createText : loginText }}Facebook
-    </q-btn
-    >
+  <div class="q-gutter-y-sm">
+    <div v-for="platform in authPlatforms" class="flex flex-center">
+      <AuthSocialButton
+        :platform="platform"
+        :button-text="`${(isCreate) ? createText : loginText}${platform.name}`"
+        @click="redirectAuthUrl(platform.redirectProvider)"
+      />
+    </div>
   </div>
 </template>
 
 <script>
+import AuthSocialButton from 'components/AuthSocialButton.vue'
+import socialUtil from 'src/utils/social.js'
 import { useSocialAuthStore } from 'stores/social-auth-store'
-import { USER_TYPES } from 'src/utils/user-types'
 
 export default {
   name: 'AuthSocialButtons',
+  components: { AuthSocialButton },
   data () {
     return {
-      createText: 'Create account with ',
-      loginText: 'Login with '
+      createText: 'Create with ',
+      loginText: 'Login with ',
+      authPlatforms: [
+        socialUtil.platformCfgs[socialUtil.SOCIAL_KEY_LINKED_IN],
+        socialUtil.platformCfgs[socialUtil.SOCIAL_KEY_GOOGLE]
+      ]
     }
   },
   props: {
@@ -33,8 +34,7 @@ export default {
       default: false
     },
     userTypeBit: {
-      type: Number,
-      default: USER_TYPES.Employee
+      type: [Number, null]
     },
     redirectPageUrl: {
       type: [String, null]
@@ -45,9 +45,9 @@ export default {
   },
   methods: {
     async redirectAuthUrl (provider) {
-      const url = await this.socialStore.getOauthUrl(
+      const url = await this.socialAuthStore.getOauthUrl(
         provider,
-        { redirectPageUrl: this.redirectPageUrl, redirectParams: this.redirectParams }
+        { redirectPageUrl: this.redirectPageUrl, redirectParams: this.redirectParams, userTypeBit: this.userTypeBit }
       )
       window.location.href = url
     }
@@ -56,14 +56,8 @@ export default {
     this.$api.get('auth/login-set-cookie/')
   },
   setup () {
-    const socialStore = useSocialAuthStore()
-    return { socialStore }
+    const socialAuthStore = useSocialAuthStore()
+    return { socialAuthStore }
   }
 }
 </script>
-
-<style lang="scss" scoped>
-#facebook-logo {
-  color: $facebook
-}
-</style>

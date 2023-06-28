@@ -1,0 +1,21 @@
+{% extends 'emails/base_general_email.html' %}
+
+{% block body %}
+    <h2>Support email</h2>
+    <table class="bordered" width="100%" cellpadding="0" cellspacing="0" style="min-width:100%; border-collapse: collapse;">
+        <tbody>
+        <tr>
+            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">User name</td>
+            <td style="border: 1px solid black; padding: 5px;">{{ user.name }}</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">User email</td>
+            <td style="border: 1px solid black; padding: 5px;">{{ user.email }}</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Message</td>
+            <td style="border: 1px solid black; padding: 5px;">{{ message }}</td>
+        </tr>
+        </tbody>
+    </table>
+{% endblock body %}

@@ -16,12 +16,19 @@
         </q-btn>
       </template>
     </q-input>
+    <div class="text-small text-grey-7">
+      This site is protected by reCAPTCHA and the Google
+      <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+      <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+    </div>
   </div>
 </template>
 
 <script>
+import messagesUtil, { msgTypes } from 'src/utils/messages.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import formUtil from 'src/utils/form'
+import { useAuthStore } from 'stores/auth-store'
 
 export default {
   name: 'WaitlistSignUp',
@@ -34,15 +41,29 @@ export default {
   },
   methods: {
     async saveWaitlist () {
-      if (!this.$refs.emailInput.validate()) {
+      const isValidForm = await this.$refs.emailInput.validate()
+      if (!isValidForm) {
         return
       }
       this.isSavingWaitlist = true
-      await this.$api.post('waitlist/', getAjaxFormData({ email: this.email }))
-      this.isSavingWaitlist = false
-      this.email = null
-      this.$refs.emailInput.blur()
+      this.authStore.executeIfCaptchaValid(
+        'WAITLIST',
+        async () => {
+          await this.$api.post('sales/waitlist/', getAjaxFormData({ email: this.email }))
+        },
+        () => messagesUtil.addErrorMsg(
+          'Unable to complete waitlist sign up. reCAPTCHA authentication failed'
+        ),
+        () => {
+          this.isSavingWaitlist = false
+          this.email = null
+          this.$refs.emailInput.blur()
+        }
+      )
     }
+  },
+  setup () {
+    return { authStore: useAuthStore() }
   }
 }
 </script>

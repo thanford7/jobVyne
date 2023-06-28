@@ -1,6 +1,13 @@
 <template>
   <div>
-    <AuthEmailForm :is-create="isCreate" :default-email="defaultEmail" :user-type-bit="userTypeBit"/>
+    <AuthEmailForm
+      :is-create="isCreate"
+      :default-email="defaultEmail"
+      :user-type-bit="userTypeBit"
+      :user-props="userProps"
+      :redirect-page-url="redirectPageUrl"
+      :style-override="styleOverride"
+    />
     <SeparatorWithText>or</SeparatorWithText>
     <AuthSocialButtons
       :is-create="isCreate"
@@ -15,7 +22,7 @@
 import AuthEmailForm from 'components/AuthEmailForm.vue'
 import AuthSocialButtons from 'components/AuthSocialButtons.vue'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
-import { USER_TYPES } from 'src/utils/user-types'
+
 export default {
   name: 'AuthAll',
   components: {
@@ -33,13 +40,18 @@ export default {
       default: false
     },
     userTypeBit: {
-      type: Number,
-      default: USER_TYPES.Employee
+      type: [Number, null]
+    },
+    userProps: {
+      type: [Object, null]
     },
     redirectPageUrl: {
       type: [String, null]
     },
     redirectParams: {
+      type: [Object, null]
+    },
+    styleOverride: {
       type: [Object, null]
     }
   }

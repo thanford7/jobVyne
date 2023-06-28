@@ -2,44 +2,7 @@
 
 from django.db import migrations
 
-GROUPS = (('Admin', 16, 0), ('HR Professional', 16, 1), ('Employee', 4, 1), ('Influencer', 8, 1))
-PERMISSIONS = (
-    ('Manage users', 'Allows the user to create and edit new users.', ['Admin'], 16),
-    ('Change user permissions', '', ['Admin'], 16),
-    ('Manage custom permission groups', 'Allows the user to create, edit, and delete custom permission groups.',
-     ['Admin'], 16),
-    ('Manage employer content',
-     'Allows the user to create, edit, and delete employer content such as the employer description.',
-     ['Admin', 'HR Professional'], 16),
-    ('Manage employer jobs',
-     'Allows the user to create, edit, and delete. For most employers, most job data will automatically be pulled from your ATS.',
-     ['Admin', 'HR Professional'], 16),
-    ('Manage employee referral bonuses',
-     'Allows user to set and modify the referral bonus for any job or groups of jobs.', ['Admin', 'HR Professional'],
-     16),
-    ('Add personal employee content',
-     'Allows employees to add text and video content about their job which is displayed for any of their unique job links.',
-     ['Employee'], 4),
-    ('Manage billing settings', 'Allows user to update billing details and set budget limits', ['Admin'], 16)
-)
-
-
-def add_permissions(apps, schema_editor):
-    EmployerAuthGroup = apps.get_model('jvapp', 'EmployerAuthGroup')
-    EmployerPermission = apps.get_model('jvapp', 'EmployerPermission')
-    
-    auth_groups = {}
-    for name, user_type_bit, is_default in GROUPS:
-        new_group = EmployerAuthGroup(name=name, is_default=is_default, user_type_bit=user_type_bit)
-        new_group.save()
-        auth_groups[name] = new_group
-    
-    for name, description, group_names, user_type_bit in PERMISSIONS:
-        new_permission = EmployerPermission(name=name, description=description, user_type_bits=user_type_bit)
-        new_permission.save()
-        
-        for group_name in group_names:
-            auth_groups[group_name].permissions.add(new_permission)
+from jvapp.utils.migration_permissions import update_permissions
 
 
 class Migration(migrations.Migration):
@@ -48,5 +11,5 @@ class Migration(migrations.Migration):
     ]
     
     operations = [
-        migrations.RunPython(add_permissions, atomic=True),
+        migrations.RunPython(update_permissions, atomic=True),
     ]

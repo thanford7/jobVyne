@@ -1,0 +1,24 @@
+{% extends 'emails/base_general_email.html' %}
+
+{% block body %}
+    <p style="text-align:left">Hi {{ user.first_name }},</p>
+    <p style="text-align:left">Please verify your email by clicking the button below:</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+        <tbody>
+        <tr>
+            <td align="left">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                    <tr>
+                        <td><a href="{{ protocol }}://{{ domain }}/verify-email/{{ uid }}/{{ token }}" target="_blank">Verify Email</a></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <p style="text-align:left">This link will expire in 8 hours. If you need to send another verification email, go to
+        your
+        <a href="{{ protocol }}://{{ domain }}/user/profile/?tab=security">profile</a>.
+{% endblock body %}

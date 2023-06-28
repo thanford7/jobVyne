@@ -7,7 +7,7 @@ services:
     networks:
       - main
     ports:
-      - "3308:3306"
+      - "3310:3306"
     volumes:
       - db-data:/var/lib/mysql
     env_file:
@@ -58,14 +58,14 @@ services:
       - https_key
     restart: "no"
     # Rebuild is necessary: https://stackoverflow.com/questions/69607736/vite-react-app-esbuild-error-in-docker-container
-    command: bash -c "npm rebuild esbuild && quasar dev -p 9000"
+    command: bash -c "NODE_OPTIONS=--max_old_space_size=4096 npm rebuild esbuild && quasar dev -p 9000"
 
   backend:
     container_name: backend
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: bash -c "python manage.py migrate --noinput && python manage.py runserver_plus 0.0.0.0:8000 --keep-meta-shutdown --cert-file /run/secrets/https_cert --key-file /run/secrets/https_key"
+    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py runserver_plus 0.0.0.0:8000 --keep-meta-shutdown --cert-file /run/secrets/https_cert --key-file /run/secrets/https_key"
     volumes:
       - ./backend:/backend
     ports:
@@ -75,10 +75,63 @@ services:
     secrets:
       - https_cert
       - https_key
+      - google_key
     env_file:
       - ./backend/.env
     depends_on:
       - db
+
+  stripe-cli:
+    image: stripe/stripe-cli
+    container_name: stripe-cli
+    build: .
+    command: "listen --api-key ${STRIPE_API_KEY} --device-name ${STRIPE_DEVICE_NAME} --forward-to https://backend:8000/api/v1/billing/webhooks/ --skip-verify"
+    env_file:
+      - stripe_cli.env
+    networks:
+      - main
+    depends_on:
+      - backend
+
+#  cron:
+#    container_name: cron
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py ats_jobs --schedule_minutes 5"
+#    volumes:
+#      - ./backend:/backend
+#    networks:
+#      - main
+#    env_file:
+#      - ./backend/.env
+#    depends_on:
+#      - db
+
+#  cron:
+#    container_name: cron
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile-Celery
+#    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && celery -A cron-jobs worker -l INFO"
+#    volumes:
+#      - ./backend:/cron-jobs
+#    networks:
+#      - main
+#    env_file:
+#      - ./backend/.env
+#    depends_on:
+#      - db
+#      - rabbitmq
+#
+#  rabbitmq:
+#    image: rabbitmq:latest
+#    networks:
+#      - main
+#    ports:
+#      - "5672:5672"
+#    restart: on-failure
+
 
 volumes:
   db-data:
@@ -92,3 +145,5 @@ secrets:
     file: frontend/localhost.pem
   https_key:
     file: frontend/localhost-key.pem
+  google_key:
+    file: backend/secret/google-captcha-local.json

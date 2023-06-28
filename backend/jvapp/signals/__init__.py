@@ -1,15 +1,20 @@
-import functools
-
+__all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
+from django.core.files import File
 from django.db.models import Q
-from django.db.models.signals import m2m_changed, post_save, pre_delete, pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from jvapp.models import EmployerAuthGroup, JobVyneUser
+from jvapp.apis.job_seeker import ApplicationTemplateView
+from jvapp.apis.job_subscription import JobSubscriptionView
+from jvapp.apis.social import SocialLinkView
+from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobApplicationRequirement, is_default_auth_group
+from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
+from jvapp.models.social import SocialLink
+from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
+from jvapp.utils.file import get_file_extension, get_file_name
+from jvapp.utils.image import resize_image_with_fill
 
-__all__ = ('add_audit_fields', 'update_user_types_on_group_save', 'update_user_types_on_group_delete')
-
-from jvapp.models.employer import is_default_auth_group
 
 def _get_default_user_groups(employer_id):
     # Get the default permission groups for each user type
@@ -30,37 +35,6 @@ def _get_default_user_groups(employer_id):
             None
         )
     return default_permission_group_dict
-    
-
-def _reduce_user_type_bits(permission_groups):
-    return functools.reduce(
-        lambda user_type_bits, group: group.user_type_bit | user_type_bits,
-        permission_groups, 0
-    )
-
-
-def _update_user_types_on_group_change(instance, is_delete):
-    impacted_users = JobVyneUser.objects \
-        .prefetch_related('permission_groups') \
-        .filter(permission_groups__in=[instance])
-
-    cache_default_user_groups = {}
-    filter_fn = lambda group: (not is_delete) or group.id != instance.id
-    for user in impacted_users:
-        if not (default_user_groups := cache_default_user_groups.get(user.employer_id)):
-            default_user_groups = _get_default_user_groups(user.employer_id)
-            cache_default_user_groups[user.employer_id] = default_user_groups
-        new_user_type_bits = _reduce_user_type_bits((g for g in user.permission_groups.all() if filter_fn(g)))
-        
-        # Add the default group for any user type bits that would be lost
-        lost_user_type_bits = (new_user_type_bits ^ user.user_type_bits) & user.user_type_bits
-        for user_type_bit in JobVyneUser.ALL_USER_TYPES:
-            if user_type_bit & lost_user_type_bits:
-                user.permission_groups.add(default_user_groups[user_type_bit])
-        
-        user.user_type_bits |= new_user_type_bits
-    
-    JobVyneUser.objects.bulk_update(impacted_users, ['user_type_bits'])
 
 
 @receiver(pre_save)
@@ -72,36 +46,146 @@ def add_audit_fields(sender, instance, *args, **kwargs):
         instance.modified_dt = timezone.now()
 
 
-@receiver(post_save, sender=EmployerAuthGroup)
-def update_user_types_on_group_save(sender, instance, *args, **kwargs):
-    _update_user_types_on_group_change(instance, False)
+@receiver(pre_save)
+def add_owner_fields(sender, instance, *args, **kwargs):
+    if hasattr(instance, 'created_user') and not instance.id:
+        instance.created_dt = timezone.now()
+    
+    if hasattr(instance, 'modified_user'):
+        instance.modified_dt = timezone.now()
 
 
-@receiver(pre_delete, sender=EmployerAuthGroup)
-def update_user_types_on_group_delete(sender, instance, *args, **kwargs):
-    _update_user_types_on_group_change(instance, True)
-    
-    
-@receiver(m2m_changed, sender=JobVyneUser.permission_groups.through)
-def update_user_types_on_user_permission_change(sender, instance, action, *args, **kwargs):
-    if not isinstance(instance, JobVyneUser):
-        return
-    
-    if action not in ('post_add', 'post_remove', 'post_clear'):
-        return
+@receiver(pre_save, sender=JobVyneUser)
+def prevent_duplicate_user(sender, instance, *args, **kwargs):
+    new_user_emails = [instance.email]
+    if instance.business_email:
+        new_user_emails.append(instance.business_email)
+    current_user_filter = Q(email__in=new_user_emails) | Q(business_email__in=new_user_emails)
+    current_user_filter &= ~Q(id=instance.id)
+    existing_users = JobVyneUser.objects.filter(current_user_filter)
+    if existing_users:
+        raise ValueError('A user with this email address already exists')
 
-    instance.user_type_bits = _reduce_user_type_bits(instance.permission_groups.all())
-    instance.save()
     
+@receiver(post_save, sender=JobVyneUser)
+def create_employee_referral_link(sender, instance, *args, **kwargs):
+    if instance.employer_id:
+        SocialLinkView.get_or_create_employee_referral_links([instance], instance.employer)
+
     
 @receiver(post_save, sender=JobVyneUser)
 def set_user_permission_groups_on_save(sender, instance, *args, **kwargs):
-    if len(instance.permission_groups.all()):
+    # Only set permission groups if the user is associated with an employer
+    if not instance.employer_id:
         return
     
     default_permission_groups = _get_default_user_groups(instance.employer_id)
+    groups_to_add = []
     for user_type_bit in JobVyneUser.ALL_USER_TYPES:
-        if instance.user_type_bits & user_type_bit:
+        if instance.user_type_bits and (instance.user_type_bits & user_type_bit):
             default_permission_group = default_permission_groups.get(user_type_bit)
             if default_permission_group:
-                instance.permission_groups.add(default_permission_group)
+                groups_to_add.append(
+                    UserEmployerPermissionGroup(
+                        user_id=instance.id,
+                        employer_id=instance.employer_id,
+                        permission_group_id=default_permission_group.id,
+                        is_employer_approved=user_type_bit not in JobVyneUser.USER_TYPES_APPROVAL_REQUIRED
+                    )
+                )
+
+    UserEmployerPermissionGroup.objects.bulk_create(groups_to_add, ignore_conflicts=True)
+
+       
+@receiver(post_save, sender=JobVyneUser)
+def link_job_applications(sender, instance, *args, **kwargs):
+    # User must have verified their email before we can show them completed job applications
+    if not instance.is_email_verified:
+        return
+    
+    orphaned_applications = JobApplication.objects.filter(email=instance.email, user__isnull=True)
+    for app in orphaned_applications:
+        app.user_id = instance.id
+        
+    JobApplication.objects.bulk_update(orphaned_applications, ['user_id'])
+    
+    # Create an application template for the user if they don't already have one
+    if (not ApplicationTemplateView.get_application_template(instance.id)) and orphaned_applications:
+        app_defaults = orphaned_applications[0]
+        JobApplicationTemplate(
+            owner=instance,
+            first_name=app_defaults.first_name,
+            last_name=app_defaults.last_name,
+            email=app_defaults.email,
+            phone_number=app_defaults.phone_number,
+            linkedin_url=app_defaults.linkedin_url,
+            resume=app_defaults.resume
+        ).save()
+        
+        
+@receiver(post_save, sender=Employer)
+def add_job_application_requirements(sender, instance, created, *args, **kwargs):
+    # Only add requirements if this is a new employer
+    if not created:
+        return
+    
+    requirements = [
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='first_name', is_required=True, is_optional=False, is_hidden=False, is_locked=True
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='last_name', is_required=True, is_optional=False, is_hidden=False, is_locked=True
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='email', is_required=True, is_optional=False, is_hidden=False, is_locked=True
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='phone_number', is_required=False, is_optional=True, is_hidden=False, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='linkedin_url', is_required=False, is_optional=True, is_hidden=False, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='resume', is_required=True, is_optional=False, is_hidden=False, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='academic_transcript', is_required=False, is_optional=False, is_hidden=True, is_locked=False
+        )
+    ]
+    for application_requirement in requirements:
+        application_requirement.employer = instance
+        
+    EmployerJobApplicationRequirement.objects.bulk_create(requirements)
+
+
+@receiver(post_save, sender=Employer)
+def generate_logo_sizes(sender, instance, created, *args, **kwargs):
+    if instance.logo and not instance.logo_square_88:
+        new_image = resize_image_with_fill(instance.logo, 88, 88)
+        if not new_image:
+            return
+        file_name = get_file_name(instance.logo.url, is_include_extension=False)
+        file_extension = get_file_extension(instance.logo.url)
+        instance.logo_square_88 = File(new_image, name=f'{file_name}_square_88.{file_extension}')
+        instance.save()
+        new_image.close()
+
+
+@receiver(post_save, sender=Employer)
+def create_employer_job_board(sender, instance, created, *args, **kwargs):
+    if created:
+        link = SocialLink(
+            is_default=True, name='Main Job Board', employer_id=instance.id
+        )
+        link.save()
+        # If this is an employer then, they should only be subscribed to their jobs
+        if instance.organization_type & Employer.ORG_TYPE_EMPLOYER:
+            employer_subscription = JobSubscriptionView.get_or_create_employer_subscription(instance.id)
+            link.job_subscriptions.add(employer_subscription.id)

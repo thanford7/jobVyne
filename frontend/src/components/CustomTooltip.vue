@@ -1,21 +1,35 @@
 <template>
   <div style="display: inline-block;">
-    <span v-if="is_include_space">&nbsp;</span><slot name="icon"/>
-    <q-tooltip :class="color_class" style="font-size: 14px;" max-width="500px">
+    <slot name="content"/>
+    <span v-if="is_include_space">&nbsp;</span>
+    <slot name="icon">
+      <q-icon v-if="is_include_icon" :class="icon_color_class" tag="span" name="help_outline" :size="icon_size"/>
+    </slot>
+    <Tooltip>
       <slot/>
-    </q-tooltip>
+    </Tooltip>
   </div>
 </template>
 
 <script>
+import Tooltip from 'components/Tooltip.vue'
 export default {
   name: 'CustomTooltip',
+  components: { Tooltip },
   props: {
-    color_class: {
+    icon_color_class: {
       type: String,
-      default: 'bg-info'
+      default: 'text-gray-500'
+    },
+    icon_size: {
+      type: String,
+      default: '24px'
     },
     is_include_space: {
+      type: Boolean,
+      default: false
+    },
+    is_include_icon: {
       type: Boolean,
       default: true
     }

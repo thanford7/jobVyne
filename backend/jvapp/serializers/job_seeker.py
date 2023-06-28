@@ -1,4 +1,7 @@
+from django.utils import timezone
+
 from jvapp.models.job_seeker import *
+from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -11,18 +14,23 @@ def base_application_serializer(app: JobApplication or JobApplicationTemplate):
         'email': app.email,
         'phone_number': app.phone_number,
         'linkedin_url': app.linkedin_url,
-        'resume_url': app.resume.url if app.resume else None
+        'resume_url': app.resume.url if app.resume else None,
+        'academic_transcript_url': app.academic_transcript.url if app.academic_transcript else None
     }
 
 
 def get_serialized_job_application(job_application: JobApplication):
-    return {
+    data = {
         **base_application_serializer(job_application),
-        'social_link_filter_id': job_application.social_link_filter_id,
+        'social_link_id': job_application.social_link_id,
+        'is_external_application': job_application.is_external_application,
         'employer_job': {
             'id': job_application.employer_job_id,
-            'employer_name': job_application.employer_job.employer.employerName,
+            'employer_name': job_application.employer_job.employer.employer_name,
             'employer_id': job_application.employer_job.employer_id,
-            'title': job_application.employer_job.jobTitle
+            'title': job_application.employer_job.job_title,
+            'locations': [get_serialized_location(l) for l in job_application.employer_job.locations.all()],
+            'is_open': (not job_application.employer_job.close_date) or (job_application.employer_job.close_date < timezone.now().date())
         }
     }
+    return data

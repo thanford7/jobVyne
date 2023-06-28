@@ -7,29 +7,32 @@
       <q-input
         filled
         readonly
-        :model-value="dataUtil.getFileNameFromUrl(fileUrl)"
+        class="jv-existing-file"
+        :model-value="fileUtil.getFileNameFromUrl(fileUrl)"
         :label="`Current ${label}`"
-      />
+      >
+        <template v-if="fileUtil.isImage(fileUrl)" v-slot:after>
+          <img :src="fileUrl" alt="Sample view of image" style="max-height: 56px">
+        </template>
+      </q-input>
       <span class="text-small">
         <span class="text-gray-3">
           <q-icon name="file_download"/>&nbsp;
         </span>
         <a :href="fileUrl" class="no-decoration" target="_blank">
-          {{ dataUtil.getFileNameFromUrl(fileUrl) }}
+          {{ fileUtil.getFileNameFromUrl(fileUrl) }}
         </a>
       </span>
     </div>
-    <div v-if="fileUrl">
-      <div class="q-gutter-sm">
-        <q-radio v-model="isUpload" :val="true" :label="`Upload new ${label}`"/>
-        <q-radio v-model="isUpload" :val="false" :label="`Use current ${label}`"/>
-      </div>
+    <div v-if="fileUrl && isAllowFileUpdate">
+      <q-radio v-model="isUpload" :val="true" :label="`Upload new ${label}`" class="text-small"/>
+      <q-radio v-model="isUpload" :val="false" :label="`Use current ${label}`" class="text-small"/>
     </div>
   </div>
 </template>
 
 <script>
-import dataUtil from 'src/utils/data'
+import fileUtil from 'src/utils/file'
 
 export default {
   name: 'FileDisplayOrUpload',
@@ -48,12 +51,21 @@ export default {
     },
     label: {
       type: String
+    },
+    isAllowFileUpdate: {
+      type: Boolean,
+      default: true
     }
   },
   data () {
     return {
       isUpload: true,
-      dataUtil
+      fileUtil
+    }
+  },
+  watch: {
+    fileUrl () {
+      this.isUpload = !this.fileUrl
     }
   },
   methods: {

@@ -33,11 +33,11 @@ export const getAjaxFormData = (data, mediaFields = null) => {
   return ajaxData
 }
 
-export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) => {
+export const openDialog = ($q, title, message, { isCancel = false, okFn, cancelFn, dismissFn } = {}) => {
   return $q.dialog({
-    title: 'Confirm',
+    title,
     message,
-    cancel: true,
+    cancel: isCancel,
     persistent: true
   }).onOk(() => {
     if (okFn) {
@@ -53,4 +53,23 @@ export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) =>
       dismissFn()
     }
   })
+}
+
+export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) => {
+  return openDialog($q, 'Confirm', message,
+    { isCancel: true, okFn, cancelFn, dismissFn }
+  )
+}
+
+/**
+ * ~assets doesn't work when assigned to a variable so this function can be used to get the appropriate path
+ * @param relativePath {String}: The path from the assets folder, starting with the forward slash
+ * @returns {string}
+ */
+export const getAssetsPath = (relativePath) => {
+  return process.env.ASSETS_PATH + relativePath
+}
+
+export const makeApiRequestKey = (...args) => {
+  return JSON.stringify(args)
 }

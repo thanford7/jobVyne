@@ -11,10 +11,17 @@
         <q-space/>
         <q-tabs class="gt-sm" align="right" shrink>
           <template v-if="authStore.propIsAuthenticated">
-            <q-route-tab to="/dashboard" label="Dashboard"/>
-            <q-tab label="Logout" @click="authStore.logout"/>
+            <q-route-tab :to="pagePermissionsUtil.getDefaultLandingPage(authStore.propUser)" label="Dashboard"/>
+            <q-tab id="jv-logout-btn" label="Logout" @click="authStore.logout()"/>
           </template>
-          <q-route-tab v-else to="/login" label="Login"/>
+          <template v-else>
+            <q-route-tab :to="{ name: 'login', query: { isNew: 0 } }" label="Login"/>
+            <q-route-tab
+              :to="{ name: 'login', query: { isNew: 1 } }"
+              label="Employee sign up"
+              class="bg-accent text-white"
+            />
+          </template>
         </q-tabs>
         <div class="lt-md q-pa-md" style="max-width: 250px">
           <q-btn-dropdown
@@ -32,7 +39,7 @@
                   exact clickable v-close-popup
                   v-ripple
                   label="Dashboard"
-                  to="/dashboard"
+                  :to="pagePermissionsUtil.getDefaultLandingPage(authStore.propUser)"
                 >
                   <q-item-section>
                     Dashboard
@@ -42,24 +49,33 @@
                   exact clickable v-close-popup
                   v-ripple
                   label="Logout"
-                  @click="authStore.logout"
+                  @click="authStore.logout()"
                 >
                   <q-item-section>
                     Logout
                   </q-item-section>
                 </q-item>
               </template>
-              <q-item
-                v-else
-                exact clickable v-close-popup
-                v-ripple
-                to="/login"
-                label="Login"
-              >
-                <q-item-section>
-                  Login
-                </q-item-section>
-              </q-item>
+              <template v-else>
+                <q-item
+                  exact clickable v-close-popup
+                  v-ripple
+                  :to="{ name: 'login', query: { isNew: 0 } }"
+                >
+                  <q-item-section>
+                    Login
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  exact clickable v-close-popup
+                  v-ripple
+                  :to="{ name: 'login', query: { isNew: 1 } }"
+                >
+                  <q-item-section>
+                    Employee sign up
+                  </q-item-section>
+                </q-item>
+              </template>
             </q-list>
           </q-btn-dropdown>
         </div>
@@ -67,7 +83,6 @@
     </q-header>
 
     <q-page-container>
-      <BannerMessage/>
       <router-view/>
     </q-page-container>
 
@@ -77,14 +92,23 @@
 </template>
 
 <script>
+import { loadScript } from 'src/utils/load-script.js'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { useAuthStore } from 'stores/auth-store'
-import BannerMessage from 'components/BannerMessage.vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import { Loading } from 'quasar'
 
 export default {
   name: 'LandingLayout',
-  components: { CustomFooter, BannerMessage },
+  components: { CustomFooter },
+  data () {
+    return {
+      pagePermissionsUtil
+    }
+  },
+  async created () {
+    await loadScript(`https://www.google.com/recaptcha/enterprise.js?render=${process.env.GOOGLE_CAPTCHA_KEY}`)
+  },
   preFetch () {
     const authStore = useAuthStore()
     Loading.show()

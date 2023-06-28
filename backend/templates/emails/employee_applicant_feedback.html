@@ -1,0 +1,45 @@
+{% extends 'emails/base_email.html' %}
+
+{% block body %}
+    <p>
+        {{ referrer.first_name }} {{ referrer.last_name }} provided feedback on the applicant,
+        {{ application.first_name }} {{ application.last_name }}, for the {{ job.job_title }} role.
+    </p>
+    <hr/>
+    <table width="100%" cellpadding="0" cellspacing="0" style="min-width:100%; border-collapse: collapse;">
+        <tbody>
+        <tr>
+            <td style="font-weight: bold; padding: 5px;">Do you know the applicant?</td>
+        </tr>
+        <tr>
+            <td style="padding: 5px;">{{ know_applicant }}</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; padding: 5px;">Would you recommend this applicant for the {{ job.job_title }} position?</td>
+        </tr>
+        <tr>
+            <td style="padding: 5px;">{{ recommend_job }}</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; padding: 5px;">Would you recommend this applicant for any position?</td>
+        </tr>
+        <tr>
+            <td style="padding: 5px;">{{ recommend_any }}</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; padding: 5px;">Additional feedback:</td>
+        </tr>
+        <tr>
+            <td style="padding: 5px;">{{ application.feedback_note }}</td>
+        </tr>
+        </tbody>
+    </table>
+    <hr/>
+{% endblock body %}
+{% block final_message %}
+    <p style="margin-top: 5px;">
+        You can view employee feedback on all applicants on the
+        <a href="{{ base_url }}/employer/employer-applications" target="_blank">Job applications page</a> by clicking
+        the down arrow next to the applicant to show more information.
+    </p>
+{% endblock final_message %}

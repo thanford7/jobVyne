@@ -1,0 +1,19 @@
+{% extends 'emails/base_email.html' %}
+
+{% block body %}
+    <p>
+        Congratulations! {{ application.first_name }} {{ application.last_name }} submitted an application for
+        the {{ job.job_title }} position using one of your referral links.
+    </p>
+    <p>
+        Please take a moment to
+        <a href="{{ base_url }}/employee/employee-applications/?application={{ application.id }}" target="_blank">provide feedback</a>
+        on this applicant by answering four quick questions. You can also track all of your referred
+        applications on the
+        <a href="{{ base_url }}/employee/employee-applications/" target="_blank">Job applications page</a>
+    </p>
+{% endblock body %}
+
+{% block final_message %}
+    {% include 'snippets/support_signoff.html' %}
+{% endblock final_message %}

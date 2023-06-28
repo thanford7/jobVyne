@@ -1,15 +1,36 @@
 <template>
   <q-page padding>
-    <!-- content -->
+    <div class="q-ml-sm">
+      <PageHeader title="Dashboard"/>
+    </div>
   </q-page>
 </template>
 
 <script>
+import { useAuthStore } from 'stores/auth-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
 import { useGlobalStore } from 'stores/global-store'
-import { useMeta } from 'quasar'
+import { Loading, useMeta } from 'quasar'
+import PageHeader from 'components/PageHeader.vue'
 
 export default {
-  // name: 'PageName',
+  name: 'DashboardPage',
+  components: { PageHeader },
+  preFetch () {
+    const authStore = useAuthStore()
+    const employerStore = useEmployerStore()
+    Loading.show()
+
+    return authStore.setUser().then(() => {
+      if (authStore.propUser.employer_id) {
+        return Promise.all([
+          employerStore.setEmployer(authStore.propUser.employer_id)
+        ])
+      }
+    }).finally(() => {
+      Loading.hide()
+    })
+  },
   setup () {
     const globalStore = useGlobalStore()
 

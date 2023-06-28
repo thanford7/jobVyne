@@ -12,15 +12,18 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
+$body-font-size   : 16px !default;
+$button-font-size : 16px !default;
+
 $primary   : #034C3C;
 $secondary : #D99255;
-$accent    : #9BA2FF;
+$accent    : darken(#9BA2FF, 10%);
 
 $dark      : #1D1D1D;
 $dark-page : #121212;
 
-$positive  : #5AD780;
-$negative  : #EF8276;
+$positive  : #26C281;
+$negative  : #D24D57;
 $info      : #6795DA;
 $warning   : #F2CD61;
 
@@ -32,6 +35,7 @@ $gray-700  : #4E5F58;
 $gray-900  : #002416;
 
 $facebook  : #1a92f3;
+$google    : #ea4334;
 
 $gray-color-map: (
   'white': $white,
@@ -45,5 +49,9 @@ $gray-color-map: (
 $brand-color-map: (
   'primary': $primary,
   'secondary': $secondary,
-  'accent': $accent
+  'accent': $accent,
+  'negative': $negative,
+  'warning': $warning,
+  'positive': $positive,
+  'info': $info
 );

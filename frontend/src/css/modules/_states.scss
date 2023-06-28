@@ -1,4 +1,11 @@
+@use '../quasar.variables' as *;
 
-.background-hover:hover {
+@each $name, $color in $gray-color-map {
+  .bg-hover-#{$name}:hover {
+    background-color: $color;
+  }
+}
+
+.bg-hover:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }

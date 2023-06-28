@@ -1,0 +1,1 @@
+*/30 * * * * /cron-jobs/run_ats_job.sh

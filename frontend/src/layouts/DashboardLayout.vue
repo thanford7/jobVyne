@@ -2,9 +2,9 @@
   <q-layout view="hHh lpR fFf">
 
     <q-drawer
-      v-if="!utilStore.isMobile"
+      v-if="!utilStore.isUnderBreakPoint('md')"
       :breakpoint="0"
-      :width="250"
+      :width="300"
       side="left"
       show-if-above
       :mini="!isLeftDrawerOpen"
@@ -51,7 +51,7 @@
               clickable
               :active="menuItem.key === pageKey"
               :class="(menuItem.key === pageKey) ? 'border-left-4-primary' : ''"
-              @click="redirectUrl(menuItem.key)"
+              @click="$router.push(pagePermissionsUtil.getRouterPageCfg(menuItem.key, viewerModeBit))"
               v-ripple
             >
               <q-item-section avatar>
@@ -65,7 +65,7 @@
           </template>
           <q-item
             clickable
-            @click="authStore.logout"
+            @click="authStore.logout()"
             v-ripple
           >
             <q-item-section avatar>
@@ -93,11 +93,10 @@
     </q-drawer>
 
     <q-page-container>
-      <BannerMessage/>
       <router-view/>
     </q-page-container>
 
-    <q-footer v-if="utilStore.isMobile" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow-x">
+    <q-footer v-if="utilStore.isUnderBreakPoint('md')" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow">
       <q-btn-dropdown
         v-if="userViewOptions.length > 1"
         flat unelevated stack
@@ -125,7 +124,7 @@
         v-for="menuItem in menuList"
         class="col-3 q-py-sm"
         :class="getMobileMenuItemClasses(menuItem)"
-        @click="redirectUrl(menuItem.key)"
+        @click="$router.push(pagePermissionsUtil.getRouterPageCfg(menuItem.key))"
         v-ripple
       >
         <div class="text-center">
@@ -133,7 +132,7 @@
         </div>
         <div class="text-center">{{ menuItem.label }}</div>
       </div>
-      <div class="col-3 q-py-sm" v-ripple @click="authStore.logout">
+      <div class="col-3 q-py-sm" v-ripple @click="authStore.logout()">
         <div class="text-center">
           <q-icon name="logout" size="24px"/>
         </div>
@@ -145,182 +144,74 @@
 </template>
 
 <script>
-import BannerMessage from 'components/BannerMessage.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
 import { useUtilStore } from 'stores/utility-store'
 import { useAuthStore } from 'stores/auth-store'
 import { Loading } from 'quasar'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import { USER_TYPES } from 'src/utils/user-types'
 
 const generalMenuList = [
   {
-    icon: 'settings',
-    key: 'settings',
-    label: 'Settings',
+    icon: 'badge',
+    key: 'profile',
+    label: 'Account',
     separator: false
   },
+  // TODO: Hide until messaging is supported
+  // {
+  //   icon: 'message',
+  //   key: 'messages',
+  //   label: 'Messages',
+  //   separator: false
+  // },
   {
     icon: 'feedback',
     key: 'feedback',
     label: 'Send Feedback',
     separator: false
-  },
-  {
-    icon: 'help',
-    key: 'help',
-    label: 'Help',
-    separator: false
   }
 ]
 
-const userCfgMap = {
-  [USER_TYPES.Admin]: {
-    viewLabel: 'Admin',
-    viewIcon: 'admin_panel_settings',
-    namespace: 'admin',
-    menuItems: [
-      {
-        icon: 'home',
-        key: 'dashboard',
-        label: 'Dashboard',
-        separator: false
-      }
-    ]
-  },
-  [USER_TYPES.Candidate]: {
-    viewLabel: 'Job seeker',
-    viewIcon: 'fa-solid fa-binoculars',
-    namespace: 'candidate',
-    menuItems: [
-      {
-        icon: 'home',
-        key: 'dashboard',
-        label: 'Dashboard',
-        separator: false
-      }
-    ]
-  },
-  [USER_TYPES.Employee]: {
-    viewLabel: 'Employee',
-    viewIcon: 'work',
-    namespace: 'employee',
-    menuItems: [
-      {
-        icon: 'home',
-        key: 'dashboard',
-        label: 'Dashboard',
-        separator: false
-      },
-      {
-        icon: 'link',
-        key: 'links',
-        label: 'Referral Links',
-        separator: false
-      },
-      {
-        icon: 'person',
-        key: 'profile',
-        label: 'Profile',
-        separator: false
-      },
-      {
-        icon: 'share',
-        key: 'social-accounts',
-        label: 'Social Accounts',
-        separator: false
-      },
-      {
-        icon: 'message',
-        key: 'messages',
-        label: 'Messages',
-        separator: false
-      },
-      {
-        icon: 'dynamic_feed',
-        key: 'content',
-        label: 'Content',
-        separator: true
-      }
-    ]
-  },
-  [USER_TYPES.Influencer]: {
-    viewLabel: 'Influencer',
-    viewIcon: 'groups_3',
-    namespace: 'influencer',
-    menuItems: [
-      {
-        icon: 'home',
-        key: 'dashboard',
-        label: 'Dashboard',
-        separator: false
-      }
-    ]
-  },
-  [USER_TYPES.Employer]: {
-    viewLabel: 'Employer',
-    viewIcon: 'business',
-    namespace: 'employer',
-    menuItems: [
-      {
-        icon: 'home',
-        key: 'dashboard',
-        label: 'Dashboard',
-        separator: false
-      },
-      {
-        icon: 'groups',
-        key: 'user-management',
-        label: 'Users',
-        separator: false
-      },
-      {
-        icon: 'message',
-        key: 'messages',
-        label: 'Messages',
-        separator: false
-      },
-      {
-        icon: 'dynamic_feed',
-        key: 'content',
-        label: 'Content',
-        separator: true
-      }
-    ]
-  }
-}
-
 export default {
-  components: { BannerMessage },
   data () {
     return {
       isLeftDrawerOpen: true,
       isRightDrawerOpen: false,
-      userCfgMap
+      pagePermissionsUtil,
+      userCfgMap: pagePermissionsUtil.userCfgMap
     }
   },
   computed: {
     menuList () {
       if (!this.viewerModeBit) {
-        return []
+        return generalMenuList
       }
-      return [...userCfgMap[this.viewerModeBit].menuItems, ...generalMenuList]
+      const userMenuList = pagePermissionsUtil.filterViewablePages(this.user, this.viewerModeBit)
+
+      // Add a separator between user type specific items and general items
+      if (userMenuList.length) {
+        userMenuList[userMenuList.length - 1].separator = true
+      }
+      return [...userMenuList, ...generalMenuList]
     },
     pageKey () {
-      return this.$route.params.key || 'dashboard'
+      return this.$route.name
     },
     viewerModeBit () {
-      const viewerModeBit = Object.entries(userCfgMap).reduce((matchedUserBit, [userBit, cfg]) => {
+      const viewerModeBit = Object.entries(this.userCfgMap).reduce((matchedUserBit, [userBit, cfg]) => {
         if (cfg.namespace === this.$route.params.namespace) {
           return userBit
         }
         return matchedUserBit
       }, 0)
-      return viewerModeBit || this.getDefaultUserModeBit()
+      return viewerModeBit || this.$route.params.userTypeBit || this.getDefaultUserModeBit()
     },
     userViewOptions () {
       return this.authStore.propUserTypeBitsList.map((userBit) => {
         return {
-          label: userCfgMap[userBit].viewLabel,
-          icon: userCfgMap[userBit].viewIcon,
+          label: this.userCfgMap[userBit].viewLabel,
+          icon: this.userCfgMap[userBit].viewIcon,
           userBit
         }
       })
@@ -328,8 +219,7 @@ export default {
   },
   methods: {
     changeViewMode (viewModeBit) {
-      const namespace = userCfgMap[viewModeBit].namespace
-      this.redirectUrl('dashboard', namespace)
+      this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.user, viewModeBit))
     },
     getDefaultUserModeBit () {
       const viewModePrioritized = [
@@ -354,12 +244,6 @@ export default {
         classTxt += ' border-right-1-white'
       }
       return classTxt
-    },
-    redirectUrl (key, namespace = null) {
-      namespace = namespace || userCfgMap[this.viewerModeBit].namespace
-      const baseUrl = `/dashboard/${namespace}`
-      const url = (key === 'dashboard') ? baseUrl : `${baseUrl}/${key}`
-      this.$router.push(url)
     }
   },
   preFetch () {
@@ -368,9 +252,12 @@ export default {
     return authStore.setUser().finally(() => Loading.hide())
   },
   setup () {
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
     return {
       authStore: useAuthStore(),
-      utilStore: useUtilStore()
+      utilStore: useUtilStore(),
+      user
     }
   }
 }

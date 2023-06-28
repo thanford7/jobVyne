@@ -1,15 +1,19 @@
 <template>
   <q-page>
-    <div class="row justify-center q-mt-xl q-gutter-y-lg">
+    <div class="row justify-center q-pt-xl q-gutter-y-lg  vine-background-1">
       <ResponsiveWidth class="q-px-md">
-        <div class="row">
+        <div class="row q-my-xl">
           <transition appear enter-active-class="animated slideInLeft">
             <div class="col-12 col-md-7 q-gutter-y-lg">
               <div class="rfs-h2 text-center text-bold font-primary">Turn your employees into your best recruiters</div>
               <div class="rfs-h6 text-center text-gray-700">
                 Automate employee referrals and generate more meaningful connections with job seekers
               </div>
-              <WaitlistSignUp class="q-px-lg"/>
+              <q-btn
+                icon="event" color="accent" size="1.2rem" class="w-100 q-mt-xl" ripple
+                label="Schedule demo"
+                @click="openDialogDemoSignUp()"
+              />
             </div>
           </transition>
           <transition appear enter-active-class="animated slideInRight">
@@ -22,13 +26,146 @@
           </transition>
         </div>
       </ResponsiveWidth>
-      <div class="row justify-center bg-grey-2 w-100">
+      <div class="row justify-center w-100 wavey" style="background-color: rgba(155, 162, 255, 0.2);">
         <ResponsiveWidth class="q-gutter-y-xl q-px-md q-py-xl">
-          <div class="rfs-h4 font-primary q-ml-md-xl">How it works</div>
+          <div class="rfs-h4 font-primary q-ml-md-xl text-center">You are missing talented candidates</div>
+          <div class="row">
+            <div class="col-12 col-md-6 q-pa-sm">
+              <div class="border-1-negative border-rounded q-pa-md">
+                <div class="rfs-h5 text-center q-mb-lg">Traditional Referral Programs</div>
+                <div class="text-center q-mb-lg">
+                  <q-img class="w-25" src="~assets/icons/one-to-one2.png" alt="One to one sharing"/>
+                </div>
+                <div class="rfs-h6 q-mb-lg">
+                  Employee referral programs are "one to one". An employee has to know of a job candidate that
+                  is a good fit and reach out to that person.
+                </div>
+                <div class="rfs-h6 q-mb-sm">
+                  This means you <b>miss out</b> on:
+                </div>
+                <ListIcon class="rfs-h6"
+                  :items="[
+                    'Passive candidates',
+                    'Candidates that the employee didn\'t think of',
+                    'Candidates that could have been referred by employees that don\'t participate in employee referrals'
+                  ]"
+                  color="negative"
+                  icon-name="visibility_off"
+                />
+              </div>
+            </div>
+            <div class="col-12 col-md-6 q-pa-sm">
+              <div class="border-1-positive border-rounded q-pa-md h-100">
+                <div class="rfs-h5 text-center q-mb-lg">JobVyne Platform</div>
+                <div class="text-center q-mb-lg">
+                  <q-img class="w-25" src="~assets/icons/many-to-one2.png" alt="Many to one sharing"/>
+                </div>
+                <div class="rfs-h6 q-mb-lg">
+                  JobVyne automatically posts multiple recent jobs to employees' social networks. Job candidates
+                  self-identify
+                  and apply directly.
+                </div>
+                <div class="rfs-h6 q-mb-sm">
+                  This means you <b>get more referrals</b> from:
+                </div>
+                <ListIcon class="rfs-h6"
+                  :items="[
+                    'Passive candidates',
+                    'Candidates that the employee didn\'t think of',
+                    '2nd and 3rd degree connections in an employee\'s network'
+                  ]"
+                  color="positive"
+                  icon-name="group_add"
+                />
+              </div>
+            </div>
+          </div>
+        </ResponsiveWidth>
+      </div>
+      <div class="row justify-center w-100">
+        <ResponsiveWidth class="q-gutter-y-xl q-px-md q-py-xl">
+          <div class="rfs-h4 font-primary q-ml-md-xl text-center">Employers and employees love JobVyne</div>
+          <div class="q-pa-md">
+            <q-carousel
+              id="testimonials"
+              animated keep-alive
+              v-model="slide"
+              infinite :autoplay="autoplay" control-color="primary"
+              :height="(utilStore.isUnderBreakPoint('md')) ? '60vh' : '40vh'"
+              transition-prev="slide-right"
+              transition-next="slide-left"
+              @mouseenter="autoplay = 7000"
+              @mouseleave="autoplay = false"
+              style="background-color: rgba(0,0,0,0);"
+              class="q-pt-md"
+            >
+              <q-carousel-slide :name="1">
+                <div class="flex h-100 items-center justify-center">
+                  <TestimonialCard
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
+                    headshot-src="/images/headshots/heatherWaldron.png"
+                    quote="JobVyne has made it so easy for employees to get the word out on new job openings and to get referrals.
+                    Hiring managers have been very happy with the quality of the applicants as well."
+                    name="Heather Waldron"
+                    job-title="HR Generalist"
+                  />
+                </div>
+              </q-carousel-slide>
+              <q-carousel-slide :name="2">
+                <div class="flex h-100 items-center justify-center">
+                  <TestimonialCard
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
+                    headshot-src="/images/headshots/timBirkmire.jpeg"
+                    quote="I got my first referral a few days after setting up my account. It's easy and simple. Every employee should check this out!"
+                    name="Tim Birkmire"
+                    job-title="Senior Software Engineer"
+                  />
+                </div>
+              </q-carousel-slide>
+              <q-carousel-slide :name="3">
+                <div class="flex h-100 items-center justify-center">
+                  <TestimonialCard
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
+                    headshot-src="/images/headshots/gretelUptegrove.jpeg"
+                    quote="I've never made a referral before, but JobVyne allows me to 'set it and forget it'. I got a referral within two weeks of joining the platform."
+                    name="Gretel Uptegrove"
+                    job-title="Data Engineer"
+                  />
+                </div>
+              </q-carousel-slide>
+              <q-carousel-slide :name="4">
+                <div class="flex h-100 items-center justify-center">
+                  <TestimonialCard
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
+                    headshot-src="/images/headshots/russGunther.jpeg"
+                    quote="It's often difficult to keep up with all of the job postings. JobVyne automatically updates the jobs so I don't even have to think about it. It's a great platform."
+                    name="Russ Gunther"
+                    job-title="Senior Software Engineer"
+                  />
+                </div>
+              </q-carousel-slide>
+              <q-carousel-slide :name="5">
+                <div class="flex h-100 items-center justify-center">
+                  <TestimonialCard
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
+                    headshot-src="/images/headshots/ericHochberg.jpeg"
+                    quote="I attend a lot of events and can share job openings with potential candidates by sharing a JobVyne QR code. It makes recruiting a lot easier. Even better, the QR code is linked to me so I can get a referral bonus!"
+                    name="Eric Hochberg"
+                    job-title="Director of Product Management"
+                  />
+                </div>
+              </q-carousel-slide>
+            </q-carousel>
+          </div>
+        </ResponsiveWidth>
+      </div>
+      <div class="row justify-center w-100 wavey" style="background-color: rgba(155, 162, 255, 0.2);">
+        <ResponsiveWidth class="q-gutter-y-xl q-px-md q-py-xl">
+          <div class="rfs-h4 font-primary q-ml-md-xl q-pt-lg">How it works</div>
           <q-intersection once style="min-height: 150px" transition="slide-right" :threshold="0.8"
                           transition-duration="1000">
             <HowItWorksItem
-              header="JobVyne automatically integrates with your Applicant Tracking System
+              header="JobVyne integrates with your Applicant Tracking System
                 to pull job posting information"
               :benefits="[
               'One click integration so you don\'t have to do any extra work to post jobs',
@@ -86,7 +223,7 @@
         </ResponsiveWidth>
       </div>
       <ResponsiveWidth class="q-px-md q-py-lg">
-        <div class="rfs-h4 font-primary q-mb-lg">Your employees are your best recruiters</div>
+        <div class="rfs-h4 font-primary q-mb-lg text-center">Your employees are your best recruiters</div>
         <div class="row">
           <div class="col-12 col-md-6 q-pa-md" v-for="benefit in [
             {
@@ -110,12 +247,16 @@
           </div>
         </div>
       </ResponsiveWidth>
-      <div class="row justify-center bg-grey-2 w-100">
-        <div class="col-12 col-md-6 col-lg-4 q-py-lg">
-          <div class="rfs-h4 font-primary text-center q-mb-lg">
-            Join the waitlist now!
+      <div class="row justify-center wavey-top w-100 q-pb-xl" style="background-color: rgba(155, 162, 255, 0.2);">
+        <div class="col-12 col-md-8 q-mt-xl">
+          <div class="rfs-h4 font-primary text-center q-mb-sm">
+            Don't miss out on your best source for talent. Get more employee referrals today
           </div>
-          <WaitlistSignUp/>
+          <q-btn
+            icon="event" color="accent" size="1.2rem" class="w-100 q-mt-md" ripple
+            label="Schedule demo"
+            @click="openDialogDemoSignUp()"
+          />
         </div>
       </div>
     </div>
@@ -123,17 +264,33 @@
 </template>
 
 <script>
+import DialogDemoSignUp from 'components/dialogs/DialogDemoSignUp.vue'
+import ListIcon from 'components/ListIcon.vue'
+import TestimonialCard from 'components/TestimonialCard.vue'
+import { useUtilStore } from 'stores/utility-store.js'
 import { defineComponent } from 'vue'
 import { useGlobalStore } from 'stores/global-store'
-import { useMeta } from 'quasar'
+import { useMeta, useQuasar } from 'quasar'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 import HowItWorksItem from 'pages/index-page/HowItWorksItem.vue'
 import BenefitItem from 'pages/index-page/BenefitItem.vue'
-import WaitlistSignUp from 'pages/index-page/WaitlistSignUp.vue'
 
 export default defineComponent({
   name: 'IndexPage',
-  components: { WaitlistSignUp, BenefitItem, HowItWorksItem, ResponsiveWidth },
+  components: { TestimonialCard, ListIcon, BenefitItem, HowItWorksItem, ResponsiveWidth },
+  data () {
+    return {
+      autoplay: 7000, // Number of milliseconds to show each slide
+      slide: 1
+    }
+  },
+  methods: {
+    openDialogDemoSignUp () {
+      this.q.dialog({
+        component: DialogDemoSignUp
+      })
+    }
+  },
   setup () {
     const globalStore = useGlobalStore()
 
@@ -143,6 +300,35 @@ export default defineComponent({
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
+    return {
+      utilStore: useUtilStore(),
+      q: useQuasar()
+    }
   }
 })
 </script>
+
+<style lang="scss">
+.vine-background-1 {
+  position: relative;
+
+  &::before {
+    content: "";
+    background: url('../../assets/background/vine1.jpeg') center center fixed;
+    background-size: cover;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    opacity: 0.15;
+    overflow: hidden;
+  }
+}
+
+#testimonials {
+  .q-panel {
+    overflow: visible;
+  }
+}
+</style>

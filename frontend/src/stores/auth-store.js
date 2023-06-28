@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import dataUtil from 'src/utils/data'
 import { USER_TYPES } from 'src/utils/user-types'
+import { getAjaxFormData } from 'src/utils/requests'
 
 /**
  * The bulk of authentication is handled in router-guards.js where:
@@ -13,7 +14,8 @@ import { USER_TYPES } from 'src/utils/user-types'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: {},
-    applications: []
+    applications: [],
+    employeeQuestions: {} // employerId: [<question1>, <question2>, ...]
   }),
   getters: {
     propIsAuthenticated: (state) => state.user && !dataUtil.isEmpty(state.user),
@@ -35,22 +37,23 @@ export const useAuthStore = defineStore('auth', {
     }
   },
   actions: {
-    async logout () {
+    async logout (redirect = '/') {
+      await this.$api.get('auth/login-set-cookie/')
       await this.$api.post('auth/logout/')
+      if (redirect) {
+        await this.$router.push(redirect)
+      }
       this.user = {}
-      this.$router.push('/')
     },
     async setUser (isForce = false) {
       if (isForce || !this.user || dataUtil.isEmpty(this.user)) {
         const resp = await this.$api.get('auth/check-auth/')
-        this.user = resp.data || {}
-        if (!dataUtil.isEmpty(this.user)) {
-          await this.setApplications(this.user, isForce)
-        }
+        this.user = resp?.data?.user || {}
       }
     },
     async setApplications (user, isForce = false) {
-      if (!user) {
+      if (!user || dataUtil.isEmpty(user)) {
+        this.applications = []
         return
       }
       if (isForce || !this.applications.length) {
@@ -60,8 +63,37 @@ export const useAuthStore = defineStore('auth', {
         this.applications = resp.data
       }
     },
-    getHasPermission (permissionName) {
-      return this?.user?.permissions?.includes(permissionName)
+    async setUserEmployeeQuestions (employerId) {
+      const resp = await this.$api.get('employee-questions/', {
+        params: { employer_id: employerId }
+      })
+      this.employeeQuestions[employerId] = resp.data
+    },
+    getHasPermission (permissionName, employerId = null) {
+      employerId = employerId || this.user.employer_id
+      if (!this.user || !this.user.permissions_by_employer[employerId]) {
+        return false
+      }
+      return this.user.permissions_by_employer[employerId].includes(permissionName)
+    },
+    getUserEmployeeQuestions (employerId) {
+      return this.employeeQuestions[employerId]
+    },
+    executeIfCaptchaValid (action, successFn, failureFn, alwaysFn = null) {
+      // eslint-disable-next-line no-undef
+      grecaptcha.enterprise.ready(async () => {
+        // eslint-disable-next-line no-undef
+        const token = await grecaptcha.enterprise.execute(process.env.GOOGLE_CAPTCHA_KEY, { action })
+        const resp = await this.$api.post('auth/validate-captcha/', getAjaxFormData({ token, action }))
+        if (resp?.data?.score) {
+          successFn()
+        } else {
+          failureFn()
+        }
+        if (alwaysFn) {
+          alwaysFn()
+        }
+      })
     }
   }
 })

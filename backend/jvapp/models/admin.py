@@ -4,10 +4,10 @@ from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.employer import *
 from jvapp.models.job_seeker import *
+from jvapp.models.karma import DonationOrganization
 from jvapp.models.location import *
 from jvapp.models.social import *
-
-__all__ = ('JobVyneUserAdmin',)
+from jvapp.models.user import UserEmployerPermissionGroup
 
 
 class JobVyneUserAdmin(UserAdmin):
@@ -23,7 +23,7 @@ class JobVyneUserAdmin(UserAdmin):
                     "is_superuser",
                     "user_type_bits",
                     "is_employer_deactivated",
-                    "permission_groups"
+                    "employer_permission_group"
                 ),
             },
         ),
@@ -41,6 +41,11 @@ class JobVyneUserAdmin(UserAdmin):
     list_display = ("email", "first_name", "last_name", "is_staff")
     search_fields = ("first_name", "last_name", "email")
     ordering = ("last_name", "first_name")
+    
+
+@admin.register(UserEmployerPermissionGroup)
+class UserAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Employer, EmployerJob, EmployerAuthGroup, EmployerPermission, EmployerSize, JobDepartment)
@@ -53,11 +58,23 @@ class JobSeekerAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(SocialPlatform, SocialLinkFilter)
-class SocialAdmin(admin.ModelAdmin):
+@admin.register(SocialPlatform)
+class SocialPlatformAdmin(admin.ModelAdmin):
+    list_display = ('name', 'sort_order', 'is_displayed')
+    ordering = ('sort_order',)
+
+
+@admin.register(SocialLink)
+class SocialLinkAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(Country, State)
+@admin.register(Country, State, City, Location)
 class LocationAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(DonationOrganization)
+class DonationOrganizationAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    ordering = ('name',)

@@ -1,5 +1,13 @@
 *.env
+*.env*
 node_modules
 *.pyc
 media
 /docker_secrets
+backend/secret
+backend/secure
+backend/.env*
+*.pem
+*.crt
+docker-compose-mysql.yml
+docker-compose-cypress.yml

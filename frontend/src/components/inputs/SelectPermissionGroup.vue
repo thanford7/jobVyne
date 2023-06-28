@@ -1,6 +1,7 @@
 <template>
   <q-select
-    filled multiple emit-value map-options clearable use-chips
+    v-if="isLoaded"
+    filled multiple emit-value map-options use-chips
     :options="options"
     autocomplete="name"
     option-value="id"
@@ -18,7 +19,7 @@
           v-for="child in opt.child_options"
           v-bind="getOptionProps(itemProps)"
           :active="selected"
-          class="background-hover"
+          class="bg-hover"
           @click="toggleOption(child)"
         >
           <q-item-section>
@@ -27,8 +28,12 @@
         </q-item>
       </q-expansion-item>
     </template>
-    <template v-slot:selected-item="{ opt, toggleOption }">
-      <q-chip removable @remove="toggleOption(opt)">{{ getOptionLabel(opt) }}</q-chip>
+    <template v-slot:selected-item="{ opt, removeAtIndex, tabindex, index }">
+      <q-chip
+        removable
+        @remove="removeAtIndex(index)"
+        :tabindex="tabindex"
+      >{{ getOptionLabel(opt) }}</q-chip>
     </template>
   </q-select>
 </template>
@@ -55,6 +60,7 @@ export default {
   },
   data () {
     return {
+      isLoaded: false,
       userTypeUtil
     }
   },
@@ -76,9 +82,6 @@ export default {
     }
   },
   methods: {
-    log (val) {
-      return console.log(val)
-    },
     getOptionProps (itemProps) {
       return dataUtil.omit(itemProps, ['id', 'onClick', 'onMousemove'])
     },
@@ -86,9 +89,9 @@ export default {
       return this.employerStore.permissionGroups.find((pg) => pg.id === parseInt(groupId)).name
     }
   },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    return employerStore.setEmployerPermissions()
+  async mounted () {
+    await this.employerStore.setEmployerPermissions()
+    this.isLoaded = true
   },
   setup () {
     return { employerStore: useEmployerStore() }

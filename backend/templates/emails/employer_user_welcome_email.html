@@ -1,0 +1,58 @@
+{% extends 'emails/base_general_email.html' %}
+
+{% block body %}
+    <p style="text-align:left">Hi {{ user.first_name }},</p>
+    <p style="text-align:left">
+        Welcome to JobVyne! {{ admin_user.full_name }} from your company, {{ employer.employer_name }},
+        has created an account for you.
+    </p>
+    {% if user.is_employee %}
+        <p style="text-align:left">
+            <span style="font-weight: bold">First of all, what the heck is JobVyne?!</span> JobVyne is a social
+            referral platform that allows you to share a unique job referral link with your professional network
+            to allow them to view all jobs at {{ employer.employer_name }} and apply directly to them.
+        </p>
+        <p style="text-align:left">
+            Whenever anyone applies using your link and is hired, you may be eligible to receive a referral bonus!
+        </p>
+    {% else %}
+        <p style="text-align:left">
+            <span style="font-weight: bold">First of all, what the heck is JobVyne?!</span> JobVyne is a social
+            referral platform that allows employees to share a unique job referral link with their professional network
+            and allow them to view all jobs at {{ employer.employer_name }} and apply directly to them.
+        </p>
+        <p>
+            You have been granted employer priveleges, allowing you to make updates to jobs, your employer profile,
+            and send messages to employees. To check out the full features, use the quick start list below.
+        </p>
+    {% endif %}
+    <p style="text-align:left">
+        There are a few quick items you can do to get started:
+        <ul>
+            <li>
+                <a href="{{ reset_password_url }}" target="_blank"> Set your JobVyne password</a>.
+                Note that this link can only be used once and will expire in 8 hours. If you need to reset your
+                password again, please visit <a href="{{ base_url }}/login">app.jobvyne.com/login</a>
+                and request a password reset.
+            </li>
+            {% if user.is_employee %}
+                <li>
+                    Complete the onboarding checklist on your
+                    <a href="{{ base_url }}/employee/dashboard/">JobVyne dashboard</a>
+                    JobVyne dashboard
+                </li>
+                <li>
+                    Start sharing your unique referral link: {{ job_referral_url }}
+                </li>
+            {% else %}
+                <li>
+                    <a href="{{ base_url }}/employer/dashboard/">Visit your employer dashboard to get started</a>
+                </li>
+                <li>
+                    Speak with {{ admin_user.full_name }} to determine if they want you to
+                    take any actions at this time
+                </li>
+            {% endif %}
+        </ul>
+    </p>
+{% endblock body %}

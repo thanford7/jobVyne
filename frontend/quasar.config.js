@@ -13,7 +13,7 @@ const path = require('path')
 const fs = require('fs')
 
 module.exports = configure(function (ctx) {
-  return {
+  const cfg = {
     eslint: {
       // fix: true,
       // include = [],
@@ -31,6 +31,7 @@ module.exports = configure(function (ctx) {
     // https://v2.quasar.dev/quasar-cli/boot-files
     boot: [
       'i18n',
+      'charts',
       'axios',
       'router-guards'
     ],
@@ -66,16 +67,30 @@ module.exports = configure(function (ctx) {
       // vueDevtools,
       // vueOptionsAPI: false,
 
-      // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
+      rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
       // publicPath: '/',
-      // analyze: true,
-      env: {
-        API_URL: '/api/v1/'
+      analyze: ctx.dev, // Opens a graph of file size after build
+      env: (ctx.dev) ? {
+        API_URL: '/api/v1/',
+        ASSETS_PATH: '/src/assets',
+        JV_LOGO_URL: 'https://jobvyne-dev.nyc3.digitaloceanspaces.com/static-files/jobVyneLogo.png',
+        EVERY_ORG_API_URL: 'https://staging.every.org/',
+        GOOGLE_CAPTCHA_KEY: '6LeweAghAAAAAAdJdSUx102nAfP8-YYriBV0Nnjp',
+        STRIPE_PUBLIC_KEY: 'pk_test_51LRzlsEJHiHytoQBmLNj0LU3xg6V0vPE7rw92vCIsoxlUChlnGMqB93uAdAenZZVtZLChv9khkBUOsUBny3mXXFb009nRm5IiQ'
+      } : {
+        API_URL: '/backend/api/v1',
+        ASSETS_PATH: '/assets',
+        GOOGLE_CAPTCHA_KEY: '6LeSMgohAAAAAAx1shMr147QuE3F49oI4XEBRqRl',
+        JV_LOGO_URL: 'https://jobvyne.nyc3.digitaloceanspaces.com/static-files/jobVyneLogo.png',
+        EVERY_ORG_API_URL: 'https://www.every.org/',
+        STRIPE_PUBLIC_KEY: 'pk_test_51M5bt2GNH25jX7UwbDX5HYNxdUC9vVnOVAcau11xfQP7Eq1xMjnP5LGxILYqJsvtcxhxk3xTwfJ3RmBs5XoctUXq00Rp9mTuAK',
+        STRIPE_LIVE_PUBLIC_KEY: 'pk_live_51M5bt2GNH25jX7UwNmLFth6fwDiEB9YDThUIDzSHoHmzM6zZcIInI8oFejoeRHI1JuHuBpkl3gSftsZLWWdoJJYq00oqDd8sYn'
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
-      // minify: false,
+      minify: !process.env.isSourceMap,
+      sourcemap: process.env.isSourceMap,
       // polyfillModulePreload: true,
       // distDir
 
@@ -91,20 +106,6 @@ module.exports = configure(function (ctx) {
           include: path.resolve(__dirname, './src/i18n/**')
         }]
       ]
-    },
-
-    // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
-    devServer: {
-      https: {
-        cert: fs.readFileSync('/run/secrets/https_cert'),
-        key: fs.readFileSync('/run/secrets/https_key')
-      },
-      // proxy: {
-      //   '!/static': {
-      //     target: 'http://backend:8000'
-      //   }
-      // },
-      open: true // opens browser window automatically
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
@@ -138,8 +139,9 @@ module.exports = configure(function (ctx) {
         'Dialog',
         'Loading',
         'LocalStorage',
-        'SessionStorage',
-        'Meta'
+        'Notify',
+        'Meta',
+        'SessionStorage'
       ]
     },
 
@@ -242,4 +244,22 @@ module.exports = configure(function (ctx) {
       // extendBexManifestJson (json) {}
     }
   }
+
+  if (ctx.dev) {
+    // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
+    cfg.devServer = {
+      https: {
+        cert: fs.readFileSync('/run/secrets/https_cert'),
+        key: fs.readFileSync('/run/secrets/https_key')
+      },
+      // proxy: {
+      //   '!/static': {
+      //     target: 'http://backend:8000'
+      //   }
+      // },
+      open: true, // opens browser window automatically
+      hmr: true
+    }
+  }
+  return cfg
 })

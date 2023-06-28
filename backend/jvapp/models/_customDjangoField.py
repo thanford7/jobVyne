@@ -39,3 +39,12 @@ class SeparatedValueField(models.CharField):
         # Use sorted to ensure value comparisons are correct
         # e.g. [a, b] == [b, a]
         return self.separator.join([str(val) for val in sorted(value)])
+    
+    
+class LowercaseCharField(models.CharField):
+
+    def get_prep_value(self, value):
+        if value is None:
+            return value
+        
+        return str(value).lower()

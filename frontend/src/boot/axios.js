@@ -2,6 +2,8 @@ import { boot } from 'quasar/wrappers'
 import { Cookies } from 'quasar'
 import axios from 'axios'
 import emitter from 'tiny-emitter/instance'
+import md5 from 'md5'
+import { setupCache, serializeQuery } from 'axios-cache-adapter'
 
 // Be careful when using SSR for cross-request state pollution
 // due to creating a Singleton instance here;
@@ -11,7 +13,32 @@ import emitter from 'tiny-emitter/instance'
 // for each client)
 export const AJAX_EVENTS = {
   ERROR: 'ajax-error',
+  WARNING: 'ajax-warning',
   SUCCESS: 'ajax-success'
+}
+
+// https://github.com/RasCarlito/axios-cache-adapter/issues/231
+const { adapter: axiosCacheAdapter, cache } = setupCache({
+  // debug: process.env.NODE_ENV !== 'production',
+  debug: false,
+  maxAge: 1000 // In milliseconds
+})
+
+const runningRequests = {}
+const noDuplicateRequestsAdapter = request => {
+  const requestUrl = `${request.baseURL ? request.baseURL : ''}${request.url}`
+  let requestKey = requestUrl + serializeQuery(request)
+
+  if (request.data) requestKey = requestKey + md5(request.data)
+
+  // Add the request to runningRequests
+  if (!runningRequests[requestKey]) runningRequests[requestKey] = axiosCacheAdapter(request)
+
+  // Return the response promise
+  return runningRequests[requestKey].finally(() => {
+    // Finally, delete the request from the runningRequests whether there's error or not
+    delete runningRequests[requestKey]
+  })
 }
 
 axios.defaults.withCredentials = true
@@ -19,10 +46,13 @@ export default boot(({ app, ssrContext, store, router }) => {
   const api = axios.create({
     withCredentials: true,
     baseURL: process.env.API_URL,
+    adapter: noDuplicateRequestsAdapter,
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   })
+
+  api.cache = cache
 
   api.interceptors.request.use(function (config) {
     const cookies = process.env.SERVER
@@ -30,16 +60,30 @@ export default boot(({ app, ssrContext, store, router }) => {
       : Cookies // otherwise we're on client
     config.headers['X-CSRFTOKEN'] = cookies.get('csrftoken')
     return config
+  }, (error) => {
+    return Promise.reject(error)
   })
 
   api.interceptors.response.use(function (response) {
     const successMessage = response?.data?.successMessage
+    const errorMessages = response?.data?.errorMessages
+    const warningMessages = response?.data?.warningMessages
     if (successMessage) {
-      emitter.emit(AJAX_EVENTS.SUCCESS, successMessage)
+      emitter.emit(AJAX_EVENTS.SUCCESS, { message: successMessage })
+    }
+    if (warningMessages && warningMessages.length) {
+      warningMessages.forEach((warningMsg) => {
+        emitter.emit(AJAX_EVENTS.WARNING, { message: warningMsg })
+      })
+    }
+    if (errorMessages && errorMessages.length) {
+      errorMessages.forEach((errorMsg) => {
+        emitter.emit(AJAX_EVENTS.ERROR, { message: errorMsg })
+      })
     }
     return response
   }, function (error) {
-    emitter.emit(AJAX_EVENTS.ERROR, error)
+    emitter.emit(AJAX_EVENTS.ERROR, { error })
     return Promise.reject(error)
   })
 
@@ -63,4 +107,6 @@ export default boot(({ app, ssrContext, store, router }) => {
   //       so you can easily perform requests against your app's API
 
   app.config.globalProperties.$global = emitterEvents
+
+  app.config.globalProperties.$log = (txt) => { console.log(txt) }
 })

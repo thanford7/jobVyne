@@ -9,4 +9,16 @@ table, table.q-table {
       font-weight: bold;
     }
   }
+
+  td.table-wrap, th.table-wrap {
+    /* don't shorten cell contents */
+    white-space: normal !important;
+  }
+}
+
+table.table {
+  table-layout: auto;
+  td, th {
+    padding: 4px;
+  }
 }

@@ -1,9 +1,22 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card class="q-dialog-plugin">
-      <q-card-section>
-        <div v-if="titleText" class="text-h6">
-          {{titleText}}
+  <q-dialog
+    ref="dialogRef"
+    :maximized="isFullScreen"
+    transition-show="slide-up"
+    transition-hide="slide-down"
+    @hide="onDialogHide"
+  >
+    <q-card class="q-dialog-plugin" :style="cardStyle">
+      <q-bar v-if="isFullScreen">
+        {{ baseTitleText }}
+        <q-space/>
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-card-section v-if="isIncludeHeader && !isFullScreen" class="border-bottom-1-gray-300 q-pb-none q-mb-md">
+        <div v-if="baseTitleText" class="text-h6">
+          {{ baseTitleText }}
         </div>
         <q-btn
           flat unelevated ripple
@@ -13,6 +26,9 @@
           class="q-pr-sm"
           style="position: absolute; top: 0; right: 0"
         />
+        <p class="text-gray-500 q-mt-none">
+          <slot name="subTitle"/>
+        </p>
       </q-card-section>
 
       <slot name="fullWidthBody"/>
@@ -23,8 +39,31 @@
 
       <q-card-actions v-if="isIncludeButtons" align="right" class="text-primary">
         <slot name="buttons">
-          <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel" />
-          <q-btn class="bg-accent" flat ripple text-color="white" :label="primaryButtonText" @click="onDialogOK"/>
+          <q-btn class="bg-grey-7" flat ripple text-color="white" label="Cancel" @click="onDialogCancel"/>
+          <CustomTooltip v-if="okBtnHelpText" class="q-ml-sm" :is_include_icon="false" :is_include_space="true">
+            <template v-slot:content>
+              <q-btn
+                class="bg-accent"
+                :disable="!isOKBtnEnabled"
+                flat ripple text-color="white"
+                :label="primaryButtonText"
+                :loading="isLoading"
+                @click="onOkClick"
+              />
+            </template>
+            {{ okBtnHelpText }}
+          </CustomTooltip>
+          <q-btn
+            v-else
+            class="bg-accent"
+            :disable="!isOKBtnEnabled"
+            flat ripple text-color="white"
+            :icon="primaryButtonIcon"
+            :icon-right="primaryButtonIconRight"
+            :label="primaryButtonText"
+            :loading="isLoading"
+            @click="onOkClick"
+          />
         </slot>
       </q-card-actions>
     </q-card>
@@ -32,21 +71,58 @@
 </template>
 
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import { useDialogPluginComponent } from 'quasar'
 
 export default {
   name: 'DialogBase',
+  components: { CustomTooltip },
   props: {
     primaryButtonText: {
       type: String,
       default: 'Submit'
     },
-    titleText: {
+    primaryButtonIcon: {
       type: [String, null]
+    },
+    primaryButtonIconRight: {
+      type: [String, null]
+    },
+    baseTitleText: {
+      type: [String, null]
+    },
+    isFullScreen: {
+      type: Boolean,
+      default: false
     },
     isIncludeButtons: {
       type: Boolean,
       default: true
+    },
+    isIncludeHeader: {
+      type: Boolean,
+      default: true
+    },
+    isOKBtnEnabled: {
+      type: Boolean,
+      default: true
+    },
+    okBtnHelpText: {
+      type: [String, null]
+    },
+    isLoading: {
+      type: Boolean,
+      default: false
+    },
+    okFn: {
+      type: [Function, null]
+    },
+    isValidFormFn: {
+      type: [Function, null]
+    },
+    width: {
+      type: String,
+      default: '500px'
     }
   },
   emits: [
@@ -54,8 +130,32 @@ export default {
     // component will emit through useDialogPluginComponent()
     ...useDialogPluginComponent.emits
   ],
-
+  computed: {
+    cardStyle () {
+      if (this.isFullScreen) {
+        return
+      }
+      return { width: this.width, maxWidth: '95vw' }
+    }
+  },
+  methods: {
+    async onOkClick () {
+      if (this.okFn) {
+        await this.okFn().finally(() => this.onDialogOK())
+      } else {
+        if (this.isValidFormFn) {
+          const isValidForm = await this.isValidFormFn()
+          if (!isValidForm) {
+            return
+          }
+        }
+        this.onDialogOK()
+      }
+    }
+  },
   setup () {
+    // !NOTE!! prefetch method doesn't work with dialogs. See DialogEmployerFile for an
+    // example of handling async data
     // https://quasar.dev/quasar-plugins/dialog#invoking-custom-component
     // REQUIRED; must be called inside of setup()
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginComponent()
@@ -76,7 +176,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-
-</style>
