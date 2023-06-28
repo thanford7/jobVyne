@@ -1,11 +1,10 @@
-import datetime
 import logging
 from time import sleep
 
 from django.core.management import BaseCommand
 
 from jvapp.apis.content import ShareSocialPostView
-from jvapp.apis.slack import SlackJobsMessageView, SlackReferralsMessageView
+from jvapp.apis.slack import SlackCommandJobSeekerView, SlackJobsMessageView, SlackReferralsMessageView
 from jvapp.utils.cron_util import get_datetime_to_nearest_minutes, get_seconds_to_next_minute_interval
 from jvapp.utils.datetime import get_current_datetime
 
@@ -52,3 +51,6 @@ class Command(BaseCommand):
 
                 successful_slack_referral_posts = SlackReferralsMessageView.run_auto_posts()
                 writer(self.style.SUCCESS(f'{successful_slack_referral_posts} successful Slack referral posts'))
+
+                successful_slack_job_seeker_posts = SlackCommandJobSeekerView.send_job_slack_messages(current_dt)
+                writer(self.style.SUCCESS(f'{successful_slack_job_seeker_posts} successful Slack job seeker posts'))

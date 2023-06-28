@@ -138,10 +138,10 @@ const routes = [
         component: () => import('pages/employee/ProfilePage.vue')
       },
       {
-        path: ':key(employee-social-accounts)',
-        name: 'employee-social-accounts',
+        path: ':key(employee-social)',
+        name: 'employee-social',
         meta: { userTypeBits: USER_TYPES.Employee },
-        component: () => import('pages/employee/social-accounts-page/SocialAccountsPage.vue')
+        component: () => import('pages/employee/social-page/SocialPage.vue')
       }
     ]
   },
@@ -155,6 +155,18 @@ const routes = [
         name: 'influencer-dashboard',
         meta: { userTypeBits: USER_TYPES.Influencer },
         component: () => import('pages/DashboardPage.vue')
+      },
+      {
+        path: 'jobs',
+        name: 'influencer-jobs',
+        meta: { userTypeBits: USER_TYPES.Influencer },
+        component: () => import('pages/influencer/JobBoardsPage.vue')
+      },
+      {
+        path: ':key(influencer-social)',
+        name: 'influencer-social',
+        meta: { userTypeBits: USER_TYPES.Influencer },
+        component: () => import('pages/influencer/social-page/SocialPage.vue')
       }
     ]
   },
@@ -182,10 +194,16 @@ const routes = [
         component: () => import('pages/employer/job-add-page/JobAddPage.vue')
       },
       {
-        path: ':key(employer-job-links)',
-        name: 'employer-job-links',
+        path: ':key(employer-job-boards)',
+        name: 'employer-job-boards',
         meta: { userTypeBits: USER_TYPES.Employer },
-        component: () => import('pages/employer/job-links-page/JobLinksPage.vue')
+        component: () => import('pages/employer/job-boards-page/JobBoardsPage.vue')
+      },
+      {
+        path: ':key(employer-referrals)',
+        name: 'employer-referrals',
+        meta: { userTypeBits: USER_TYPES.Employer },
+        component: () => import('pages/employer/referrals-page/ReferralsPage.vue')
       },
       {
         path: ':key(employer-applications)',
@@ -241,13 +259,33 @@ const routes = [
 
   {
     path: '/:namespace(karma)',
-    component: () => import('layouts/BodyAndFooterLayout.vue'),
+    component: () => import('layouts/BodyLeftDrawerFooterLayout.vue'),
     children: [
       {
-        path: 'connect-request/:requestId(\\d+)',
+        path: 'home/',
+        name: 'karma-home',
+        meta: {},
+        component: () => import('pages/karma/home-page/HomePage.vue')
+      },
+      {
+        path: 'intro-request/:requestId',
+        name: 'intro-request',
+        meta: { isNoAuth: true, trackRoute: true },
+        component: () => import('pages/karma/intro-request-page/IntroRequestPage.vue')
+      },
+      {
+        path: 'connect-request/:requestId',
         name: 'connect-request',
         meta: { isNoAuth: true, trackRoute: true },
         component: () => import('pages/karma/connection-request-page/ConnectionRequestPage.vue')
+      },
+      {
+        // This is a "fake" page. We need a route to catch the redirect after a user donates
+        // This route is redirected in router-guard.js
+        path: 'donation-confirm',
+        name: 'donation-confirm',
+        meta: {},
+        component: () => {}
       }
     ]
   },

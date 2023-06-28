@@ -4,7 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 from twilio.rest import Client
 
-from jvapp.models import Message, MessageRecipient
+from jvapp.models.tracking import Message, MessageRecipient
 
 JOBVYNE_PHONE_NUMBER = '+19896584695'
 JOBVYNE_TEST_NUMBER = '+13032493165'

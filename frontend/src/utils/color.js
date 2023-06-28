@@ -61,15 +61,15 @@ class ColorUtil {
   }
 
   getEmployerPrimaryColor (employer) {
-    return employer.color_primary || this.getPaletteColor('primary')
+    return employer?.color_primary || this.getPaletteColor('primary')
   }
 
   getEmployerSecondaryColor (employer) {
-    return employer.color_secondary || employer.color_primary || this.getPaletteColor('secondary')
+    return employer?.color_secondary || employer?.color_primary || this.getPaletteColor('secondary')
   }
 
   getEmployerAccentColor (employer) {
-    return employer.color_accent || employer.color_secondary || this.getPaletteColor('accent')
+    return employer?.color_accent || employer?.color_secondary || this.getPaletteColor('accent')
   }
 
   changeAlpha (color, offset) {

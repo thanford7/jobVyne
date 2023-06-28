@@ -1,3 +1,4 @@
+__all__ = ('PageTrackView',)
 import logging
 from datetime import timedelta
 
@@ -10,10 +11,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from user_agents import parse
 
-from jvapp.models import PageView, SocialPlatform
-
-__all__ = ('PageTrackView',)
-
+from jvapp.models.social import SocialPlatform
+from jvapp.models.tracking import PageView
 
 geo_locator = GeoIP2()
 logger = logging.getLogger(__name__)
@@ -38,7 +37,7 @@ class PageTrackView(APIView):
             meta = request.META
             page_view = PageView()
             page_view.relative_url = request.data['relative_url']
-            page_view.social_link_filter_id = request.data.get('filter_id')
+            page_view.social_link_id = request.data.get('filter_id')
             params = request.data.get('query') or {}
             if platform_name := params.get('platform'):
                 try:

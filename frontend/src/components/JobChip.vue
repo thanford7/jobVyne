@@ -7,7 +7,7 @@
             color="grey-7" text-color="white" size="md" :icon="icon" :dense="isDense"
           >
             Multiple jobs&nbsp;
-            <span v-if="utilStore.isMobile">(press to view)</span>
+            <span v-if="utilStore.isUnderBreakPoint('md')">(press to view)</span>
             <span v-else>(hover to view)</span>
           </q-chip>
         </template>

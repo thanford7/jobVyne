@@ -9,7 +9,9 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models import JobApplication, JobVyneUser, MessageThreadContext, PageView, UserApplicationReview
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.tracking import MessageThreadContext, PageView
+from jvapp.models.user import JobVyneUser, UserApplicationReview
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.tracking import get_serialized_message
 from jvapp.utils.data import coerce_bool, coerce_int
@@ -58,7 +60,7 @@ class ApplicationsView(BaseDataView):
         'job_title': ('employer_job__job_title',),
         'email': ('email',),
         'created_dt': ('created_dt',),
-        'source': ('social_link_filter__owner__first_name', 'social_link_filter__name'),
+        'source': ('social_link__owner__first_name', 'social_link__name'),
         'recommended': ('feedback_recommend_this_job',),
         'total_user_rating': ('total_user_rating',),
     }
@@ -79,7 +81,7 @@ class ApplicationsView(BaseDataView):
         app_filter = Q()
         if self.filter_by:
             if employee_ids_filter := self.filter_by.get('employees'):
-                app_filter &= Q(social_link_filter__owner_id__in=employee_ids_filter)
+                app_filter &= Q(social_link__owner_id__in=employee_ids_filter)
             if platforms_filter := self.filter_by.get('platforms'):
                 app_filter &= Q(platform__name__in=platforms_filter)
             if job_title_search_filter := self.filter_by.get('jobTitle'):
@@ -93,9 +95,9 @@ class ApplicationsView(BaseDataView):
                 app_filter &= Q(email__iregex=f'^.*{email_filter}.*$')
             if source_filter := self.filter_by.get('sourceName'):
                 app_filter &= (
-                        Q(social_link_filter__owner__first_name__iregex=f'^.*{source_filter}.*$') |
-                        Q(social_link_filter__owner__last_name__iregex=f'^.*{source_filter}.*$') |
-                        Q(social_link_filter__name__iregex=f'^.*{source_filter}.*$')
+                        Q(social_link__owner__first_name__iregex=f'^.*{source_filter}.*$') |
+                        Q(social_link__owner__last_name__iregex=f'^.*{source_filter}.*$') |
+                        Q(social_link__name__iregex=f'^.*{source_filter}.*$')
                 )
             if locations_filter := self.filter_by.get('locations'):
                 app_filter &= Q(employer_job__locations__in=locations_filter)
@@ -119,12 +121,12 @@ class ApplicationsView(BaseDataView):
                 .annotate(month=TruncMonth('created_dt', tzinfo=self.timezone)) \
                 .annotate(year=TruncYear('created_dt', tzinfo=self.timezone)) \
                 .annotate(platform_name=F('platform__name')) \
-                .annotate(link_name=F('social_link_filter__name')) \
-                .annotate(owner_id=F('social_link_filter__owner_id')) \
-                .annotate(owner_first_name=F('social_link_filter__owner__first_name')) \
-                .annotate(owner_last_name=F('social_link_filter__owner__last_name')) \
+                .annotate(link_name=F('social_link__name')) \
+                .annotate(owner_id=F('social_link__owner_id')) \
+                .annotate(owner_first_name=F('social_link__owner__first_name')) \
+                .annotate(owner_last_name=F('social_link__owner__last_name')) \
                 .annotate(owner_name=Concat(
-                    'social_link_filter__owner__first_name', Value(' '), 'social_link_filter__owner__last_name'
+                    'social_link__owner__first_name', Value(' '), 'social_link__owner__last_name'
                 )) \
                 .annotate(applicant_name=Concat('first_name', Value(' '), 'last_name')) \
                 .annotate(job_title=F('employer_job__job_title')) \
@@ -171,7 +173,7 @@ class ApplicationsView(BaseDataView):
         )
     
     def serialize_application(self, application, is_employer):
-        is_owner = application.social_link_filter.owner_id == self.user.id
+        is_owner = application.social_link.owner_id == self.user.id
         application_data = {
             'id': application.id,
             'job_title': application.employer_job.job_title,
@@ -195,7 +197,7 @@ class ApplicationsView(BaseDataView):
             }
         
         if is_employer:
-            if referrer := application.social_link_filter.owner:
+            if referrer := application.social_link.owner:
                 application_data['referrer'] = {
                     'first_name': referrer.first_name,
                     'last_name': referrer.last_name,
@@ -223,7 +225,7 @@ class ApplicationsView(BaseDataView):
                 application.notification_ats_failure_dt)
             application_data['notification_ats_failure_msg'] = application.notification_ats_failure_msg
         
-        return {**application_data, **self.get_link_data(application.social_link_filter)}
+        return {**application_data, **self.get_link_data(application.social_link)}
     
     @staticmethod
     def get_job_applications(
@@ -236,11 +238,11 @@ class ApplicationsView(BaseDataView):
         if end_date:
             app_filter &= Q(created_dt__lte=end_date)
         if employer_id:
-            app_filter &= Q(social_link_filter__employer_id=employer_id)
+            app_filter &= Q(social_link__employer_id=employer_id)
         if owner_id:
-            app_filter &= Q(social_link_filter__owner_id=owner_id)
+            app_filter &= Q(social_link__owner_id=owner_id)
         if is_exclude_job_board:
-            app_filter &= Q(social_link_filter__owner_id__isnull=False)
+            app_filter &= Q(social_link__owner_id__isnull=False)
         
         # Include the message thread if this is the employer
         message_thread_prefetch = Prefetch(
@@ -263,11 +265,11 @@ class ApplicationsView(BaseDataView):
         if user.is_employer:
             application_review_filter = Q(application__employer_job__employer_id=employer_id)
         else:
-            application_review_filter = Q(application__social_link_filter__owner_id=user.id)
+            application_review_filter = Q(application__social_link__owner_id=user.id)
         application_review_prefetch = Prefetch(
             'user_review',
             queryset=UserApplicationReview.objects
-            .select_related('application', 'application__employer_job', 'application__social_link_filter', 'user')
+            .select_related('application', 'application__employer_job', 'application__social_link', 'user')
             .filter(application_review_filter)
         )
         
@@ -275,8 +277,8 @@ class ApplicationsView(BaseDataView):
             .select_related(
                 'platform',
                 'employer_job',
-                'social_link_filter',
-                'social_link_filter__owner',
+                'social_link',
+                'social_link__owner',
             ) \
             .prefetch_related(
                 'employer_job__locations',
@@ -330,7 +332,7 @@ class PageViewsView(BaseDataView):
         # TODO: Apply group by and then use paginator to return data
         views = defaultdict(int)
         for view in link_views:
-            link_data = tuple(pair for pair in self.get_link_data(view.social_link_filter).items())
+            link_data = tuple(pair for pair in self.get_link_data(view.social_link).items())
             views[(
                 get_datetime_format_or_none(view.access_dt),
                 bool(view.is_mobile or view.is_tablet),
@@ -353,13 +355,13 @@ class PageViewsView(BaseDataView):
     def get_link_views(user, start_date, end_date, employer_id=None, owner_id=None):
         view_filter = Q(access_dt__lte=end_date) & Q(access_dt__gte=start_date)
         if employer_id:
-            view_filter &= Q(social_link_filter__employer_id=employer_id)
+            view_filter &= Q(social_link__employer_id=employer_id)
         if owner_id:
-            view_filter &= Q(social_link_filter__owner_id=owner_id)
+            view_filter &= Q(social_link__owner_id=owner_id)
         views = PageView.objects \
             .select_related(
-            'social_link_filter',
-            'social_link_filter__owner'
+            'social_link',
+            'social_link__owner'
         ) \
             .filter(view_filter)
         return PageView.jv_filter_perm(user, views)

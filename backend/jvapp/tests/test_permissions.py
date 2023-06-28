@@ -1,5 +1,4 @@
-from jvapp.models import JobVyneUser
-from jvapp.models.user import StandardPermissionGroups
+from jvapp.models.user import JobVyneUser, StandardPermissionGroups
 from jvapp.tests.base import BaseTestCase
 
 

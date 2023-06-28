@@ -3,10 +3,10 @@ from enum import Enum
 
 from django.utils import timezone
 
-from jvapp.models import Currency, JobVyneUser
+from jvapp.models.currency import Currency
 from jvapp.models.employer import *
 from jvapp.models.employer import is_default_auth_group
-from jvapp.serializers.content import get_serialized_content_item
+from jvapp.models.user import JobVyneUser
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.user import reduce_user_type_bits
 from jvapp.utils.data import get_list_intersection, obfuscate_string
@@ -171,10 +171,12 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
         'salary_floor': employer_job.salary_floor,
         'salary_ceiling': employer_job.salary_ceiling,
         'salary_interval': employer_job.salary_interval,
+        'salary_text': employer_job.salary_text,
         'referral_bonus': employer_job.referral_bonus,
         'referral_bonus_currency': get_serialized_currency(employer_job.referral_bonus_currency),
         'employment_type': employer_job.employment_type,
         'locations': [get_serialized_location(l) for l in employer_job.locations.all()],
+        'locations_text': employer_job.locations_text,
         'job_source': 'website' if employer_job.is_scraped else ('ats' if employer_job.ats_job_key else 'manual')
     }
     

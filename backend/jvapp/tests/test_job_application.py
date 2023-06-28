@@ -6,7 +6,9 @@ from django.db.models import Q
 from django.utils import timezone
 
 from jvapp.apis.notification import BaseMessageView
-from jvapp.models import EmployerJob, JobApplication, REMOTE_TYPES
+from jvapp.models.employer import EmployerJob
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.location import REMOTE_TYPES
 from jvapp.models.tracking import MessageGroup
 from jvapp.tests.base import BaseTestCase
 
@@ -18,7 +20,7 @@ class JobApplicationTestCase(BaseTestCase):
         job_infos = self._get_jobs_from_social_link(page_count=1)
         self.assertEqual(len(self.jobs), len(job_infos))
     
-    def test_get_jobs_from_link_filter(self):
+    def test_get_jobs_from_social_link(self):
         search_title = 'Engineer'
         job_infos = self._get_jobs_from_social_link(search_regex=search_title)
         self.assertLess(len(job_infos), len(self.jobs))

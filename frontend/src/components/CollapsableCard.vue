@@ -1,7 +1,7 @@
 <template>
   <q-card>
     <div
-      class="row q-pr-md border-bottom-1-gray-100 bg-grey-2 items-center"
+      class="row q-px-md border-bottom-1-gray-100 bg-grey-2 items-center"
       :class="(isDense) ? '' : 'q-py-sm'"
     >
       <div class="text-h6 text-h6--mobile q-ml-md">{{ title }}</div>

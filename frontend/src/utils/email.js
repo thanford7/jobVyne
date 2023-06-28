@@ -1,4 +1,3 @@
-
 class EmailUtil {
   constructor () {
     // Keep in sync with ContentPlaceholders on SocialPost backend

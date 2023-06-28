@@ -8,6 +8,18 @@
       <div class="row q-gutter-y-md q-mt-sm">
         <div class="col-12">
           <q-input
+            v-model="formData.title"
+            autofocus filled label="Subscription title"
+          >
+            <template v-slot:after>
+              <CustomTooltip>
+                Used to summarize what this job subscription is for (e.g. "Remote Product Managers")
+              </CustomTooltip>
+            </template>
+          </q-input>
+        </div>
+        <div class="col-12">
+          <q-input
             v-model="formData.job_title_regex"
             filled label="Include job titles"
           >
@@ -75,12 +87,12 @@ export default {
   },
   methods: {
     async saveJobSubscription () {
-      await this.$api.put(`employer/job-subscription/${this.jobSubscription.id}`, getAjaxFormData(this.formData))
+      await this.$api.put(`job-subscription/${this.jobSubscription.id}`, getAjaxFormData(this.formData))
       this.$emit('ok')
     }
   },
   mounted () {
-    this.formData = Object.assign({}, this.jobSubscription.filters)
+    this.formData = Object.assign({ title: this.jobSubscription.title }, this.jobSubscription.filters)
 
     // Turn filter objects into flat IDs
     const flattenFilterItems = ['jobs', 'employers']

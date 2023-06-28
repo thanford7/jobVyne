@@ -5,7 +5,9 @@ from typing import Union
 from django.utils import timezone
 
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import EmployerJob, JobDepartment
+from jvapp.models.employer import EmployerJob, JobDepartment
+from jvapp.utils.file import get_file_extension
+from jvapp.utils.image import convert_url_to_image
 from jvapp.utils.sanitize import sanitize_html
 
 
@@ -23,6 +25,8 @@ class JobItem:
     salary_floor: Union[float, None] = None
     salary_ceiling: Union[float, None] = None
     salary_interval: Union[str, None] = None
+    logo_url: Union[str, None] = None
+    website_domain: Union[str, None] = None
     
     def get_compensation_dict(self):
         return {
@@ -78,9 +82,28 @@ class JobProcessor:
             self.process_job(job_item)
     
     def process_job(self, job_item: JobItem):
+        is_save_employer = False
+        if job_item.logo_url and not self.employer.logo:
+            self.employer.logo = convert_url_to_image(
+                job_item.logo_url,
+                f'{self.employer.employer_name}_logo.{get_file_extension(job_item.logo_url)}',
+                is_use_request=True
+            )
+            is_save_employer = True
+        if job_item.website_domain and (not self.employer.email_domains or job_item.website_domain not in self.employer.email_domains):
+            if not self.employer.email_domains:
+                self.employer.email_domains = job_item.website_domain
+            else:
+                self.employer.email_domains += f',{job_item.website_domain}'
+            is_save_employer = True
+        
+        if is_save_employer:
+            self.employer.save()
+        
         job_item.job_description = sanitize_html(job_item.job_description)
         job_item.employment_type = job_item.employment_type or self.default_employment_type
-        
+        if job_item.locations and (not isinstance(job_item.locations, list)):
+            job_item.locations = [job_item.locations]
         locations = [
             self.location_parser.get_location(self.add_remote_to_location(loc, job_item.job_title))
             for loc in set(job_item.locations)

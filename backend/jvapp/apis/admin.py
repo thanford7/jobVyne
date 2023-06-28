@@ -13,8 +13,8 @@ from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
 from jvapp.apis.job_seeker import ApplicationView
 from jvapp.apis.user import UserView
 from jvapp.management.commands.ats_data_pull import save_ats_data
-from jvapp.models import Employer, EmployerAts, EmployerAuthGroup, EmployerSubscription, JobVyneUser, \
-    UserEmployerPermissionGroup
+from jvapp.models.employer import Employer, EmployerAts, EmployerAuthGroup, EmployerSubscription
+from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.job_seeker import base_application_serializer
@@ -236,9 +236,9 @@ class AdminEmployerView(JobVyneAPIView):
             'id': employer.id,
             'name': employer.employer_name,
             'organization_type': employer.organization_type,
+            'job_board_url': employer.default_job_board[0].get_link_url() if employer.default_job_board else None,
             'logo_url': employer.logo.url if employer.logo else None,
             'joined_date': get_datetime_format_or_none(employer.created_dt),
-            'employee_count': employer.employee_count,
             'email_domains': employer.email_domains,
             'is_use_job_url': employer.is_use_job_url,
             **subscription_data,

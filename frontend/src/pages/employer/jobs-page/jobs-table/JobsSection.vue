@@ -1,7 +1,8 @@
 <template>
-  <div v-if="isLoaded" class="row q-gutter-y-md">
+  <div class="row q-gutter-y-md">
     <div class="col-12">
       <q-table
+        :loading="isLoading"
         :rows="employerJobs"
         row-key="id"
         :columns="jobColumns"
@@ -14,7 +15,7 @@
           <div class="col-12">
             <div class="row q-gutter-sm">
               <q-btn
-                v-if="employer.is_manual_job_entry"
+                v-if="employer?.is_manual_job_entry"
                 unelevated label="Add job" icon="add" color="primary"
                 @click.prevent="openEditJobDialog()"
               />
@@ -268,7 +269,7 @@ export default {
   },
   data () {
     return {
-      isLoaded: false,
+      isLoading: false,
       isFetchingJobs: false,
       employer: null,
       employerBonusRules: null,
@@ -329,8 +330,12 @@ export default {
   },
   methods: {
     async updateEmployerJobs (isForceRefresh = true) {
-      await this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh })
-      await this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh, isOnlyClosed: true })
+      this.isLoading = true
+      await Promise.all([
+        this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh }),
+        this.employerStore.setEmployerJobs(this.user.employer_id, { isForceRefresh, isOnlyClosed: true })
+      ])
+      this.isLoading = false
     },
     openEditJobDialog (job) {
       if (!this.isEmployer) {
@@ -431,14 +436,15 @@ export default {
     }
   },
   async mounted () {
+    this.isLoading = true
     await Promise.all([
       this.employerStore.setEmployer(this.user.employer_id),
       this.employerStore.setEmployerBonusRules(this.user.employer_id),
       this.updateEmployerJobs(false)
     ])
+    this.isLoading = false
     this.employer = this.employerStore.getEmployer(this.user.employer_id)
     this.employerBonusRules = this.employerStore.getEmployerBonusRules(this.user.employer_id)
-    this.isLoaded = true
   },
   setup () {
     const employerStore = useEmployerStore()

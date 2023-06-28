@@ -1,8 +1,8 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, email, employer, job_seeker, job, jobs, job_subscription,
-    message, notification, sales, slack, social, stripe, test, tracking, user
+    admin, ats, auth, content, currency, data, donation_org, email, employer, job_seeker, job, jobs, job_subscription,
+    karma, message, notification, sales, slack, social, stripe, test, tracking, user
 )
 from jvapp.apis.geocoding import LocationSearchView
 
@@ -30,7 +30,6 @@ urlpatterns = [
     path('employer/job/bonus/', employer.EmployerJobBonusView.as_view()),
     path('employer/job/department/', employer.EmployerJobDepartmentView.as_view()),
     path('employer/job/location/', employer.EmployerJobLocationView.as_view()),
-    re_path('^employer/job-subscription/(?P<subscription_id>[0-9]+)?/?$', job_subscription.EmployerJobSubscriptionView.as_view()),
     re_path('^employer/permission/(?P<auth_group_id>[0-9]+)?/?$', employer.EmployerAuthGroupView.as_view()),
     path('employer/referral/request/', employer.EmployerReferralRequestView.as_view()),
     re_path('^employer/slack/(?P<slack_cfg_id>[0-9]+)?/?$', employer.EmployerSlackView.as_view()),
@@ -45,13 +44,14 @@ urlpatterns = [
     path('job/department/', job.JobDepartmentView.as_view()),
     path('job/location/', job.LocationView.as_view()),
     path('jobs/', jobs.JobsView.as_view()),
+    re_path('^job-subscription/(?P<subscription_id>[0-9]+)?/?$', job_subscription.JobSubscriptionView.as_view()),
     path('notification-preference/', notification.UserNotificationPreferenceView.as_view()),
     path('page-view/', tracking.PageTrackView.as_view()),
     re_path('^social-content-item/(?P<item_id>[0-9]+)?/?$', content.SocialContentItemView.as_view()),
     path('social-link/share/', social.ShareSocialLinkView.as_view()),
-    re_path('^social-link-filter/(?P<link_filter_id>\S+)?/?$', social.SocialLinkFilterView.as_view()),
-    re_path('^social-link-jobs/(?P<link_filter_id>\S+)?/?$', social.SocialLinkJobsView.as_view()),
-    path('social-link-tag/', social.SocialLinkTagView.as_view()),
+    re_path('^social-link/(?P<link_id>\S+)?/?$', social.SocialLinkView.as_view()),
+    re_path('^social-link-jobs/(?P<link_id>\S+)?/?$', social.SocialLinkJobsView.as_view()),
+    path('social-link-post-jobs/', social.SocialLinkPostJobsView.as_view()),
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
@@ -61,6 +61,14 @@ urlpatterns = [
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/job-application-review/', user.UserJobApplicationReviewView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
+    
+    # Karma
+    path('karma/connection-donation-organization/', karma.UserRequestDonationOrgView.as_view()),
+    path('karma/donation-organization/', karma.DonationOrganizationView.as_view()),
+    path('karma/user/', karma.UserView.as_view()),
+    path('karma/user-donation/', karma.UserDonationView.as_view()),
+    path('karma/user-donation-organization/', karma.UserDonationOrganizationView.as_view()),
+    path('karma/user-request/', karma.UserRequestView.as_view()),
     
     # Emails
     path('email/admin/', notification.MessageAdminView.as_view()),
@@ -114,6 +122,9 @@ urlpatterns = [
     # Google
     path('search/location/', LocationSearchView.as_view()),
     
+    # Every.org
+    path('search/donation-org/', donation_org.DonationOrgSearchView.as_view()),
+    
     # Sendgrid email
     path('sendgrid/webhooks/', email.SendgridWebhooksView.as_view()),
     path('sendgrid/webhooks/inbound/', email.SendgridWebhooksInboundView.as_view()),
@@ -121,6 +132,7 @@ urlpatterns = [
     # Slack
     path('slack/channel/', slack.SlackChannelView.as_view()),
     path('slack/command/suggest/', slack.SlackCommandSuggestView.as_view()),
+    path('slack/command/job-seeker/', slack.SlackCommandJobSeekerView.as_view()),
     path('slack/message/job/', slack.SlackJobsMessageView.as_view()),
     path('slack/message/referral/', slack.SlackReferralsMessageView.as_view()),
     path('slack/webhooks/inbound/', slack.SlackWebhookInboundView.as_view()),
@@ -130,6 +142,7 @@ urlpatterns = [
     
     # Social auth
     path('social/slack/', auth.social_auth_slack),
+    path('social/calendly/', auth.social_auth_calendly),
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
 

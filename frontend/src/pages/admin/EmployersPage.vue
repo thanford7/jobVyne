@@ -36,7 +36,10 @@
                   :key="col.name"
                   :props="props"
                 >
-                  <template v-if="col.name === 'subscriptionStatus'">
+                  <template v-if="col.name === 'employerName'">
+                    <a :href="props.row.job_board_url" target="_blank">{{ props.row.name }}</a>
+                  </template>
+                  <template v-else-if="col.name === 'subscriptionStatus'">
                     <q-chip
                       dense
                       :label="(props.row.subscription_status) ? dataUtil.capitalize(props.row.subscription_status) : 'No subscription'"

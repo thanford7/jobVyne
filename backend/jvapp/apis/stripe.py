@@ -11,8 +11,9 @@ from rest_framework.views import APIView
 
 import stripe
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY
-from jvapp.models import Employer, EmployerSubscription, PermissionName
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.employer import Employer, EmployerSubscription
+from jvapp.models.user import PermissionName
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.datetime import get_datetime_from_unix
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from jvapp.apis._apiBase import SUCCESS_MESSAGE_KEY
-from jvapp.models import SalesInquiry, Waitlist
+from jvapp.models.sales import SalesInquiry, Waitlist
 from jvapp.utils.data import set_object_attributes
 from jvapp.utils.email import EMAIL_ADDRESS_SEND, send_django_email, EMAIL_ADDRESS_SALES
 

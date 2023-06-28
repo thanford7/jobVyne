@@ -2,13 +2,12 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from jvapp.models import UserEmployerPermissionGroup
 from jvapp.models.employer import *
 from jvapp.models.job_seeker import *
+from jvapp.models.karma import DonationOrganization
 from jvapp.models.location import *
 from jvapp.models.social import *
-
-__all__ = ('JobVyneUserAdmin',)
+from jvapp.models.user import UserEmployerPermissionGroup
 
 
 class JobVyneUserAdmin(UserAdmin):
@@ -64,7 +63,8 @@ class SocialPlatformAdmin(admin.ModelAdmin):
     list_display = ('name', 'sort_order', 'is_displayed')
     ordering = ('sort_order',)
 
-@admin.register(SocialLinkFilter)
+
+@admin.register(SocialLink)
 class SocialLinkAdmin(admin.ModelAdmin):
     pass
 
@@ -73,6 +73,12 @@ class SocialLinkAdmin(admin.ModelAdmin):
 class LocationAdmin(admin.ModelAdmin):
     pass
 
+
+@admin.register(DonationOrganization)
+class DonationOrganizationAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    ordering = ('name',)
+    
 
 @admin.register(TaxType, Taxonomy, JobTaxonomy)
 class TaxonomyAdmin(admin.ModelAdmin):

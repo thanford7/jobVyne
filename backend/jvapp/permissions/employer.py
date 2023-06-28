@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AnonymousUser
 from rest_framework import permissions
 
-from jvapp.models import JobVyneUser
+from jvapp.models.user import JobVyneUser
 
 
 class IsAdminOrEmployerOrReadOnlyPermission(permissions.BasePermission):

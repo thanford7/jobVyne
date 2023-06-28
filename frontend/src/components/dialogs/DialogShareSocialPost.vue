@@ -1,127 +1,159 @@
 <template>
   <DialogBase
-    :base-title-text="`Share ${post.platform.name} post`"
+    base-title-text="Share post"
     :primary-button-text="btnText"
     :is-loading="isAjaxActive"
-    :is-o-k-btn-enabled="isValidForm"
-    :ok-btn-help-text="validationHelpText"
+    :is-valid-form-fn="isValidForm"
     :ok-fn="sharePost"
   >
-    <div class="row">
-      <div class="col-12">
-        <SelectJobLink
-          v-model="formData.link_filter"
-          :is-required="true"
-          :platform-name="post.platform.name"
-        />
-      </div>
-      <div class="col-12">
-        <div class="text-bold">{{ this.post.platform.name }} account</div>
-        <q-checkbox v-for="cred in socialCredentials" v-model="formData.post_accounts[cred.email]" :label="cred.email"/>
-        <div v-if="!socialCredentials || !socialCredentials.length">
-          <q-icon name="warning" color="warning" size="24px"/>
-          No {{ this.post.platform.name }} account connected. Connect your account in the
-          <a href="#" @click.prevent="goToSocialAccountsPage()">Social Accounts page</a>.
+    <q-form ref="form">
+      <div class="row">
+        <div class="col-12">
+          <SelectJobBoard
+            v-model="formData.social_link"
+            :is-required="true"
+            :is-employer="false"
+          >
+            <template v-slot:after>
+              <CustomTooltip>
+                This is the job board where the latest jobs will be shown. The link in the post
+                will direct to the job board web page.
+              </CustomTooltip>
+            </template>
+          </SelectJobBoard>
         </div>
-      </div>
-      <div class="col-12 q-mt-md">
-        <div>
-          <span class="text-bold">Post now </span>
-          <CustomTooltip icon_size="24px">
-            When on, this post will be sent immediately, in addition to any auto-posts in the future.
-          </CustomTooltip>
+        <div class="col-12 q-mb-sm">
+          <div class="text-bold">Accounts to post to:</div>
+          <q-field
+            ref="creds"
+            :model-value="selectedPostAccounts"
+            lazy-rules
+            :rules="[
+              (val) => val?.length || 'You must select at least one account to post to'
+            ]"
+            borderless dense
+          >
+            <template v-slot:control>
+              <q-checkbox v-for="cred in socialCredentials" v-model="formData.post_account_ids[cred.id]">
+                <q-img
+                  v-if="socialUtil.getPlatformLogo({ platformName: cred.platform_name })"
+                  :src="socialUtil.getPlatformLogo({ platformName: cred.platform_name})"
+                  width="18px"
+                />
+                {{ cred.email }}
+              </q-checkbox>
+            </template>
+          </q-field>
+          <div v-if="!socialCredentials || !socialCredentials.length">
+            <q-icon name="warning" color="warning" size="24px"/>
+            No social accounts connected. Connect your account on the "Accounts" tab
+          </div>
         </div>
-        <q-toggle
-          v-model="formData.is_post_now"
-          :label="(formData.is_post_now) ? 'On' : 'Off'"
-        />
+        <div class="col-12">
+          <q-input
+            v-model="formData.content"
+            filled autogrow
+            label="Post text"
+            type="textarea"
+          >
+            <template v-slot:after>
+              <CustomTooltip>
+                The live view box below will show the full text, including the open jobs.
+              </CustomTooltip>
+            </template>
+          </q-input>
+        </div>
+        <div class="col-12">
+          <PostLiveView
+            :social-link="formData.social_link"
+            :content="formData.content"
+            :max-char-count="maxPostCharLength"
+          />
+        </div>
+        <div class="col-12 q-mt-md">
+          <div>
+            <span class="text-bold">Post now </span>
+            <CustomTooltip icon_size="24px">
+              When on, this post will be sent immediately, in addition to any auto-posts in the future.
+            </CustomTooltip>
+          </div>
+          <q-toggle
+            v-model="formData.is_post_now"
+            :label="(formData.is_post_now) ? 'On' : 'Off'"
+          />
+        </div>
+        <FormAutoPost ref="autoPost" :post="post" class="col-12 q-mt-md"/>
       </div>
-      <FormAutoPost ref="autoPost" :post="post" class="col-12 q-mt-md"/>
-      <div class="col-12">
-        <PostLiveView
-          :content="post.content"
-          :file="(post.files) ? post.files[0] : null"
-          :job-link="formData.link_filter"
-          :max-char-count="platformCfg.characterLimit"
-          @content-update="formData.formatted_content = $event"
-        />
-      </div>
-    </div>
+    </q-form>
   </DialogBase>
 </template>
 
 <script>
+import SelectJobBoard from 'components/inputs/SelectJobBoard.vue'
+import { storeToRefs } from 'pinia/dist/pinia'
+import dataUtil from 'src/utils/data.js'
 import FormAutoPost from 'components/dialogs/dialog-social-content/FormAutoPost.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
-import SelectJobLink from 'components/inputs/SelectJobLink.vue'
 import PostLiveView from 'pages/content-page/PostLiveView.vue'
+import emailUtil from 'src/utils/email.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
 import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useSocialAuthStore } from 'stores/social-auth-store.js'
 
-export const loadDialogShareSocialPostFn = () => {
-  const socialAuthStore = useSocialAuthStore()
-  const authStore = useAuthStore()
-  return authStore.setUser().then(() => {
-    return Promise.all([
-      socialAuthStore.setUserSocialCredentials()
-    ])
-  })
-}
-
 export default {
   name: 'DialogShareSocialPost',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { FormAutoPost, DialogBase, SelectJobLink, PostLiveView },
+  components: { FormAutoPost, DialogBase, SelectJobBoard, PostLiveView },
   props: {
-    post: Object
+    isEmployer: {
+      type: Boolean,
+      default: false
+    },
+    post: [Object, null]
   },
   data () {
     return {
+      socialCredentials: [],
       formData: {
-        link_filter: this.post.link_filter_id,
-        post_accounts: {},
+        social_link: null,
+        content: '',
+        post_account_ids: {},
         is_post_now: true
       },
       isAjaxActive: false,
-      authStore: null,
-      socialAuthStore: null
+      user: null,
+      socialAuthStore: null,
+      socialUtil
     }
   },
   computed: {
-    isValidForm () {
-      return Boolean((!this.post.employer_id || this.formData.link_filter) && this.postAccountIds.length)
+    templatePostContent () {
+      return `\n\n${emailUtil.PLACEHOLDER_JOBS_LIST.placeholder}\n\nView and apply for all jobs here: ${emailUtil.PLACEHOLDER_JOB_LINK.placeholder}`
     },
-    validationHelpText () {
-      if (this.isValidForm) {
-        return null
-      }
-      let text = 'You must select at least one social account to post to'
-      if (this.post.employer_id) {
-        text += ' and select a job link'
-      }
-      return text
+    maxPostCharLength () {
+      // Get the minimum post length of all the selected social posts
+      // For example if LinkedIn and Facebook are selected, we want to find the social with the lowest character count
+      return this.selectedPostAccounts.reduce((totalMaxLength, acct) => {
+        const maxLength = socialUtil.platformCfgs[acct.platform_name].characterLimit
+        if (!totalMaxLength) {
+          return maxLength
+        }
+        if (!dataUtil.isNil(maxLength)) {
+          return Math.min(totalMaxLength, maxLength)
+        }
+        return totalMaxLength
+      }, null)
     },
-    platformCfg () {
-      return socialUtil.platformCfgs[this.post.platform.name]
-    },
-    postAccountIds () {
-      return Object.entries(this.formData.post_accounts).reduce((data, [email, isShare]) => {
+    selectedPostAccounts () {
+      return Object.entries(this.formData.post_account_ids).reduce((data, [postAccountId, isShare]) => {
         if (!isShare) {
           return data
         }
-        const cred = this.socialCredentials.find((c) => c.email === email)
-        data.push(cred.id)
+        data.push(this.socialCredentials.find((cred) => cred.id === Number.parseInt(postAccountId)))
         return data
       }, [])
-    },
-    socialCredentials () {
-      if (!this.socialAuthStore) {
-        return null
-      }
-      return this.socialAuthStore.socialCredentials[this.post.platform.name]
     },
     btnText () {
       const autoPostData = this.$refs?.autoPost?.getFormData() || {}
@@ -133,47 +165,49 @@ export default {
       return 'Save'
     }
   },
-  watch: {
-    socialCredentials () {
-      if (!this.socialCredentials) {
-        return
-      }
-      Object.values(this.socialCredentials).forEach((cred) => {
-        this.formData.post_accounts[cred.email] = !this.post.post_account_ids.length || this.post.post_account_ids.includes(cred.id)
-      })
-    }
-  },
   methods: {
+    async isValidForm () {
+      return await this.$refs.form.isValidForm() && await this.$refs.autoPost.isValidForm()
+    },
     async sharePost () {
       this.isAjaxActive = true
-
-      // Make sure auto post fields are good
-      if (!await this.$refs.autoPost.isValidForm()) {
-        return
-      }
-
-      await this.$api.post('social-post/share/', getAjaxFormData(Object.assign(
+      await this.$api.put('social-post/', getAjaxFormData(Object.assign(
         {
-          post_id: this.post.id,
-          link_filter_id: this.formData.link_filter?.id,
-          post_account_ids: this.postAccountIds,
-          owner_id: (this.post.employer_id) ? this.authStore.propUser.id : null, // If this post is owned by an employer, we need to copy it for the owner
-          formatted_content: this.formData.formatted_content,
+          post_id: this.post?.id,
+          social_link_id: this.formData.social_link.id,
+          post_account_ids: this.selectedPostAccounts.map((acct) => acct.id),
+          user_id: (this.isEmployer) ? null : this.user.id,
+          employer_id: (this.isEmployer) ? this.user.employer_id : null,
+          content: this.formData.content,
           is_post_now: this.formData.is_post_now
         }, this.$refs.autoPost.getFormData()
       ))).finally(() => {
         this.isAjaxActive = false
         this.$emit('ok')
       })
-    },
-    goToSocialAccountsPage () {
-      this.$emit('hide')
-      this.$router.push({ name: 'employee-social-accounts' })
     }
   },
-  mounted () {
-    this.authStore = useAuthStore()
+  async mounted () {
+    const { user } = storeToRefs(useAuthStore())
+    this.user = user
     this.socialAuthStore = useSocialAuthStore()
+    await this.socialAuthStore.setUserSocialCredentials()
+    this.socialCredentials = Object.entries(this.socialAuthStore.getUserSocialCredentials()).reduce((allCreds, [platformName, platformCreds]) => {
+      if ([socialUtil.SOCIAL_KEY_LINKED_IN].includes(platformName)) {
+        return [...allCreds, ...platformCreds]
+      }
+      return allCreds
+    }, [])
+    if (this.post) {
+      Object.assign(this.formData, dataUtil.pick(this.post, Object.keys(this.formData)))
+    }
+    this.formData.post_account_ids = {}
+    this.socialCredentials.forEach((cred) => {
+      this.formData.post_account_ids[cred.id.toString()] = (this.post) ? this.post.post_account_ids.includes(cred.id) : true
+    })
+    if (!this.formData.content) {
+      this.formData.content = this.templatePostContent
+    }
   }
 }
 </script>

@@ -1,8 +1,8 @@
-from jvapp.models import Message, MessageRecipient, MessageThread
+__all__ = ['get_serialized_social_platform', 'get_serialized_social_link']
+
 from jvapp.models.social import *
-
-__all__ = ['get_serialized_social_platform', 'get_serialized_social_link_filter']
-
+from jvapp.models.tracking import Message, MessageRecipient, MessageThread
+from jvapp.serializers.job_subscription import get_serialized_job_subscription
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -16,20 +16,20 @@ def get_serialized_social_platform(social_platform: SocialPlatform):
     }
 
 
-def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_performance=False):
+def get_serialized_social_link(link: SocialLink, is_include_performance=False):
     data = {
-        'id': link_filter.id,
-        'owner_id': link_filter.owner_id,
-        'employer_name': link_filter.employer.employer_name,
-        'employer_id': link_filter.employer_id,
-        'link_name': link_filter.name,
-        'is_default': link_filter.is_default,
-        'jobs': [{'title': j.job_title, 'id': j.id} for j in link_filter.jobs.all()],
-        'tags': [{'name': tag.tag_name, 'id': tag.id} for tag in link_filter.tags.all()]
+        'id': link.id,
+        'owner_id': link.owner_id,
+        'employer_name': link.employer.employer_name if link.employer else None,
+        'employer_id': link.employer_id,
+        'link_name': link.name,
+        'is_default': link.is_default,
+        'is_employee_referral': link.is_employee_referral,
+        'job_subscriptions': [get_serialized_job_subscription(js) for js in link.job_subscriptions.all()],
     }
     
     if is_include_performance:
-        views = link_filter.page_view.all()
+        views = link.page_view.all()
         unique_views = {view.ip_address for view in views}
         data['performance'] = {
             'views': {
@@ -42,17 +42,10 @@ def get_serialized_social_link_filter(link_filter: SocialLinkFilter, is_include_
                 'last_name': app.last_name,
                 'job_title': app.employer_job.job_title,
                 'apply_dt': get_datetime_format_or_none(app.created_dt)
-            } for app in link_filter.job_application.all()]
+            } for app in link.job_application.all()]
         }
     
     return data
-
-
-def get_serialized_link_tag(link_tag: SocialLinkTag):
-    return {
-        'id': link_tag.id,
-        'tag_name': link_tag.tag_name
-    }
 
 
 def get_serialized_message(message: Message, is_include_recipients=True):

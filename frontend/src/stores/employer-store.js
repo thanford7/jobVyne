@@ -13,9 +13,7 @@ export const useEmployerStore = defineStore('employer', {
     employerJobDepartments: {}, // employerId: [<jobDept1>, <jobDept2>, ...]
     employerReferralRequests: {}, // employerId: [<request1>, <request2>, ...]
     employerBonusRules: {}, // employerId: [<rule1>, <rule2>, ...]
-    employerSocialLinks: {}, // employerId: [<link1>, <link2>, ...]
     employerSubscription: {}, // employerId: {subscription data}
-    employerJobSubscription: {}, // employerId: [<subscription1>, <subscription2>, ...]
     employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
@@ -111,26 +109,10 @@ export const useEmployerStore = defineStore('employer', {
         this.employerBonusRules[employerId] = resp.data
       }
     },
-    async setEmployerSocialLinks (employerId, isForceRefresh = false) {
-      if (!this.employerSocialLinks[employerId] || isForceRefresh) {
-        const resp = await this.$api.get('social-link-filter/', {
-          params: { employer_id: employerId }
-        })
-        this.employerSocialLinks[employerId] = resp.data
-      }
-    },
     async setEmployerSubscription (employerId, isForceRefresh = false) {
       if (!this.employerSubscription[employerId] || isForceRefresh) {
         const resp = await this.$api.get(`employer/subscription/${employerId}/`)
         this.employerSubscription[employerId] = resp.data
-      }
-    },
-    async setEmployerJobSubscription (employerId, isForceRefresh = false) {
-      if (!this.employerJobSubscription[employerId] || isForceRefresh) {
-        const resp = await this.$api.get('employer/job-subscription/', {
-          params: { employer_id: employerId }
-        })
-        this.employerJobSubscription[employerId] = resp.data
       }
     },
     async setEmployerPermissions (isForceRefresh = false) {
@@ -214,14 +196,8 @@ export const useEmployerStore = defineStore('employer', {
     getEmployerBonusRules (employerId) {
       return dataUtil.sortBy(this.employerBonusRules[employerId] || [], 'order_idx')
     },
-    getEmployerSocialLinks (employerId) {
-      return this.employerSocialLinks[employerId] || []
-    },
     getEmployerSubscription (employerId) {
       return this.employerSubscription[employerId]
-    },
-    getEmployerJobSubscription (employerId) {
-      return this.employerJobSubscription[employerId]
     },
     getEmployerJobDepartments (employerId) {
       const departments = this.employerJobDepartments[employerId]

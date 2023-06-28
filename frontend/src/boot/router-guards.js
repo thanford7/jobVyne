@@ -79,6 +79,19 @@ export default boot(({ app, router }) => {
 
       // Add meta permission to edit which can be used by the page
       to.meta.canEdit = canEdit
+
+      // Handle donation confirmation redirect URL
+      if (to.name === 'donation-confirm') {
+        const { donationId } = to.query
+        try {
+          await $api.put('karma/user-donation/', getAjaxFormData({ donation_id: donationId }))
+        } catch (e) {
+          messagesUtil.parseAndAddErrorMsg(e)
+          return { name: 'error' }
+        }
+
+        return { path: '/karma/home' }
+      }
     } catch (e) {
       return { name: 'error' }
     }

@@ -8,9 +8,11 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
-from jvapp.models import Employer, JobApplication, JobVyneUser, MessageThread, UserNotificationPreference
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.tracking import Message, MessageGroup, MessageThreadContext
+from jvapp.models.employer import Employer
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.tracking import Message, MessageGroup, MessageThread, MessageThreadContext
+from jvapp.models.user import JobVyneUser, UserNotificationPreference
 from jvapp.permissions.employer import IsAdminOrEmployerPermission, IsAdminPermission
 from jvapp.utils.email import ContentPlaceholders, send_django_email
 from jvapp.utils.gmail import GmailException

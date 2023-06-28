@@ -1,13 +1,12 @@
+__all__ = ('JobApplication', 'JobApplicationTemplate')
 from enum import Enum
 
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q
 
-from jvapp.models.user import get_user_upload_location
 from jvapp.models.abstract import ALLOWED_UPLOADS_FILE, AuditFields, JobVynePermissionsMixin
-
-__all__ = ('JobApplication', 'JobApplicationTemplate')
+from jvapp.utils.file import get_user_upload_location
 
 
 # NOTE: Keep field names in sync with EmployerJobApplicationRequirement.application_field
@@ -70,8 +69,8 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
         ARCHIVED = 'archived'
     
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
-    social_link_filter = models.ForeignKey(
-        'SocialLinkFilter', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
+    social_link = models.ForeignKey(
+        'SocialLink', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
     )
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     employer_job = models.ForeignKey(
@@ -118,7 +117,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
             applier_filter |= Q(email=user.email)
             
         employer_filter = Q(employer_job__employer_id=user.employer_id)
-        referrer_filter = Q(social_link_filter__owner_id=user.id)
+        referrer_filter = Q(social_link__owner_id=user.id)
         filter = applier_filter | referrer_filter
         if user.is_employer:
             filter |= employer_filter

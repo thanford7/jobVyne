@@ -1,3 +1,4 @@
+from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from scrape.base_scrapers import Scraper
 from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
 
@@ -37,9 +38,9 @@ class EbayScraper(Scraper):
         
         standard_job_item = self.get_google_standard_job_item(html)
         job_description = html.xpath('//*[contains(@class, "jd-info")]').get()
-        description_compensation_data = self.parse_compensation_text(job_description)
+        description_compensation_data = parse_compensation_text(job_description)
         compensation_data = {}
-        compensation_data = self.merge_compensation_data(
+        compensation_data = merge_compensation_data(
             [description_compensation_data, compensation_data, standard_job_item.get_compensation_dict()]
         )
         

@@ -33,7 +33,7 @@ DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,5f3c-71-196-128-60.ngrok-free.app').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,3144-75-166-113-92.ngrok-free.app').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_SEND_EMAILS = env('IS_SEND_EMAILS', cast=bool, default=True)
@@ -417,6 +417,9 @@ GOOGLE_MAPS_KEY = env('GOOGLE_MAPS_KEY')  # This is for reverse geolocation look
 SLACK_CLIENT_ID = env('SLACK_CLIENT_ID')
 SLACK_CLIENT_SECRET = env('SLACK_CLIENT_SECRET')
 SLACK_SIGNING_SECRET = env('SLACK_SIGNING_SECRET')
+
+# Every Org
+EVERY_ORG_PUBLIC_KEY = env('EVERY_ORG_PUBLIC_KEY')
 
 # Stripe payments
 IS_STRIPE_LIVE = env('IS_STRIPE_LIVE', cast=bool, default=False)

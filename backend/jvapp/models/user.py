@@ -1,3 +1,9 @@
+__all__ = (
+    'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
+    'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate',
+    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion', 'UserNotificationPreference',
+    'UserApplicationReview'
+)
 from collections import defaultdict
 from enum import Enum, IntEnum
 
@@ -11,29 +17,12 @@ from django.utils import crypto, timezone
 from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
-
-
-__all__ = (
-    'CustomUserManager', 'JobVyneUser', 'PermissionName', 'UserUnknownEmployer',
-    'get_user_upload_location', 'UserEmployerPermissionGroup', 'UserFile', 'UserEmployerCandidate',
-    'UserEmployeeProfileResponse', 'UserEmployeeProfileQuestion', 'UserNotificationPreference',
-    'UserApplicationReview'
-)
-
 from jvapp.utils.email import get_domain_from_email
+from jvapp.utils.file import get_user_upload_location
 
 
 def generate_password():
     return crypto.get_random_string(length=30, allowed_chars=crypto.RANDOM_STRING_CHARS + '!@#$%^&*()-+=')
-
-
-def get_user_upload_location(instance, filename):
-    if hasattr(instance, 'user_id') and instance.user:
-        email = instance.user.email
-    else:
-        email = instance.email
-    
-    return f'user/{email}/{filename}'
 
 
 # Keep in sync with frontend user-types
@@ -74,7 +63,7 @@ class CustomUserManager(BaseUserManager):
         """
         Create and save a User with the given email and password.
         """
-        from jvapp.models import Employer  # Avoid circular import
+        from jvapp.models.employer import Employer
         from jvapp.apis.employer import EmployerSubscriptionView
         
         if not email:
@@ -135,6 +124,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
+    linkedin_url = models.CharField(max_length=200, null=True, blank=True)
     phone_number = models.CharField(max_length=25, null=True, blank=True)
     profile_picture = models.ImageField(upload_to=get_user_upload_location, null=True, blank=True)
     is_email_verified = models.BooleanField(default=False)
@@ -353,7 +343,7 @@ class UserApplicationReview(AuditFields, JobVynePermissionsMixin):
 
     def _jv_can_create(self, user):
         return any([
-            user.id == self.application.social_link_filter.owner_id,
+            user.id == self.application.social_link.owner_id,
             user.is_employer and (user.employer_id == self.application.employer_job.employer_id)
         ])
     
@@ -403,3 +393,21 @@ class UserNotificationPreference(models.Model, JobVynePermissionsMixin):
     
     def _jv_can_create(self, user):
         return self.user_id == user.id
+    
+    
+class UserSocialSubscription(AuditFields):
+    """Push content to user's social feed
+    """
+    class SubscriptionType(Enum):
+        jobs = 'JOBS'
+        connect_managers = 'CONNECT_MANAGERS'  # Job seekers can opt to be shown to managers
+        events = 'EVENTS'
+        news = 'NEWS'
+        
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='social_subscription')
+    provider = models.CharField(max_length=32)  # OauthProviders
+    subscription_type = models.CharField(max_length=40)
+    subscription_data = models.JSONField()
+    
+    class Meta:
+        unique_together = ('user', 'provider', 'subscription_type')

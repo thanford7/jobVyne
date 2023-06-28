@@ -22,7 +22,9 @@ from rest_framework.views import APIView
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.employer import EmployerAtsView
 from jvapp.apis.geocoding import LocationParser
-from jvapp.models import Employer, EmployerAts, EmployerJob, JobApplication, JobDepartment, PermissionName
+from jvapp.models.employer import Employer, EmployerAts, EmployerJob, JobDepartment
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.user import PermissionName
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none, get_unix_datetime
@@ -120,7 +122,7 @@ class BaseAts:
         pass
     
     def get_referrer_name_from_application(self, application):
-        referrer = application.social_link_filter.owner
+        referrer = application.social_link.owner
         return f'{referrer.first_name} {referrer.last_name}'
     
     def get_job_title_from_application(self, application):

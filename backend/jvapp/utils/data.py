@@ -107,3 +107,12 @@ def capitalize(text, is_every_word=True):
         last_char = char
     
     return new_text
+
+
+def get_website_domain_from_url(url):
+    if not url:
+        return None
+    url_groups = url.split('.')
+    if len(url_groups) >= 2:
+        return '.'.join(url_groups[-2:])
+    return None

@@ -14,10 +14,12 @@ from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.notification import MessageGroupView, NotificationPreferenceKey, UserNotificationPreferenceView
 from jvapp.apis.user import UserView
-from jvapp.models import EmployerAts, JobVyneUser, MessageThread, MessageThreadContext, SocialPlatform
 from jvapp.models.abstract import PermissionTypes
+from jvapp.models.employer import EmployerAts
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
-from jvapp.models.user import UserEmployerCandidate
+from jvapp.models.social import SocialPlatform
+from jvapp.models.tracking import MessageThread, MessageThreadContext
+from jvapp.models.user import JobVyneUser, UserEmployerCandidate
 from jvapp.permissions.general import IsAuthenticatedOrPost
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.job_seeker import get_serialized_job_application
@@ -120,8 +122,8 @@ class ApplicationView(JobVyneAPIView):
         django_context = {
             'job': application.employer_job,
             'application': application,
-            'referrer': application.social_link_filter.owner,
-            'link_name': application.social_link_filter.name,
+            'referrer': application.social_link.owner,
+            'link_name': application.social_link.name,
             'employer': employer
         }
         if any([resume, academic_transcript]):
@@ -145,13 +147,13 @@ class ApplicationView(JobVyneAPIView):
         )
         
         # Email the referrer (if there is one)
-        if application.social_link_filter.owner and UserNotificationPreferenceView.get_is_notification_enabled(
-            application.social_link_filter.owner, NotificationPreferenceKey.NEW_APPLICATION.value
+        if application.social_link.owner and UserNotificationPreferenceView.get_is_notification_enabled(
+            application.social_link.owner, NotificationPreferenceKey.NEW_APPLICATION.value
         ):
             send_django_email(
                 f'Congratulations, you have a new referral',
                 'emails/application_submission_referrer_email.html',
-                to_email=[application.social_link_filter.owner.email],
+                to_email=[application.social_link.owner.email],
                 from_email=EMAIL_ADDRESS_SEND,
                 django_context={
                     'is_unsubscribe': True,
@@ -215,7 +217,7 @@ class ApplicationView(JobVyneAPIView):
     
     def put(self, request, application_id):
         application = self.get_applications(self.user, application_id=application_id)
-        if self.user.id != application.social_link_filter.owner_id:
+        if self.user.id != application.social_link.owner_id:
             return Response('You do not have permission to review this application', status=status.HTTP_401_UNAUTHORIZED)
         
         set_object_attributes(application, self.data, {
@@ -236,7 +238,7 @@ class ApplicationView(JobVyneAPIView):
                 from_email=EMAIL_ADDRESS_SEND,
                 django_context={
                     'application': application,
-                    'referrer': application.social_link_filter.owner,
+                    'referrer': application.social_link.owner,
                     'job': application.employer_job,
                     'know_applicant': application.get_know_applicant_label(),
                     'recommend_job': application.get_recommend_applicant_label(application.feedback_recommend_this_job),
@@ -249,7 +251,7 @@ class ApplicationView(JobVyneAPIView):
         if application.ats_application_key and application.employer_job.ats_job_key:
             ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
             ats_api = get_ats_api(ats_cfg)
-            referrer = application.social_link_filter.owner
+            referrer = application.social_link.owner
             referrer_note = f'''
                 {referrer.first_name} {referrer.last_name} ({referrer.email}) provided feedback on this candidate:
                 Do you know the applicant? {application.get_know_applicant_label()}
@@ -277,7 +279,7 @@ class ApplicationView(JobVyneAPIView):
                 pass
         cfg = {
             'employer_job_id': AttributeCfg(form_name='job_id'),
-            'social_link_filter_id': AttributeCfg(form_name='filter_id'),
+            'social_link_id': AttributeCfg(form_name='filter_id'),
             **APPLICATION_SAVE_CFG
         }
         set_object_attributes(application, data, cfg)
@@ -345,8 +347,8 @@ class ApplicationView(JobVyneAPIView):
                 'employer_job__locations__country',
             )\
             .select_related(
-                'social_link_filter',
-                'social_link_filter__owner',
+                'social_link',
+                'social_link__owner',
                 'employer_job',
                 'employer_job__employer',
             ) \

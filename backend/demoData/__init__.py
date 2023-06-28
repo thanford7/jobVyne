@@ -11,12 +11,13 @@ from numpy.random import poisson
 from jvapp.apis.job_seeker import ApplicationView
 from jvapp.apis.social import SocialLinkJobsView
 from jvapp.apis.tracking import set_user_agent_data
-from jvapp.models import City, Country, Employer, EmployerJob, EmployerReferralBonusRule, \
-    EmployerReferralBonusRuleModifier, JobApplication, JobDepartment, \
-    JobVyneUser, Location, \
-    PageView, SocialLinkFilter, \
-    SocialPlatform, State
-
+from jvapp.models.employer import Employer, EmployerJob, EmployerReferralBonusRule, EmployerReferralBonusRuleModifier, \
+    JobDepartment
+from jvapp.models.job_seeker import JobApplication
+from jvapp.models.location import City, Country, Location, State
+from jvapp.models.social import SocialLink, SocialPlatform
+from jvapp.models.tracking import PageView
+from jvapp.models.user import JobVyneUser
 
 fake = Faker()
 
@@ -118,7 +119,7 @@ def generate_employer_job(
 
 
 def generate_social_link(owner, employer, departments=None, cities=None, states=None, countries=None):
-    link = SocialLinkFilter(
+    link = SocialLink(
         owner=owner,
         employer=employer
     )
@@ -191,7 +192,7 @@ def generate_bonus_rule_modifier(
         return modifier
     
     
-def generate_job_application(social_link_filter, job, platform):
+def generate_job_application(social_link, job, platform):
     first_name = names.get_first_name()
     last_name = names.get_last_name()
     email = fake.ascii_free_email()
@@ -203,7 +204,7 @@ def generate_job_application(social_link_filter, job, platform):
             last_name=last_name,
             email=email,
             linkedin_url=f'https://www.linkedin.com/in/{first_name}-{last_name}/',
-            social_link_filter=social_link_filter,
+            social_link=social_link,
             platform=platform,
             employer_job=job,
             created_dt=application_dt,
@@ -222,8 +223,8 @@ def generate_page_view(social_link, platform, access_dt=None):
     lat, long, city, country, state = fake.local_latlng()
     state = state.split('/')[-1].replace('_', ' ')
     page_view = PageView(
-        relative_url=f'social-link-filter/{social_link.id}/',
-        social_link_filter=social_link,
+        relative_url=f'social-link/{social_link.id}/',
+        social_link=social_link,
         platform=platform,
         ip_address=ip_address,
         access_dt=access_dt or fake.date_time_between(current_dt - timedelta(days=7), current_dt).replace(tzinfo=pytz.UTC),
@@ -339,9 +340,9 @@ def create_recurring_data():
     platforms = list(SocialPlatform.objects.all())
     for employer in employers:
         users = JobVyneUser.objects.filter(employer=employer)
-        social_link_filters = SocialLinkFilter.objects.filter(owner_id__in=[u.id for u in users])
-        for social_link in social_link_filters:
-            jobs = SocialLinkJobsView.get_jobs_from_filter(link_filter=social_link)
+        social_links = SocialLink.objects.filter(owner_id__in=[u.id for u in users])
+        for social_link in social_links:
+            jobs = SocialLinkJobsView.get_jobs_from_social_link(social_link)
             if not jobs:
                 continue
             application_count = int(poisson(lam=3.0))

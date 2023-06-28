@@ -5,7 +5,9 @@
       <div class="justify-center row" style="position: relative">
         <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
           <q-toolbar-title shrink>
-            <img :src="employer?.logo_url" alt="Logo"
+            <img v-if="employer?.logo_url" :src="employer.logo_url" alt="Logo"
+                 style="max-height: 40px; max-width: 120px; object-fit: scale-down">
+            <img v-else src="~assets/jobVyneLogo.png" alt="Logo"
                  style="max-height: 40px; max-width: 120px; object-fit: scale-down">
           </q-toolbar-title>
         </q-toolbar>
@@ -33,7 +35,7 @@
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
-            <q-tab v-if="isActiveEmployee &&  isShowEmployeeProfile" id="jv-tab-me" name="me"
+            <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me"
                    :label="`About ${profile?.first_name}`"/>
           </q-tabs>
         </ResponsiveWidth>
@@ -71,11 +73,11 @@
           <q-tab-panel name="jobs" style="position: relative">
             <div class="row justify-center">
               <ResponsiveWidth>
-                <div v-if="isActiveEmployer" class="row">
+                <div class="row">
                   <div v-if="!user || dataUtil.isEmpty(user)" class="col-12 q-mb-md">
                     <q-card flat class="border-4-info">
                       <q-card-section class="text-center text-bold">
-                        Want to auto-fill and track all your job applications?
+                        Want to track all your job applications?
                         <a href="#" @click.prevent="openLoginModal(false)">Login</a>
                         or <a href="#" @click.prevent="openLoginModal(true)">create an account</a>
                       </q-card-section>
@@ -85,13 +87,14 @@
                     <CollapsableCard title="Job filters" :is-dense="true">
                       <template v-slot:body>
                         <div class="col-12 q-pa-sm">
-                          <div class="row q-gutter-y-sm">
+                          <q-form class="row q-gutter-y-sm">
                             <div class="col-12 col-md-4 q-pr-md-sm">
                               <q-input
                                 v-model="jobFilters.search_regex"
                                 filled
                                 :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
                                 debounce="500"
+                                @keyup.enter="loadData()"
                               >
                                 <template v-slot:append>
                                   <q-icon name="search"/>
@@ -103,19 +106,26 @@
                                 v-model:location="jobFilters.location"
                                 v-model:range_miles="jobFilters.range_miles"
                                 :is-include-range="true"
+                                @update:location="loadData()"
+                                @update:range_miles="loadData()"
                               />
                             </div>
                             <div class="col-12 col-md-4 q-pr-md-sm">
-                              <SelectRemote v-model="jobFilters.remote_type_bit"/>
+                              <SelectRemote v-model="jobFilters.remote_type_bit" @update:model-value="loadData()"/>
                             </div>
                             <div class="col-12 col-md-4 q-pl-md-sm">
                               <MoneyInput
                                 v-model:money-value="jobFilters.minimum_salary"
                                 v-model:currency-name="jobFilters.currency"
+                                :is-include-currency-selection="false"
                                 label="Minimum salary"
+                                @submit="loadData()"
                               />
                             </div>
-                          </div>
+                            <div class="col-12">
+                              <q-btn ref="filterSubmit" color="primary" label="Search" @click="loadData()"/>
+                            </div>
+                          </q-form>
                         </div>
                       </template>
                     </CollapsableCard>
@@ -142,7 +152,6 @@
                     :jobs-by-employer="jobsByEmployer"
                     :applications="applications"
                     :job-application="jobApplication"
-                    :has-job-subscription="hasJobSubscription"
                     :job-pages-count="jobPagesCount"
                     @openApplication="openApplication($event)"
                   />
@@ -155,30 +164,10 @@
                     class="q-mt-md"
                   />
                 </div>
-                <div v-else class="row justify-center items-center" style="height: 50vh">
-                  <div class="col-6">
-                    <q-card class="bg-primary text-white">
-                      <q-card-section class="flex justify-center">
-                        <q-icon name="power_off" size="80px"/>
-                      </q-card-section>
-                      <q-card-section>
-                        <div class="text-h6 text-center">
-                          {{ employer.name }} no longer has an active JobVyne account. If you wish to
-                          view and apply for jobs, please visit their
-                          <a v-if="employer.company_jobs_page_url" :href="employer.company_jobs_page_url"
-                             target="_blank" class="text-white">
-                            jobs page
-                          </a>
-                          <span v-else>jobs page</span>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-                </div>
               </ResponsiveWidth>
             </div>
           </q-tab-panel>
-          <q-tab-panel name="me" v-if="isActiveEmployee && isShowEmployeeProfile" class="q-pa-none">
+          <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
             <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
               <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
                 <div class="flex items-center">
@@ -226,7 +215,6 @@ import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import JobCards from 'pages/jobs-page/JobCards.vue'
 import employerStyleUtil from 'src/utils/employer-styles.js'
-import formUtil from 'src/utils/form.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
@@ -263,16 +251,12 @@ export default {
       employer: null,
       profile: null,
       isLoaded: false,
-      hasJobSubscription: false,
-      isActiveEmployer: null,
-      isActiveEmployee: null,
       jobApplication: null,
       jobPagesCount: null,
       jobFilters: {},
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
-      formUtil,
       locationUtil,
       userUtil
     }
@@ -306,15 +290,12 @@ export default {
       async handler () {
         await this.loadData({ pageNumber: this.pageNumber })
       }
-    },
-    jobFilters: {
-      async handler () {
-        await this.loadData()
-      },
-      deep: true
     }
   },
   methods: {
+    log (x) {
+      console.log(x)
+    },
     getFullLocation: locationUtil.getFullLocation,
     resetJobFilters () {
       this.jobFilters = Object.assign({}, jobFiltersTemplate)
@@ -329,10 +310,12 @@ export default {
     },
     getJobApplicationById (jobId) {
       for (const employer of this.jobsByEmployer) {
-        for (const jobs of Object.values(employer.jobs)) {
-          for (const job of jobs) {
-            if (job.id === jobId) {
-              return job
+        for (const jobPositions of Object.values(employer.jobs)) {
+          for (const jobs of Object.values(jobPositions)) {
+            for (const job of jobs) {
+              if (job.id === jobId) {
+                return job
+              }
             }
           }
         }
@@ -374,32 +357,23 @@ export default {
         employer,
         total_page_count: totalPageCount,
         owner_id: ownerId,
-        is_active_employee: isActiveEmployee,
         filter_values: filterValues,
-        total_employer_job_count: totalEmployerJobCount,
-        has_job_subscription: hasJobSubscription
+        total_employer_job_count: totalEmployerJobCount
       } = resp.data
 
       if (isFirstLoad) {
         Object.assign(this.jobFilters, filterValues)
       }
-      this.hasJobSubscription = hasJobSubscription
       this.totalEmployerJobCount = totalEmployerJobCount
       if (!isExample) {
         await Promise.all([
-          this.employerStore.setEmployerSubscription(employer.id),
           this.authStore.setApplications(this.user)
         ])
         if (ownerId) {
           await this.userStore.setUserProfile(ownerId)
         }
-        const { is_active: isActiveEmployer } = this.employerStore.getEmployerSubscription(employer.id)
-        this.isActiveEmployer = isActiveEmployer
-        this.isActiveEmployee = isActiveEmployee
         this.profile = storeToRefs(this.userStore).userProfile
       } else {
-        this.isActiveEmployer = true
-        this.isActiveEmployee = true
         if (this.$route.params.ownerId) {
           await this.userStore.setUserProfile(this.$route.params.ownerId)
           this.profile = this.userStore.userProfile
@@ -407,7 +381,7 @@ export default {
           this.profile = null
         }
       }
-      this.jobsByEmployer = (this.isActiveEmployer && this.isActiveEmployee) ? jobsByEmployer : []
+      this.jobsByEmployer = jobsByEmployer || []
       this.employer = employer
 
       this.jobPagesCount = totalPageCount

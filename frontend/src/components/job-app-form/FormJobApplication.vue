@@ -55,24 +55,12 @@
             :label="(isFieldOptional('phone_number')) ? 'Phone number*' : 'Phone number'"
             :is-required="!isFieldOptional('phone_number')"
           />
-          <q-input
+          <InputLinkedIn
             v-if="isFieldShown('linkedin_url')"
-            filled
             v-model="formData.linkedin_url"
             class="jv-form-job-app-linkedin"
-            :label="(isFieldOptional('linkedin_url')) ? 'LinkedIn URL*' : 'LinkedIn URL'"
-            hint="www.linkedin.com/in/{your profile id}"
-            lazy-rules
-            :rules="[ val => {
-              if (isFieldOptional('linkedin_url') && (!val?.length || formUtil.isGoodLinkedInUrl(val))) {
-                return true
-              } else if (!isFieldOptional('linkedin_url') && val?.length && formUtil.isGoodLinkedInUrl(val)) {
-                return true
-              }
-              return 'The LinkedIn URL must be valid'
-            },
-            val => !val || val.length <= 200 || 'LinkedIn URL must be less than or equal to 200 characters'
-            ]"
+            :label-override="(isFieldOptional('linkedin_url')) ? 'LinkedIn URL*' : 'LinkedIn URL'"
+            :is-required="!isFieldOptional('linkedin_url')"
           />
           <FileDisplayOrUpload
             v-if="isFieldShown('resume')"
@@ -205,6 +193,7 @@
 </template>
 
 <script>
+import InputLinkedIn from 'components/inputs/InputLinkedIn.vue'
 import PhoneInput from 'components/inputs/PhoneInput.vue'
 import colorUtil from 'src/utils/color.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
@@ -234,7 +223,7 @@ const formDataTemplate = {
 
 export default {
   name: 'FormJobApplication',
-  components: { PhoneInput, FileDisplayOrUpload, AuthAll, ListIcon },
+  components: { InputLinkedIn, PhoneInput, FileDisplayOrUpload, AuthAll, ListIcon },
   data () {
     return {
       formData: this.resetFormData(),

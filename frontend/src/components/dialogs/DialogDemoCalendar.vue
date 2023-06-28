@@ -3,7 +3,7 @@
     base-title-text="Schedule 30-minute demo"
     :is-include-buttons="false"
   >
-    <CalendlyEmbed :first-name="firstName" :last-name="lastName" :email="email"/>
+    <CalendlyEmbed :first-name="firstName" :last-name="lastName" :email="email" :is-dialog="true"/>
   </DialogBase>
 </template>
 

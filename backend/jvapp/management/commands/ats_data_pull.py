@@ -4,8 +4,7 @@ from time import sleep
 from django.core.management import BaseCommand
 
 from jvapp.apis.ats import get_ats_api
-from jvapp.models import EmployerAts
-
+from jvapp.models.employer import EmployerAts
 
 logger = logging.getLogger(__name__)
 

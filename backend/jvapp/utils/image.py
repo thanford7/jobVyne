@@ -1,6 +1,9 @@
 from tempfile import NamedTemporaryFile
+from urllib.request import urlopen
 
+import requests
 from PIL import Image
+from django.core.files import File
 
 from jvapp.utils.file import get_file_extension
 
@@ -33,5 +36,22 @@ def resize_image_with_fill(image, width, height):
     im.close()
     image.close()
     background_file = NamedTemporaryFile()
-    background.save(background_file, format=get_file_extension(image.url))
+    try:
+        background.save(background_file, format=get_file_extension(image.url))
+    except KeyError:
+        background.save(background_file, format='png')
     return background_file
+
+
+def convert_url_to_image(image_url, file_name, is_use_request=False):
+    if not image_url:
+        return None
+    image = NamedTemporaryFile()
+    if is_use_request:
+        # Sometimes urlopen gets a Forbidden error so we need to use a request
+        image_data = requests.get(image_url).content
+    else:
+        image_data = urlopen(image_url).read()
+    image.write(image_data)
+    image.flush()
+    return File(image, name=file_name)

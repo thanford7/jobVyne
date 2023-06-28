@@ -3,7 +3,7 @@
     <div class="q-ml-sm">
       <PageHeader title="Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
-        <div v-if="defaultReferralLink" class="col-12">
+        <div v-if="employeeReferralLink" class="col-12">
           <BaseExpansionItem :is-include-separator="false">
             <template v-slot:header>
               <div class="text-h6">
@@ -12,7 +12,7 @@
             </template>
             <div>
               <div class="text-small q-mb-sm">Click icon to copy link</div>
-              <ReferralLinkButtons :social-link-filter="defaultReferralLink"/>
+              <ReferralLinkButtons :social-link="employeeReferralLink"/>
             </div>
           </BaseExpansionItem>
         </div>
@@ -44,7 +44,6 @@
 
 <script>
 import BaseExpansionItem from 'components/BaseExpansionItem.vue'
-import DialogImgCarousel from 'components/dialogs/DialogImgCarousel.vue'
 import PageHeader from 'components/PageHeader.vue'
 import ReferralLinkButtons from 'components/ReferralLinkButtons.vue'
 import EmployeeLeaderBoard from 'pages/employer/dashboard-page/EmployeeLeaderBoard.vue'
@@ -78,19 +77,9 @@ export default {
     }
   },
   computed: {
-    defaultReferralLink () {
-      const referralLinks = this.socialStore.getSocialLinkFilters(this.user.id)
-      return referralLinks.find((link) => link.is_default)
-    },
-    hasCompletedChecklist () {
-      return [
-        this.userEmployeeChecklist.is_email_verified,
-        this.userEmployeeChecklist.is_email_employer_permitted || this.userEmployeeChecklist.has_secondary_email,
-        !this.userEmployeeChecklist.has_secondary_email || this.userEmployeeChecklist.is_business_email_verified,
-        this.userEmployeeChecklist.has_updated_profile,
-        this.userEmployeeChecklist.has_connected_linkedin,
-        this.userEmployeeChecklist.has_scheduled_auto_post
-      ].every((val) => val)
+    employeeReferralLink () {
+      const referralLinks = this.socialStore.getSocialLinks({ userId: this.user.id })
+      return referralLinks.find((link) => link.is_employee_referral)
     }
   },
   watch: {
@@ -101,17 +90,6 @@ export default {
       deep: true
     }
   },
-  methods: {
-    openImageExplainer (imageSrcs) {
-      this.q.dialog({
-        component: DialogImgCarousel,
-        componentProps: {
-          title: 'Instructions',
-          imageSrcs
-        }
-      })
-    }
-  },
   preFetch () {
     const authStore = useAuthStore()
     const socialStore = useSocialStore()
@@ -120,7 +98,7 @@ export default {
     Loading.show()
     return authStore.setUser().then(() => {
       return Promise.all([
-        socialStore.setSocialLinkFilters(authStore.propUser.id),
+        socialStore.setSocialLinks({ userId: authStore.propUser.id }),
         userStore.setUserEmployeeChecklist(authStore.propUser.id)
       ])
     }).finally(() => Loading.hide())

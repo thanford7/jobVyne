@@ -13,6 +13,11 @@ class SocialUtil {
     this.SOCIAL_KEY_YOUTUBE = 'YouTube'
     this.SOCIAL_KEY_SLACK = 'Slack'
 
+    // Keep in sync with PostChannel
+    this.SOCIAL_CHANNEL_SLACK_JOB = 'slack-job'
+    this.SOCIAL_CHANNEL_SLACK_EMPLOYEE_REFERRAL = 'slack-employee-referral'
+    this.SOCIAL_CHANNEL_LINKEDIN_JOB = 'linkedin-job'
+
     this.platformCfgs = {
       [this.SOCIAL_KEY_LINKED_IN]: {
         name: this.SOCIAL_KEY_LINKED_IN,
@@ -114,6 +119,13 @@ class SocialUtil {
       ))
       return socialLinks
     }, [])
+  }
+
+  getPlatformLogo ({ platformName = null, provider = null }) {
+    if (platformName) {
+      return this.platformCfgs[platformName].logo
+    }
+    return Object.values(this.platformCfgs).find((cfg) => cfg.redirectProvider === provider).logo
   }
 }
 

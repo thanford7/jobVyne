@@ -130,7 +130,7 @@ class GmailAPIService:
         return json.loads(decoded_data)
     
     def get_normalized_email(self, raw_email):
-        from jvapp.models import Message  # Avoid circular import
+        from jvapp.models.tracking import Message
         payload = raw_email['payload']
         headers = payload['headers']
         get_header_value_by_name = lambda name: next((h['value'] for h in headers if h['name'] == name), None)

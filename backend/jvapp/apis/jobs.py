@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.apis.employer import EmployerJobView
-from jvapp.models import Employer
+from jvapp.models.employer import Employer
 from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.data import coerce_bool

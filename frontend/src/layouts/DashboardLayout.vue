@@ -2,9 +2,9 @@
   <q-layout view="hHh lpR fFf">
 
     <q-drawer
-      v-if="!utilStore.isMobile"
+      v-if="!utilStore.isUnderBreakPoint('md')"
       :breakpoint="0"
-      :width="250"
+      :width="300"
       side="left"
       show-if-above
       :mini="!isLeftDrawerOpen"
@@ -96,7 +96,7 @@
       <router-view/>
     </q-page-container>
 
-    <q-footer v-if="utilStore.isMobile" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow">
+    <q-footer v-if="utilStore.isUnderBreakPoint('md')" bordered reveal class="bg-gray-500 row scroll-x scrollbar-narrow">
       <q-btn-dropdown
         v-if="userViewOptions.length > 1"
         flat unelevated stack

@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from sendgrid import EventWebhook
 
-from jvapp.models import Message, MessageAttachment, MessageRecipient, MessageThread
+from jvapp.models.tracking import Message, MessageAttachment, MessageRecipient, MessageThread
 from jvapp.utils.datetime import get_datetime_from_unix
 from jvapp.utils.email import MESSAGE_ENVIRONMENT_KEY, MESSAGE_ID_KEY
 from jvapp.utils.gmail import GmailAPIService

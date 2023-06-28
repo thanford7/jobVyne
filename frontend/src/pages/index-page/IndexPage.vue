@@ -91,7 +91,7 @@
               animated keep-alive
               v-model="slide"
               infinite :autoplay="autoplay" control-color="primary"
-              :height="(utilityStore.isMobile) ? '60vh' : '40vh'"
+              :height="(utilStore.isUnderBreakPoint('md')) ? '60vh' : '40vh'"
               transition-prev="slide-right"
               transition-next="slide-left"
               @mouseenter="autoplay = 7000"
@@ -102,7 +102,7 @@
               <q-carousel-slide :name="1">
                 <div class="flex h-100 items-center justify-center">
                   <TestimonialCard
-                    :class="(utilityStore.isMobile) ? '' : 'w-50'"
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
                     headshot-src="/images/headshots/heatherWaldron.png"
                     quote="JobVyne has made it so easy for employees to get the word out on new job openings and to get referrals.
                     Hiring managers have been very happy with the quality of the applicants as well."
@@ -114,7 +114,7 @@
               <q-carousel-slide :name="2">
                 <div class="flex h-100 items-center justify-center">
                   <TestimonialCard
-                    :class="(utilityStore.isMobile) ? '' : 'w-50'"
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
                     headshot-src="/images/headshots/timBirkmire.jpeg"
                     quote="I got my first referral a few days after setting up my account. It's easy and simple. Every employee should check this out!"
                     name="Tim Birkmire"
@@ -125,7 +125,7 @@
               <q-carousel-slide :name="3">
                 <div class="flex h-100 items-center justify-center">
                   <TestimonialCard
-                    :class="(utilityStore.isMobile) ? '' : 'w-50'"
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
                     headshot-src="/images/headshots/gretelUptegrove.jpeg"
                     quote="I've never made a referral before, but JobVyne allows me to 'set it and forget it'. I got a referral within two weeks of joining the platform."
                     name="Gretel Uptegrove"
@@ -136,7 +136,7 @@
               <q-carousel-slide :name="4">
                 <div class="flex h-100 items-center justify-center">
                   <TestimonialCard
-                    :class="(utilityStore.isMobile) ? '' : 'w-50'"
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
                     headshot-src="/images/headshots/russGunther.jpeg"
                     quote="It's often difficult to keep up with all of the job postings. JobVyne automatically updates the jobs so I don't even have to think about it. It's a great platform."
                     name="Russ Gunther"
@@ -147,7 +147,7 @@
               <q-carousel-slide :name="5">
                 <div class="flex h-100 items-center justify-center">
                   <TestimonialCard
-                    :class="(utilityStore.isMobile) ? '' : 'w-50'"
+                    :class="(utilStore.isUnderBreakPoint('md')) ? '' : 'w-50'"
                     headshot-src="/images/headshots/ericHochberg.jpeg"
                     quote="I attend a lot of events and can share job openings with potential candidates by sharing a JobVyne QR code. It makes recruiting a lot easier. Even better, the QR code is linked to me so I can get a referral bonus!"
                     name="Eric Hochberg"
@@ -301,7 +301,7 @@ export default defineComponent({
     }
     useMeta(metaData)
     return {
-      utilityStore: useUtilStore(),
+      utilStore: useUtilStore(),
       q: useQuasar()
     }
   }
