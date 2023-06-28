@@ -87,13 +87,14 @@
                     <CollapsableCard title="Job filters" :is-dense="true">
                       <template v-slot:body>
                         <div class="col-12 q-pa-sm">
-                          <div class="row q-gutter-y-sm">
+                          <q-form class="row q-gutter-y-sm">
                             <div class="col-12 col-md-4 q-pr-md-sm">
                               <q-input
                                 v-model="jobFilters.search_regex"
                                 filled
                                 :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
                                 debounce="500"
+                                @keyup.enter="loadData()"
                               >
                                 <template v-slot:append>
                                   <q-icon name="search"/>
@@ -105,10 +106,12 @@
                                 v-model:location="jobFilters.location"
                                 v-model:range_miles="jobFilters.range_miles"
                                 :is-include-range="true"
+                                @update:location="loadData()"
+                                @update:range_miles="loadData()"
                               />
                             </div>
                             <div class="col-12 col-md-4 q-pr-md-sm">
-                              <SelectRemote v-model="jobFilters.remote_type_bit"/>
+                              <SelectRemote v-model="jobFilters.remote_type_bit" @update:model-value="loadData()"/>
                             </div>
                             <div class="col-12 col-md-4 q-pl-md-sm">
                               <MoneyInput
@@ -116,9 +119,13 @@
                                 v-model:currency-name="jobFilters.currency"
                                 :is-include-currency-selection="false"
                                 label="Minimum salary"
+                                @submit="loadData()"
                               />
                             </div>
-                          </div>
+                            <div class="col-12">
+                              <q-btn ref="filterSubmit" color="primary" label="Search" @click="loadData()"/>
+                            </div>
+                          </q-form>
                         </div>
                       </template>
                     </CollapsableCard>
@@ -208,7 +215,6 @@ import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import JobCards from 'pages/jobs-page/JobCards.vue'
 import employerStyleUtil from 'src/utils/employer-styles.js'
-import formUtil from 'src/utils/form.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
@@ -251,7 +257,6 @@ export default {
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
-      formUtil,
       locationUtil,
       userUtil
     }
@@ -285,15 +290,12 @@ export default {
       async handler () {
         await this.loadData({ pageNumber: this.pageNumber })
       }
-    },
-    jobFilters: {
-      async handler () {
-        await this.loadData()
-      },
-      deep: true
     }
   },
   methods: {
+    log (x) {
+      console.log(x)
+    },
     getFullLocation: locationUtil.getFullLocation,
     resetJobFilters () {
       this.jobFilters = Object.assign({}, jobFiltersTemplate)

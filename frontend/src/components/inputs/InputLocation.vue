@@ -15,6 +15,7 @@
       :hide-dropdown-icon="true"
       :loading="isLoading"
       @input-value="getLocationsDebounceFn"
+      @new-value="setNewValue"
       new-value-mode="add-unique"
       :options="locationOptions"
       option-label="text"
@@ -32,7 +33,7 @@
       <template v-slot:no-option>
         <q-item>
           <q-item-section class="text-italic text-grey">
-            Begin typing...
+            {{ noOptionText }}
           </q-item-section>
         </q-item>
       </template>
@@ -53,6 +54,7 @@
 
 <script>
 import { debounce } from 'quasar'
+import dataUtil from 'src/utils/data.js'
 import { useUtilStore } from 'stores/utility-store.js'
 
 export default {
@@ -81,12 +83,21 @@ export default {
         hasCity = this.location?.city
       }
       return hasCity && this.isIncludeRange
+    },
+    noOptionText () {
+      if (this.isLoading) {
+        return 'Searching'
+      } else if (this.searchText) {
+        return 'Continue typing...'
+      }
+      return 'Begin typing...'
     }
   },
   data () {
     return {
       isLoading: false,
       locationOptions: [],
+      searchText: null,
       getLocationsDebounceFn: null,
       utilStore: useUtilStore()
     }
@@ -97,6 +108,7 @@ export default {
       this.$refs.select.updateInputValue('')
     },
     async getLocationOptions (searchText) {
+      this.searchText = searchText
       if (!searchText || !searchText.length) {
         return
       }
@@ -108,6 +120,12 @@ export default {
       this.isLoading = false
       this.$refs.select.refresh()
       this.$refs.select.showPopup()
+    },
+    setNewValue (inputVal, doneFn) {
+      if (dataUtil.isString(inputVal)) {
+        return
+      }
+      doneFn(inputVal)
     }
   },
   created () {

@@ -132,7 +132,10 @@ class JobPost(AuditFields):
         LINKEDIN_JOB = 'linkedin-job'
     
     employer = models.ForeignKey('Employer', on_delete=models.CASCADE, null=True, blank=True, related_name='job_post')
-    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True, related_name='job_post')
+    # Owner indicates an "influencer" that posted to a channel
+    owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True, related_name='job_post')
+    # Recipient indicates a job seeker that received a job post to a channel
+    recipient = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True, related_name='recipient_job_post')
     job = models.ForeignKey('EmployerJob', on_delete=models.CASCADE, related_name='job_post')
     channel = models.CharField(max_length=30)
     
@@ -140,12 +143,17 @@ class JobPost(AuditFields):
         constraints = [
             UniqueConstraint(
                 fields=['employer', 'job', 'channel'],
-                condition=Q(user=None),
+                condition=Q(owner=None, recipient=None),
                 name='unique_employer_job_channel'
             ),
             UniqueConstraint(
-                fields=['user', 'job', 'channel'],
-                condition=Q(employer=None),
-                name='unique_user_job_channel'
+                fields=['owner', 'job', 'channel'],
+                condition=Q(employer=None, recipient=None),
+                name='unique_owner_job_channel'
+            ),
+            UniqueConstraint(
+                fields=['recipient', 'job', 'channel'],
+                condition=Q(employer=None, owner=None),
+                name='unique_recipient_job_channel'
             ),
         ]

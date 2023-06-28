@@ -393,3 +393,21 @@ class UserNotificationPreference(models.Model, JobVynePermissionsMixin):
     
     def _jv_can_create(self, user):
         return self.user_id == user.id
+    
+    
+class UserSocialSubscription(AuditFields):
+    """Push content to user's social feed
+    """
+    class SubscriptionType(Enum):
+        jobs = 'JOBS'
+        connect_managers = 'CONNECT_MANAGERS'  # Job seekers can opt to be shown to managers
+        events = 'EVENTS'
+        news = 'NEWS'
+        
+    user = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='social_subscription')
+    provider = models.CharField(max_length=32)  # OauthProviders
+    subscription_type = models.CharField(max_length=40)
+    subscription_data = models.JSONField()
+    
+    class Meta:
+        unique_together = ('user', 'provider', 'subscription_type')

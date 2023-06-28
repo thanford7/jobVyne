@@ -132,6 +132,7 @@ urlpatterns = [
     # Slack
     path('slack/channel/', slack.SlackChannelView.as_view()),
     path('slack/command/suggest/', slack.SlackCommandSuggestView.as_view()),
+    path('slack/command/job-seeker/', slack.SlackCommandJobSeekerView.as_view()),
     path('slack/message/job/', slack.SlackJobsMessageView.as_view()),
     path('slack/message/referral/', slack.SlackReferralsMessageView.as_view()),
     path('slack/webhooks/inbound/', slack.SlackWebhookInboundView.as_view()),

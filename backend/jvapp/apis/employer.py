@@ -649,7 +649,12 @@ class EmployerJobView(JobVyneAPIView):
                 employer_job_filter &= Q(open_date__lte=timezone.now().date())
         
         jobs = EmployerJob.objects \
-            .select_related('job_department', 'employer', 'referral_bonus_currency') \
+            .select_related(
+                'job_department',
+                'employer',
+                'referral_bonus_currency',
+                'salary_currency'
+            ) \
             .prefetch_related(
                 'locations',
                 'locations__city',
@@ -771,7 +776,14 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
             )
         
         return EmployerJobApplicationRequirement.objects \
-            .prefetch_related('filter_departments', 'filter_jobs') \
+            .prefetch_related(
+                'employer',
+                'employer__default_bonus_currency',
+                'filter_departments',
+                'filter_jobs',
+                'filter_jobs__salary_currency',
+                'filter_jobs__referral_bonus_currency'
+            ) \
             .filter(application_requirement_filter)
     
     @staticmethod

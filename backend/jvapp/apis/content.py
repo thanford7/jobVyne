@@ -13,13 +13,13 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
 from jvapp.apis.auth import get_refreshed_access_token
-from jvapp.apis.social import SocialLinkJobsView, SocialLinkPostJobsView, SocialLinkView
+from jvapp.apis.social import SocialLinkPostJobsView, SocialLinkView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import JobPost, SocialContentItem, SocialPost, SocialPostAudit, SocialPostFile
 from jvapp.models.employer import EmployerFile
 from jvapp.models.user import UserFile
 from jvapp.serializers.content import get_serialized_social_post
-from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.data import set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import ContentPlaceholders
 from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
@@ -349,7 +349,7 @@ class ShareSocialPostView(JobVyneAPIView):
             post_account_credential = post_account['credential']
             platform_name = OAUTH_CFGS[post_account_credential.provider]['name']
             formatted_content = SocialPostView.get_formatted_content(post, post_account['jobs'], platform_name)
-            args = [post.user, post_account_credential.access_token, formatted_content]
+            args = [post.owner, post_account_credential.access_token, formatted_content]
             kwargs = {'post_file': file.file if file else None}
             resp = None
             if post_account_credential.provider == 'linkedin-oauth2':
@@ -439,7 +439,7 @@ class ShareSocialPostView(JobVyneAPIView):
                 'jobs': SocialLinkPostJobsView.get_jobs_for_post(
                     MAX_JOBS_TO_POST,
                     ShareSocialPostView.get_post_channel_by_provider(post_cred.provider),
-                    user_id=post.user_id,
+                    owner_id=post.user_id,
                     employer_id=post.employer_id,
                     job_subscriptions=post.social_link.job_subscriptions.all()
                 )

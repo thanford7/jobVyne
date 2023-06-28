@@ -9,8 +9,9 @@
       <CurrencyInput
         :id="id" class="q-field__input"
         :model-value="modelValue"
-        @change="emitMoneyVal($event)"
+        @update:model-value="emitMoneyVal($event)"
         :options="moneyFormat"
+        @keyup.enter="$emit('submit', modelValue)"
         v-show="floatingLabel"
       />
     </template>

@@ -15,8 +15,7 @@ export default {
     options: Object
   },
   setup (props) {
-    const { inputRef } = useCurrencyInput(props.options)
-
+    const { inputRef } = useCurrencyInput(props.options, true)
     return { inputRef }
   }
 }

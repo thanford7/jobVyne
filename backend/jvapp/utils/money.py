@@ -27,7 +27,7 @@ def parse_compensation_text(text, salary_interval='year'):
     currency_pattern = reduce(lambda full_pattern, currency: f'{full_pattern}{"|" if full_pattern else ""}{currency}', currencies, '')
     currency_match = re.search(f'({currency_pattern})\s', text)
     grouped_compensation_matches = get_grouped_compensation_matches(text)
-    bad_salary_floor = 10000 if salary_interval == 'year' else 1
+    bad_salary_floor = 40000 if salary_interval == 'year' else 1
     bad_salary_ceiling = 500000
     best_compensation_match = get_best_compensation_group(grouped_compensation_matches, bad_salary_floor, bad_salary_ceiling)
     currency = None

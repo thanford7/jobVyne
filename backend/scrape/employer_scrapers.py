@@ -562,6 +562,7 @@ class GunterGroupScraper(GreenhouseScraper):
     
     
 class BigDConstructionScraper(UltiProScraper):
+    # Not working currently
     employer_name = 'Big-D Construction'
     start_url = 'https://recruiting2.ultipro.com/BIG1005BGDC/JobBoard/a1b85713-c4d6-4da4-98fa-9080a291bd18/'
     
@@ -775,6 +776,7 @@ class TrunkScraper(LeverScraper):
     
     
 class HelmAiScraper(LeverScraper):
+    """No longer working. Might have gone out of business"""
     employer_name = 'Helm.ai'
     EMPLOYER_KEY = 'helm'
     
@@ -1494,7 +1496,7 @@ all_scrapers = {
     ReforgeScraper.employer_name: ReforgeScraper,
     AtoBScraper.employer_name: AtoBScraper,
     TrunkScraper.employer_name: TrunkScraper,
-    HelmAiScraper.employer_name: HelmAiScraper,
+    # HelmAiScraper.employer_name: HelmAiScraper,
     RayaScraper.employer_name: RayaScraper,
     SquareScraper.employer_name: SquareScraper,
     KintsugiScraper.employer_name: KintsugiScraper,
@@ -1528,7 +1530,7 @@ all_scrapers = {
     KodiakCakesScraper.employer_name: KodiakCakesScraper,
     SalesRabbitScraper.employer_name: SalesRabbitScraper,
     CricutScraper.employer_name: CricutScraper,
-    BigDConstructionScraper.employer_name: BigDConstructionScraper,
+    # BigDConstructionScraper.employer_name: BigDConstructionScraper,
     GunterGroupScraper.employer_name: GunterGroupScraper,
     BlueOriginScraper.employer_name: BlueOriginScraper,
     DoorDashScraper.employer_name: DoorDashScraper,

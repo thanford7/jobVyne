@@ -53,7 +53,19 @@ def add_owner_fields(sender, instance, *args, **kwargs):
     
     if hasattr(instance, 'modified_user'):
         instance.modified_dt = timezone.now()
-    
+
+
+@receiver(pre_save, sender=JobVyneUser)
+def prevent_duplicate_user(sender, instance, *args, **kwargs):
+    new_user_emails = [instance.email]
+    if instance.business_email:
+        new_user_emails.append(instance.business_email)
+    current_user_filter = Q(email__in=new_user_emails) | Q(business_email__in=new_user_emails)
+    current_user_filter &= ~Q(id=instance.id)
+    existing_users = JobVyneUser.objects.filter(current_user_filter)
+    if existing_users:
+        raise ValueError('A user with this email address already exists')
+
     
 @receiver(post_save, sender=JobVyneUser)
 def create_employee_referral_link(sender, instance, *args, **kwargs):

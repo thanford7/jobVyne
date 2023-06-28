@@ -1,6 +1,7 @@
 __all__ = ('SocialPlatformView', 'SocialLinkView', 'SocialLinkJobsView', 'ShareSocialLinkView')
 
 import json
+import logging
 import math
 from collections import defaultdict
 from datetime import timedelta
@@ -25,6 +26,9 @@ from jvapp.utils.data import AttributeCfg, coerce_int, set_object_attributes
 from jvapp.utils.email import send_django_email
 from jvapp.utils.message import send_sms_message
 from jvapp.utils.sanitize import sanitize_html
+
+
+logger = logging.getLogger(__name__)
 
 
 class SocialPlatformView(JobVyneAPIView):
@@ -266,6 +270,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         if not any([link_id, main_employer_id]):
             raise ValueError('A link ID or employer ID is required')
         
+        logger.info('Fetching social link')
         link = SocialLinkView.get_link(
             self.user,
             link_id=link_id,
@@ -297,6 +302,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         jobs_by_employer = {}
         if jobs:
             employer_ids = {j.employer_id for j in jobs}
+            logger.info('Fetching application requirements')
             application_requirements = EmployerJobApplicationRequirementView.get_application_requirements(employer_ids=employer_ids)
             application_requirements_by_employer = defaultdict(list)
             for requirement in application_requirements:
@@ -366,22 +372,27 @@ class SocialLinkJobsView(JobVyneAPIView):
     def get_jobs_from_social_link(link, extra_filter=None):
         from jvapp.apis.employer import EmployerJobView
         from jvapp.apis.job_subscription import JobSubscriptionView
+        
+        logger.info('Fetching job filter')
         job_filter = JobSubscriptionView.get_combined_job_subscription_filter(link.job_subscriptions.all())
         if extra_filter:
             job_filter &= extra_filter
+            
+        logger.info('Fetching jobs')
         return EmployerJobView.get_employer_jobs(employer_job_filter=job_filter)
     
     @staticmethod
     def get_location_filter(location_dict: Union[dict, None], remote_type_bit: int, range_miles: Union[int, None]):
         location_filter = Q()
+        remote_type_bit = remote_type_bit or 0
         if location_dict and location_dict.get('city') and range_miles:
             start_point = Location.get_geometry_point(location_dict['latitude'], location_dict['longitude'])
             location_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
         elif location_dict:
             # If remote is allowed, we only want to filter on country, regardless of whether a state is set
-            if (state := location_dict['state']) and not remote_type_bit & REMOTE_TYPES.YES.value:
+            if (state := location_dict.get('state')) and not remote_type_bit & REMOTE_TYPES.YES.value:
                 location_filter &= Q(locations__state__name=state)
-            elif country := location_dict['country']:
+            elif country := location_dict.get('country'):
                 country_filter = Q(locations__country__name=country)
                 if remote_type_bit & REMOTE_TYPES.YES.value:
                     # Some remote jobs don't have a country. In this case, we assume it's a global remote job
@@ -418,7 +429,7 @@ class SocialLinkPostJobsView(JobVyneAPIView):
             max_jobs,
             self.query_params['social_channel'],
             employer_id=employer_id,
-            user_id=user_id,
+            owner_id=user_id,
             job_subscriptions=job_subscriptions
         )
         
@@ -427,17 +438,27 @@ class SocialLinkPostJobsView(JobVyneAPIView):
         ])
 
     @staticmethod
-    def get_jobs_for_post(max_job_count, social_channel, employer_id=None, user_id=None, job_subscriptions=None):
+    def get_jobs_for_post(max_job_count, social_channel, employer_id=None, owner_id=None, recipient_id=None, job_subscriptions=None):
         from jvapp.apis.employer import EmployerJobView
         from jvapp.apis.job_subscription import JobSubscriptionView
         
-        if not any((employer_id, user_id)):
-            raise ValueError('An employer ID or user ID is required')
+        """
+        Owners and employers create job subscriptions which filter the relevant jobs to them and their users
+        Recipients are part of a channel that an owner or employer uses (e.g. a recipient is part of a Slack group
+        managed by an employer).
+        Jobs are narrowed down by an employer or owner's subscriptions
+        Then we check that:
+            (1a) The employer or owner has not PUSHED a post to a given channel
+            (1b) The recipient has not RECEIVED a post to a given channel
+        """
+        
+        if not any((employer_id, owner_id, recipient_id)):
+            raise ValueError('An employer ID, owner ID, or recipient ID is required')
         
         # Get job subscriptions
         if not job_subscriptions:
-            if user_id:
-                job_subscriptions = JobSubscriptionView.get_job_subscriptions(user_id=user_id)
+            if owner_id:
+                job_subscriptions = JobSubscriptionView.get_job_subscriptions(user_id=owner_id)
                 jobs_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 if not jobs_filter:
                     raise ValueError('User does not have any job subscriptions')
@@ -454,8 +475,10 @@ class SocialLinkPostJobsView(JobVyneAPIView):
     
         # Don't post jobs that have already been posted
         job_post_filter = Q(job_post__channel=social_channel)
-        if user_id:
-            job_post_filter &= Q(job_post__user_id=user_id)
+        if recipient_id:
+            job_post_filter &= Q(job_post__recipient_id=owner_id)
+        elif owner_id:
+            job_post_filter &= Q(job_post__owner_id=owner_id)
         else:
             job_post_filter &= Q(job_post__employer_id=employer_id)
         jobs_filter &= ~job_post_filter

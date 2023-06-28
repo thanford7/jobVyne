@@ -152,7 +152,7 @@ class UserView(JobVyneAPIView):
         if user_id:
             user_filter = Q(id=user_id)
         elif user_email:
-            user_filter = Q(email=user_email)
+            user_filter = Q(email=user_email) | Q(business_email=user_email)
         
         users = JobVyneUser.objects \
             .select_related('employer') \
@@ -185,18 +185,18 @@ class UserView(JobVyneAPIView):
         return users
     
     @staticmethod
-    def get_or_create_user(user, data):
+    def get_or_create_user(user, data, is_check_permission=True):
         """
         :return {tuple}: (user, is_new)
         """
         try:
-            return UserView.get_user(user, user_email=data['email']), False
+            return UserView.get_user(user, user_email=data['email'], is_check_permission=is_check_permission), False
         except JobVyneUser.DoesNotExist:
             return JobVyneUser.objects.create_user(
                 data['email'],
                 first_name=data['first_name'],
                 last_name=data['last_name'],
-                employer_id=data['employer_id'],
+                employer_id=data.get('employer_id'),
             ), True
     
     @staticmethod

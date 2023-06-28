@@ -311,3 +311,10 @@ class BaseTestCase(TestCase):
     
     def assert_200_response(self, resp):
         self.assertEqual(200, resp.status_code)
+    
+    def is_failed(self, fn, allowed_exception):
+        try:
+            fn()
+            return False
+        except allowed_exception:
+            return True
