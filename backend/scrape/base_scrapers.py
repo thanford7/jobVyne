@@ -1062,7 +1062,7 @@ class WorkableScraper(Scraper):
         if (not location_data) and is_remote:
             location_text = 'Remote'
         elif location_data:
-            location_parts = [location_data['city'], location_data['region'], location_data['country']]
+            location_parts = [location_data.get('city'), location_data.get('region'), location_data.get('country')]
             location_text = ', '.join([p for p in location_parts if p])
             if job_data['remote']:
                 location_text = f'Remote: {location_text}'
