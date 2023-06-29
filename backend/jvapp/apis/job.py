@@ -95,7 +95,7 @@ class JobClassificationView(JobVyneAPIView):
             groupby(taxonomies, lambda t: t.tax_type)
         }
         taxonomy_map = {
-            (t.tax_type, t.name): t for t in Taxonomy.objects.all()
+            (t.tax_type, t.name): t for t in taxonomies
         }
         job_taxonomies = []
         for job in jobs:
