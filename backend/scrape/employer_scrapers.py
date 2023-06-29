@@ -1560,6 +1560,178 @@ class FiscalnoteScraper(LeverScraper):
     EMPLOYER_KEY = 'fiscalnote'
 
 
+class NextInsuranceScraper(GreenhouseApiScraper):
+    employer_name = 'Next Insurance'
+    EMPLOYER_KEY = 'nextinsurance66'
+
+
+class RoivantScraper(GreenhouseScraper):
+    employer_name = 'Roivant'
+    EMPLOYER_KEY = 'roivantsciences'
+
+
+class ModulrScraper(GreenhouseApiScraper):
+    employer_name = 'Modulr'
+    EMPLOYER_KEY = 'modulrfinance'
+
+
+class WilsonSonsiniScraper(WorkdayScraper):
+    employer_name = 'Wilson Sonsini'
+    start_url = 'https://wsgr.wd1.myworkdayjobs.com/en-US/WSGR/'
+    has_job_departments = False
+
+
+class StripeScraper(GreenhouseApiScraper):
+    employer_name = 'Stripe'
+    EMPLOYER_KEY = 'stripe'
+
+
+class HudsonRiverTradingScraper(GreenhouseApiScraper):
+    employer_name = 'Hudson River Trading'
+    EMPLOYER_KEY = 'wehrtyou'
+
+
+class KavakScraper(GreenhouseScraper):
+    employer_name = 'Kavak'
+    EMPLOYER_KEY = 'kavakcareers'
+
+
+class HeadwayScraper(GreenhouseScraper):
+    employer_name = 'Headway'
+    EMPLOYER_KEY = 'headway'
+
+
+class JaneStreetScraper(GreenhouseScraper):
+    employer_name = 'Jane Street'
+    EMPLOYER_KEY = 'janestreet'
+
+
+class GetsafeScraper(GreenhouseScraper):
+    employer_name = 'GetSafe'
+    EMPLOYER_KEY = 'getsafe'
+
+
+class ZscalerScraper(SmartRecruitersScraper):
+    employer_name = 'Zscaler'
+    EMPLOYER_KEY = 'Zscaler'
+
+
+class Point72Scraper(GreenhouseScraper):
+    employer_name = 'Point72'
+    EMPLOYER_KEY = 'point72'
+
+
+class MessariScraper(GreenhouseScraper):
+    employer_name = 'Messari'
+    EMPLOYER_KEY = 'messari'
+
+
+class SpacexScraper(GreenhouseApiScraper):
+    employer_name = 'SpaceX'
+    EMPLOYER_KEY = 'spacex'
+
+
+class AstSpacemobileScraper(GreenhouseApiScraper):
+    employer_name = 'AST SpaceMobile'
+    EMPLOYER_KEY = 'astspacemobile'
+
+
+class TakealotScraper(GreenhouseScraper):
+    employer_name = 'takealot.com'
+    EMPLOYER_KEY = 'takealotcom'
+
+
+class RiotGamesScraper(GreenhouseApiScraper):
+    employer_name = 'Riot Games'
+    EMPLOYER_KEY = 'riotgames'
+
+
+class ThunesScraper(GreenhouseApiScraper):
+    employer_name = 'Thunes'
+    EMPLOYER_KEY = 'thunes'
+
+
+class CompstakScraper(LeverScraper):
+    employer_name = 'CompStak'
+    EMPLOYER_KEY = 'compstak'
+
+
+class GopuffScraper(LeverScraper):
+    employer_name = 'goPuff'
+    EMPLOYER_KEY = 'gopuff'
+
+
+class CredScraper(LeverScraper):
+    employer_name = 'CRED'
+    EMPLOYER_KEY = 'cred'
+
+
+class ChewyScraper(GreenhouseApiScraper):
+    employer_name = 'Chewy'
+    EMPLOYER_KEY = 'chewycom'
+
+
+class FoodpandaScraper(GreenhouseScraper):
+    employer_name = 'Foodpanda'
+    EMPLOYER_KEY = 'foodpandapakistan'
+
+
+class TipaltiScraper(GreenhouseApiScraper):
+    employer_name = 'Tipalti'
+    EMPLOYER_KEY = 'tipaltisolutions'
+
+
+class OcadoScraper(WorkdayScraper):
+    employer_name = 'Ocado'
+    start_url = 'https://ocado.wd3.myworkdayjobs.com/en-US/OcadoGroupCareers/'
+    has_job_departments = False
+
+
+class AdevintaScraper(SmartRecruitersScraper):
+    employer_name = 'Adevinta'
+    EMPLOYER_KEY = 'Adevinta'
+
+
+class MedallionScraper(GreenhouseApiScraper):
+    employer_name = 'Medallion'
+    EMPLOYER_KEY = 'medallion'
+
+
+class AvaloqGroupScraper(SmartRecruitersScraper):
+    employer_name = 'Avaloq Group'
+    EMPLOYER_KEY = 'Avaloq1'
+
+
+class BluevineScraper(GreenhouseScraper):
+    employer_name = 'BlueVine'
+    EMPLOYER_KEY = 'bluevineus'
+
+
+class AgodaScraper(GreenhouseApiScraper):
+    employer_name = 'Agoda'
+    EMPLOYER_KEY = 'agoda'
+
+
+class PeekScraper(LeverScraper):
+    employer_name = 'Peek'
+    EMPLOYER_KEY = 'peek'
+
+
+class LevadataScraper(LeverScraper):
+    employer_name = 'LevaData'
+    EMPLOYER_KEY = 'levadata'
+
+
+class UsertestingScraper(GreenhouseApiScraper):
+    employer_name = 'UserTesting'
+    EMPLOYER_KEY = 'usertesting48'
+
+
+class TsImagineScraper(GreenhouseApiScraper):
+    employer_name = 'TS Imagine'
+    EMPLOYER_KEY = 'tsimagine'
+
+
 # TODO: Build a new scraper for PhenomPeople ats
 # class AdobeScraper():
 #     employer_name = 'Adobe'
@@ -1570,6 +1742,40 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    UsertestingScraper.employer_name: UsertestingScraper,
+    TsImagineScraper.employer_name: TsImagineScraper,
+    BluevineScraper.employer_name: BluevineScraper,
+    AgodaScraper.employer_name: AgodaScraper,
+    PeekScraper.employer_name: PeekScraper,
+    LevadataScraper.employer_name: LevadataScraper,
+    MedallionScraper.employer_name: MedallionScraper,
+    AvaloqGroupScraper.employer_name: AvaloqGroupScraper,
+    OcadoScraper.employer_name: OcadoScraper,
+    AdevintaScraper.employer_name: AdevintaScraper,
+    TipaltiScraper.employer_name: TipaltiScraper,
+    FoodpandaScraper.employer_name: FoodpandaScraper,
+    RiotGamesScraper.employer_name: RiotGamesScraper,
+    ChewyScraper.employer_name: ChewyScraper,
+    ThunesScraper.employer_name: ThunesScraper,
+    CompstakScraper.employer_name: CompstakScraper,
+    GopuffScraper.employer_name: GopuffScraper,
+    CredScraper.employer_name: CredScraper,
+    AstSpacemobileScraper.employer_name: AstSpacemobileScraper,
+    TakealotScraper.employer_name: TakealotScraper,
+    SpacexScraper.employer_name: SpacexScraper,
+    JaneStreetScraper.employer_name: JaneStreetScraper,
+    GetsafeScraper.employer_name: GetsafeScraper,
+    ZscalerScraper.employer_name: ZscalerScraper,
+    Point72Scraper.employer_name: Point72Scraper,
+    MessariScraper.employer_name: MessariScraper,
+    NextInsuranceScraper.employer_name: NextInsuranceScraper,
+    ModulrScraper.employer_name: ModulrScraper,
+    HudsonRiverTradingScraper.employer_name: HudsonRiverTradingScraper,
+    KavakScraper.employer_name: KavakScraper,
+    HeadwayScraper.employer_name: HeadwayScraper,
+    WilsonSonsiniScraper.employer_name: WilsonSonsiniScraper,
+    StripeScraper.employer_name: StripeScraper,
+    RoivantScraper.employer_name: RoivantScraper,
     HpScraper.employer_name: HpScraper,
     HpeScraper.employer_name: HpeScraper,
     DoubleverifyScraper.employer_name: DoubleverifyScraper,
