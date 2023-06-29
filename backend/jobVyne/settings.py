@@ -33,7 +33,7 @@ DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,3144-75-166-113-92.ngrok-free.app').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_SEND_EMAILS = env('IS_SEND_EMAILS', cast=bool, default=True)

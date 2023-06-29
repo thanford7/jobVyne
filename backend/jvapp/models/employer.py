@@ -11,8 +11,7 @@ __all__ = (
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
-    'EmployerSlack',
-    'TaxType', 'Taxonomy', 'JobTaxonomy',
+    'EmployerSlack', 'Taxonomy', 'JobTaxonomy',
 )
 
 from jvapp.models.user import PermissionName
@@ -278,16 +277,17 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         return False
 
 
-class TaxType(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    # allow_multiple = models.BooleanField()  # TODO: Implement in bucketize_jobs
-
-    def __str__(self):
-        return self.name
-
-
 class Taxonomy(models.Model):
-    tax_type = models.ForeignKey(TaxType, on_delete=models.PROTECT)
+    TAX_TYPE_JOB_TITLE = 'JOB_TITLE'
+    TAX_TYPE_INDUSTRY = 'INDUSTRY'
+    TAX_TYPE_JOB_LEVEL = 'JOB_LEVEL'
+    ALL_TAX_TYPES = [
+        TAX_TYPE_JOB_TITLE,
+        TAX_TYPE_INDUSTRY,
+        TAX_TYPE_JOB_LEVEL
+    ]
+    
+    tax_type = models.CharField(max_length=20)
     name = models.CharField(max_length=100)
 
     class Meta:

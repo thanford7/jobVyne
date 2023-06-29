@@ -80,6 +80,6 @@ class DonationOrganizationAdmin(admin.ModelAdmin):
     ordering = ('name',)
     
 
-@admin.register(TaxType, Taxonomy, JobTaxonomy)
+@admin.register(Taxonomy, JobTaxonomy)
 class TaxonomyAdmin(admin.ModelAdmin):
     pass
