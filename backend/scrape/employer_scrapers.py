@@ -1732,6 +1732,135 @@ class TsImagineScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'tsimagine'
 
 
+class PaytrixScraper(WorkableScraper):
+    employer_name = 'Paytrix'
+    EMPLOYER_KEY = 'paytrix'
+
+
+class CybercubeScraper(LeverScraper):
+    employer_name = 'CyberCube'
+    EMPLOYER_KEY = 'cybcube'
+
+
+class ArkoseLabsScraper(GreenhouseScraper):
+    employer_name = 'Arkose Labs'
+    EMPLOYER_KEY = 'arkoselabs'
+
+
+class GotoScraper(LeverScraper):
+    employer_name = 'GoTo'
+    EMPLOYER_KEY = 'GoToGroup'
+
+
+class NubankScraper(GreenhouseScraper):
+    employer_name = 'Nubank'
+    EMPLOYER_KEY = 'nubank'
+
+
+class GostudentScraper(GreenhouseApiScraper):
+    employer_name = 'GoStudent'
+    EMPLOYER_KEY = 'gostudent'
+
+
+class ExpressvpnScraper(GreenhouseApiScraper):
+    employer_name = 'ExpressVPN'
+    EMPLOYER_KEY = 'expressvpn'
+
+
+class CareemScraper(GreenhouseScraper):
+    employer_name = 'Careem'
+    EMPLOYER_KEY = 'careem'
+
+
+class OneMedicalScraper(GreenhouseApiScraper):
+    employer_name = 'One Medical'
+    EMPLOYER_KEY = 'onemedical'
+
+
+class DeliveryHeroScraper(WorkdayScraper):
+    employer_name = 'Delivery Hero'
+    start_url = 'https://deliveryhero.wd3.myworkdayjobs.com/en-US/DH/'
+    has_job_departments = False
+
+
+class OpenxScraper(LeverScraper):
+    employer_name = 'OpenX'
+    EMPLOYER_KEY = 'openx'
+
+
+class CheckoutScraper(SmartRecruitersScraper):
+    employer_name = 'Checkout.com'
+    EMPLOYER_KEY = 'Checkoutcom1'
+
+
+class AdyenScraper(GreenhouseScraper):
+    employer_name = 'Adyen'
+    EMPLOYER_KEY = 'adyen'
+
+
+class PaloAltoNetworksScraper(SmartRecruitersScraper):
+    employer_name = 'Palo Alto Networks'
+    EMPLOYER_KEY = 'PaloAltoNetworks2'
+
+
+class BackMarketScraper(LeverScraper):
+    employer_name = 'Back Market'
+    EMPLOYER_KEY = 'backmarket'
+
+
+class BynderScraper(GreenhouseScraper):
+    employer_name = 'Bynder'
+    EMPLOYER_KEY = 'bynderjobs'
+
+
+class ArchiproScraper(WorkableScraper):
+    employer_name = 'ArchiPro'
+    EMPLOYER_KEY = 'archipro-3'
+
+
+class MarshmallowScraper(AshbyHQScraper):
+    employer_name = 'Marshmallow'
+    EMPLOYER_KEY = 'marshmallow'
+
+
+class GrabScraper(WorkdayScraper):
+    employer_name = 'Grab'
+    start_url = 'https://grab.wd3.myworkdayjobs.com/en-US/Careers/'
+    has_job_departments = False
+
+
+class SaviyntScraper(LeverScraper):
+    employer_name = 'Saviynt'
+    EMPLOYER_KEY = 'saviynt'
+
+
+class SentineloneScraper(GreenhouseApiScraper):
+    employer_name = 'SentinelOne'
+    EMPLOYER_KEY = 'sentinellabs'
+
+
+class QuantexaScraper(WorkableScraper):
+    employer_name = 'Quantexa'
+    EMPLOYER_KEY = 'quantexa'
+
+
+class TetrascienceScraper(WorkableScraper):
+    employer_name = 'TetraScience'
+    EMPLOYER_KEY = 'tetrascience'
+
+
+class SportradarScraper(WorkdayScraper):
+    employer_name = 'Sportradar'
+    start_url = 'https://sportradar.wd3.myworkdayjobs.com/en-US/sportradar_careers/'
+    has_job_departments = False
+
+
+class NxpSemiScraper(WorkdayScraper):
+    employer_name = 'NXP Semi'
+    start_url = 'https://nxp.wd3.myworkdayjobs.com/en-US/careers/'
+    has_job_departments = False
+
+
 # TODO: Build a new scraper for PhenomPeople ats
 # class AdobeScraper():
 #     employer_name = 'Adobe'
@@ -1742,6 +1871,31 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    SentineloneScraper.employer_name: SentineloneScraper,
+    QuantexaScraper.employer_name: QuantexaScraper,
+    TetrascienceScraper.employer_name: TetrascienceScraper,
+    SportradarScraper.employer_name: SportradarScraper,
+    NxpSemiScraper.employer_name: NxpSemiScraper,
+    GrabScraper.employer_name: GrabScraper,
+    SaviyntScraper.employer_name: SaviyntScraper,
+    MarshmallowScraper.employer_name: MarshmallowScraper,
+    ArchiproScraper.employer_name: ArchiproScraper,
+    OneMedicalScraper.employer_name: OneMedicalScraper,
+    DeliveryHeroScraper.employer_name: DeliveryHeroScraper,
+    OpenxScraper.employer_name: OpenxScraper,
+    CheckoutScraper.employer_name: CheckoutScraper,
+    AdyenScraper.employer_name: AdyenScraper,
+    PaloAltoNetworksScraper.employer_name: PaloAltoNetworksScraper,
+    BackMarketScraper.employer_name: BackMarketScraper,
+    BynderScraper.employer_name: BynderScraper,
+    PaytrixScraper.employer_name: PaytrixScraper,
+    CybercubeScraper.employer_name: CybercubeScraper,
+    ArkoseLabsScraper.employer_name: ArkoseLabsScraper,
+    GotoScraper.employer_name: GotoScraper,
+    NubankScraper.employer_name: NubankScraper,
+    GostudentScraper.employer_name: GostudentScraper,
+    ExpressvpnScraper.employer_name: ExpressvpnScraper,
+    CareemScraper.employer_name: CareemScraper,
     UsertestingScraper.employer_name: UsertestingScraper,
     TsImagineScraper.employer_name: TsImagineScraper,
     BluevineScraper.employer_name: BluevineScraper,

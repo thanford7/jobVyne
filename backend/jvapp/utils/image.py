@@ -1,6 +1,8 @@
+import re
 from tempfile import NamedTemporaryFile
 from urllib.request import urlopen
 
+import cairosvg
 import requests
 from PIL import Image
 from django.core.files import File
@@ -46,12 +48,20 @@ def resize_image_with_fill(image, width, height):
 def convert_url_to_image(image_url, file_name, is_use_request=False):
     if not image_url:
         return None
-    image = NamedTemporaryFile()
+
     if is_use_request:
         # Sometimes urlopen gets a Forbidden error so we need to use a request
         image_data = requests.get(image_url).content
     else:
         image_data = urlopen(image_url).read()
-    image.write(image_data)
-    image.flush()
+    
+    if re.match('^.*?<svg.*?</svg>.*?$', str(image_data)):
+        # TODO: Django hangs when trying to save these converted images
+        # image = cairosvg.svg2png(bytestring=image_data)
+        return None
+    else:
+        image = NamedTemporaryFile()
+        image.write(image_data)
+        image.flush()
+    
     return File(image, name=file_name)
