@@ -194,6 +194,9 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
     job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True, blank=True)
+    responsibilities = models.JSONField(null=True, blank=True)
+    qualifications = models.JSONField(null=True, blank=True)
+    technical_qualifications = models.JSONField(null=True, blank=True)
     job_department = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
     open_date = models.DateField(null=True, blank=True)
     close_date = models.DateField(null=True, blank=True)
@@ -289,6 +292,8 @@ class Taxonomy(models.Model):
     
     tax_type = models.CharField(max_length=20)
     name = models.CharField(max_length=100)
+    # TODO: Add descriptions for job levels category
+    description = models.CharField(max_length=2000, null=True, blank=True)
 
     class Meta:
         unique_together = ('tax_type', 'name')
@@ -298,7 +303,7 @@ class Taxonomy(models.Model):
 
 
 class JobTaxonomy(AuditFields):
-    job = models.ForeignKey(EmployerJob, on_delete=models.PROTECT)  # Related name?
+    job = models.ForeignKey(EmployerJob, on_delete=models.PROTECT, related_name='taxonomy')
     taxonomy = models.ForeignKey(Taxonomy, on_delete=models.PROTECT)
     # aiPrompt = models.ForeignKey
 

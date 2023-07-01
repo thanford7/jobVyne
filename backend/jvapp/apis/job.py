@@ -91,30 +91,41 @@ class JobClassificationView(JobVyneAPIView):
     
         taxonomies = Taxonomy.objects.all().order_by('tax_type')
         taxonomies_by_type = {
-            tax_type: ', '.join(list(t.name for t in tax_list)) for tax_type, tax_list in
+            tax_type: ',\n'.join(list(f'"{t.name}"' for t in tax_list)) for tax_type, tax_list in
             groupby(taxonomies, lambda t: t.tax_type)
         }
         taxonomy_map = {(t.tax_type, t.name): t for t in taxonomies}
         job_taxonomies = []
         for job in jobs:
+            # prompt = (
+            #     'You are helping to classify job descriptions into buckets of standardized categories.'
+            #     'You must pick a standardized category for:\n'
+            #     f'<{Taxonomy.TAX_TYPE_JOB_TITLE}>\n'
+            #     f'<{Taxonomy.TAX_TYPE_JOB_LEVEL}>\n'
+            #     f'There can be only one category for <{Taxonomy.TAX_TYPE_JOB_TITLE}> and one category <{Taxonomy.TAX_TYPE_JOB_LEVEL}>.\n'
+            #     f'The available <{Taxonomy.TAX_TYPE_JOB_TITLE}> category options are:\n'
+            #     f'[{taxonomies_by_type[Taxonomy.TAX_TYPE_JOB_TITLE]}]\n'
+            #     f'The available <{Taxonomy.TAX_TYPE_JOB_LEVEL}> options are:\n'
+            #     f'[{taxonomies_by_type[Taxonomy.TAX_TYPE_JOB_LEVEL]}]\n'
+            #     f'The output of your response should be JSON in the format:\n'
+            #     f'{{"{Taxonomy.TAX_TYPE_JOB_LEVEL}": <{Taxonomy.TAX_TYPE_JOB_LEVEL}>, "{Taxonomy.TAX_TYPE_JOB_TITLE}": <{Taxonomy.TAX_TYPE_JOB_TITLE}>}}\n'
+            #     f'Choose the <{Taxonomy.TAX_TYPE_JOB_LEVEL}> and <{Taxonomy.TAX_TYPE_JOB_TITLE}> for the following job description:\n'
+            #     f'\'\'\'{job.job_title}\n{BeautifulSoup(job.job_description).text}\'\'\'\n'
+            #     f'Remember that the <{Taxonomy.TAX_TYPE_JOB_TITLE}> must be one of the available category options.'
+            #     f'If you are not confident that the job description matches with one of the available <{Taxonomy.TAX_TYPE_JOB_TITLE}> categories, use the default category of "UNKNOWN"'
+            # )
             prompt = (
-                'You are helping to classify job descriptions into buckets of standardized categories.'
-                'You must pick a standardized category for:\n'
-                f'<{Taxonomy.TAX_TYPE_JOB_TITLE}>\n'
-                f'<{Taxonomy.TAX_TYPE_JOB_LEVEL}>\n'
-                f'There can be only one category for <{Taxonomy.TAX_TYPE_JOB_TITLE}> and one category <{Taxonomy.TAX_TYPE_JOB_LEVEL}>.\n'
-                f'The available <{Taxonomy.TAX_TYPE_JOB_TITLE}> category options are:\n'
-                f'[{taxonomies_by_type[Taxonomy.TAX_TYPE_JOB_TITLE]}]\n'
-                f'The available <{Taxonomy.TAX_TYPE_JOB_LEVEL}> options are:\n'
-                f'[{taxonomies_by_type[Taxonomy.TAX_TYPE_JOB_LEVEL]}]\n'
-                f'The output of your response should be JSON in the format:\n'
-                f'{{"{Taxonomy.TAX_TYPE_JOB_LEVEL}": <{Taxonomy.TAX_TYPE_JOB_LEVEL}>, "{Taxonomy.TAX_TYPE_JOB_TITLE}": <{Taxonomy.TAX_TYPE_JOB_TITLE}>}}\n'
-                f'Choose the <{Taxonomy.TAX_TYPE_JOB_LEVEL}> and <{Taxonomy.TAX_TYPE_JOB_TITLE}> for the following job description:\n'
-                f'{job.job_title}\n{BeautifulSoup(job.job_description).text}\n'
+                'Use "---" as a delimiter\n'
+                f'Create a variable called "JOB_DESCRIPTION" and set it equal to ---\'{BeautifulSoup(job.job_description).text}\'---\n'
+                'Analyze the value of JOB_DESCRIPTION and summarize up to 5 job responsibilities and up to 10 required job qualifications. If technical qualifications are required, also list up to 20 technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
+                'The output of your answer should be JSON in the format:\n'
+                f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
             )
+            print(prompt)
             resp = ai.ask(prompt)
             categorizations = json.loads(resp['choices'][0]['text'])
             print(categorizations)
+            return
             
             # TODO: Add this as metadata somewhere
             completion_model = resp['model']
