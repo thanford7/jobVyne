@@ -41,8 +41,11 @@ def font_size_to_header_sanitizer(element):
         return element
     if 'px' not in font_size_px:
         return element
-
-    font_size = float(font_size_px.replace('px', '').replace('!important', '').strip())
+    
+    try:
+        font_size = float(font_size_px.replace('px', '').replace('!important', '').strip())
+    except ValueError:
+        font_size = 12
     if font_size >= 16:
         element.tag = 'h6'
     else:
