@@ -13,4 +13,4 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         limit = options['limit']
-        JobClassificationView.classify_jobs(limit)
+        JobClassificationView.classify_jobs(limit, is_test=False)

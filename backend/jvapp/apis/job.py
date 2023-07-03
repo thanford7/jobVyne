@@ -12,6 +12,7 @@ from jvapp.models.employer import EmployerJob, JobDepartment, JobTaxonomy, Taxon
 from jvapp.models.location import Location
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils import ai
+from jvapp.utils.ai import PromptError
 
 logger = logging.getLogger(__name__)
 
@@ -81,63 +82,36 @@ class JobClassificationView(JobVyneAPIView):
     
     @staticmethod
     def classify_jobs(limit, is_test=True):
-        # Find jobs that have not yet been 'bucketed'
-        jobs = EmployerJob.objects\
-            .annotate(job_taxonomy_count=Count('jobtaxonomy'))\
-            .filter(job_taxonomy_count__lt=len(Taxonomy.ALL_TAX_TYPES))
-        
+        # Find jobs that have not had their properties set
+        jobs = EmployerJob.objects.filter(
+            responsibilities__isnull=True,
+            qualifications__isnull=True,
+            technical_qualifications__isnull=True,
+            prompt_tracker__isnull=True,
+        )
+
         if limit:
             jobs = jobs[:limit]
+
+        DESCRIPTION_LIMIT = 6000  # Prevent exceeding token limit in OpenAI
     
-        taxonomies = Taxonomy.objects.all().order_by('tax_type')
-        taxonomies_by_type = {
-            tax_type: ',\n'.join(list(f'"{t.name}"' for t in tax_list)) for tax_type, tax_list in
-            groupby(taxonomies, lambda t: t.tax_type)
-        }
-        taxonomy_map = {(t.tax_type, t.name): t for t in taxonomies}
-        job_taxonomies = []
         for job in jobs:
-            # prompt = (
-            #     'You are helping to classify job descriptions into buckets of standardized categories.'
-            #     'You must pick a standardized category for:\n'
-            #     f'<{Taxonomy.TAX_TYPE_JOB_TITLE}>\n'
-            #     f'<{Taxonomy.TAX_TYPE_JOB_LEVEL}>\n'
-            #     f'There can be only one category for <{Taxonomy.TAX_TYPE_JOB_TITLE}> and one category <{Taxonomy.TAX_TYPE_JOB_LEVEL}>.\n'
-            #     f'The available <{Taxonomy.TAX_TYPE_JOB_TITLE}> category options are:\n'
-            #     f'[{taxonomies_by_type[Taxonomy.TAX_TYPE_JOB_TITLE]}]\n'
-            #     f'The available <{Taxonomy.TAX_TYPE_JOB_LEVEL}> options are:\n'
-            #     f'[{taxonomies_by_type[Taxonomy.TAX_TYPE_JOB_LEVEL]}]\n'
-            #     f'The output of your response should be JSON in the format:\n'
-            #     f'{{"{Taxonomy.TAX_TYPE_JOB_LEVEL}": <{Taxonomy.TAX_TYPE_JOB_LEVEL}>, "{Taxonomy.TAX_TYPE_JOB_TITLE}": <{Taxonomy.TAX_TYPE_JOB_TITLE}>}}\n'
-            #     f'Choose the <{Taxonomy.TAX_TYPE_JOB_LEVEL}> and <{Taxonomy.TAX_TYPE_JOB_TITLE}> for the following job description:\n'
-            #     f'\'\'\'{job.job_title}\n{BeautifulSoup(job.job_description).text}\'\'\'\n'
-            #     f'Remember that the <{Taxonomy.TAX_TYPE_JOB_TITLE}> must be one of the available category options.'
-            #     f'If you are not confident that the job description matches with one of the available <{Taxonomy.TAX_TYPE_JOB_TITLE}> categories, use the default category of "UNKNOWN"'
-            # )
             prompt = (
                 'Use "---" as a delimiter\n'
-                f'Create a variable called "JOB_DESCRIPTION" and set it equal to ---\'{BeautifulSoup(job.job_description).text}\'---\n'
-                'Analyze the value of JOB_DESCRIPTION and summarize up to 5 job responsibilities and up to 10 required job qualifications. If technical qualifications are required, also list up to 20 technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
+                f'Create a variable called "JOB_DESCRIPTION" and set it equal to ---\'{BeautifulSoup(job.job_description).text[:DESCRIPTION_LIMIT]}\'---\n'
+                'Analyze the value of JOB_DESCRIPTION and summarize up to 5 job responsibilities and up to 10 required job qualifications. If technical qualifications are required, also list up to 10 technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
                 'The output of your answer should be JSON in the format:\n'
                 f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
             )
-            print(prompt)
-            resp = ai.ask(prompt)
-            categorizations = json.loads(resp['choices'][0]['text'])
-            print(categorizations)
-            return
-            
-            # TODO: Add this as metadata somewhere
-            completion_model = resp['model']
-            total_tokens_used = resp['usage']['total_tokens']
-            
-            for tax_type in [Taxonomy.TAX_TYPE_JOB_TITLE, Taxonomy.TAX_TYPE_JOB_LEVEL]:
-                val = categorizations[tax_type]
-                tax = taxonomy_map.get((tax_type, val))
-                if not tax:
-                    logger.error(f'Could not find taxonomy {val} for taxonomy type {tax_type}. Job ID = {job.id}')
-                    continue
-                job_taxonomies.append(JobTaxonomy(job=job, taxonomy=tax))
-        
-        if not is_test:
-            JobTaxonomy.objects.bulk_create(job_taxonomies)
+            try:
+                resp, tracker = ai.ask(prompt)
+                job.prompt_tracker = tracker
+                job.qualifications = resp.get('JOB_QUALIFICATIONS')
+                job.technical_qualifications = resp.get('TECHNICAL_QUALIFICATIONS')
+                job.responsibilities = resp.get('JOB_RESPONSIBILITIES')
+            except PromptError:
+                pass
+
+            if not is_test:
+                job.save()
+

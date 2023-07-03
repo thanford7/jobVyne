@@ -210,7 +210,8 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     locations = models.ManyToManyField('Location')
     application_url = models.CharField(max_length=300, null=True, blank=True)  # Used as a fallback when we don't have an ATS integration with an employer
     is_scraped = models.BooleanField(default=False, blank=True)
-    
+    qualifications_prompt = models.ForeignKey('AIRequest', null=True, on_delete=models.SET_NULL)
+
     ats_job_key = models.CharField(max_length=50, null=True, blank=True)
     
     def __str__(self):
