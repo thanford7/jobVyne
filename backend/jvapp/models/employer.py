@@ -304,8 +304,8 @@ class Taxonomy(models.Model):
 
 
 class JobTaxonomy(AuditFields):
-    job = models.ForeignKey(EmployerJob, on_delete=models.PROTECT, related_name='taxonomy')
-    taxonomy = models.ForeignKey(Taxonomy, on_delete=models.PROTECT)
+    job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='taxonomy')
+    taxonomy = models.ForeignKey(Taxonomy, on_delete=models.CASCADE)
     # aiPrompt = models.ForeignKey
 
     class Meta:

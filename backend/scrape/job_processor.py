@@ -113,7 +113,7 @@ class JobProcessor:
         location_ids = tuple(location_ids)
         
         new_job = EmployerJob(
-            job_title=job_item.job_title,
+            job_title=job_item.job_title.strip(),
             is_scraped=True
         )
         if not (job := self.jobs.get(EmployerJob.generate_job_key(new_job.job_title, location_ids))):
