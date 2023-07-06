@@ -7,7 +7,7 @@ from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY
+from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_success_response
 from jvapp.apis.ats import get_ats_api
 from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
 from jvapp.apis.job_seeker import ApplicationView
@@ -22,6 +22,7 @@ from jvapp.serializers.user import get_serialized_user
 from jvapp.tasks import task_run_job_scrapers
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
+from jvapp.utils.taxonomy import run_job_title_standardization, update_taxonomies
 from scrape.scraper import run_job_scrapers
 
 
@@ -330,3 +331,12 @@ class AdminUserView(JobVyneAPIView):
         }
         
         return Response(status=status.HTTP_200_OK, data=data)
+    
+    
+class AdminTaxonomyView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def post(self, request):
+        update_taxonomies()
+        run_job_title_standardization(is_non_standardized_only=not self.data['is_run_all'])
+        return get_success_response('Taxonomy updated')

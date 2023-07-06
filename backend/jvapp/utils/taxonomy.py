@@ -163,7 +163,7 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
         job.taxonomy.all().delete()  # Remove existing taxonomy
         standardized_job_tax = get_standardized_job_taxonomy(job.job_title)
         if not standardized_job_tax:
-            logger.info(f'Could not find standardized title for {job.job_title}')
+            # logger.info(f'Could not find standardized title for {job.job_title}')
             continue
         job_taxes_to_save.append(JobTaxonomy(
             taxonomy=standardized_job_tax,
@@ -171,7 +171,7 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
             created_dt=timezone.now(),
             modified_dt=timezone.now()
         ))
-        if idx and (idx % 100 == 0 or idx == len(jobs) - 1):
+        if idx and (idx % 5000 == 0 or idx == len(jobs) - 1):
             logger.info(f'Total jobs ({idx + 1}). Saving jobs.')
             JobTaxonomy.objects.bulk_create(job_taxes_to_save)
             job_taxes_to_save = []
