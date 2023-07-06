@@ -183,7 +183,7 @@ def get_standardized_job_taxonomy(job_title: str):
     start_or_word_and_space_re = '(^|^.+?\W)'
     engineer_words = '(developer|engineer|architect)'
     if any((
-        re.match(f'{start_or_word_and_space_re}(executive|administrative|office) assist.+?$', job_title),
+        re.match(f'{start_or_word_and_space_re}(executive|administrative|office|personal) (assist|admin).+?$', job_title),
         re.match(f'{start_or_word_and_space_re}office (admin|manag).+?$', job_title),
         re.match(f'{start_or_word_and_space_re}ea{space_and_word_or_end_re}.+?$', job_title),
     )):
@@ -222,7 +222,10 @@ def get_standardized_job_taxonomy(job_title: str):
         re.match(f'{start_or_word_and_space_re}(account|client|customer|enterprise) (development|partner|director|advocate){space_and_word_or_end_re}$', job_title),
         re.match(f'{start_or_word_and_space_re}(account|client|customer|enterprise|partner) relation.+?$', job_title),
         re.match(f'{start_or_word_and_space_re}crm{space_and_word_or_end_re}', job_title),
-    )) and not re.match(f'{start_or_word_and_space_re}{engineer_words}{space_and_word_or_end_re}', job_title):
+    )) and not any((
+        re.match(f'{start_or_word_and_space_re}{engineer_words}{space_and_word_or_end_re}', job_title),
+        re.match(f'{start_or_word_and_space_re}receivable{space_and_word_or_end_re}', job_title)
+    )):
         return get_or_create_job_title_tax('Account Management')
     if any((
         re.match(f'{start_or_word_and_space_re}solution.+?$', job_title),
@@ -241,9 +244,10 @@ def get_standardized_job_taxonomy(job_title: str):
     )):
         return get_or_create_job_title_tax('Customer Support')
     if any((
-        re.match(f'{start_or_word_and_space_re}talent.*?acqui.*?$', job_title),
+        re.match(f'{start_or_word_and_space_re}talent.*?(acqui|sourc).*?$', job_title),
         re.match(f'{start_or_word_and_space_re}(recruiter|recruitment|recruiting){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}recruit.+?coordinat.+?$', job_title),
+        re.match(f'.+?of talent.*?$', job_title),
     )):
         return get_or_create_job_title_tax('Talent Acquisition')
     if any((
@@ -293,7 +297,7 @@ def get_standardized_job_taxonomy(job_title: str):
     )):
         return get_or_create_job_title_tax('Devops Engineering')
     if any((
-        re.match(f'{start_or_word_and_space_re}(qa|quality).+?{engineer_words}.*?$', job_title),
+        re.match(f'{start_or_word_and_space_re}(qa|quality|software test).+?{engineer_words}.*?$', job_title),
         re.match(f'{start_or_word_and_space_re}(qa|quality assurance){space_and_word_or_end_re}', job_title),
     )):
         return get_or_create_job_title_tax('QA Engineering')
@@ -394,7 +398,8 @@ def get_standardized_job_taxonomy(job_title: str):
         return get_or_create_job_title_tax('Product Design')
     if any((
         re.match(f'{start_or_word_and_space_re}(ui|ux|user interface|user experience){space_and_word_or_end_re}', job_title),
-        re.match(f'{start_or_word_and_space_re}(design|graphic designer|creative developer){space_and_word_or_end_re}', job_title),
+        re.match(f'{start_or_word_and_space_re}design{space_and_word_or_end_re}', job_title),
+        re.match(f'{start_or_word_and_space_re}(graphic|creative|digital|3d).+?(design|develop).*?$', job_title),
     )):
         return get_or_create_job_title_tax('UI/UX')
     if any((
