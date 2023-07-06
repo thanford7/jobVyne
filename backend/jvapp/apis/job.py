@@ -3,7 +3,8 @@ import logging
 from itertools import groupby
 
 from bs4 import BeautifulSoup
-from django.db.models import Count
+from django.db.models import Count, Q
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -87,25 +88,32 @@ class JobClassificationView(JobVyneAPIView):
             responsibilities__isnull=True,
             qualifications__isnull=True,
             technical_qualifications__isnull=True,
-            prompt_tracker__isnull=True,
-        )
+            qualifications_prompt__isnull=True,
+        ).filter(Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
 
         if limit:
             jobs = jobs[:limit]
 
-        DESCRIPTION_LIMIT = 6000  # Prevent exceeding token limit in OpenAI
-    
+        DESCRIPTION_CHAR_LIMIT = 6000  # Prevent exceeding token limit in OpenAI
+        RESPONSIBILITY_LIMIT = 5
+        QUALIFICATION_LIMIT = 10
+        TECH_QUALIFICATION_LIMIT = 10
+
         for job in jobs:
             prompt = (
                 'Use "---" as a delimiter\n'
-                f'Create a variable called "JOB_DESCRIPTION" and set it equal to ---\'{BeautifulSoup(job.job_description).text[:DESCRIPTION_LIMIT]}\'---\n'
-                'Analyze the value of JOB_DESCRIPTION and summarize up to 5 job responsibilities and up to 10 required job qualifications. If technical qualifications are required, also list up to 10 technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
+                f'Create a variable called "JOB_DESCRIPTION" and set it equal to ---\'{job.job_description[:DESCRIPTION_CHAR_LIMIT]}\'---\n'
+                f'Analyze the value of JOB_DESCRIPTION and summarize up to {RESPONSIBILITY_LIMIT} job responsibilities, up to {QUALIFICATION_LIMIT} required job qualifications, and up to {TECH_QUALIFICATION_LIMIT} technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
+                'Job responsibilities will likely be listed close to the word "responsibilities" in a bulleted list or comma separated list.\n'
+                'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
+                'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
+                'Technical qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
                 'The output of your answer should be JSON in the format:\n'
                 f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
             )
             try:
                 resp, tracker = ai.ask(prompt)
-                job.prompt_tracker = tracker
+                job.qualifications_prompt = tracker
                 job.qualifications = resp.get('JOB_QUALIFICATIONS')
                 job.technical_qualifications = resp.get('TECHNICAL_QUALIFICATIONS')
                 job.responsibilities = resp.get('JOB_RESPONSIBILITIES')

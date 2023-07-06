@@ -5,6 +5,10 @@ const { getScrollTarget } = scroll
 const SCROLL_PADDING = 40
 
 class ScrollUtil {
+  scrollTo (top) {
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
+
   // !Make sure to add the "scroll" class to the scroll container
   scrollToElement (el) {
     const target = getScrollTarget(el)

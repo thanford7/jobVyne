@@ -1365,6 +1365,16 @@ class RobinhoodScraper(GreenhouseIframeScraper):
     employer_name = 'Robinhood'
     EMPLOYER_KEY = 'robinhood'
     
+    
+class OnfidoScraper(LeverScraper):
+    employer_name = 'Onfido'
+    EMPLOYER_KEY = 'onfido'
+    
+
+class JamCityScraper(LeverScraper):
+    employer_name = 'Jam City'
+    EMPLOYER_KEY = 'jamcity'
+    
 
 # TODO: Build a new scraper for PhenomPeople ats
 # class AdobeScraper():
@@ -1377,6 +1387,8 @@ test_scrapers = {
 
 
 all_scrapers = {
+    JamCityScraper.employer_name: JamCityScraper,
+    OnfidoScraper.employer_name: OnfidoScraper,
     RobinhoodScraper.employer_name: RobinhoodScraper,
     CoinbaseScraper.employer_name: CoinbaseScraper,
     PinterestScraper.employer_name: PinterestScraper,

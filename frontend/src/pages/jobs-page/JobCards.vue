@@ -7,8 +7,11 @@
     </div>
     <div class="row q-gutter-y-lg">
       <div v-for="employer in jobsByEmployer" class="col-12">
-        <q-card>
-          <q-card-section v-if="!isSingleEmployer" class="border-bottom-1-gray-300">
+        <q-card :id="`employer-${employer.employer_id}`">
+          <q-card-section
+            v-if="!isSingleEmployer"
+            class="border-bottom-1-gray-300 custom-sticky custom-sticky-1 bg-white"
+          >
             <div class="row justify-center">
               <div v-if="employer.employer_logo" class="col-2">
                 <div class="h-100 flex items-start align-center q-my-sm q-mr-md">
@@ -22,11 +25,27 @@
               </div>
             </div>
           </q-card-section>
-          <div v-for="(jobsByTitle, jobDepartment) in employer.jobs">
-            <div class="text-bold bg-grey-7 text-white q-px-sm q-py-xs">Department: {{ jobDepartment }}</div>
+          <div
+            v-for="(jobsByTitle, jobDepartment) in employer.jobs"
+          >
+            <div
+              class="text-bold bg-grey-7 text-white q-px-sm q-py-xs custom-sticky"
+              :class="`custom-sticky-${(isSingleEmployer) ? '1' : '2'}`"
+            >
+              Department: {{ jobDepartment }}
+            </div>
             <q-card-section class="q-pb-none">
-              <div v-for="(jobs, jobTitle) in jobsByTitle" class="border-bottom-1-gray-100">
-                <h6>{{ jobTitle }}</h6>
+              <div
+                v-for="(jobs, jobTitle) in jobsByTitle"
+                :id="`job-${employer.employer_id}-${jobs[0].id}`"
+                class="border-bottom-1-gray-100"
+              >
+                <h6
+                  class="bg-white custom-sticky"
+                  :class="`custom-sticky-${(isSingleEmployer) ? '2' : '3'}`"
+                >
+                  {{ jobTitle }}
+                </h6>
                 <JobCardInfo
                   v-for="job in getLimitedJobs(employer, jobs, jobTitle)"
                   :id="`job-${job.id}`"
@@ -65,7 +84,6 @@ import JobCardInfo from 'pages/jobs-page/JobCardInfo.vue'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
-import employerTypeUtil from 'src/utils/employer-types.js'
 import formUtil from 'src/utils/form.js'
 
 export default {
@@ -73,9 +91,12 @@ export default {
   props: {
     employer: Object,
     jobsByEmployer: Object,
+    isSingleEmployer: Boolean,
+    hasNoJobs: Boolean,
     applications: Array,
     jobApplication: [Object, null],
-    jobPagesCount: Number
+    jobPagesCount: Number,
+    scrollStickStartPx: Number
   },
   components: {
     JobCardInfo
@@ -91,14 +112,6 @@ export default {
       formUtil
     }
   },
-  computed: {
-    hasNoJobs () {
-      return dataUtil.isEmpty(this.jobsByEmployer)
-    },
-    isSingleEmployer () {
-      return this.jobsByEmployer.length === 1 && employerTypeUtil.isTypeEmployer(this.employer?.organization_type)
-    }
-  },
   methods: {
     getLimitedJobs (employer, jobs, jobTitle) {
       if (this.showAllJobs.includes(this.getShowMoreJobsKey(employer, jobTitle))) {
@@ -108,7 +121,36 @@ export default {
     },
     getShowMoreJobsKey (employer, jobTitle) {
       return `${employer.employer_id}-${jobTitle}`
+    },
+    updateStickyOffsets () {
+      const stickyElements = document.querySelectorAll('.custom-sticky')
+      let stickyOffsetPx
+      let lastSticky1HeightPx
+      let lastSticky2HeightPx
+      for (const stickyEl of stickyElements) {
+        if (stickyEl.classList.contains('custom-sticky-1')) {
+          stickyOffsetPx = this.scrollStickStartPx
+          lastSticky1HeightPx = stickyEl.offsetHeight
+          stickyEl.style['z-index'] = 1003
+        } else if (stickyEl.classList.contains('custom-sticky-2')) {
+          stickyOffsetPx = this.scrollStickStartPx + lastSticky1HeightPx
+          lastSticky2HeightPx = stickyEl.offsetHeight
+          stickyEl.style['z-index'] = 1002
+        } else if (stickyEl.classList.contains('custom-sticky-3')) {
+          stickyOffsetPx = this.scrollStickStartPx + lastSticky1HeightPx + lastSticky2HeightPx
+          stickyEl.style['z-index'] = 1001
+        } else {
+          stickyOffsetPx = this.scrollStickStartPx
+        }
+        stickyEl.style.top = `${stickyOffsetPx}px`
+      }
     }
+  },
+  mounted () {
+    this.updateStickyOffsets()
+  },
+  updated () {
+    this.updateStickyOffsets()
   }
 }
 </script>

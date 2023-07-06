@@ -22,6 +22,14 @@
   z-index: 1000; // Make sure the floating content appears above all other content
 }
 
+.q-tab-panels.no-overflow {
+  overflow: unset !important;
+
+  .q-panel {
+    overflow: unset !important;
+  }
+}
+
 .inherit-text-color {
   .q-item .q-item__section--side {
     color: inherit  // Used to make sure q-expansion-item icons get the same color as the rest of the text

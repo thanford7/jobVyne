@@ -1,10 +1,13 @@
 # https://docs.google.com/spreadsheets/d/1G5-9y6bp0QHjZmxIWmGtjI6F_AbuqfHmYYFmQC6p_UU/edit#gid=0
+import logging
 import re
 
 from django.db.models import Count, Prefetch, Q, Subquery
 from django.utils import timezone
 
 from jvapp.models.employer import EmployerJob, JobTaxonomy, Taxonomy
+
+logger = logging.getLogger(__name__)
 
 JOB_TITLES = [
     'Executive Assistant',
@@ -153,12 +156,14 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
             .prefetch_related(job_title_tax_prefetch) \
             .filter(job_filter)
     
+    logger.info(f'Running job standardization for {len(jobs)} jobs')
     job_taxes_to_save = []
     for idx, job in enumerate(jobs):
         # TODO: Make sure this doesn't delete taxonomies other than job title
         job.taxonomy.all().delete()  # Remove existing taxonomy
         standardized_job_tax = get_standardized_job_taxonomy(job.job_title)
         if not standardized_job_tax:
+            logger.info(f'Could not find standardized title for {job.job_title}')
             continue
         job_taxes_to_save.append(JobTaxonomy(
             taxonomy=standardized_job_tax,
@@ -166,8 +171,8 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
             created_dt=timezone.now(),
             modified_dt=timezone.now()
         ))
-        if idx and (idx % 100 == 0 or idx == len(jobs)):
-            print(f'Total jobs ({idx + 1}). Saving jobs.')
+        if idx and (idx % 100 == 0 or idx == len(jobs) - 1):
+            logger.info(f'Total jobs ({idx + 1}). Saving jobs.')
             JobTaxonomy.objects.bulk_create(job_taxes_to_save)
             job_taxes_to_save = []
 
@@ -198,13 +203,13 @@ def get_standardized_job_taxonomy(job_title: str):
         re.match(f'{start_or_word_and_space_re}(compliance|fraud|risk|ethics|regulatory).*?$', job_title),
     )):
         return get_or_create_job_title_tax('Government & Regulation')
-    if re.match(f'{start_or_word_and_space_re}product market.+?$', job_title):
+    if re.match(f'{start_or_word_and_space_re}product\W.*?market.+?$', job_title):
         return get_or_create_job_title_tax('Product Marketing')
     if any((
-        re.match(f'{start_or_word_and_space_re}product\W.*?(manager|owner|analyst|lead|leader|management|operations|mgr|development|developer|director|expert|intern|line){space_and_word_or_end_re}', job_title),
+        re.match(f'{start_or_word_and_space_re}product\W.*?(manager|owner|analyst|lead|leader|management|mgr|director|expert|intern|line){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}(chief|vp|vice president|head|director|manager).+?product (officer|manage).*?', job_title),
         re.match(f'{start_or_word_and_space_re}cpo{space_and_word_or_end_re}', job_title),
-    )) and not re.match(f'{start_or_word_and_space_re}(design|support|expert){space_and_word_or_end_re}', job_title):
+    )) and not re.match(f'{start_or_word_and_space_re}(design|support|product development|designer|engineer|engineering){space_and_word_or_end_re}', job_title):
         return get_or_create_job_title_tax('Product Management')
     if any((
         re.match(f'{start_or_word_and_space_re}(customer|client|partner).+?(success|delight|engagement|retention|journey|outcomes|excellence|happiness|loyalty|adoption){space_and_word_or_end_re}', job_title),
@@ -236,7 +241,7 @@ def get_standardized_job_taxonomy(job_title: str):
     )):
         return get_or_create_job_title_tax('Customer Support')
     if any((
-        re.match(f'{start_or_word_and_space_re}talent.*?$', job_title),
+        re.match(f'{start_or_word_and_space_re}talent.*?acqui.*?$', job_title),
         re.match(f'{start_or_word_and_space_re}(recruiter|recruitment|recruiting){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}recruit.+?coordinat.+?$', job_title),
     )):
@@ -245,7 +250,7 @@ def get_standardized_job_taxonomy(job_title: str):
         re.match(f'{start_or_word_and_space_re}(hr|people|hrbp|recursos humanos){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}human resource.*?$', job_title),
         re.match(f'{start_or_word_and_space_re}(training|learning|elearning|l&d){space_and_word_or_end_re}', job_title),
-        re.match(f'{start_or_word_and_space_re}(compensation|benefits|total rewards).*?$', job_title),
+        re.match(f'{start_or_word_and_space_re}(compensation|benefits|total reward).*?$', job_title),
         re.match(f'{start_or_word_and_space_re}dei{space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}(diversity|equity|inclusion){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}(employee|workforce){space_and_word_or_end_re}', job_title),
