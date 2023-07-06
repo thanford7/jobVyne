@@ -1,14 +1,14 @@
 <template>
   <q-layout view="hHr lpR fFf">
 
-    <q-header v-if="isLoaded" elevated class="bg-white text-primary">
+    <q-header v-if="isLoaded" ref="header" elevated class="bg-white text-primary">
       <div class="justify-center row" style="position: relative">
         <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
           <q-toolbar-title shrink>
             <img v-if="employer?.logo_url" :src="employer.logo_url" alt="Logo"
-                 style="max-height: 40px; max-width: 120px; object-fit: scale-down">
+                 style="height: 40px; max-width: 120px; object-fit: scale-down">
             <img v-else src="~assets/jobVyneLogo.png" alt="Logo"
-                 style="max-height: 40px; max-width: 120px; object-fit: scale-down">
+                 style="height: 40px; max-width: 120px; object-fit: scale-down">
           </q-toolbar-title>
         </q-toolbar>
         <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
@@ -68,9 +68,9 @@
     </q-drawer>
 
     <q-page-container class="q-pt-none">
-      <q-page v-if="isLoaded" class="scroll">
-        <q-tab-panels v-model="tab" animated keep-alive>
-          <q-tab-panel name="jobs" style="position: relative">
+      <q-page v-if="isLoaded">
+        <q-tab-panels v-model="tab" animated keep-alive class="no-overflow">
+          <q-tab-panel name="jobs" style="position: relative;">
             <div class="row justify-center">
               <ResponsiveWidth>
                 <div class="row">
@@ -146,15 +146,57 @@
                     input
                     class="q-mt-md"
                   />
-                  <JobCards
-                    class="col-12 q-mt-md"
-                    :employer="employer"
-                    :jobs-by-employer="jobsByEmployer"
-                    :applications="applications"
-                    :job-application="jobApplication"
-                    :job-pages-count="jobPagesCount"
-                    @openApplication="openApplication($event)"
-                  />
+                  <div class="col-12 scroll" style="overflow: unset;">
+                    <div class="row">
+                      <JobCards
+                        class="col-12 col-md-9 q-mt-md"
+                        :employer="employer"
+                        :jobs-by-employer="jobsByEmployer"
+                        :is-single-employer="isSingleEmployer"
+                        :has-no-jobs="hasNoJobs"
+                        :applications="applications"
+                        :job-application="jobApplication"
+                        :job-pages-count="jobPagesCount"
+                        :scroll-stick-start-px="headerHeight"
+                        @openApplication="openApplication($event)"
+                      />
+                      <div
+                        v-if="!utilStore.isUnderBreakPoint('md') && !hasNoJobs"
+                        class="col-3 q-py-md q-px-sm custom-sticky"
+                        style="align-self: start;"
+                      >
+                        <CollapsableCard
+                          title="Job quick links"
+                          :is-dense="true"
+                        >
+                          <template v-slot:body>
+                            <q-list dense style="height: 25vh; overflow-x: hidden; overflow-y: scroll">
+                              <template v-for="employer in jobsByEmployer">
+                                <q-item
+                                  v-if="!isSingleEmployer"
+                                  clickable
+                                  class="text-bold"
+                                  @click="scrollUtil.scrollTo(getElementTop(`employer-${employer.employer_id}`))"
+                                >
+                                  {{ employer.employer_name }}
+                                </q-item>
+                                <template v-for="jobsByTitle in employer.jobs">
+                                  <q-item
+                                    v-for="(jobs, jobTitle) in jobsByTitle"
+                                    clickable
+                                    :style="(isSingleEmployer) ? '' : 'padding-left: 40px'"
+                                    @click="scrollUtil.scrollTo(getElementTop(`job-${employer.employer_id}-${jobs[0].id}`))"
+                                  >
+                                    {{ jobTitle }}
+                                  </q-item>
+                                </template>
+                              </template>
+                            </q-list>
+                          </template>
+                        </CollapsableCard>
+                      </div>
+                    </div>
+                  </div>
                   <q-pagination
                     v-if="jobPagesCount > 1"
                     v-model="pageNumber"
@@ -197,6 +239,9 @@
             </div>
           </q-tab-panel>
         </q-tab-panels>
+        <q-page-scroller position="bottom-right" :scroll-offset="100" :offset="[40, 40]">
+          <q-btn round color="primary" icon="arrow_upward"/>
+        </q-page-scroller>
       </q-page>
     </q-page-container>
 
@@ -215,6 +260,7 @@ import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import JobCards from 'pages/jobs-page/JobCards.vue'
 import employerStyleUtil from 'src/utils/employer-styles.js'
+import employerTypeUtil from 'src/utils/employer-types.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
@@ -254,10 +300,13 @@ export default {
       jobApplication: null,
       jobPagesCount: null,
       jobFilters: {},
+      headerHeight: 0,
+      anchorPositions: {},
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
       locationUtil,
+      scrollUtil,
       userUtil
     }
   },
@@ -272,8 +321,11 @@ export default {
     SelectRemote
   },
   computed: {
+    hasNoJobs () {
+      return dataUtil.isEmpty(this.jobsByEmployer)
+    },
     isSingleEmployer () {
-      return this.jobsByEmployer.length === 1
+      return this.jobsByEmployer.length === 1 && employerTypeUtil.isTypeEmployer(this.employer?.organization_type)
     },
     employmentYears () {
       if (!this.profile.employment_start_date) {
@@ -293,9 +345,6 @@ export default {
     }
   },
   methods: {
-    log (x) {
-      console.log(x)
-    },
     getFullLocation: locationUtil.getFullLocation,
     resetJobFilters () {
       this.jobFilters = Object.assign({}, jobFiltersTemplate)
@@ -320,6 +369,24 @@ export default {
           }
         }
       }
+    },
+    getElementTop (elId) {
+      const el = document.getElementById(elId)
+
+      // Sticky elements are outside of DOM flow and will cover up the top of the screen
+      const scrollSticks = [
+        document.querySelector('.custom-sticky-1'),
+        document.querySelector('.custom-sticky-2'),
+        document.querySelector('.custom-sticky-3')
+      ].filter((s) => s)
+      let stickHeight = 0
+      scrollSticks.forEach((stick, idx) => {
+        if (idx === scrollSticks.length - 1) {
+          return
+        }
+        stickHeight += stick.offsetHeight
+      })
+      return el.getBoundingClientRect().top + window.scrollY - this.headerHeight - stickHeight
     },
     async openApplication (jobId) {
       this.jobApplication = this.getJobApplicationById(jobId)
@@ -411,6 +478,18 @@ export default {
           styleOverride: this.employerStyleUtil.getButtonStyle(this.employer)
         }
       })
+    },
+    setAnchorPositions () {
+      this.jobsByEmployer.forEach((employer) => {
+        const employerElId = `employer-${employer.employer_id}`
+        this.anchorPositions[employerElId] = this.getElementTop(employerElId)
+        employer.jobs.forEach((jobsByTitle) => {
+          Object.entries(jobsByTitle).forEach(([jobs, jobTitle]) => {
+            const jobElId = `job-${employer.employer_id}-${jobs[0].id}`
+            this.anchorPositions[jobElId] = this.getElementTop(jobElId)
+          })
+        })
+      })
     }
   },
   async mounted () {
@@ -426,7 +505,8 @@ export default {
     if (jobId) {
       this.openApplication(parseInt(jobId))
     }
-
+    this.headerHeight = this.$refs.header.$el.clientHeight
+    // this.setAnchorPositions()
     this.isLoaded = true
   },
   preFetch () {

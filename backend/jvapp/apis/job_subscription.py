@@ -89,7 +89,8 @@ class JobSubscriptionView(JobVyneAPIView):
                 'filter_location__state',
                 'filter_location__country',
                 'filter_job',
-                'filter_employer'
+                'filter_employer',
+                'filter_job_titles'
             ) \
             .filter(subscription_filter)
         
@@ -111,8 +112,6 @@ class JobSubscriptionView(JobVyneAPIView):
         with atomic():
             set_object_attributes(job_subscription, data, {
                 'title': None,
-                'filter_job_title_regex': AttributeCfg(form_name='job_title_regex'),
-                'filter_exclude_job_title_regex': AttributeCfg(form_name='exclude_job_title_regex'),
                 'filter_remote_type_bit': AttributeCfg(form_name='remote_type_bit'),
                 'filter_range_miles': AttributeCfg(form_name='range_miles')
             })
@@ -132,6 +131,15 @@ class JobSubscriptionView(JobVyneAPIView):
             job_subscription.save()
             
             # Add new filters
+            if job_title_ids := data.get('job_titles'):
+                filter_job_titles = []
+                filter_model = job_subscription.filter_job_titles.through
+                for job_title_id in job_title_ids:
+                    filter_job_titles.append(filter_model(
+                        jobsubscription_id=job_subscription.id,
+                        taxonomy_id=job_title_id
+                    ))
+                filter_model.objects.bulk_create(filter_job_titles)
             if locations:
                 filter_locations = []
                 filter_model = job_subscription.filter_location.through
@@ -179,10 +187,8 @@ class JobSubscriptionView(JobVyneAPIView):
     @staticmethod
     def get_job_filter(job_subscription):
         job_filter = Q()
-        if job_subscription.filter_job_title_regex:
-            job_filter &= Q(job_title__iregex=f'^.*({job_subscription.filter_job_title_regex}).*$')
-        if job_subscription.filter_exclude_job_title_regex:
-            job_filter &= ~Q(job_title__iregex=f'^.*({job_subscription.filter_exclude_job_title_regex}).*$')
+        if job_title_ids := [jt.id for jt in job_subscription.filter_job_titles.all()]:
+            job_filter &= Q(taxonomy__taxonomy_id__in=job_title_ids)
         if job_ids := [j.id for j in job_subscription.filter_job.all()]:
             job_filter &= Q(id__in=job_ids)
         if employer_ids := [e.id for e in job_subscription.filter_employer.all()]:

@@ -153,3 +153,13 @@ class MessageGroup(AuditFields):
         one user or employer
         """
         return bool(user_ids or employer_id)
+
+
+class AIRequest(AuditFields):
+    RESULT_STATUS_SUCCESS = 'SUCCESS'
+    RESULT_STATUS_ERROR = 'ERROR'
+    RESULT_STATUS_UNPARSEABLE = 'UNPARSEABLE'
+
+    prompt_hash = models.CharField(max_length=40)
+    result_status = models.CharField(max_length=20)
+    response = models.JSONField(null=True)

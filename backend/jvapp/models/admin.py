@@ -78,3 +78,8 @@ class LocationAdmin(admin.ModelAdmin):
 class DonationOrganizationAdmin(admin.ModelAdmin):
     list_display = ('name',)
     ordering = ('name',)
+    
+
+@admin.register(Taxonomy, JobTaxonomy)
+class TaxonomyAdmin(admin.ModelAdmin):
+    pass

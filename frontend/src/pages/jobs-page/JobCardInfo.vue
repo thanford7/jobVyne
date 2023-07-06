@@ -28,8 +28,37 @@
               text-color="white" size="md" icon="attach_money">
         {{ dataUtil.getSalaryRange(job.salary_floor, job.salary_ceiling, job.salary_interval) }}
       </q-chip>
+      <div class="q-gutter-sm q-pt-md" v-if="job.qualifications">
+        <div class="row">
+          <div v-if="job.responsibilities?.length" class="col-12 col-md-4">
+            <div class="text-bold">Responsibilities</div>
+            <ul>
+              <li v-for="resp in job.responsibilities">
+                {{ dataUtil.capitalize(resp) }}
+              </li>
+            </ul>
+          </div>
+          <div v-if="job.qualifications?.length" class="col-12 col-md-4">
+            <div class="text-bold">Qualfications</div>
+            <ul>
+              <li v-for="qual in job.qualifications">
+                {{ dataUtil.capitalize(qual) }}
+              </li>
+            </ul>
+          </div>
+          <div v-if="job.technical_qualifications?.length" class="col-12 col-md-4">
+            <div class="text-bold">Technical Qualifications</div>
+            <ul>
+              <li v-for="qual in job.technical_qualifications">
+                {{ dataUtil.capitalize(qual) }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <div class="q-gutter-sm q-pt-md q-pb-sm">
         <q-btn
+          v-if="!job.qualifications?.length"
           ripple
           label="Show job description"
           color="grey-5"

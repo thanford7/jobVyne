@@ -2,6 +2,7 @@ import datetime
 from dataclasses import dataclass
 from typing import Union
 
+from django.db.models import Q
 from django.utils import timezone
 
 from jvapp.apis.geocoding import LocationParser
@@ -9,6 +10,7 @@ from jvapp.models.employer import EmployerJob, JobDepartment
 from jvapp.utils.file import get_file_extension
 from jvapp.utils.image import convert_url_to_image
 from jvapp.utils.sanitize import sanitize_html
+from jvapp.utils.taxonomy import run_job_title_standardization
 
 
 @dataclass
@@ -77,6 +79,8 @@ class JobProcessor:
             .filter(id__in=[j.id for j in skipped_jobs])\
             .update(modified_dt=timezone.now())
 
+        run_job_title_standardization(job_filter=Q(employer_id=self.employer.id), is_non_standardized_only=True)
+
     def process_jobs(self, job_items):
         for job_item in job_items:
             self.process_job(job_item)
@@ -113,7 +117,7 @@ class JobProcessor:
         location_ids = tuple(location_ids)
         
         new_job = EmployerJob(
-            job_title=job_item.job_title,
+            job_title=job_item.job_title.strip(),
             is_scraped=True
         )
         if not (job := self.jobs.get(EmployerJob.generate_job_key(new_job.job_title, location_ids))):

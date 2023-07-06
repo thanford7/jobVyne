@@ -1,7 +1,7 @@
 <template>
   <DialogBase
-    base-title-text="Edit job subscription"
-    primary-button-text="Update"
+    :base-title-text="(jobSubscription) ? 'Edit job subscription' : 'Create job subscription'"
+    :primary-button-text="(jobSubscription) ? 'Update' : 'Create'"
     @ok="saveJobSubscription"
   >
     <q-form ref="form">
@@ -19,28 +19,7 @@
           </q-input>
         </div>
         <div class="col-12">
-          <q-input
-            v-model="formData.job_title_regex"
-            filled label="Include job titles"
-          >
-            <template v-slot:after>
-              <CustomTooltip>
-                Use partial or full job titles. You can include multiple titles using a "|" separator
-              </CustomTooltip>
-            </template>
-          </q-input>
-        </div>
-        <div class="col-12">
-          <q-input
-            v-model="formData.exclude_job_title_regex"
-            filled label="Exclude job titles"
-          >
-            <template v-slot:after>
-              <CustomTooltip>
-                Use partial or full job titles. You can include multiple titles using a "|" separator
-              </CustomTooltip>
-            </template>
-          </q-input>
+          <SelectJobTitle v-model="formData.job_titles" :is-multi="true" :is-required="true"/>
         </div>
         <div class="col-12">
           <SelectEmployer v-model="formData.employers" :is-multi="true"/>
@@ -64,6 +43,7 @@
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import InputLocation from 'components/inputs/InputLocation.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
+import SelectJobTitle from 'components/inputs/SelectJobTitle.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import { getAjaxFormData } from 'src/utils/requests.js'
 
@@ -72,13 +52,14 @@ export default {
   extends: DialogBase,
   inheritAttrs: false,
   components: {
+    SelectJobTitle,
     DialogBase,
     InputLocation,
     SelectEmployer,
     SelectRemote
   },
   props: {
-    jobSubscription: Object
+    jobSubscription: [Object, null]
   },
   data () {
     return {
@@ -87,18 +68,24 @@ export default {
   },
   methods: {
     async saveJobSubscription () {
-      await this.$api.put(`job-subscription/${this.jobSubscription.id}`, getAjaxFormData(this.formData))
+      if (this.jobSubscription) {
+        await this.$api.put(`job-subscription/${this.jobSubscription.id}`, getAjaxFormData(this.formData))
+      } else {
+        await this.$api.post('job-subscription/', getAjaxFormData(this.formData))
+      }
       this.$emit('ok')
     }
   },
   mounted () {
-    this.formData = Object.assign({ title: this.jobSubscription.title }, this.jobSubscription.filters)
+    if (this.jobSubscription) {
+      this.formData = Object.assign({ title: this.jobSubscription.title }, this.jobSubscription.filters)
 
-    // Turn filter objects into flat IDs
-    const flattenFilterItems = ['jobs', 'employers']
-    flattenFilterItems.forEach((filterKey) => {
-      this.formData[filterKey] = this.formData[filterKey].map((item) => item.id)
-    })
+      // Turn filter objects into flat IDs
+      const flattenFilterItems = ['jobs', 'employers', 'job_titles']
+      flattenFilterItems.forEach((filterKey) => {
+        this.formData[filterKey] = this.formData[filterKey].map((item) => item.id)
+      })
+    }
   }
 }
 </script>

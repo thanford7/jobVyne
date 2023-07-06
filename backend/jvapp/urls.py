@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from jvapp.apis import (
     admin, ats, auth, content, currency, data, donation_org, email, employer, job_seeker, job, jobs, job_subscription,
-    karma, message, notification, sales, slack, social, stripe, test, tracking, user
+    karma, message, notification, sales, slack, social, stripe, taxonomy, test, tracking, user
 )
 from jvapp.apis.geocoding import LocationSearchView
 
@@ -55,6 +55,7 @@ urlpatterns = [
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
+    path('taxonomy/job-title/', taxonomy.TaxonomyJobTitleView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
     re_path('^user/employee-checklist/(?P<user_id>[0-9]+)?/?$', user.UserEmployeeChecklistView.as_view()),
     re_path('^user/profile/(?P<user_id>[0-9]+)/?$', user.UserProfileView.as_view()),
@@ -145,6 +146,9 @@ urlpatterns = [
     path('social/calendly/', auth.social_auth_calendly),
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
+
+    # Job classification
+    path('classify-jobs/', job.JobClassificationView.as_view()),
     
     # Test url
     path('test/email/', test.TestEmailView.as_view()),

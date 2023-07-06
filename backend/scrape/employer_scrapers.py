@@ -1364,7 +1364,17 @@ class CoinbaseScraper(GreenhouseApiScraper):
 class RobinhoodScraper(GreenhouseIframeScraper):
     employer_name = 'Robinhood'
     EMPLOYER_KEY = 'robinhood'
+    
+    
+class OnfidoScraper(LeverScraper):
+    employer_name = 'Onfido'
+    EMPLOYER_KEY = 'onfido'
+    
 
+class JamCityScraper(LeverScraper):
+    employer_name = 'Jam City'
+    EMPLOYER_KEY = 'jamcity'
+    
 
 class ArteraScraper(LeverScraper):
     employer_name = 'Artera'
@@ -3886,6 +3896,8 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    JamCityScraper.employer_name: JamCityScraper,
+    OnfidoScraper.employer_name: OnfidoScraper,
     SuperComScraper.employer_name: SuperComScraper,
     PineconeScraper.employer_name: PineconeScraper,
     AgoricScraper.employer_name: AgoricScraper,

@@ -11,7 +11,7 @@ __all__ = (
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
-    'EmployerSlack'
+    'EmployerSlack', 'Taxonomy', 'JobTaxonomy',
 )
 
 from jvapp.models.user import PermissionName
@@ -194,6 +194,9 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
     job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True, blank=True)
+    responsibilities = models.JSONField(null=True, blank=True)
+    qualifications = models.JSONField(null=True, blank=True)
+    technical_qualifications = models.JSONField(null=True, blank=True)
     job_department = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
     open_date = models.DateField(null=True, blank=True)
     close_date = models.DateField(null=True, blank=True)
@@ -207,7 +210,8 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     locations = models.ManyToManyField('Location')
     application_url = models.CharField(max_length=300, null=True, blank=True)  # Used as a fallback when we don't have an ATS integration with an employer
     is_scraped = models.BooleanField(default=False, blank=True)
-    
+    qualifications_prompt = models.ForeignKey('AIRequest', null=True, on_delete=models.SET_NULL)
+
     ats_job_key = models.CharField(max_length=50, null=True, blank=True)
     
     def __str__(self):
@@ -275,8 +279,49 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
                 return True
             
         return False
+
+
+class Taxonomy(models.Model):
+    TAX_TYPE_JOB_TITLE = 'JOB_TITLE'
+    TAX_TYPE_INDUSTRY = 'INDUSTRY'
+    TAX_TYPE_JOB_LEVEL = 'JOB_LEVEL'
+    ALL_TAX_TYPES = [
+        TAX_TYPE_JOB_TITLE,
+        TAX_TYPE_INDUSTRY,
+        TAX_TYPE_JOB_LEVEL
+    ]
     
-    
+    tax_type = models.CharField(max_length=20)
+    name = models.CharField(max_length=100)
+    # TODO: Add descriptions for job levels category
+    description = models.CharField(max_length=2000, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('tax_type', 'name')
+
+    def __str__(self):
+        return f'{self.tax_type}: {self.name}'
+
+
+class JobTaxonomy(AuditFields):
+    job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='taxonomy')
+    taxonomy = models.ForeignKey(Taxonomy, on_delete=models.CASCADE)
+    # aiPrompt = models.ForeignKey
+
+    class Meta:
+        constraints = [
+            # This is what we really want:
+            # models.constraints.UniqueConstraint(fields=('job', 'taxonomy__tax_type'), name='job_unique_taxonomy')
+            # But this is the best we can do; we'll have to disallow multiple assignments on a single taxonomy type some other way
+            models.constraints.UniqueConstraint(fields=('job', 'taxonomy'), name='job_unique_taxonomy'),
+        ]
+
+# TODO: Implement model and use in prediction
+# class AiPrompt():
+#     '''An AI prompt'''
+#     pass
+
+
 class EmployerJobApplicationRequirement(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='job_application_requirement')
     application_field = models.CharField(max_length=25)  # based on JobApplicationFields model
