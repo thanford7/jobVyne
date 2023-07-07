@@ -476,7 +476,7 @@ class SocialLinkPostJobsView(JobVyneAPIView):
         # Don't post jobs that have already been posted
         job_post_filter = Q(job_post__channel=social_channel)
         if recipient_id:
-            job_post_filter &= Q(job_post__recipient_id=owner_id)
+            job_post_filter &= Q(job_post__recipient_id=recipient_id)
         elif owner_id:
             job_post_filter &= Q(job_post__owner_id=owner_id)
         else:
