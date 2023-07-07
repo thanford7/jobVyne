@@ -1,4 +1,7 @@
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
+
+import re
+
 from django.core.files import File
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
@@ -189,3 +192,14 @@ def create_employer_job_board(sender, instance, created, *args, **kwargs):
         if instance.organization_type & Employer.ORG_TYPE_EMPLOYER:
             employer_subscription = JobSubscriptionView.get_or_create_employer_subscription(instance.id)
             link.job_subscriptions.add(employer_subscription.id)
+
+
+@receiver(post_save, sender=Employer)
+def create_employer_key(sender, instance, created, *args, **kwargs):
+    if created:
+        instance.employer_key = re.sub('[^a-z0-9]', '-', instance.employer_name.lower())
+        existing_employer_filter = Q(employer_key=instance.employer_key) & ~Q(id=instance.id)
+        if Employer.objects.filter(existing_employer_filter):
+            instance.employer_key = f'{instance.employer_key}{instance.id}'
+        instance.save()
+        
