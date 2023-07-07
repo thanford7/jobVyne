@@ -27,7 +27,7 @@ class SocialLink(AuditFields, JobVynePermissionsMixin):
     # The default social link filter is used to auto-populate forms
     is_default = models.BooleanField(default=False, blank=True)
     is_archived = models.BooleanField(default=False, blank=True)
-    name = models.CharField(max_length=250, null=True, blank=True)
+    name = models.CharField(max_length=250, default='General')
     # If no owner, this is an employer owned link
     # If owner and employer, this is an employee referral link
     owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True)

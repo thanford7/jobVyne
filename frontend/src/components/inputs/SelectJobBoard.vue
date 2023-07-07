@@ -1,6 +1,6 @@
 <template>
   <q-select
-    v-if="isLoaded"
+    :loading="isLoading"
     ref="select"
     :model-value="modelValue"
     @update:model-value="$emit('update:model-value', $event)"
@@ -57,7 +57,7 @@ export default {
   },
   data () {
     return {
-      isLoaded: false,
+      isLoading: true,
       socialLinks: [],
       locationUtil,
       socialUtil
@@ -80,11 +80,11 @@ export default {
 
     // If a value is required and none is populated, use the default link
     if ((!this.modelValue || dataUtil.isEmpty(this.modelValue)) && this.isRequired) {
+      console.log('Set default link')
       const defaultLink = this.socialLinks.find((link) => link.is_default)
       this.$emit('update:model-value', defaultLink)
     }
-
-    this.isLoaded = true
+    this.isLoading = false
   },
   setup () {
     const authStore = useAuthStore()
