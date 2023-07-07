@@ -4821,6 +4821,74 @@ class RepriseScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'reprise'
 
 
+class ProcoreScraper(SmartRecruitersScraper):
+    employer_name = 'Procore'
+    EMPLOYER_KEY = 'ProcoreTechnologies'
+
+
+class VtexScraper(GreenhouseApiScraper):
+    employer_name = 'VTEX'
+    EMPLOYER_KEY = 'vtex'
+
+
+class MediamathScraper(GreenhouseApiScraper):
+    employer_name = 'MediaMath'
+    EMPLOYER_KEY = 'mediamath'
+
+
+class PigmentScraper(LeverScraper):
+    employer_name = 'Pigment'
+    EMPLOYER_KEY = 'pigment'
+
+
+class CadenceScraper(WorkdayScraper):
+    employer_name = 'Cadence'
+    start_url = 'https://cadence.wd1.myworkdayjobs.com/en-US/External_Careers/'
+    has_job_departments = False
+
+
+class FactsetScraper(WorkdayScraper):
+    employer_name = 'Factset'
+    start_url = 'https://factset.wd1.myworkdayjobs.com/en-US/FactSetCareers/'
+    has_job_departments = False
+
+
+class AgoraScraper(GreenhouseApiScraper):
+    employer_name = 'Agora'
+    EMPLOYER_KEY = 'agoralabinc'
+
+
+class Neo4jScraper(GreenhouseApiScraper):
+    employer_name = 'Neo4j'
+    EMPLOYER_KEY = 'neo4j'
+
+
+class Rapid7Scraper(WorkdayScraper):
+    employer_name = 'Rapid7'
+    start_url = 'https://mymoose.wd1.myworkdayjobs.com/en-US/careers/'
+    has_job_departments = False
+
+
+class RossumScraper(GreenhouseApiScraper):
+    employer_name = 'Rossum'
+    EMPLOYER_KEY = 'rossum'
+
+
+class MessagebirdScraper(AshbyHQScraper):
+    employer_name = 'MessageBird'
+    EMPLOYER_KEY = 'messagebird'
+
+
+class BufScraper(GreenhouseApiScraper):
+    employer_name = 'Buf'
+    EMPLOYER_KEY = 'buftechnologies'
+
+
+class HootsuiteScraper(GreenhouseApiScraper):
+    employer_name = 'Hootsuite'
+    EMPLOYER_KEY = 'hootsuite'
+
+
 # TODO: Build a new scraper for PhenomPeople ats
 # class AdobeScraper():
 #     employer_name = 'Adobe'
@@ -4831,6 +4899,19 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    AgoraScraper.employer_name: AgoraScraper,
+    Neo4jScraper.employer_name: Neo4jScraper,
+    MessagebirdScraper.employer_name: MessagebirdScraper,
+    BufScraper.employer_name: BufScraper,
+    HootsuiteScraper.employer_name: HootsuiteScraper,
+    Rapid7Scraper.employer_name: Rapid7Scraper,
+    RossumScraper.employer_name: RossumScraper,
+    CadenceScraper.employer_name: CadenceScraper,
+    FactsetScraper.employer_name: FactsetScraper,
+    ProcoreScraper.employer_name: ProcoreScraper,
+    VtexScraper.employer_name: VtexScraper,
+    MediamathScraper.employer_name: MediamathScraper,
+    PigmentScraper.employer_name: PigmentScraper,
     RelexSolutionsScraper.employer_name: RelexSolutionsScraper,
     RaiseScraper.employer_name: RaiseScraper,
     RubrikScraper.employer_name: RubrikScraper,
