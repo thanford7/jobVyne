@@ -4673,6 +4673,154 @@ class AviatrixScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'aviatrix'
 
 
+class MarigoldScraper(WorkdayScraper):
+    employer_name = 'Marigold'
+    start_url = 'https://campaignmonitor.wd5.myworkdayjobs.com/en-US/marigold/'
+    has_job_departments = False
+
+
+class AstronomerScraper(AshbyHQScraper):
+    employer_name = 'Astronomer'
+    EMPLOYER_KEY = 'astronomer'
+
+
+class TranscarentScraper(GreenhouseScraper):
+    employer_name = 'Transcarent'
+    EMPLOYER_KEY = 'transcarent'
+
+
+class VercelScraper(GreenhouseScraper):
+    employer_name = 'Vercel'
+    EMPLOYER_KEY = 'vercel'
+
+
+class VerilyScraper(GreenhouseApiScraper):
+    employer_name = 'Verily'
+    EMPLOYER_KEY = 'verily'
+
+
+class DatagrailScraper(GreenhouseScraper):
+    employer_name = 'DataGrail'
+    EMPLOYER_KEY = 'datagrail'
+
+
+class AppianScraper(GreenhouseScraper):
+    employer_name = 'Appian'
+    EMPLOYER_KEY = 'appian'
+
+
+class TailscaleScraper(GreenhouseScraper):
+    employer_name = 'Tailscale'
+    EMPLOYER_KEY = 'tailscale'
+
+
+class Eightx8Scraper(LeverScraper):
+    employer_name = '8x8'
+    EMPLOYER_KEY = '8x8'
+
+
+class RelexSolutionsScraper(GreenhouseApiScraper):
+    employer_name = 'Relex Solutions'
+    EMPLOYER_KEY = 'relex'
+
+
+class RaiseScraper(GreenhouseApiScraper):
+    employer_name = 'Raise'
+    EMPLOYER_KEY = 'raise'
+
+
+class RubrikScraper(GreenhouseApiScraper):
+    employer_name = 'Rubrik'
+    EMPLOYER_KEY = 'rubrik'
+
+
+class FlockSafetyScraper(GreenhouseScraper):
+    employer_name = 'Flock Safety'
+    EMPLOYER_KEY = 'flocksafety'
+
+
+class LogicgateScraper(GreenhouseScraper):
+    employer_name = 'LogicGate'
+    EMPLOYER_KEY = 'logicgate'
+
+
+class ZoomScraper(WorkdayScraper):
+    employer_name = 'Zoom'
+    start_url = 'https://zoom.wd5.myworkdayjobs.com/en-US/Zoom/'
+    has_job_departments = False
+
+
+class RobinScraper(LeverScraper):
+    employer_name = 'Robin'
+    EMPLOYER_KEY = 'robinpowered'
+
+
+class AirbaseScraper(GreenhouseScraper):
+    employer_name = 'Airbase'
+    EMPLOYER_KEY = 'airbase'
+
+
+class MemfaultScraper(LeverScraper):
+    employer_name = 'Memfault'
+    EMPLOYER_KEY = 'memfault'
+
+
+class SitetrackerScraper(LeverScraper):
+    employer_name = 'Sitetracker'
+    EMPLOYER_KEY = 'sitetracker'
+
+
+class PlanetscaleScraper(GreenhouseScraper):
+    employer_name = 'PlanetScale'
+    EMPLOYER_KEY = 'planetscale'
+
+
+class VezaScraper(GreenhouseScraper):
+    employer_name = 'Veza'
+    EMPLOYER_KEY = 'veza'
+
+
+class PrimerScraper(GreenhouseScraper):
+    employer_name = 'Primer'
+    EMPLOYER_KEY = 'primerai'
+
+
+class OwnbackupScraper(GreenhouseApiScraper):
+    employer_name = 'OwnBackup'
+    EMPLOYER_KEY = 'ownbackup'
+
+
+class CovermymedsScraper(WorkdayScraper):
+    employer_name = 'CoverMyMeds'
+    start_url = 'https://mckesson.wd3.myworkdayjobs.com/en-US/CoverMyMeds_External_Careers/'
+    has_job_departments = False
+
+
+class SysdigScraper(GreenhouseScraper):
+    employer_name = 'Sysdig'
+    EMPLOYER_KEY = 'sysdig'
+
+
+class AssentComplianceScraper(SmartRecruitersScraper):
+    employer_name = 'Assent Compliance'
+    EMPLOYER_KEY = 'Assent'
+
+
+class SendcloudScraper(GreenhouseApiScraper):
+    employer_name = 'Sendcloud'
+    EMPLOYER_KEY = 'sendcloud'
+
+
+class SiftScraper(GreenhouseScraper):
+    employer_name = 'Sift'
+    EMPLOYER_KEY = 'siftscience'
+
+
+class RepriseScraper(GreenhouseApiScraper):
+    employer_name = 'Reprise'
+    EMPLOYER_KEY = 'reprise'
+
+
 # TODO: Build a new scraper for PhenomPeople ats
 # class AdobeScraper():
 #     employer_name = 'Adobe'
@@ -4683,6 +4831,35 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    RelexSolutionsScraper.employer_name: RelexSolutionsScraper,
+    RaiseScraper.employer_name: RaiseScraper,
+    RubrikScraper.employer_name: RubrikScraper,
+    FlockSafetyScraper.employer_name: FlockSafetyScraper,
+    LogicgateScraper.employer_name: LogicgateScraper,
+    ZoomScraper.employer_name: ZoomScraper,
+    RobinScraper.employer_name: RobinScraper,
+    AirbaseScraper.employer_name: AirbaseScraper,
+    MemfaultScraper.employer_name: MemfaultScraper,
+    SitetrackerScraper.employer_name: SitetrackerScraper,
+    PlanetscaleScraper.employer_name: PlanetscaleScraper,
+    VezaScraper.employer_name: VezaScraper,
+    PrimerScraper.employer_name: PrimerScraper,
+    OwnbackupScraper.employer_name: OwnbackupScraper,
+    CovermymedsScraper.employer_name: CovermymedsScraper,
+    SysdigScraper.employer_name: SysdigScraper,
+    AssentComplianceScraper.employer_name: AssentComplianceScraper,
+    SendcloudScraper.employer_name: SendcloudScraper,
+    SiftScraper.employer_name: SiftScraper,
+    RepriseScraper.employer_name: RepriseScraper,
+    MarigoldScraper.employer_name: MarigoldScraper,
+    AstronomerScraper.employer_name: AstronomerScraper,
+    TranscarentScraper.employer_name: TranscarentScraper,
+    VercelScraper.employer_name: VercelScraper,
+    VerilyScraper.employer_name: VerilyScraper,
+    DatagrailScraper.employer_name: DatagrailScraper,
+    AppianScraper.employer_name: AppianScraper,
+    TailscaleScraper.employer_name: TailscaleScraper,
+    Eightx8Scraper.employer_name: Eightx8Scraper,
     BluecoreScraper.employer_name: BluecoreScraper,
     OntraScraper.employer_name: OntraScraper,
     OwkinScraper.employer_name: OwkinScraper,
