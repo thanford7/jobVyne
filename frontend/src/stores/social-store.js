@@ -6,7 +6,9 @@ export const useSocialStore = defineStore('social', {
   state: () => ({
     platforms: null,
     socialLinks: {}, // key: [<socialLink>, ...]
-    socialLinkPostJobs: {} // key: [<job1>, ...]
+    socialLinkJobs: {}, // key: {}
+    socialLinkPostJobs: {}, // key: [<job1>, ...]
+    socialLinkEmployer: {} // key: {}
   }),
 
   actions: {
@@ -27,6 +29,30 @@ export const useSocialStore = defineStore('social', {
         { params: { owner_id: userId, employer_id: employerId } }
       )
       this.socialLinks[key] = resp.data
+    },
+    async setSocialLinkJobs ({
+      linkId = null,
+      employerKey = null,
+      professionKey = null,
+      pageNumber = 1,
+      jobFilters = null,
+      isForceRefresh = false
+    }) {
+      const key = makeApiRequestKey(linkId, employerKey, professionKey, pageNumber, JSON.stringify(jobFilters))
+      if (!isForceRefresh && this.socialLinkJobs[key]) {
+        return
+      }
+
+      const resp = await this.$api.get('social-link-jobs/', {
+        params: {
+          link_id: linkId,
+          employer_key: employerKey,
+          profession_key: professionKey,
+          page_count: pageNumber,
+          job_filters: jobFilters
+        }
+      })
+      this.socialLinkJobs[key] = resp.data
     },
     async setSocialLinkPostJobs ({
       userId = null,
@@ -53,6 +79,22 @@ export const useSocialStore = defineStore('social', {
       )
       this.socialLinkPostJobs[key] = resp.data
     },
+    async setSocialLinkEmployer ({ socialLinkId = null, employerKey = null, isForceRefresh = false }) {
+      if (!socialLinkId && !employerKey) {
+        return
+      }
+      const key = makeApiRequestKey(socialLinkId, employerKey)
+      if (!isForceRefresh && this.socialLinkEmployer[key]) {
+        return
+      }
+      const resp = await this.$api.get('employer/', {
+        params: {
+          social_link_id: socialLinkId,
+          employer_key: employerKey
+        }
+      })
+      this.socialLinkEmployer[key] = resp.data
+    },
     async getOrCreateSocialLink (filterData) {
       const resp = await this.$api.post('social-link/', getAjaxFormData(filterData))
       return resp.data.social_link
@@ -62,10 +104,24 @@ export const useSocialStore = defineStore('social', {
       const socialLinks = this.socialLinks[key]
       return socialLinks || []
     },
+    getSocialLinkJobs ({
+      linkId = null,
+      employerKey = null,
+      professionKey = null,
+      pageNumber = 1,
+      jobFilters = null
+    }) {
+      const key = makeApiRequestKey(linkId, employerKey, professionKey, pageNumber, JSON.stringify(jobFilters))
+      return this.socialLinkJobs[key]
+    },
     getSocialLinkPostJobs ({ userId = null, employerId = null, socialLinkId = null, socialChannel = null }) {
       const key = makeApiRequestKey(userId, employerId, socialLinkId, socialChannel)
       const socialLinkPostJobs = this.socialLinkPostJobs[key]
       return socialLinkPostJobs || []
+    },
+    getSocialLinkEmployer ({ socialLinkId = null, employerKey = null }) {
+      const key = makeApiRequestKey(socialLinkId, employerKey)
+      return this.socialLinkEmployer[key]
     }
   }
 })

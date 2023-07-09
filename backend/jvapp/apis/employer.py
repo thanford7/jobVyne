@@ -55,9 +55,20 @@ class EmployerView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request, employer_id=None):
+        employer = None
         if employer_id:
             employer_id = int(employer_id)
             employer = self.get_employers(employer_id=employer_id)
+        elif employer_key := self.query_params.get('employer_key'):
+            employer = self.get_employers(employer_key=employer_key)
+        elif social_link_id := self.query_params.get('social_link_id'):
+            social_link = SocialLink.objects.get(id=social_link_id)
+            employer_id = social_link.employer_id
+            if not employer_id:
+                return Response(status=status.HTTP_200_OK, data={})
+            employer = self.get_employers(employer_id=employer_id)
+        
+        if employer:
             data = get_serialized_employer(
                 employer,
                 is_employer=self.user and (
@@ -65,10 +76,10 @@ class EmployerView(JobVyneAPIView):
                         or (self.user.employer_id == employer_id and self.user.is_employer)
                 )
             )
-        else:
-            employers = self.get_employers(employer_filter=Q())
-            data = sorted([get_serialized_employer(e) for e in employers], key=lambda e: e['name'])
+            return Response(status=status.HTTP_200_OK, data=data)
         
+        employers = self.get_employers(employer_filter=Q())
+        data = sorted([get_serialized_employer(e) for e in employers], key=lambda e: e['name'])
         return Response(status=status.HTTP_200_OK, data=data)
     
     @atomic
@@ -97,9 +108,11 @@ class EmployerView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_employers(employer_id=None, employer_filter=None):
+    def get_employers(employer_id=None, employer_key=None, employer_filter=None):
         if employer_id:
             employer_filter = Q(id=employer_id)
+        elif employer_key:
+            employer_filter = Q(employer_key=employer_key)
         
         default_job_board_prefetch = Prefetch(
             'sociallink_set',
@@ -122,7 +135,7 @@ class EmployerView(JobVyneAPIView):
             .filter(employer_filter) \
             .annotate(employee_count=Count('employee'))
         
-        if employer_id:
+        if employer_id or employer_key:
             if not employers:
                 raise Employer.DoesNotExist
             return employers[0]

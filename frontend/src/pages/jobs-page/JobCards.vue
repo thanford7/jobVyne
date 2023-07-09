@@ -20,7 +20,10 @@
               </div>
               <div class="q-pl-lg" :class="(employer.employer_logo) ? 'col-10' : 'col-12'">
                 <div class="h-100 flex items-center">
-                  <h5>{{ employer.employer_name }}</h5>
+                  <h5 class="w-100 q-mb-none">{{ employer.employer_name }}</h5>
+                  <div>
+                    <a :href="`/co/${employer.employer_key}`" target="_blank">View all jobs</a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -89,7 +92,6 @@ import formUtil from 'src/utils/form.js'
 export default {
   name: 'JobCards',
   props: {
-    employer: Object,
     jobsByEmployer: Object,
     isSingleEmployer: Boolean,
     hasNoJobs: Boolean,

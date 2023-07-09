@@ -251,9 +251,30 @@ const routes = [
   },
 
   {
-    path: '/jobs-link/example/:employerId(\\d+)/:ownerId(\\d+)?/:tab?',
-    name: 'jobs-link-example',
-    meta: { isNoAuth: true, isExample: true },
+    path: '/jobs',
+    name: 'jobs',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/group/:employerKey',
+    name: 'group',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/co/:employerKey',
+    name: 'company',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/profession/:professionKey',
+    name: 'profession',
+    meta: { isNoAuth: true, trackRoute: true },
     component: () => import('layouts/JobsLayout.vue')
   },
 

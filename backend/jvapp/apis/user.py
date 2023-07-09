@@ -17,6 +17,7 @@ from jvapp.apis.geocoding import LocationParser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import SocialPost
 from jvapp.models.employer import Employer
+from jvapp.models.social import SocialLink
 from jvapp.models.user import JobVyneUser, UserApplicationReview, UserEmployeeProfileQuestion, \
     UserEmployeeProfileResponse, UserFile, \
     UserSocialCredential, \
@@ -239,7 +240,15 @@ class UserView(JobVyneAPIView):
 class UserProfileView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
-    def get(self, request, user_id):
+    def get(self, request):
+        user_id = self.query_params.get('user_id')
+        social_link_id = self.query_params.get('social_link_id')
+        assert any((user_id, social_link_id))
+        if social_link_id:
+            user_id = SocialLink.objects.get(id=social_link_id).owner_id
+        if not user_id:
+            return Response(status=status.HTTP_200_OK, data=None)
+        
         user = UserView.get_user(self.user, user_id=user_id, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data=get_serialized_user_profile(user))
 

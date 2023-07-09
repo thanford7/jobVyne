@@ -54,15 +54,15 @@
         ref="jobApplicationForm"
         :job-application="jobApplication"
         :employer="employer"
-        @login="loadData()"
-        @closeApplication="closeApplication"
+        @login="this.authStore.setApplications(this.authStore.propUser)"
+        @closeApplication="closeJobApplication()"
       />
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
         <q-btn
           dense round unelevated
           color="grey-5"
           icon="chevron_right"
-          @click="closeApplication()"
+          @click="closeJobApplication()"
         />
       </div>
     </q-drawer>
@@ -71,143 +71,14 @@
       <q-page v-if="isLoaded">
         <q-tab-panels v-model="tab" animated keep-alive class="no-overflow">
           <q-tab-panel name="jobs" style="position: relative;">
-            <div class="row justify-center">
-              <ResponsiveWidth>
-                <div class="row">
-                  <div v-if="!user || dataUtil.isEmpty(user)" class="col-12 q-mb-md">
-                    <q-card flat class="border-4-info">
-                      <q-card-section class="text-center text-bold">
-                        Want to track all your job applications?
-                        <a href="#" @click.prevent="openLoginModal(false)">Login</a>
-                        or <a href="#" @click.prevent="openLoginModal(true)">create an account</a>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-                  <div class="col-12 q-mt-md">
-                    <CollapsableCard title="Job filters" :is-dense="true">
-                      <template v-slot:body>
-                        <div class="col-12 q-pa-sm">
-                          <q-form class="row q-gutter-y-sm">
-                            <div class="col-12 col-md-4 q-pr-md-sm">
-                              <q-input
-                                v-model="jobFilters.search_regex"
-                                filled
-                                :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
-                                debounce="500"
-                                @keyup.enter="loadData()"
-                              >
-                                <template v-slot:append>
-                                  <q-icon name="search"/>
-                                </template>
-                              </q-input>
-                            </div>
-                            <div class="col-12 col-md-8 q-pl-md-sm">
-                              <InputLocation
-                                v-model:location="jobFilters.location"
-                                v-model:range_miles="jobFilters.range_miles"
-                                :is-include-range="true"
-                                @update:location="loadData()"
-                                @update:range_miles="loadData()"
-                              />
-                            </div>
-                            <div class="col-12 col-md-4 q-pr-md-sm">
-                              <SelectRemote v-model="jobFilters.remote_type_bit" @update:model-value="loadData()"/>
-                            </div>
-                            <div class="col-12 col-md-4 q-pl-md-sm">
-                              <MoneyInput
-                                v-model:money-value="jobFilters.minimum_salary"
-                                v-model:currency-name="jobFilters.currency"
-                                :is-include-currency-selection="false"
-                                label="Minimum salary"
-                                @submit="loadData()"
-                              />
-                            </div>
-                            <div class="col-12">
-                              <q-btn ref="filterSubmit" color="primary" label="Search" @click="loadData()"/>
-                            </div>
-                          </q-form>
-                        </div>
-                      </template>
-                    </CollapsableCard>
-                  </div>
-                  <div v-if="jobFilters?.job_ids?.length && totalEmployerJobCount > jobFilters.job_ids.length"
-                       class="col-12 q-mt-md">
-                    <q-btn
-                      class="w-100" :label="`View all ${totalEmployerJobCount} jobs`"
-                      icon="visibility" :style="employerStyleUtil.getButtonStyle(employer)"
-                      @click="resetJobFilters"
-                    />
-                  </div>
-                  <q-pagination
-                    v-if="jobPagesCount > 1"
-                    v-model="pageNumber"
-                    :max-pages="5"
-                    :max="jobPagesCount"
-                    input
-                    class="q-mt-md"
-                  />
-                  <div class="col-12 scroll" style="overflow: unset;">
-                    <div class="row">
-                      <JobCards
-                        class="col-12 col-md-9 q-mt-md"
-                        :employer="employer"
-                        :jobs-by-employer="jobsByEmployer"
-                        :is-single-employer="isSingleEmployer"
-                        :has-no-jobs="hasNoJobs"
-                        :applications="applications"
-                        :job-application="jobApplication"
-                        :job-pages-count="jobPagesCount"
-                        :scroll-stick-start-px="headerHeight"
-                        @openApplication="openApplication($event)"
-                      />
-                      <div
-                        v-if="!utilStore.isUnderBreakPoint('md') && !hasNoJobs"
-                        class="col-3 q-py-md q-px-sm custom-sticky"
-                        style="align-self: start;"
-                      >
-                        <CollapsableCard
-                          title="Job quick links"
-                          :is-dense="true"
-                        >
-                          <template v-slot:body>
-                            <q-list dense style="max-height: 70vh; overflow-x: hidden; overflow-y: scroll">
-                              <template v-for="employer in jobsByEmployer">
-                                <q-item
-                                  v-if="!isSingleEmployer"
-                                  clickable
-                                  class="text-bold"
-                                  @click="scrollUtil.scrollTo(getElementTop(`employer-${employer.employer_id}`))"
-                                >
-                                  {{ employer.employer_name }}
-                                </q-item>
-                                <template v-for="jobsByTitle in employer.jobs">
-                                  <q-item
-                                    v-for="(jobs, jobTitle) in jobsByTitle"
-                                    clickable
-                                    :style="(isSingleEmployer) ? '' : 'padding-left: 40px'"
-                                    @click="scrollUtil.scrollTo(getElementTop(`job-${employer.employer_id}-${jobs[0].id}`))"
-                                  >
-                                    {{ jobTitle }}
-                                  </q-item>
-                                </template>
-                              </template>
-                            </q-list>
-                          </template>
-                        </CollapsableCard>
-                      </div>
-                    </div>
-                  </div>
-                  <q-pagination
-                    v-if="jobPagesCount > 1"
-                    v-model="pageNumber"
-                    :max-pages="5"
-                    :max="jobPagesCount"
-                    input
-                    class="q-mt-md"
-                  />
-                </div>
-              </ResponsiveWidth>
-            </div>
+            <JobsSection
+              ref="jobs"
+              :user="user"
+              :employer="employer"
+              :headerHeight="headerHeight"
+              @openAppSideBar="isRightDrawerOpen = true"
+              @closeAppSideBar="isRightDrawerOpen = false"
+            />
           </q-tab-panel>
           <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
             <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
@@ -250,21 +121,14 @@
 </template>
 
 <script>
-import CollapsableCard from 'components/CollapsableCard.vue'
 import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
-import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
-import DialogLogin from 'components/dialogs/DialogLogin.vue'
-import InputLocation from 'components/inputs/InputLocation.vue'
-import MoneyInput from 'components/inputs/MoneyInput.vue'
-import SelectRemote from 'components/inputs/SelectRemote.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
-import JobCards from 'pages/jobs-page/JobCards.vue'
+import JobsSection from 'pages/jobs-page/JobsSection.vue'
 import employerStyleUtil from 'src/utils/employer-styles.js'
-import employerTypeUtil from 'src/utils/employer-types.js'
 import scrollUtil from 'src/utils/scroll.js'
-import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
+import { useSocialStore } from 'stores/social-store.js'
 import { useUserStore } from 'stores/user-store.js'
 import { useUtilStore } from 'stores/utility-store.js'
 import { ref } from 'vue'
@@ -278,28 +142,15 @@ import dateTimeUtil from 'src/utils/datetime'
 import { storeToRefs } from 'pinia/dist/pinia'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 
-const jobFiltersTemplate = {
-  job_ids: [],
-  location: null,
-  range_miles: 50,
-  search_regex: '',
-  remote_type_bit: null,
-  minimum_salary: null
-}
-
 export default {
   data () {
     return {
       tab: this.$route?.params?.tab || 'jobs',
       pageNumber: 1,
-      totalEmployerJobCount: null,
-      jobsByEmployer: null,
       employer: null,
       profile: null,
       isLoaded: false,
       jobApplication: null,
-      jobPagesCount: null,
-      jobFilters: {},
       headerHeight: 0,
       anchorPositions: {},
       dataUtil,
@@ -311,22 +162,12 @@ export default {
     }
   },
   components: {
-    InputLocation,
-    MoneyInput,
+    JobsSection,
     ResponsiveWidth,
     CustomFooter,
-    FormJobApplication,
-    JobCards,
-    CollapsableCard,
-    SelectRemote
+    FormJobApplication
   },
   computed: {
-    hasNoJobs () {
-      return dataUtil.isEmpty(this.jobsByEmployer)
-    },
-    isSingleEmployer () {
-      return this.jobsByEmployer.length === 1 && employerTypeUtil.isTypeEmployer(this.employer?.organization_type)
-    },
     employmentYears () {
       if (!this.profile.employment_start_date) {
         return null
@@ -337,176 +178,52 @@ export default {
       return Boolean(this.profile && this.profile.is_profile_viewable && this.profile.profile_responses.length)
     }
   },
-  watch: {
-    pageNumber: {
-      async handler () {
-        await this.loadData({ pageNumber: this.pageNumber })
-      }
-    }
-  },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
-    resetJobFilters () {
-      this.jobFilters = Object.assign({}, jobFiltersTemplate)
-    },
-    async closeApplication () {
-      this.isRightDrawerOpen = false
-      this.jobApplication = null
-      await this.$router.replace({
-        name: this.$route.name,
-        query: dataUtil.omit(this.$route.query || {}, ['jobId'])
-      })
-    },
-    getJobApplicationById (jobId) {
-      for (const employer of this.jobsByEmployer) {
-        for (const jobPositions of Object.values(employer.jobs)) {
-          for (const jobs of Object.values(jobPositions)) {
-            for (const job of jobs) {
-              if (job.id === jobId) {
-                return job
-              }
-            }
-          }
-        }
-      }
-    },
-    getElementTop (elId) {
-      const el = document.getElementById(elId)
-
-      // Sticky elements are outside of DOM flow and will cover up the top of the screen
-      const scrollSticks = [
-        document.querySelector('.custom-sticky-1'),
-        document.querySelector('.custom-sticky-2'),
-        document.querySelector('.custom-sticky-3')
-      ].filter((s) => s)
-      let stickHeight = 0
-      scrollSticks.forEach((stick, idx) => {
-        if (idx === scrollSticks.length - 1) {
-          return
-        }
-        stickHeight += stick.offsetHeight
-      })
-      return el.getBoundingClientRect().top + window.scrollY - this.headerHeight - stickHeight
-    },
-    async openApplication (jobId) {
-      this.jobApplication = this.getJobApplicationById(jobId)
-      await this.$router.replace({ name: this.$route.name, query: Object.assign({}, this.$route.query, { jobId }) })
-      if (window.innerWidth < 600) {
-        this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
-      } else {
-        this.isRightDrawerOpen = true
-      }
-      scrollUtil.scrollToElement(document.getElementById(`job-${jobId}`))
-    },
     async logoutUser () {
       await this.authStore.logout(false)
-      await this.loadData()
+      await this.authStore.setApplications()
     },
-    async loadData ({ isFirstLoad = false, pageNumber = 1 } = {}) {
+    async setLinkOwnerProfile () {
+      const params = { socialLinkId: this.$route.params.filterId }
+      await this.userStore.setUserProfile(params)
+      this.profile = this.userStore.getUserProfile(params)
+    },
+    async setEmployer () {
+      const params = {
+        socialLinkId: this.$route.params.filterId,
+        employerKey: this.$route.params.employerKey
+      }
+      await this.socialStore.setSocialLinkEmployer(params)
+      this.employer = this.socialStore.getSocialLinkEmployer(params)
+    },
+    async loadData () {
       this.isLoaded = false
       Loading.show()
-      const isExample = this.$route.meta.isExample
-      let url = 'social-link-jobs/'
-      if (this.$route.params.filterId) {
-        url = `${url}${this.$route.params.filterId}`
-      }
-      const params = {
-        page_count: pageNumber,
-        employer_id: this.$route.params.employerId
-      }
-      // After the first page load, job filters are managed through the UI
-      if (!isFirstLoad || isExample) {
-        Object.assign(params, this.jobFilters)
-      }
-      const resp = await this.$api.get(url, { params })
-      const {
-        jobs_by_employer: jobsByEmployer,
-        employer,
-        total_page_count: totalPageCount,
-        owner_id: ownerId,
-        filter_values: filterValues,
-        total_employer_job_count: totalEmployerJobCount
-      } = resp.data
-
-      if (isFirstLoad) {
-        Object.assign(this.jobFilters, filterValues)
-      }
-      this.totalEmployerJobCount = totalEmployerJobCount
-      if (!isExample) {
-        await Promise.all([
-          this.authStore.setApplications(this.user)
-        ])
-        if (ownerId) {
-          await this.userStore.setUserProfile(ownerId)
-        }
-        this.profile = storeToRefs(this.userStore).userProfile
-      } else {
-        if (this.$route.params.ownerId) {
-          await this.userStore.setUserProfile(this.$route.params.ownerId)
-          this.profile = this.userStore.userProfile
-        } else {
-          this.profile = null
-        }
-      }
-      this.jobsByEmployer = jobsByEmployer || []
-      this.employer = employer
-
-      this.jobPagesCount = totalPageCount
+      await Promise.all([
+        this.setLinkOwnerProfile(),
+        this.setEmployer()
+      ])
       this.isLoaded = true
       Loading.hide()
     },
-    openJobAppModal (jobApplication) {
-      return this.q.dialog({
-        component: DialogJobApp,
-        componentProps: { jobApplication, employer: this.employer },
-        noRouteDismiss: true
-      })
+    async closeJobApplication () {
+      await this.$refs.jobs.closeApplication()
     },
     openFeedbackModal () {
       return this.q.dialog({
         component: DialogFeedback
       })
-    },
-    openLoginModal (isCreate) {
-      return this.q.dialog({
-        component: DialogLogin,
-        componentProps: {
-          isCreate,
-          redirectPageUrl: window.location.pathname,
-          redirectParams: dataUtil.getQueryParams(),
-          userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE],
-          styleOverride: this.employerStyleUtil.getButtonStyle(this.employer)
-        }
-      })
-    },
-    setAnchorPositions () {
-      this.jobsByEmployer.forEach((employer) => {
-        const employerElId = `employer-${employer.employer_id}`
-        this.anchorPositions[employerElId] = this.getElementTop(employerElId)
-        employer.jobs.forEach((jobsByTitle) => {
-          Object.entries(jobsByTitle).forEach(([jobs, jobTitle]) => {
-            const jobElId = `job-${employer.employer_id}-${jobs[0].id}`
-            this.anchorPositions[jobElId] = this.getElementTop(jobElId)
-          })
-        })
-      })
     }
   },
   async mounted () {
-    this.resetJobFilters()
-    const params = Object.entries(dataUtil.getQueryParams()).reduce((params, [key, val]) => {
-      params[key] = dataUtil.getForceArray(parseInt(val))
-      return params
-    }, {})
-    Object.assign(this.jobFilters, params)
-    await this.loadData({ isFirstLoad: true })
+    await this.loadData()
 
     const { jobId } = dataUtil.getQueryParams()
     if (jobId) {
-      this.openApplication(parseInt(jobId))
+      this.$refs.jobs.openApplication(parseInt(jobId))
     }
     this.headerHeight = this.$refs.header.$el.clientHeight
-    // this.setAnchorPositions()
     this.isLoaded = true
   },
   preFetch () {
@@ -534,6 +251,7 @@ export default {
       isRightDrawerOpen,
       authStore,
       employerStore: useEmployerStore(),
+      socialStore: useSocialStore(),
       userStore: useUserStore(),
       utilStore: useUtilStore(),
       q: useQuasar()

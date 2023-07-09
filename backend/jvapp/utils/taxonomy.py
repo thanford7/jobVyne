@@ -10,49 +10,50 @@ from jvapp.models.employer import EmployerJob, JobTaxonomy, Taxonomy
 logger = logging.getLogger(__name__)
 
 JOB_TITLES = [
-    'Executive Assistant',
-    'Chief of Staff',
-    'Law',
-    'Government & Regulation',
-    'Product Management',
-    'Product Marketing',
-    'Customer Success',
-    'Account Management',
-    'Client Solutions',
-    'Customer Support',
-    'Human Resources',
-    'Talent Acquisition',
-    'Hardware Engineering',
-    'Software Engineering',
-    'Front-End Development',
-    'Back-End Development',
-    'Mobile Development',
-    'Devops Engineering',
-    'QA Engineering',
-    'IT (Non-Engineering)',
-    'Data Analysis',
-    'Data Science',
-    'Machine Learning / AI Engineering',
-    'Data Engineering',
-    'Database Administration',
-    'SDR / BDR',
-    'Sales Executive',
-    'Business/Corporate Development',
-    'Marketing',
-    'Growth Marketing',
-    'Digital Marketing',
-    'SEO',
-    'Event Marketing',
-    'Public Relations',
-    'Market Research',
-    'UI/UX',
-    'Product Design',
-    'Project Management',
-    'Business Analysis',
-    'Strategy & Operations',
-    'Growth',
-    'Finance',
-    'Accounting'
+    # (name, key)
+    ('Executive Assistant', 'ea'),
+    ('Chief of Staff', 'cos'),
+    ('Law', 'law'),
+    ('Government & Regulation', 'gov'),
+    ('Product Management', 'product-management'),
+    ('Product Marketing', 'product-marketing'),
+    ('Customer Success', 'customer-success'),
+    ('Account Management', 'account-management'),
+    ('Client Solutions', 'client-solutions'),
+    ('Customer Support', 'customer-support'),
+    ('Human Resources', 'hr'),
+    ('Talent Acquisition', 'ta'),
+    ('Hardware Engineering', 'eng-hardware'),
+    ('Software Engineering', 'eng-software'),
+    ('Front-End Development', 'eng-frontend'),
+    ('Back-End Development', 'eng-backend'),
+    ('Mobile Development', 'eng-mobile'),
+    ('Devops Engineering', 'devops'),
+    ('QA Engineering', 'qa'),
+    ('IT (Non-Engineering)', 'it'),
+    ('Data Analysis', 'data-analysis'),
+    ('Data Science', 'data-science'),
+    ('Machine Learning / AI Engineering', 'ml'),
+    ('Data Engineering', 'eng-data'),
+    ('Database Administration', 'dba'),
+    ('SDR / BDR', 'sdr'),
+    ('Sales Executive', 'sales'),
+    ('Business/Corporate Development', 'bus-dev'),
+    ('Marketing', 'marketing'),
+    ('Growth Marketing', 'marketing-growth'),
+    ('Digital Marketing', 'marketing-digital'),
+    ('SEO', 'marketing-seo'),
+    ('Event Marketing', 'marketing-events'),
+    ('Public Relations', 'pr'),
+    ('Market Research', 'marketing-research'),
+    ('UI/UX', 'ui'),
+    ('Product Design', 'product-design'),
+    ('Project Management', 'project-management'),
+    ('Business Analysis', 'business-analysis'),
+    ('Strategy & Operations', 'strategy-ops'),
+    ('Growth', 'growth'),
+    ('Finance', 'finance'),
+    ('Accounting', 'accounting')
 ]
 
 INDUSTRIES = [
@@ -100,7 +101,7 @@ JOB_LEVELS = [
 
 taxonomy_cfgs = set()
 for job_title in JOB_TITLES:
-    taxonomy_cfgs.add((Taxonomy.TAX_TYPE_JOB_TITLE, job_title))
+    taxonomy_cfgs.add((Taxonomy.TAX_TYPE_JOB_TITLE, job_title[0], job_title[1]))
 for industry in INDUSTRIES:
     taxonomy_cfgs.add((Taxonomy.TAX_TYPE_INDUSTRY, industry))
 for job_level in JOB_LEVELS:
@@ -108,19 +109,24 @@ for job_level in JOB_LEVELS:
 
 
 def update_taxonomies(*args, **kwargs):
-    current_taxonomies = {(t.tax_type, t.name): t.id for t in Taxonomy.objects.all()}
+    current_taxonomies = {(t.tax_type, t.name): t for t in Taxonomy.objects.all()}
     tax_to_add = []
+    tax_to_update = []
     tax_to_delete = []
     for tax_cfg in taxonomy_cfgs:
-        if existing_tax := current_taxonomies.get(tax_cfg):
-            continue
-        tax_to_add.append(Taxonomy(tax_type=tax_cfg[0], name=tax_cfg[1]))
+        if existing_tax := current_taxonomies.get(tax_cfg[:2]):
+            if len(tax_cfg) == 3 and not existing_tax.key:
+                existing_tax.key = tax_cfg[2]
+                tax_to_update.append(existing_tax)
+        else:
+            tax_to_add.append(Taxonomy(tax_type=tax_cfg[0], name=tax_cfg[1]))
     
-    for tax_key, current_tax_id in current_taxonomies.items():
-        if tax_key not in taxonomy_cfgs:
-            tax_to_delete.append(current_tax_id)
+    for tax_key, current_tax in current_taxonomies.items():
+        if tax_key not in [tc[:2] for tc in taxonomy_cfgs]:
+            tax_to_delete.append(current_tax.id)
     
     Taxonomy.objects.bulk_create(tax_to_add)
+    Taxonomy.objects.bulk_update(tax_to_update, ['key'])
     Taxonomy.objects.filter(id__in=tax_to_delete).delete()
     
     

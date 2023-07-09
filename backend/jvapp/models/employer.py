@@ -294,6 +294,7 @@ class Taxonomy(models.Model):
     
     tax_type = models.CharField(max_length=20)
     name = models.CharField(max_length=100)
+    key = models.CharField(max_length=50, null=True, blank=True)
     # TODO: Add descriptions for job levels category
     description = models.CharField(max_length=2000, null=True, blank=True)
 

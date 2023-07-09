@@ -7,8 +7,8 @@ from functools import reduce
 from jvapp.models.currency import currencies, currency_lookup
 from jvapp.utils.sanitize import sanitize_html
 
-
-CURRENCY_RANGE_MAX_CHAR_COUNT = 4
+# Example -- Minimum: $157,300.00 Maximum: $344,200.00
+CURRENCY_RANGE_MAX_CHAR_COUNT = 10
 
 
 currency_characters = u'[$¢£¤¥֏؋৲৳৻૱௹฿៛\u20a0-\u20bd\ua838\ufdfc\ufe69\uff04\uffe0\uffe1\uffe5\uffe6]'
@@ -56,13 +56,13 @@ def get_best_compensation_group(compensation_groups, bad_salary_floor, bad_salar
 
 
 def get_grouped_compensation_matches(text):
-    compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+((\.?[0-9]+)|([0-9]*?))),?(?P<second_numbers>[0-9]+)?\s?(?P<thousand_marker>[kK])?'
+    compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+((\.?[0-9]+)|([0-9]*?))),?(?P<second_numbers>[0-9]+(\.?[0-9]+)?)?\s?(?P<thousand_marker>[kK])?'
     compensation_matches = list(re.finditer(compensation_pattern, text))
     groups = []
     combined_group = []
     last_end_position = 0
     for idx, match in enumerate(compensation_matches):
-        if len(combined_group) == 2 or match.start() - 4 > last_end_position:
+        if len(combined_group) == 2 or match.start() - CURRENCY_RANGE_MAX_CHAR_COUNT > last_end_position:
             groups.append(combined_group)
             combined_group = [match]
         else:

@@ -76,13 +76,8 @@ class SocialUtil {
     return text
   }
 
-  getJobLinkUrl (jobLink, { platform, filters, employerId } = {}) {
-    let url = `${window.location.origin}/jobs-link/`
-    if (!jobLink) {
-      url = `${url}example/${employerId}`
-    } else {
-      url = `${url}${jobLink.id}`
-    }
+  getJobLinkUrl (jobLink, { platform, filters } = {}) {
+    let url = `${window.location.origin}/jobs-link/${jobLink.id}`
     const params = []
     if (platform) {
       params.push({ key: 'platform', val: platform })
