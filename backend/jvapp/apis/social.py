@@ -280,8 +280,9 @@ class SocialLinkJobsView(JobVyneAPIView):
         link_id = self.query_params.get('link_id')
         profession_key = self.query_params.get('profession_key')
         employer_key = self.query_params.get('employer_key')
-        if not any([link_id, profession_key, employer_key]):
-            raise ValueError('A link ID is required')
+        job_subscription_ids = self.query_params.get('job_subscription_ids')
+        if not any([link_id, profession_key, employer_key, job_subscription_ids]):
+            raise ValueError('A link ID, profession key, employer key, or job subscription id is required')
         
         logger.info('Fetching social link')
         link = SocialLinkView.get_link(
@@ -315,7 +316,12 @@ class SocialLinkJobsView(JobVyneAPIView):
             'total_employer_job_count': 0,
             'jobs_by_employer': {},
         }
-        if profession_key:
+        if job_subscription_ids:
+            job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
+            job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
+            jobs_filter &= job_subscription_filter
+            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+        elif profession_key:
             try:
                 taxonomy = TaxonomyJobTitleView.get_job_title_taxonomy(tax_key=profession_key)
             except Taxonomy.DoesNotExist:
@@ -373,10 +379,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         
         jobs_by_employer = list(jobs_by_employer.values())
         
-        if job_filters:
-            total_jobs = self.get_jobs_from_social_link(link).count()
-        else:
-            total_jobs = len(jobs)
+        total_jobs = len(jobs)
         start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
         
         return Response(status=status.HTTP_200_OK, data={

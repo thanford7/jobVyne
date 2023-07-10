@@ -71,8 +71,8 @@ class JobSubscriptionView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_job_subscriptions(subscription_id=None, employer_id=None, user_id=None):
-        subscription_filter = Q()
+    def get_job_subscriptions(subscription_id=None, employer_id=None, user_id=None, subscription_filter=None):
+        subscription_filter = subscription_filter or Q()
         if subscription_id:
             subscription_filter &= Q(id=subscription_id)
         elif user_id:
