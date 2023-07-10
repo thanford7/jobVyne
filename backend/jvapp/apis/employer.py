@@ -62,7 +62,10 @@ class EmployerView(JobVyneAPIView):
         elif employer_key := self.query_params.get('employer_key'):
             employer = self.get_employers(employer_key=employer_key)
         elif social_link_id := self.query_params.get('social_link_id'):
-            social_link = SocialLink.objects.get(id=social_link_id)
+            try:
+                social_link = SocialLink.objects.get(id=social_link_id)
+            except SocialLink.DoesNotExist:
+                return Response(status=status.HTTP_200_OK, data={})
             employer_id = social_link.employer_id
             if not employer_id:
                 return Response(status=status.HTTP_200_OK, data={})
@@ -649,7 +652,7 @@ class EmployerJobView(JobVyneAPIView):
     @staticmethod
     def get_employer_jobs(
             employer_job_id=None, employer_job_filter=None, order_by='-open_date',
-            is_only_closed=False, is_include_closed=False, is_include_future=False
+            is_only_closed=False, is_include_closed=False, is_include_future=False, is_include_fetch=True
     ):
         if employer_job_id:
             employer_job_filter = Q(id=employer_job_id)
@@ -661,22 +664,24 @@ class EmployerJobView(JobVyneAPIView):
             if not is_include_future:
                 employer_job_filter &= Q(open_date__lte=timezone.now().date())
         
-        jobs = EmployerJob.objects \
-            .select_related(
-                'job_department',
-                'employer',
-                'referral_bonus_currency',
-                'salary_currency'
-            ) \
-            .prefetch_related(
-                'locations',
-                'locations__city',
-                'locations__state',
-                'locations__country'
-            ) \
-            .filter(employer_job_filter) \
-            .distinct() \
-            .order_by(order_by, 'id')
+        if is_include_fetch:
+            jobs = EmployerJob.objects \
+                .select_related(
+                    'job_department',
+                    'employer',
+                    'referral_bonus_currency',
+                    'salary_currency'
+                ) \
+                .prefetch_related(
+                    'locations',
+                    'locations__city',
+                    'locations__state',
+                    'locations__country'
+                ) \
+                .filter(employer_job_filter)
+        else:
+            jobs = EmployerJob.objects.filter(employer_job_filter)
+        jobs = jobs.distinct().order_by(order_by, 'id')
         
         if employer_job_id:
             if not jobs:

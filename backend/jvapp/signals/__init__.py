@@ -214,7 +214,11 @@ def parse_social_link(sender, instance, *args, **kwargs):
         
 @receiver(pre_save, sender=PageView)
 def parse_social_link(sender, instance, *args, **kwargs):
-    if instance.social_link:
-        instance.employer_id = instance.employer_id or instance.social_link.employer_id
-        instance.page_owner_id = instance.page_owner_id or instance.social_link.owner_id
+    if instance.social_link_id:
+        try:
+            social_link = SocialLink.objects.get(id=instance.social_link_id)
+            instance.employer_id = instance.employer_id or social_link.employer_id
+            instance.page_owner_id = instance.page_owner_id or social_link.owner_id
+        except SocialLink.DoesNotExist:
+            instance.social_link = None
         

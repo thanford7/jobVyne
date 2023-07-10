@@ -245,7 +245,10 @@ class UserProfileView(JobVyneAPIView):
         social_link_id = self.query_params.get('social_link_id')
         assert any((user_id, social_link_id))
         if social_link_id:
-            user_id = SocialLink.objects.get(id=social_link_id).owner_id
+            try:
+                user_id = SocialLink.objects.get(id=social_link_id).owner_id
+            except SocialLink.DoesNotExist:
+                return Response(status=status.HTTP_200_OK, data=None)
         if not user_id:
             return Response(status=status.HTTP_200_OK, data=None)
         

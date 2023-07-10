@@ -296,7 +296,6 @@ export default {
     },
     async loadJobs () {
       this.isLoaded = false
-      console.log(dataUtil.getQueryParams())
       const params = {
         linkId: this.$route.params.filterId,
         employerKey: this.$route.params.employerKey,

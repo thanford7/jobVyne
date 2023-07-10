@@ -14,7 +14,8 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
+    get_redirect_response
 from jvapp.apis.taxonomy import TaxonomyJobTitleView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, Taxonomy
@@ -285,11 +286,18 @@ class SocialLinkJobsView(JobVyneAPIView):
             raise ValueError('A link ID, profession key, employer key, or job subscription id is required')
         
         logger.info('Fetching social link')
-        link = SocialLinkView.get_link(
-            self.user,
-            link_id=link_id,
-            is_use_permissions=False  # This is a public page
-        ) if link_id else None
+        link = None
+        warning_message = None
+        if link_id:
+            try:
+                link = SocialLinkView.get_link(
+                    self.user,
+                    link_id=link_id,
+                    is_use_permissions=False  # This is a public page
+                )
+            except SocialLink.DoesNotExist:
+                warning_message = 'This link is no longer active. Showing all jobs.'
+                
         
         jobs_filter = Q()
         if job_filters := self.query_params.get('job_filters'):
@@ -320,14 +328,14 @@ class SocialLinkJobsView(JobVyneAPIView):
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
             jobs_filter &= job_subscription_filter
-            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter, is_include_fetch=False)
         elif profession_key:
             try:
                 taxonomy = TaxonomyJobTitleView.get_job_title_taxonomy(tax_key=profession_key)
             except Taxonomy.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy=taxonomy)
-            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter, is_include_fetch=False)
         elif employer_key:
             try:
                 employer = Employer.objects.get(employer_key=employer_key)
@@ -339,12 +347,34 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=employer.id)
                 job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 jobs_filter &= job_subscription_filter
-            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter, is_include_fetch=False)
+        elif link:
+            jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=False)
         else:
-            jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter)
+            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=Q(), is_include_fetch=False)
+        
         jobs_by_employer = {}
+        start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
         if jobs:
-            employer_ids = {j.employer_id for j in jobs}
+            latest_employer_job = {}
+            for job in jobs:
+                latest_date = latest_employer_job.get(job.employer_id) or job.open_date
+                latest_employer_job[job.employer_id] = max(latest_date, job.open_date)
+            latest_employer_job = sorted([(employer_id, latest_date) for employer_id, latest_date in latest_employer_job.items()], key=lambda x: (x[1], x[0]), reverse=True)
+            employer_ids = [l[0] for l in latest_employer_job[start_employer_job_idx:start_employer_job_idx + self.EMPLOYERS_PER_PAGE]]
+            jobs = jobs.filter(employer_id__in=employer_ids)\
+                .select_related(
+                    'job_department',
+                    'employer',
+                    'referral_bonus_currency',
+                    'salary_currency'
+                ) \
+                .prefetch_related(
+                    'locations',
+                    'locations__city',
+                    'locations__state',
+                    'locations__country'
+                )
             logger.info('Fetching application requirements')
             application_requirements = EmployerJobApplicationRequirementView.get_application_requirements(
                 employer_ids=employer_ids)
@@ -378,20 +408,20 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_jobs['jobs'][job_department or 'General'][job.job_title].append(serialized_job)
         
         jobs_by_employer = list(jobs_by_employer.values())
-        
         total_jobs = len(jobs)
-        start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
         
-        return Response(status=status.HTTP_200_OK, data={
+        data = {
             'total_page_count': math.ceil(len(jobs_by_employer) / self.EMPLOYERS_PER_PAGE),
             'total_employer_job_count': total_jobs,
-            'jobs_by_employer': jobs_by_employer[
-                                start_employer_job_idx:start_employer_job_idx + self.EMPLOYERS_PER_PAGE
-                                ],
-        })
+            'jobs_by_employer': jobs_by_employer,
+        }
+        if warning_message:
+            data[WARNING_MESSAGES_KEY] = [warning_message]
+        
+        return Response(status=status.HTTP_200_OK, data=data)
     
     @staticmethod
-    def get_jobs_from_social_link(link, extra_filter=None):
+    def get_jobs_from_social_link(link, extra_filter=None, is_include_fetch=True):
         from jvapp.apis.employer import EmployerJobView
         from jvapp.apis.job_subscription import JobSubscriptionView
         
@@ -401,7 +431,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             job_filter &= extra_filter
         
         logger.info('Fetching jobs')
-        return EmployerJobView.get_employer_jobs(employer_job_filter=job_filter)
+        return EmployerJobView.get_employer_jobs(employer_job_filter=job_filter, is_include_fetch=is_include_fetch)
     
     @staticmethod
     def get_location_filter(location_dict: Union[dict, None], remote_type_bit: int, range_miles: Union[int, None]):
