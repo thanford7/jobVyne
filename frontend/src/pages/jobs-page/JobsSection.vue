@@ -108,7 +108,7 @@
                   :is-dense="true"
                 >
                   <template v-slot:body>
-                    <q-list dense style="max-height: 70vh; overflow-x: hidden; overflow-y: scroll">
+                    <q-list class="w-100" dense style="max-height: 70vh; overflow-x: hidden; overflow-y: scroll">
                       <template v-for="employer in jobsByEmployer">
                         <q-item
                           v-if="!isSingleEmployer"
