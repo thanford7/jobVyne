@@ -14,6 +14,7 @@ from jvapp.apis.social import SocialLinkView
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobApplicationRequirement, is_default_auth_group
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
 from jvapp.models.social import SocialLink
+from jvapp.models.tracking import PageView
 from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.utils.file import get_file_extension, get_file_name
 from jvapp.utils.image import resize_image_with_fill
@@ -202,4 +203,18 @@ def create_employer_key(sender, instance, created, *args, **kwargs):
         if Employer.objects.filter(existing_employer_filter):
             instance.employer_key = f'{instance.employer_key}{instance.id}'
         instance.save()
+        
+        
+@receiver(pre_save, sender=JobApplication)
+def parse_social_link(sender, instance, *args, **kwargs):
+    if instance.social_link:
+        instance.referrer_employer_id = instance.referrer_employer_id or instance.social_link.employer_id
+        instance.referrer_user_id = instance.referrer_user_id or instance.social_link.owner_id
+        
+        
+@receiver(pre_save, sender=PageView)
+def parse_social_link(sender, instance, *args, **kwargs):
+    if instance.social_link:
+        instance.employer_id = instance.employer_id or instance.social_link.employer_id
+        instance.page_owner_id = instance.page_owner_id or instance.social_link.owner_id
         

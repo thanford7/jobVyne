@@ -81,12 +81,10 @@ export default {
       let formattedContent = this.content
         .replaceAll(emailUtil.PLACEHOLDER_EMPLOYER_NAME.placeholder, this.employer?.name)
       if (this.socialLink) {
-        const jobLinkUrl = socialUtil.getJobLinkUrl(this.socialLink)
-
-        const formattedJobs = this.jobs.map((j) => `🏢 Employer: ${j.employer_name}\n💼 Job: ${j.job_title}\n📍 Locations: ${j.locations_text}\n💰 Salary: ${j.salary_text}\n🔗 Apply: ${jobLinkUrl}`).join('\n\n')
+        const formattedJobs = this.jobs.map((j) => `🏢 Employer: ${j.employer_name}\n💼 Job: ${j.job_title}\n📍 Locations: ${j.locations_text}\n💰 Salary: ${j.salary_text}\n🔗 Apply: ${this.socialLink.url}`).join('\n\n')
 
         formattedContent = formattedContent
-          .replaceAll(emailUtil.PLACEHOLDER_JOB_LINK.placeholder, jobLinkUrl)
+          .replaceAll(emailUtil.PLACEHOLDER_JOB_LINK.placeholder, this.socialLink.url)
           .replaceAll(emailUtil.PLACEHOLDER_JOBS_LIST.placeholder, formattedJobs)
       }
       return formattedContent

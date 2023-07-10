@@ -9,13 +9,14 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
+    get_warning_response
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.notification import MessageGroupView, NotificationPreferenceKey, UserNotificationPreferenceView
 from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.employer import EmployerAts
+from jvapp.models.employer import Employer, EmployerAts
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
 from jvapp.models.social import SocialPlatform
 from jvapp.models.tracking import MessageThread, MessageThreadContext
@@ -98,9 +99,7 @@ class ApplicationView(JobVyneAPIView):
             is_ignore_permissions=True
         )
         if len(applications):
-            return Response(status=status.HTTP_200_OK, data={
-                WARNING_MESSAGES_KEY: [f'You have already applied to this job using the email {email}']
-            })
+            return get_warning_response(f'You have already applied to this job using the email {email}')
         
         # Save application to Django model
         application = JobApplication()
@@ -270,20 +269,27 @@ class ApplicationView(JobVyneAPIView):
     @atomic
     def create_application(user, application, data, resume=None, academic_transcript=None):
         application.user = user
-        platform_name = data.get('platform_name')
         platform = None
-        if platform_name:
+        if platform_name := data.get('platform_name'):
             try:
                 platform = SocialPlatform.objects.get(name__iexact=platform_name)
             except SocialPlatform.DoesNotExist:
                 pass
+        employer = None
+        if employer_key := data.get('referrer_employer_key'):
+            try:
+                employer = Employer.objects.get(employer_key=employer_key)
+            except Employer.DoesNotExist:
+                pass
         cfg = {
             'employer_job_id': AttributeCfg(form_name='job_id'),
             'social_link_id': AttributeCfg(form_name='filter_id'),
+            'referrer_user_id': None,
             **APPLICATION_SAVE_CFG
         }
         set_object_attributes(application, data, cfg)
         application.platform = platform
+        application.referrer_employer = employer
         application.resume = resume
         application.academic_transcript = academic_transcript
         
@@ -425,9 +431,7 @@ class ApplicationExternalView(JobVyneAPIView):
             self.data['last_name'] = self.user.last_name
         ApplicationView.create_application(self.user, application, self.data)
         
-        return Response(status=status.HTTP_200_OK, data={
-            SUCCESS_MESSAGE_KEY: 'Application saved'
-        })
+        return Response(status=status.HTTP_200_OK)
     
     @staticmethod
     def get_existing_application(user, job_id):

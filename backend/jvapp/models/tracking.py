@@ -16,6 +16,8 @@ class PageView(models.Model, JobVynePermissionsMixin):
         'SocialLink', on_delete=models.CASCADE, null=True, blank=True, related_name='page_view'
     )
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
+    page_owner = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view')
+    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view')
     
     # Unique characteristics
     ip_address = models.CharField(max_length=40, null=True, blank=True)
@@ -45,9 +47,9 @@ class PageView(models.Model, JobVynePermissionsMixin):
         if user.is_admin:
             return query
     
-        filter = Q(social_link__owner_id=user.id)
+        filter = (Q(social_link__owner_id=user.id) | Q(page_owner_id=user.id))
         if user.is_employer:
-            filter |= Q(social_link__employer_id=user.employer_id)
+            filter |= (Q(social_link__employer_id=user.employer_id) | Q(employer_id=user.employer_id))
     
         return query.filter(filter)
     

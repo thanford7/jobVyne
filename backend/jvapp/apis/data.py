@@ -238,9 +238,9 @@ class ApplicationsView(BaseDataView):
         if end_date:
             app_filter &= Q(created_dt__lte=end_date)
         if employer_id:
-            app_filter &= Q(social_link__employer_id=employer_id)
+            app_filter &= Q(referrer_employer_id=employer_id)
         if owner_id:
-            app_filter &= Q(social_link__owner_id=owner_id)
+            app_filter &= Q(referrer_user_id=owner_id)
         if is_exclude_job_board:
             app_filter &= Q(social_link__owner_id__isnull=False)
         
@@ -265,7 +265,7 @@ class ApplicationsView(BaseDataView):
         if user.is_employer:
             application_review_filter = Q(application__employer_job__employer_id=employer_id)
         else:
-            application_review_filter = Q(application__social_link__owner_id=user.id)
+            application_review_filter = Q(application__referrer_user_id=user.id)
         application_review_prefetch = Prefetch(
             'user_review',
             queryset=UserApplicationReview.objects
@@ -355,9 +355,9 @@ class PageViewsView(BaseDataView):
     def get_link_views(user, start_date, end_date, employer_id=None, owner_id=None):
         view_filter = Q(access_dt__lte=end_date) & Q(access_dt__gte=start_date)
         if employer_id:
-            view_filter &= Q(social_link__employer_id=employer_id)
+            view_filter &= (Q(social_link__employer_id=employer_id) | Q(employer_id=employer_id))
         if owner_id:
-            view_filter &= Q(social_link__owner_id=owner_id)
+            view_filter &= (Q(social_link__owner_id=owner_id) | Q(page_owner_id=owner_id))
         views = PageView.objects \
             .select_related(
             'social_link',

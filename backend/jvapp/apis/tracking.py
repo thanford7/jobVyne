@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from user_agents import parse
 
+from jvapp.models.employer import Employer
 from jvapp.models.social import SocialPlatform
 from jvapp.models.tracking import PageView
 
@@ -39,6 +40,12 @@ class PageTrackView(APIView):
             page_view.relative_url = request.data['relative_url']
             page_view.social_link_id = request.data.get('filter_id')
             params = request.data.get('query') or {}
+            page_view.page_owner_id = params.get('connect')
+            if employer_key := request.data.get('employer_key'):
+                try:
+                    page_view.employer = Employer.objects.get(employer_key=employer_key)
+                except Employer.DoesNotExist:
+                    pass
             if platform_name := params.get('platform'):
                 try:
                     page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)

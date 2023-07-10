@@ -33,12 +33,13 @@ export const useSocialStore = defineStore('social', {
     async setSocialLinkJobs ({
       linkId = null,
       employerKey = null,
+      isEmployer = null,
       professionKey = null,
       pageNumber = 1,
       jobFilters = null,
       isForceRefresh = false
     }) {
-      const key = makeApiRequestKey(linkId, employerKey, professionKey, pageNumber, JSON.stringify(jobFilters))
+      const key = makeApiRequestKey(linkId, employerKey, isEmployer, professionKey, pageNumber, JSON.stringify(jobFilters))
       if (!isForceRefresh && this.socialLinkJobs[key]) {
         return
       }
@@ -47,6 +48,7 @@ export const useSocialStore = defineStore('social', {
         params: {
           link_id: linkId,
           employer_key: employerKey,
+          is_employer: isEmployer,
           profession_key: professionKey,
           page_count: pageNumber,
           job_filters: jobFilters
@@ -107,11 +109,12 @@ export const useSocialStore = defineStore('social', {
     getSocialLinkJobs ({
       linkId = null,
       employerKey = null,
+      isEmployer = null,
       professionKey = null,
       pageNumber = 1,
       jobFilters = null
     }) {
-      const key = makeApiRequestKey(linkId, employerKey, professionKey, pageNumber, JSON.stringify(jobFilters))
+      const key = makeApiRequestKey(linkId, employerKey, isEmployer, professionKey, pageNumber, JSON.stringify(jobFilters))
       return this.socialLinkJobs[key]
     },
     getSocialLinkPostJobs ({ userId = null, employerId = null, socialLinkId = null, socialChannel = null }) {

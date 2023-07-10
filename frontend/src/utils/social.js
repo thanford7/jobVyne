@@ -76,33 +76,15 @@ class SocialUtil {
     return text
   }
 
-  getJobLinkUrl (jobLink, { platform, filters } = {}) {
-    let url = `${window.location.origin}/jobs-link/${jobLink.id}`
-    const params = []
-    if (platform) {
-      params.push({ key: 'platform', val: platform })
+  getJobLinkUrl (jobLink, platform) {
+    if (!platform) {
+      return jobLink.url
     }
-    if (filters) {
-      Object.entries(filters).forEach(([filterKey, filterVal]) => {
-        if (filterVal && filterVal.length) {
-          if (Array.isArray(filterVal)) {
-            filterVal.forEach((val) => {
-              params.push({ key: filterKey, val })
-            })
-          } else {
-            params.push({ key: filterKey, val: filterVal })
-          }
-        }
-      })
-    }
-    if (params.length) {
-      url = dataUtil.getUrlWithParams({
-        isExcludeExistingParams: true,
-        path: url,
-        addParams: params
-      })
-    }
-    return url
+    return dataUtil.getUrlWithParams({
+      isExcludeExistingParams: false,
+      path: jobLink.url,
+      addParams: [{ key: 'platform', val: platform }]
+    })
   }
 
   getSocialLinks (platforms, jobLink) {

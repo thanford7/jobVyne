@@ -24,7 +24,7 @@ from jvapp.models.social import *
 from jvapp.models.tracking import Message, PageView
 from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
 from jvapp.serializers.social import *
-from jvapp.utils.data import AttributeCfg, coerce_int, set_object_attributes
+from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, set_object_attributes
 from jvapp.utils.email import send_django_email
 from jvapp.utils.message import send_sms_message
 from jvapp.utils.sanitize import sanitize_html
@@ -54,7 +54,7 @@ class SocialLinkView(JobVyneAPIView):
             
             data = []
             for social_link in self.get_link(self.user, social_link_filter=q_filter):
-                serialized_link = get_serialized_social_link(social_link, is_include_performance=True)
+                serialized_link = get_serialized_social_link(social_link)
                 # Only fetch job count for specific user because a database call
                 # is required per social_link and is not performant
                 if owner_id:
@@ -172,8 +172,11 @@ class SocialLinkView(JobVyneAPIView):
             'is_default': AttributeCfg(is_ignore_excluded=True),
             'name': AttributeCfg(form_name='link_name', is_ignore_excluded=True)
         }
+        job_subscription_ids = tuple(sorted(data.get('job_subscription_ids', [])))
+        
         is_new = not link.created_dt
         
+        # TODO: Handle un-archiving links
         # Add owner and employer for new link
         if is_new:
             cfg = {
@@ -181,6 +184,11 @@ class SocialLinkView(JobVyneAPIView):
                 'employer_id': None,
                 **cfg
             }
+            existing_links_map = {
+                tuple(sorted([js.id for js in sl.job_subscriptions.all()])): sl for sl in
+                SocialLink.objects.prefetch_related('job_subscriptions').filter(owner_id=data.get('owner_id'), employer_id=data.get('employer_id'))
+            }
+            link = existing_links_map.get(job_subscription_ids, link)
         
         set_object_attributes(link, data, cfg)
         if user:
@@ -201,7 +209,7 @@ class SocialLinkView(JobVyneAPIView):
                 existing_link.is_default = False
                 existing_link.save()
         
-        if job_subscription_ids := data.get('job_subscription_ids'):
+        if job_subscription_ids:
             link.job_subscriptions.set(job_subscription_ids)
         
         return link
@@ -266,6 +274,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     EMPLOYERS_PER_PAGE = 20
     
     def get(self, request):
+        from jvapp.apis.job_subscription import JobSubscriptionView
         from jvapp.apis.employer import EmployerJobApplicationRequirementView, EmployerJobView  # Avoid circular import
         page_count = coerce_int(self.query_params.get('page_count', 1))
         link_id = self.query_params.get('link_id')
@@ -318,7 +327,12 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer = Employer.objects.get(employer_key=employer_key)
             except Employer.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
-            jobs_filter &= Q(employer=employer)
+            if coerce_bool(self.query_params.get('is_employer')):
+                jobs_filter &= Q(employer=employer)
+            else:
+                job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=employer.id)
+                job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
+                jobs_filter &= job_subscription_filter
             jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
         else:
             jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter)

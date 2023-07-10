@@ -299,6 +299,7 @@ export default {
       const params = {
         linkId: this.$route.params.filterId,
         employerKey: this.$route.params.employerKey,
+        isEmployer: this.$route.name === 'company',
         professionKey: this.$route.params.professionKey,
         pageNumber: this.pageNumber,
         jobFilters: this.jobFilters

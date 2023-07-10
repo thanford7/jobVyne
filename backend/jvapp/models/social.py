@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Q, UniqueConstraint
 
 from jvapp.models.abstract import AuditFields, JobVynePermissionsMixin
+from jvapp.models.employer import Employer
 
 
 class SocialPlatform(models.Model):
@@ -72,10 +73,36 @@ class SocialLink(AuditFields, JobVynePermissionsMixin):
             (user.is_employer and self.employer_id == user.employer_id)
         ))
     
+    @property
+    def unique_key(self):
+        job_subscription_ids = [js.id for js in self.job_subscriptions.all()]
+        job_subscription_ids.sort()
+        return self.owner_id, self.employer_id, tuple(job_subscription_ids)
+    
     def get_link_url(self, platform_name=None):
-        link = f'{settings.BASE_URL}/jobs-link/{self.id}/'
-        if platform_name:
-            link += f'?platform={platform_name}'
+        link = settings.BASE_URL
+        if self.employer_id:
+            if self.employer.organization_type == Employer.ORG_TYPE_EMPLOYER:
+                link += '/co'
+            else:
+                link += '/group'
+            link += f'/{self.employer.employer_key}/'
+        else:
+            link += '/jobs/'
+        
+        # Add query params
+        job_subscriptions = self.job_subscriptions.all()
+        if any((job_subscriptions, self.owner_id, platform_name)):
+            link += '?'
+            params = []
+            if self.owner_id:
+                params.append(f'connect={self.owner_id}')
+            if platform_name:
+                params.append(f'platform={platform_name}')
+            for sub in job_subscriptions:
+                params.append(f'sub={sub.id}')
+            
+            link += '&'.join(params)
         
         return link
     
@@ -85,5 +112,5 @@ class SocialLink(AuditFields, JobVynePermissionsMixin):
         if len(job_subscriptions) != 1:
             return False
         job_subscription = job_subscriptions[0]
-        return self.owner_id and self.employer_id and job_subscription.is_employer_subscription
+        return bool(self.owner_id and self.employer_id and job_subscription.is_employer_subscription)
     

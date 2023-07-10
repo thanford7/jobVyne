@@ -40,6 +40,7 @@ export default boot(({ app, router }) => {
       $api.post('/page-view/', getAjaxFormData({
         relative_url: to.path,
         filter_id: to.params.filterId,
+        employer_key: to.params.employerKey,
         query: to.query
       }))
     }

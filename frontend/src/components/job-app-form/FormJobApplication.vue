@@ -319,7 +319,9 @@ export default {
 
       const data = Object.assign(
         {
-          platform_name: this.$route?.query?.platform
+          platform_name: this.$route?.query?.platform,
+          referrer_user_id: this.$route?.query?.connect,
+          referrer_employer_key: this.$route?.params?.employerKey
         },
         this.formData,
         (this.$refs.resumeUpload) ? this.$refs.resumeUpload.getValues() : {},

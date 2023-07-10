@@ -129,6 +129,9 @@ export default {
       await this.$api.post('job-application/external/', getAjaxFormData({
         job_id: job.id,
         filter_id: this.$route.params.filterId,
+        referrer_user_id: this.$route?.query?.connect,
+        referrer_employer_key: this.$route?.params?.employerKey,
+        professionKey: this.$route.params.professionKey,
         platform_name: this.$route?.query?.platform
       }))
       this.$emit('updateJobs', this.pageNumber)
