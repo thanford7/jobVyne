@@ -281,9 +281,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         link_id = self.query_params.get('link_id')
         profession_key = self.query_params.get('profession_key')
         employer_key = self.query_params.get('employer_key')
-        job_subscription_ids = self.query_params.get('job_subscription_ids')
-        if not any([link_id, profession_key, employer_key, job_subscription_ids]):
-            raise ValueError('A link ID, profession key, employer key, or job subscription id is required')
+        job_subscription_ids = self.query_params.getlist('job_subscription_ids[]') or self.query_params.get('job_subscription_ids')
         
         logger.info('Fetching social link')
         link = None
@@ -325,6 +323,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             'jobs_by_employer': {},
         }
         if job_subscription_ids:
+            if not isinstance(job_subscription_ids, list):
+                job_subscription_ids = [job_subscription_ids]
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
             jobs_filter &= job_subscription_filter
@@ -352,7 +352,9 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=False)
         else:
             jobs = EmployerJobView.get_employer_jobs(employer_job_filter=Q(), is_include_fetch=False)
-        
+
+        total_jobs = len(jobs)
+        total_page_count = 0
         jobs_by_employer = {}
         start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
         if jobs:
@@ -361,6 +363,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 latest_date = latest_employer_job.get(job.employer_id) or job.open_date
                 latest_employer_job[job.employer_id] = max(latest_date, job.open_date)
             latest_employer_job = sorted([(employer_id, latest_date) for employer_id, latest_date in latest_employer_job.items()], key=lambda x: (x[1], x[0]), reverse=True)
+            total_page_count = math.ceil(len(latest_employer_job) / self.EMPLOYERS_PER_PAGE)
             employer_ids = [l[0] for l in latest_employer_job[start_employer_job_idx:start_employer_job_idx + self.EMPLOYERS_PER_PAGE]]
             jobs = jobs.filter(employer_id__in=employer_ids)\
                 .select_related(
@@ -408,10 +411,9 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_jobs['jobs'][job_department or 'General'][job.job_title].append(serialized_job)
         
         jobs_by_employer = list(jobs_by_employer.values())
-        total_jobs = len(jobs)
         
         data = {
-            'total_page_count': math.ceil(len(jobs_by_employer) / self.EMPLOYERS_PER_PAGE),
+            'total_page_count': total_page_count,
             'total_employer_job_count': total_jobs,
             'jobs_by_employer': jobs_by_employer,
         }

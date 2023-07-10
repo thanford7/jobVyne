@@ -55,7 +55,7 @@ export default boot(({ app, router }) => {
       const localDeployTS = localStorage.getItem(DEPLOY_TS_KEY)
       if (deployTS && (localDeployTS !== deployTS)) {
         localStorage.setItem(DEPLOY_TS_KEY, deployTS)
-        window.location = to.path
+        window.location = to.fullPath
       }
 
       const isAuthenticated = user && !dataUtil.isEmptyOrNil(user)
