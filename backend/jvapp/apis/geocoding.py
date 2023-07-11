@@ -46,8 +46,6 @@ def parse_location_resp(raw_data, is_best_result=True):
     results = raw_data.get('results')
     if (not results) or (not results[0]):
         return None
-    if is_best_result:
-        results = results[:1]
 
     parsed_results = []
     for result in results:
@@ -55,19 +53,26 @@ def parse_location_resp(raw_data, is_best_result=True):
         location_data = {
             'text': result['formatted_address']
         }
+        has_address_component = False
         for component in address:
             val = component['long_name']
             short_val = component['short_name']
             comp_types = component['types']
             if 'locality' in comp_types:
                 location_data['city'] = val
+                has_address_component = True
             elif 'administrative_area_level_1' in comp_types:
                 location_data['state'] = val
+                has_address_component = True
             elif 'country' in comp_types:
                 location_data['country'] = val
                 location_data['country_short'] = short_val
+                has_address_component = True
             elif 'postal_code' in comp_types:
                 location_data['postal_code'] = val
+                has_address_component = True
+        if not has_address_component:
+            continue
         lat_long = result['geometry']['location']
         location_data['latitude'] = lat_long['lat']
         location_data['longitude'] = lat_long['lng']

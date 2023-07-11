@@ -133,14 +133,14 @@ export default {
         if (stickyEl.classList.contains('custom-sticky-1')) {
           stickyOffsetPx = this.scrollStickStartPx
           lastSticky1HeightPx = stickyEl.offsetHeight
-          stickyEl.style['z-index'] = 1003
+          stickyEl.style['z-index'] = 903
         } else if (stickyEl.classList.contains('custom-sticky-2')) {
           stickyOffsetPx = this.scrollStickStartPx + lastSticky1HeightPx
           lastSticky2HeightPx = stickyEl.offsetHeight
-          stickyEl.style['z-index'] = 1002
+          stickyEl.style['z-index'] = 902
         } else if (stickyEl.classList.contains('custom-sticky-3')) {
           stickyOffsetPx = this.scrollStickStartPx + lastSticky1HeightPx + lastSticky2HeightPx
-          stickyEl.style['z-index'] = 1001
+          stickyEl.style['z-index'] = 901
         } else {
           stickyOffsetPx = this.scrollStickStartPx
         }

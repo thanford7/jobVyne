@@ -11,3 +11,4 @@ backend/.env*
 *.crt
 docker-compose-mysql.yml
 docker-compose-cypress.yml
+backend/workable_*.xml

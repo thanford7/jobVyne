@@ -2,6 +2,7 @@ import datetime
 from dataclasses import dataclass
 from typing import Union
 
+from django.db import IntegrityError
 from django.db.models import Q
 from django.utils import timezone
 
@@ -181,8 +182,13 @@ class JobProcessor:
             return None
         
         if not (job_department := self.job_departments.get(job_item.job_department.lower())):
-            job_department = JobDepartment(name=job_item.job_department)
-            job_department.save()
+            # We still might miss an existing job department if another employer job processor has recently saved it
+            try:
+                job_department = JobDepartment(name=job_item.job_department)
+                job_department.save()
+            except IntegrityError:
+                job_department = JobDepartment.objects.get(name=job_item.job_department)
+                
             self.job_departments[job_item.job_department.lower()] = job_department
         
         return job_department

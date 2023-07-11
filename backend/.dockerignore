@@ -6,3 +6,4 @@ Dockerfile*
 **/secure
 e2e_db.sql
 **/media
+workable_*.xml

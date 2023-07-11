@@ -13,12 +13,13 @@
             :rows-per-page-options="[15, 25, 50]"
           >
             <template v-slot:top>
-              <q-btn ripple color="primary" label="Run all" @click="runJobScrapers(true)" class="q-mr-sm"/>
+              <q-btn ripple color="primary" label="Run all" @click="runJobScrapers({ isAll: true })" class="q-mr-sm"/>
               <q-btn
                 v-if="selectedScrapers.length"
                 class="q-mr-sm"
-                ripple color="primary" :label="`Run selected (${selectedScrapers.length})`" @click="runJobScrapers()"
+                ripple color="primary" :label="`Run selected (${selectedScrapers.length})`" @click="runJobScrapers({ isAll: false })"
               />
+              <q-btn ripple color="primary" label="Run Workable" @click="runJobScrapers({ isWorkable: true })" class="q-mr-sm"/>
               <q-btn ripple color="primary" label="Update all job taxonomies" class="q-mr-sm" @click="runJobTaxonomy(true)"/>
               <q-btn ripple color="primary" label="Update new job taxonomies" @click="runJobTaxonomy(false)"/>
             </template>
@@ -64,9 +65,10 @@ export default {
     }
   },
   methods: {
-    async runJobScrapers (isAll = false) {
+    async runJobScrapers ({ isAll = false, isWorkable = false }) {
       await this.$api.post('admin/job-scraper/', getAjaxFormData({
         is_run_all: isAll,
+        is_run_workable: isWorkable,
         employer_names: this.selectedScrapers.map((employerScraper) => employerScraper.employer_name)
       }))
       await this.adminStore.setJobScrapers(true)

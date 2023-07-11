@@ -2,6 +2,7 @@ from time import sleep
 
 from django.core.management import BaseCommand
 
+from scrape.custom_scraper.workableAts import parse_workable_xml_jobs
 from scrape.scraper import run_job_scrapers
 
 
@@ -22,8 +23,12 @@ class Command(BaseCommand):
             while True:
                 writer('Running job scraping')
                 run_job_scrapers(employer_names=None)
+                writer('Running Workable ATS job scraping')
+                parse_workable_xml_jobs()
                 writer(f'Waiting {schedule_minutes} minutes for next run')
                 sleep(schedule_minutes * 60)
         else:
             run_job_scrapers(employer_names=None)
             self.stdout.write(self.style.SUCCESS('Completed scraping job data'))
+            parse_workable_xml_jobs()
+            self.stdout.write(self.style.SUCCESS('Completed scraping Workable ATS job data'))

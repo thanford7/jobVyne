@@ -23,6 +23,7 @@ from jvapp.tasks import task_run_job_scrapers
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.taxonomy import run_job_title_standardization, update_taxonomies
+from scrape.custom_scraper.workableAts import parse_workable_xml_jobs
 from scrape.scraper import run_job_scrapers
 
 
@@ -111,9 +112,13 @@ class AdminJobScrapersView(JobVyneAPIView):
     def post(self, request):
         employer_names = self.data.get('employer_names')
         is_run_all = self.data.get('is_run_all')
-        if not (employer_names or is_run_all):
+        is_run_workable = self.data.get('is_run_workable')
+        if not any((employer_names, is_run_all, is_run_workable)):
             return Response('You must provide a list of employer names', status=status.HTTP_400_BAD_REQUEST)
-        run_job_scrapers(employer_names=None if is_run_all else employer_names)
+        if is_run_workable:
+            parse_workable_xml_jobs()
+        else:
+            run_job_scrapers(employer_names=None if is_run_all else employer_names)
         # res = task_run_job_scrapers.delay(employer_names=employer_names)
         # logger.info(f'Sent add task: ID = {res.id}')
         return Response(status=status.HTTP_200_OK, data={

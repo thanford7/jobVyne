@@ -91,7 +91,10 @@ def get_grouped_compensation_matches(text):
     
 
 def get_salary_from_match(match, has_thousand_marker=False):
-    salary = float(match.group('first_numbers') + (match.group('second_numbers') or ''))
+    try:
+        salary = float(match.group('first_numbers') + (match.group('second_numbers') or ''))
+    except ValueError:
+        return 0
     if match.group('thousand_marker') or has_thousand_marker:
         salary *= 1000
     return salary

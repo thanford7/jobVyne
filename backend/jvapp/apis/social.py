@@ -14,8 +14,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
-    get_redirect_response
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.taxonomy import TaxonomyJobTitleView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, Taxonomy
@@ -23,7 +22,7 @@ from jvapp.models.job_seeker import JobApplication
 from jvapp.models.location import Location, REMOTE_TYPES
 from jvapp.models.social import *
 from jvapp.models.tracking import Message, PageView
-from jvapp.serializers.employer import get_serialized_employer, get_serialized_employer_job
+from jvapp.serializers.employer import get_serialized_employer_job
 from jvapp.serializers.social import *
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, set_object_attributes
 from jvapp.utils.email import send_django_email
@@ -437,27 +436,44 @@ class SocialLinkJobsView(JobVyneAPIView):
     
     @staticmethod
     def get_location_filter(location_dict: Union[dict, None], remote_type_bit: int, range_miles: Union[int, None]):
-        location_filter = Q()
+        location_filter = None
         remote_type_bit = remote_type_bit or 0
-        if location_dict and location_dict.get('city') and range_miles:
+        location_dict = location_dict or {}
+        city = location_dict.get('city')
+        state = location_dict.get('state')
+        country = location_dict.get('country')
+        if city and range_miles:
             start_point = Location.get_geometry_point(location_dict['latitude'], location_dict['longitude'])
-            location_filter &= Q(locations__geometry__within_miles=(start_point, range_miles))
-        elif location_dict:
-            # If remote is allowed, we only want to filter on country, regardless of whether a state is set
-            if (state := location_dict.get('state')) and not remote_type_bit & REMOTE_TYPES.YES.value:
-                location_filter &= Q(locations__state__name=state)
-            elif country := location_dict.get('country'):
-                country_filter = Q(locations__country__name=country)
-                if remote_type_bit & REMOTE_TYPES.YES.value:
-                    # Some remote jobs don't have a country. In this case, we assume it's a global remote job
-                    country_filter |= Q(locations__country__name__isnull=True)
-                location_filter &= country_filter
+            location_filter = (
+                Q(locations__geometry__within_miles=(start_point, range_miles)) |
+                (Q(locations__city__name__isnull=True) & Q(locations__state__name=state)) |
+                (Q(locations__city__name__isnull=True) & Q(locations__state__name__isnull=True) & Q(locations__country__name=country))
+            )
+        elif state or country:
+            if state:
+                location_filter = (
+                    Q(locations__state__name=state) |
+                    (Q(locations__state__name__isnull=True) & Q(locations__country__name=country))
+                )
+            elif country:
+                location_filter = Q(locations__country__name=country)
         
-        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.NO.value):
+        remote_filter = None
+        if (not remote_type_bit and location_filter) or (remote_type_bit & REMOTE_TYPES.YES.value):
+            remote_filter = Q(locations__is_remote=True)
+            if country:
+                # Some remote jobs don't have a country. In this case, we assume it's a global remote job
+                remote_filter &= (Q(locations__country__name=country) | Q(locations__country__name__isnull=True))
+        
+        if remote_type_bit and (remote_type_bit & REMOTE_TYPES.NO.value) and not (remote_type_bit & REMOTE_TYPES.YES.value):
             location_filter &= Q(locations__is_remote=False)
         
-        if remote_type_bit and (remote_type_bit == REMOTE_TYPES.YES.value):
-            location_filter &= Q(locations__is_remote=True)
+        if remote_filter and location_filter:
+            location_filter |= remote_filter
+        elif remote_filter or location_filter:
+            location_filter = location_filter or remote_filter
+        else:
+            location_filter = Q()
         
         return location_filter
 

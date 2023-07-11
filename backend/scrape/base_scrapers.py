@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import html as html_parser
 import json
 import logging
@@ -16,6 +17,7 @@ from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import expect
 
+from jvapp.models.employer import EmployerJob
 from jvapp.utils.data import capitalize, coerce_float, coerce_int, get_base_url, get_website_domain_from_url
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 from jvapp.utils.file import get_file_storage_engine
@@ -59,6 +61,8 @@ USER_AGENTS = [
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.57'
 ]
 
+SKIP_SCRAPE_CUTOFF = datetime.timedelta(days=7)
+
 
 def get_random_user_agent():
     return random.choice(USER_AGENTS)
@@ -67,6 +71,18 @@ def get_random_user_agent():
 def normalize_url(url):
     url_parts = re.split('[/\?]', url)
     return tuple(part for part in url_parts if part and ('http' not in part))
+
+
+def get_recent_scraped_job_urls(employer_name):
+    return {
+        job for job in EmployerJob.objects
+        .filter(
+            modified_dt__gt=timezone.now() - SKIP_SCRAPE_CUTOFF,
+            is_scraped=True,
+            close_date__isnull=True,
+            employer__employer_name=employer_name
+        ).values_list('application_url', flat=True)
+    }
 
 
 class Scraper:
@@ -84,7 +100,7 @@ class Scraper:
     employer_name = None
     job_item_page_wait_sel = None
     
-    def __init__(self, playwright, browser, skip_urls):
+    def __init__(self, playwright, browser, is_skip_urls=True):
         self.job_page_count = 0
         self.skipped_urls = []
         self.job_items = []
@@ -97,8 +113,7 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        self.skip_urls = skip_urls
-        # self.skip_urls = []
+        self.skip_urls = get_recent_scraped_job_urls(self.employer_name) if is_skip_urls else []
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
@@ -669,13 +684,17 @@ class GreenhouseApiScraper(GreenhouseScraper):
             employer_name=self.employer_name,
             application_url=job_url,
             job_title=job_data['title'],
-            locations=[o['location'] or o['name'] for o in job_data['offices']],
+            locations=self.process_locations([o['location'] or o['name'] for o in job_data['offices']]),
             job_department=job_data['departments'][0]['name'] if job_data['departments'] else self.DEFAULT_JOB_DEPARTMENT,
             job_description=job_description,
             employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['updated_at'], as_date=True)),
             **compensation_data
         )
+    
+    def process_locations(self, locations):
+        # Subclass
+        return locations
 
 
 class WorkdayScraper(Scraper):
