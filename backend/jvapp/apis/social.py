@@ -325,10 +325,18 @@ class SocialLinkJobsView(JobVyneAPIView):
         if job_subscription_ids:
             if not isinstance(job_subscription_ids, list):
                 job_subscription_ids = [job_subscription_ids]
+            # Make sure subscription IDs are valid
+            # TODO: Return a warning message if a subscription ID isn't valid
+            job_subscription_ids = [jid for jid in [coerce_int(jid) for jid in job_subscription_ids] if jid]
+            
+        is_jobs_closed = False
+        if job_subscription_ids:
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
             jobs_filter &= job_subscription_filter
             jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter, is_include_fetch=False)
+            if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
+                is_jobs_closed = True
         elif profession_key:
             try:
                 taxonomy = TaxonomyJobTitleView.get_job_title_taxonomy(tax_key=profession_key)
@@ -356,14 +364,18 @@ class SocialLinkJobsView(JobVyneAPIView):
         total_jobs = len(jobs)
         total_page_count = 0
         jobs_by_employer = {}
-        start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
         if jobs:
             latest_employer_job = {}
             for job in jobs:
                 latest_date = latest_employer_job.get(job.employer_id) or job.open_date
                 latest_employer_job[job.employer_id] = max(latest_date, job.open_date)
             latest_employer_job = sorted([(employer_id, latest_date) for employer_id, latest_date in latest_employer_job.items()], key=lambda x: (x[1], x[0]), reverse=True)
-            total_page_count = math.ceil(len(latest_employer_job) / self.EMPLOYERS_PER_PAGE)
+            employer_count = len(latest_employer_job)
+            
+            total_page_count = math.ceil(employer_count / self.EMPLOYERS_PER_PAGE)
+            # Avoid a situation where a user has entered a page number that is beyond the total range
+            page_count = min(page_count, total_page_count)
+            start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
             employer_ids = [l[0] for l in latest_employer_job[start_employer_job_idx:start_employer_job_idx + self.EMPLOYERS_PER_PAGE]]
             jobs = jobs.filter(employer_id__in=employer_ids)\
                 .select_related(
@@ -416,6 +428,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             'total_page_count': total_page_count,
             'total_employer_job_count': total_jobs,
             'jobs_by_employer': jobs_by_employer,
+            'is_jobs_closed': is_jobs_closed
         }
         if warning_message:
             data[WARNING_MESSAGES_KEY] = [warning_message]

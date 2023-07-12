@@ -2,7 +2,14 @@
   <div>
     <div v-if="!jobsByEmployer.length" class="q-mb-md">
       <q-card class="q-pa-lg">
-        <div class="text-h6 text-center">No current job openings</div>
+        <div class="text-h6 text-center">
+          <span v-if="isJobsClosed">
+            Job opening has been closed
+          </span>
+          <span v-else>
+            No current job openings
+          </span>
+        </div>
       </q-card>
     </div>
     <div class="row q-gutter-y-lg">
@@ -94,7 +101,7 @@ export default {
   props: {
     jobsByEmployer: Object,
     isSingleEmployer: Boolean,
-    hasNoJobs: Boolean,
+    isJobsClosed: Boolean,
     applications: Array,
     jobApplication: [Object, null],
     jobPagesCount: Number,

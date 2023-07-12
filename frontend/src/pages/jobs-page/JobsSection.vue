@@ -91,7 +91,7 @@
                 class="col-12 col-md-9 q-mt-md"
                 :jobs-by-employer="jobsByEmployer"
                 :is-single-employer="isSingleEmployer"
-                :has-no-jobs="hasNoJobs"
+                :is-jobs-closed="isJobsClosed"
                 :applications="applications"
                 :job-application="jobApplication"
                 :job-pages-count="jobPagesCount"
@@ -195,6 +195,7 @@ export default {
       jobFilters: {},
       jobsByEmployer: {},
       totalEmployerJobCount: null,
+      isJobsClosed: false,
       jobPagesCount: null,
       applications: null,
       jobApplication: null,
@@ -220,6 +221,13 @@ export default {
       async handler () {
         await this.loadJobs()
       }
+    },
+    jobFilters: {
+      handler () {
+        // Reset page number if filters have changed
+        this.pageNumber = 1
+      },
+      deep: true
     },
     $route: {
       async handler () {
@@ -362,12 +370,14 @@ export default {
       const {
         jobs_by_employer: jobsByEmployer,
         total_page_count: totalPageCount,
-        total_employer_job_count: totalEmployerJobCount
+        total_employer_job_count: totalEmployerJobCount,
+        is_jobs_closed: isJobsClosed
       } = this.socialStore.getSocialLinkJobs(params)
 
       this.totalEmployerJobCount = totalEmployerJobCount
       this.jobsByEmployer = jobsByEmployer || []
       this.jobPagesCount = totalPageCount
+      this.isJobsClosed = isJobsClosed
 
       this.updateJobFilterQueryParams()
       this.isLoaded = true

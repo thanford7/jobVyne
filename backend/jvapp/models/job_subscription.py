@@ -42,5 +42,9 @@ class JobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
         )
     
     @property
+    def is_job_subscription(self):
+        return bool(self.filter_job.all())
+    
+    @property
     def is_employer_subscription(self):
         return self.is_single_employer and self.employer_id

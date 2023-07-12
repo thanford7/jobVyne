@@ -262,7 +262,7 @@ def get_standardized_job_taxonomy(job_title: str):
         re.match(f'{start_or_word_and_space_re}(training|learning|elearning|l&d){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}(compensation|benefits|total reward).*?$', job_title),
         re.match(f'{start_or_word_and_space_re}dei{space_and_word_or_end_re}', job_title),
-        re.match(f'{start_or_word_and_space_re}(diversity|equity|inclusion){space_and_word_or_end_re}', job_title),
+        re.match(f'{start_or_word_and_space_re}(diversity|inclusion){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}(employee|workforce){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}org.+?development{space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}hris{space_and_word_or_end_re}', job_title),
