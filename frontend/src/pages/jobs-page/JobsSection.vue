@@ -288,6 +288,18 @@ export default {
     },
     async updateJobFilterFromQueryParams () {
       const params = dataUtil.getQueryParams()
+      const intKeys = ['remote_type_bit', 'range_miles']
+      const floatKeys = ['minimum_salary']
+      intKeys.forEach((key) => {
+        if (params[key]) {
+          params[key] = Number.parseInt(params[key])
+        }
+      })
+      floatKeys.forEach((key) => {
+        if (params[key]) {
+          params[key] = Number.parseFloat(params[key])
+        }
+      })
       this.jobFilters = dataUtil.pick(params, Object.keys(jobFiltersTemplate))
       if (params.location_text) {
         const resp = await this.$api.get('search/location/', {

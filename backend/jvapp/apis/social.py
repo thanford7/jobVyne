@@ -313,7 +313,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             
             jobs_filter &= SocialLinkJobsView.get_location_filter(
                 job_filters.get('location'),
-                job_filters.get('remote_type_bit'),
+                coerce_int(job_filters.get('remote_type_bit')),
                 job_filters.get('range_miles')
             )
         
@@ -470,7 +470,10 @@ class SocialLinkJobsView(JobVyneAPIView):
             location_filter &= Q(locations__is_remote=False)
         
         if remote_filter and location_filter:
-            location_filter |= remote_filter
+            if remote_type_bit:
+                location_filter &= remote_filter
+            else:
+                location_filter |= remote_filter
         elif remote_filter or location_filter:
             location_filter = location_filter or remote_filter
         else:
