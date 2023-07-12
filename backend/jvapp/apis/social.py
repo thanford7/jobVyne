@@ -15,6 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
+from jvapp.apis.geocoding import get_raw_location
 from jvapp.apis.taxonomy import TaxonomyJobTitleView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, Taxonomy

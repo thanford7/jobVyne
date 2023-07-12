@@ -1,4 +1,5 @@
 import json
+import re
 
 import requests
 from django.conf import settings
@@ -78,7 +79,7 @@ def parse_location_resp(raw_data, is_best_result=True):
         location_data['longitude'] = lat_long['lng']
         parsed_results.append(location_data)
 
-    if is_best_result:
+    if is_best_result and parsed_results:
         return parsed_results[0]
 
     return parsed_results
@@ -142,9 +143,9 @@ class LocationParser:
         if location := self.location_lookups.get(location_text):
             return location
 
-        is_remote = 'remote' in location_text
+        is_remote = bool(re.match('^.*?(remote|anywhere).*?$', location_text, re.IGNORECASE))
         resp = requests.get(BASE_URL, params={
-            'address': location_text.replace('remote', '').replace(':', '').strip(),
+            'address': location_text.replace('remote', '').replace('anywhere', '').replace(':', '').strip(),
             'key': settings.GOOGLE_MAPS_KEY
         })
         raw_data = json.loads(resp.content)

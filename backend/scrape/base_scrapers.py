@@ -100,7 +100,7 @@ class Scraper:
     employer_name = None
     job_item_page_wait_sel = None
     
-    def __init__(self, playwright, browser, is_skip_urls=True):
+    def __init__(self, playwright, browser, skip_urls):
         self.job_page_count = 0
         self.skipped_urls = []
         self.job_items = []
@@ -113,7 +113,7 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        self.skip_urls = get_recent_scraped_job_urls(self.employer_name) if is_skip_urls else []
+        self.skip_urls = skip_urls
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in

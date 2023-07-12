@@ -267,6 +267,8 @@ def get_standardized_job_taxonomy(job_title: str):
         re.match(f'{start_or_word_and_space_re}org.+?development{space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}hris{space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}workplace.+?experiences?{space_and_word_or_end_re}', job_title),
+    )) and not any((
+        re.match(f'{start_or_word_and_space_re}(machine learning|deep learning|employee cloud){space_and_word_or_end_re}', job_title),
     )):
         return get_or_create_job_title_tax('Human Resources')
     if any((

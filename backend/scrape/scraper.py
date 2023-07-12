@@ -7,7 +7,7 @@ from django.utils import timezone
 from playwright.async_api import async_playwright
 
 from jvapp.models.employer import Employer, EmployerJob
-from scrape.base_scrapers import get_random_user_agent
+from scrape.base_scrapers import get_random_user_agent, get_recent_scraped_job_urls
 from scrape.custom_scraper.workableAts import workable_scrapers
 from scrape.employer_scrapers import all_scrapers, test_scrapers
 from scrape.job_processor import JobProcessor
@@ -27,11 +27,11 @@ async def get_browser(playwright):
     return browser, browser_context
 
         
-async def launch_scraper(scraper_class, is_skip_urls):
+async def launch_scraper(scraper_class, skip_urls):
     # Scrape jobs from web pages
     async with async_playwright() as p:
         browser, browser_context = await get_browser(p)
-        scraper = scraper_class(p, browser_context, is_skip_urls=is_skip_urls)
+        scraper = scraper_class(p, browser_context, skip_urls)
         try:
             async_scrapers = [scraper.scrape_jobs()]
             await asyncio.gather(*async_scrapers)
@@ -76,8 +76,11 @@ def run_job_scrapers(employer_names=None):
                 if (not settings.DEBUG) and last_run_diff_minutes < 180:
                     logger.info(f'Scraper successfully run in last 3 hours for {scraper_class.employer_name}. Skipping')
                     continue
-
-            scraper = asyncio.run(launch_scraper(scraper_class, is_skip_urls=bool(not employer_names)))
+            
+            skip_urls = []
+            if not employer_names:
+                skip_urls = get_recent_scraped_job_urls(employer.employer_name)
+            scraper = asyncio.run(launch_scraper(scraper_class, skip_urls))
         
             # Process raw job data
             job_processor = JobProcessor(employer)

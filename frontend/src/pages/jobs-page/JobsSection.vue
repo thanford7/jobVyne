@@ -43,7 +43,7 @@
                   </div>
                   <div class="col-12 col-md-4 q-pl-md-sm">
                     <MoneyInput
-                      v-model:money-value="jobFilters.minimum_salary"
+                      v-model:money-value.number="jobFilters.minimum_salary"
                       v-model:currency-name="jobFilters.currency"
                       :is-include-currency-selection="false"
                       label="Minimum salary"
@@ -220,6 +220,13 @@ export default {
       async handler () {
         await this.loadJobs()
       }
+    },
+    $route: {
+      async handler () {
+        await this.updateJobFilterFromQueryParams()
+        await this.loadJobs()
+      },
+      deep: true
     }
   },
   methods: {
@@ -279,6 +286,39 @@ export default {
         }
       }
     },
+    async updateJobFilterFromQueryParams () {
+      const params = dataUtil.getQueryParams()
+      this.jobFilters = dataUtil.pick(params, Object.keys(jobFiltersTemplate))
+      if (params.location_text) {
+        const resp = await this.$api.get('search/location/', {
+          params: { search_text: params.location_text }
+        })
+        this.jobFilters.location = (resp.data?.length) ? resp.data[0] : null
+      }
+    },
+    updateJobFilterQueryParams () {
+      const addParams = Object.entries(this.jobFilters).reduce((filterParams, [jobFilterKey, jobFilter]) => {
+        if (!jobFilter) {
+          return filterParams
+        }
+        if (jobFilterKey === 'location') {
+          filterParams.push({
+            key: 'location_text',
+            val: jobFilter.text
+          })
+        } else {
+          filterParams.push({
+            key: jobFilterKey,
+            val: jobFilter
+          })
+        }
+        return filterParams
+      }, [])
+      const fullPath = dataUtil.getUrlWithParams({
+        addParams, deleteParams: Object.keys(jobFiltersTemplate)
+      })
+      this.$router.push(fullPath)
+    },
     resetJobFilters () {
       this.jobFilters = Object.assign({}, jobFiltersTemplate)
     },
@@ -317,10 +357,12 @@ export default {
       this.jobsByEmployer = jobsByEmployer || []
       this.jobPagesCount = totalPageCount
 
+      this.updateJobFilterQueryParams()
       this.isLoaded = true
     }
   },
   async mounted () {
+    await this.updateJobFilterFromQueryParams()
     await Promise.all([
       this.loadJobs(),
       this.authStore.setApplications(this.user)
