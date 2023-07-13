@@ -26,9 +26,9 @@ def parse_compensation_text(text, salary_interval='year'):
     text = sanitize_html(text)
     currency_pattern = reduce(lambda full_pattern, currency: f'{full_pattern}{"|" if full_pattern else ""}{currency}', currencies, '')
     currency_match = re.search(f'({currency_pattern})\s', text)
-    grouped_compensation_matches = get_grouped_compensation_matches(text)
     bad_salary_floor = 40000 if salary_interval == 'year' else 1
     bad_salary_ceiling = 500000
+    grouped_compensation_matches = get_grouped_compensation_matches(text, bad_salary_floor, bad_salary_ceiling)
     best_compensation_match = get_best_compensation_group(grouped_compensation_matches, bad_salary_floor, bad_salary_ceiling)
     currency = None
     if best_compensation_match and best_compensation_match['currency']:
@@ -55,16 +55,60 @@ def get_best_compensation_group(compensation_groups, bad_salary_floor, bad_salar
     return possible_matches[0] if possible_matches else None
 
 
-def get_grouped_compensation_matches(text):
+def get_salary_for_group(group):
+    if len(group) == 1:
+        return {
+            'salary': [get_salary_from_match(group[0])],
+            'group': group,
+            'currency': group[0].group('currency')
+        }
+    else:
+        has_thousand_marker = bool(len([g for g in group if g.group('thousand_marker')]))
+        return {
+            'salary': [get_salary_from_match(g, has_thousand_marker=has_thousand_marker) for g in group],
+            'group': group,
+            'currency': next((g.group('currency') for g in group if g.group('currency')), None)
+        }
+
+
+def is_good_salary_range(salary_group_data, min_salary, max_salary):
+    salary = salary_group_data['salary']
+    group = salary_group_data['group']
+    if len(salary) == 1:
+        is_good_salary = salary[0] <= max_salary and salary[0] >= min_salary
+        if not is_good_salary:
+            group = []
+        return is_good_salary, group
+    
+    if salary[1] < salary[0]:
+        return False, group[1:]
+    is_good_min_salary = salary[0] <= max_salary and salary[0] >= min_salary
+    is_good_max_salary = salary[1] <= max_salary and salary[1] >= min_salary
+    if (not is_good_min_salary) and (not is_good_max_salary):
+        return False, []
+    if not is_good_min_salary:
+        return False, group[1:]
+    if not is_good_max_salary:
+        return False, group[:1]
+    return True, group
+
+
+def get_grouped_compensation_matches(text, min_salary, max_salary):
     compensation_pattern = f'(?P<currency>{currency_characters})?\s?(?P<first_numbers>[0-9]+((\.?[0-9]+)|([0-9]*?))),?(?P<second_numbers>[0-9]+(\.?[0-9]+)?)?\s?(?P<thousand_marker>[kK])?'
     compensation_matches = list(re.finditer(compensation_pattern, text))
     groups = []
     combined_group = []
     last_end_position = 0
     for idx, match in enumerate(compensation_matches):
-        if len(combined_group) == 2 or match.start() - CURRENCY_RANGE_MAX_CHAR_COUNT > last_end_position:
-            groups.append(combined_group)
-            combined_group = [match]
+        if idx != 0 and (len(combined_group) == 2 or match.start() - CURRENCY_RANGE_MAX_CHAR_COUNT > last_end_position):
+            salary = get_salary_for_group(combined_group)
+            is_good_salary, updated_group = is_good_salary_range(salary, min_salary, max_salary)
+            if is_good_salary:
+                groups.append(combined_group)
+                combined_group = [match]
+            else:
+                combined_group = updated_group
+                combined_group.append(match)
         else:
             combined_group.append(match)
         if idx == len(compensation_matches) - 1:
@@ -75,17 +119,7 @@ def get_grouped_compensation_matches(text):
     for group in groups:
         if not group:
             continue
-        if len(group) == 1:
-            salary_groups.append({
-                'salary': [get_salary_from_match(group[0])],
-                'currency': group[0].group('currency')
-            })
-        else:
-            has_thousand_marker = bool(len([g for g in group if g.group('thousand_marker')]))
-            salary_groups.append({
-                'salary': [get_salary_from_match(g, has_thousand_marker=has_thousand_marker) for g in group],
-                'currency': next((g.group('currency') for g in group if g.group('currency')), None)
-            })
+        salary_groups.append(get_salary_for_group(group))
             
     return salary_groups
     
