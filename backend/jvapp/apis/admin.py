@@ -135,9 +135,13 @@ class AdminEmployerView(JobVyneAPIView):
             employer = EmployerView.get_employers(employer_id=employer_id)
             return Response(status=status.HTTP_200_OK, data=self.get_serialized_employer(employer))
         employers = EmployerView.get_employers(employer_filter=Q())
-        return Response(status=status.HTTP_200_OK, data=[
-            self.get_serialized_employer(employer) for employer in employers
-        ])
+        paged_employers = Paginator(employers, per_page=20)
+        page_count = self.query_params.get('page_count', 1)
+        return Response(status=status.HTTP_200_OK, data={
+            'total_employer_count': len(employers),
+            'total_page_count': paged_employers.num_pages,
+            'employers': [self.get_serialized_employer(e) for e in paged_employers.get_page(page_count)]
+        })
     
     @atomic
     def post(self, request):
@@ -207,6 +211,11 @@ class AdminEmployerView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Employer successfully updated'
         })
+
+    def delete(self, request, employer_id):
+        employer = Employer.objects.get(id=employer_id)
+        employer.delete()
+        return get_success_response(f'Employer - {employer.employer_name} - has been deleted')
 
     @staticmethod
     def get_serialized_employer(employer: Employer):

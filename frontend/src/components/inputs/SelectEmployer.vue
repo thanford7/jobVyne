@@ -7,7 +7,7 @@
     @filter="filter"
     :options="filteredEmployers"
     option-value="id"
-    option-label="name"
+    option-label="employer_name"
     label="Employer"
     lazy-rules
     :rules="rules"
@@ -56,7 +56,7 @@ export default {
         return this.allEmployers
       }
       const filterRegex = new RegExp(`.*?${this.filterTxt}.*?`, 'i')
-      return this.allEmployers.filter((e) => e.name.match(filterRegex))
+      return this.allEmployers.filter((e) => e.employer_name.match(filterRegex))
     }
   },
   methods: {

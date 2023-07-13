@@ -118,7 +118,7 @@ def parse_workable_xml_jobs():
             job_description=job_data['job_description'],
             employment_type=job_data['employment_type'],
             first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['first_posted_date'], as_date=True)),
-            website_domain=job_data['website'],
+            website_domain=re.sub('https?://(www)?', '', job_data['website']) if job_data['website'] else None,
             **description_compensation_data
         )
         if not (employer_parser := employer_parsers.get(job_item.employer_name)):

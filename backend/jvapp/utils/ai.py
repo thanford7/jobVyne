@@ -3,6 +3,7 @@ import hashlib
 import json
 import math
 import os
+import time
 
 import json5
 import openai
@@ -51,7 +52,31 @@ def parse_response(openai_response, request_tracker=None):
         request_tracker.save()
     logger.info('Model response successfully parsed')
     return data
-    
+
+WAIT_MULTIPLE_SECONDS = 5
+
+
+def send_request(model, prompt, retries=2):
+    """ OpenAI has frequent service interruptions so we use exponential backoff
+    """
+    try_count = 0
+    while try_count <= retries:
+        try:
+            return openai.ChatCompletion.create(
+                model=model,
+                messages=prompt,
+                temperature=0.5,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0
+            )
+        except openai.error.ServiceUnavailableError as e:
+            try_count += 1
+            wait_seconds = WAIT_MULTIPLE_SECONDS * try_count
+            logger.warning(f'Experienced service error with OpenAI. Retrying request in {wait_seconds} seconds.')
+            time.sleep(wait_seconds)
+    raise openai.error.ServiceUnavailableError
+
 
 def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     """Make a request to OpenAI and return a structured result.
@@ -66,21 +91,14 @@ def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     prompt_hash = hashlib.md5(bytes(json.dumps(prompt) + model, 'UTF-8')).hexdigest()
     if existing := AIRequest.objects.filter(prompt_hash=prompt_hash).first():
         if existing.result_status == AIRequest.RESULT_STATUS_SUCCESS:
-            return parse_response(existing.response), existing
+            return parse_response(json.loads(existing.response)), existing
         if existing.result_status == AIRequest.RESULT_STATUS_UNPARSEABLE:
             logger.info(f'Previous run of same prompt was un-parseable')
             raise PromptParseError
     
     start_time = datetime.datetime.now()
     logger.info(f'Sending request to {model} model')
-    resp = openai.ChatCompletion.create(
-        model=model,
-        messages=prompt,
-        temperature=0.5,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
+    resp = send_request(model, prompt)
     end_time = datetime.datetime.now()
     model_request_duration = math.ceil((end_time - start_time).total_seconds())
     if is_test:

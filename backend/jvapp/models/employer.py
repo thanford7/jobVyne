@@ -192,7 +192,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         HOUR = 'hour'
         ONCE = 'once'
     
-    employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='employer_job')
     job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True, blank=True)
     responsibilities = models.JSONField(null=True, blank=True)

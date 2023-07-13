@@ -5,10 +5,13 @@
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12">
           <q-table
+            :loading="isLoading"
             :rows="employers"
             :columns="employerColumns"
             row-key="id"
-            :rows-per-page-options="[15, 25, 50]"
+            v-model:pagination="pagination"
+            @request="updatePagination"
+            :rows-per-page-options="[20]"
           >
             <template v-slot:top>
               <q-btn ripple color="primary" label="Create new employer" @click="openDialogAdminEmployer()"/>
@@ -28,8 +31,15 @@
             <template v-slot:body="props">
               <q-tr :props="props">
                 <q-td auto-width>
-                  <q-btn size="sm" color="gray-500" round dense @click="openDialogAdminEmployer(props.row)"
-                         icon="edit"/>
+                  <q-btn
+                    class="q-mr-sm"
+                    size="sm" color="gray-500" round dense icon="edit"
+                    @click="openDialogAdminEmployer(props.row)"
+                  />
+                  <q-btn
+                    size="sm" color="negative" round dense icon="delete"
+                    @click="deleteEmployer(props.row)"
+                  />
                 </q-td>
                 <q-td
                   v-for="col in props.cols"
@@ -60,12 +70,13 @@
 <script>
 import DialogAdminEmployer from 'components/dialogs/DialogAdminEmployer.vue'
 import PageHeader from 'components/PageHeader.vue'
-import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
+import { openConfirmDialog } from 'src/utils/requests.js'
 import { SUBSCRIPTION_STATUS } from 'src/utils/subscription.js'
 import { useAdminStore } from 'stores/admin-store.js'
+import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
 const employerColumns = [
@@ -111,33 +122,77 @@ export default {
   components: { PageHeader },
   data () {
     return {
+      isLoading: true,
+      employers: [],
+      pagination: {
+        sortBy: 'none',
+        descending: true,
+        page: 1,
+        rowsPerPage: 20,
+        rowsNumber: null,
+        totalPageCount: 1
+      },
       employerColumns,
       dataUtil,
       SUBSCRIPTION_STATUS
     }
   },
+  watch: {
+    pagination: {
+      async handler () {
+        await this.updateEmployerData(false)
+      }
+    }
+  },
   methods: {
+    updatePagination (props) {
+      this.pagination = props.pagination
+    },
+    async updateEmployerData (isForce) {
+      this.isLoading = true
+      await this.adminStore.setPaginatedEmployers({ pageCount: this.pagination.page, isForce })
+      const {
+        total_page_count: totalPageCount,
+        total_employer_count: totalEmployerCount,
+        employers
+      } = this.adminStore.getPaginatedEmployers({ pageCount: this.pagination.page })
+      this.pagination.totalPageCount = totalPageCount
+      this.pagination.rowsNumber = totalEmployerCount
+      this.employers = employers
+      this.isLoading = false
+    },
+    async deleteEmployer (employer) {
+      openConfirmDialog(
+        this.q,
+        `Are you sure you want to delete ${employer.name}? This will delete all associated data including job applications.`,
+        {
+          okFn: async () => {
+            await this.$api.delete(`admin/employer/${employer.id}`)
+            await this.updateEmployerData(true)
+          }
+        }
+      )
+    },
     openDialogAdminEmployer (employer) {
       return this.q.dialog({
         component: DialogAdminEmployer,
         componentProps: { employer }
       }).onOk(async () => {
-        Loading.show()
-        await this.adminStore.setEmployers(true)
-        Loading.hide()
+        await this.updateEmployerData(true)
       })
     }
   },
+  async mounted () {
+    await this.updateEmployerData(false)
+  },
   preFetch () {
-    const adminStore = useAdminStore()
+    const authStore = useAuthStore()
     Loading.show()
-
-    return adminStore.setEmployers().finally(() => Loading.hide())
+    return authStore.setUser().finally(() => Loading.hide())
   },
   setup () {
     const globalStore = useGlobalStore()
     const adminStore = useAdminStore()
-    const { employers } = storeToRefs(adminStore)
 
     const pageTitle = 'Admin Employer Page'
     const metaData = {
@@ -148,7 +203,6 @@ export default {
 
     return {
       adminStore,
-      employers,
       q: useQuasar()
     }
   }

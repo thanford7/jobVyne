@@ -4,6 +4,7 @@ from io import StringIO
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -12,7 +13,8 @@ from rest_framework.response import Response
 from slack_sdk import WebClient
 
 from jobVyne import settings
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
+    get_success_response
 from jvapp.apis.geocoding import LocationParser, get_raw_location
 from jvapp.apis.job import LocationView
 from jvapp.apis.job_subscription import JobSubscriptionView
@@ -81,9 +83,9 @@ class EmployerView(JobVyneAPIView):
             )
             return Response(status=status.HTTP_200_OK, data=data)
         
-        employers = self.get_employers(employer_filter=Q())
-        data = sorted([get_serialized_employer(e) for e in employers], key=lambda e: e['name'])
-        return Response(status=status.HTTP_200_OK, data=data)
+        employers = list(Employer.objects.all().values('id', 'employer_name'))
+        employers.sort(key=lambda e: e['employer_name'])
+        return Response(status=status.HTTP_200_OK, data=employers)
     
     @atomic
     def put(self, request, employer_id):
@@ -119,7 +121,7 @@ class EmployerView(JobVyneAPIView):
         
         default_job_board_prefetch = Prefetch(
             'sociallink_set',
-            queryset=SocialLink.objects.filter(is_default=True),
+            queryset=SocialLink.objects.prefetch_related('job_subscriptions').filter(is_default=True),
             to_attr='default_job_board'
         )
         
