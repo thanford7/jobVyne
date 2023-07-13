@@ -280,6 +280,13 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
                 return True
             
         return False
+    
+    @property
+    def job_department_standardized(self):
+        for tax in self.taxonomy.all():
+            if tax.taxonomy.tax_type == Taxonomy.TAX_TYPE_JOB_TITLE:
+                return tax.taxonomy.name
+        return 'Unknown'
 
 
 class Taxonomy(models.Model):

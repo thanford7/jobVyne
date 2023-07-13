@@ -118,11 +118,19 @@
                         >
                           {{ employer.employer_name }}
                         </q-item>
-                        <template v-for="jobsByTitle in employer.jobs">
+                        <template v-for="(jobsByTitle, jobDepartment) in employer.jobs">
+                          <q-item
+                            clickable
+                            class="text-italic"
+                            :style="(isSingleEmployer) ? '' : 'padding-left: 30px'"
+                            @click="scrollUtil.scrollTo(getElementTop(`department-${employer.employer_id}-${dataUtil.removeStringSpecialChars(jobDepartment)}`))"
+                          >
+                            {{ jobDepartment }}
+                          </q-item>
                           <q-item
                             v-for="(jobs, jobTitle) in jobsByTitle"
                             clickable
-                            :style="(isSingleEmployer) ? '' : 'padding-left: 40px'"
+                            :style="(isSingleEmployer) ? 'padding-left: 30px' : 'padding-left: 45px'"
                             @click="scrollUtil.scrollTo(getElementTop(`job-${employer.employer_id}-${jobs[0].id}`))"
                           >
                             {{ jobTitle }}

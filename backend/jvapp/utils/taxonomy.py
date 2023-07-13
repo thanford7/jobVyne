@@ -3,6 +3,7 @@ import logging
 import re
 
 from django.db.models import Count, Prefetch, Q, Subquery
+from django.db.transaction import atomic
 from django.utils import timezone
 
 from jvapp.models.employer import EmployerJob, JobTaxonomy, Taxonomy
@@ -145,28 +146,17 @@ def get_or_create_job_title_tax(job_title_standardized):
 
 def run_job_title_standardization(job_filter=None, is_non_standardized_only=True):
     job_filter = job_filter or Q()
-    job_title_tax_query = JobTaxonomy.objects.filter(taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
-    job_title_tax_prefetch = Prefetch(
-        'taxonomy', queryset=job_title_tax_query
-    )
     if is_non_standardized_only:
-        # job_filter &= Q(has_job_title__isnull=True)
         job_filter &= ~Q(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
-        # .annotate(has_job_title=Subquery(job_title_tax_query.annotate(c=Count('*')).values('c')))\
         jobs = EmployerJob.objects\
-            .prefetch_related(job_title_tax_prefetch)\
             .filter(job_filter)\
             .distinct()
     else:
-        jobs = EmployerJob.objects \
-            .prefetch_related(job_title_tax_prefetch) \
-            .filter(job_filter)
+        jobs = EmployerJob.objects.filter(job_filter)
     
     logger.info(f'Running job standardization for {len(jobs)} jobs')
     job_taxes_to_save = []
     for idx, job in enumerate(jobs):
-        # TODO: Make sure this doesn't delete taxonomies other than job title
-        job.taxonomy.all().delete()  # Remove existing taxonomy
         standardized_job_tax = get_standardized_job_taxonomy(job.job_title)
         if not standardized_job_tax:
             # logger.info(f'Could not find standardized title for {job.job_title}')
@@ -178,8 +168,10 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
             modified_dt=timezone.now()
         ))
         if idx and (idx % 5000 == 0 or idx == len(jobs) - 1):
-            logger.info(f'Total jobs ({idx + 1}). Saving jobs.')
-            JobTaxonomy.objects.bulk_create(job_taxes_to_save)
+            logger.info(f'Total jobs ({idx + 1}). Removing existing taxonomies and saving new ones.')
+            with atomic():
+                JobTaxonomy.objects.filter(job_id__in=[jt.job_id for jt in job_taxes_to_save], taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
+                JobTaxonomy.objects.bulk_create(job_taxes_to_save, ignore_conflicts=True)
             job_taxes_to_save = []
 
     

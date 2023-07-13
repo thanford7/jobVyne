@@ -1,6 +1,5 @@
 from django.core.management import BaseCommand
 
-from e2e_tests.db_setup import rebuild_db, write_db_to_file
 from jvapp.utils.taxonomy import run_job_title_standardization, update_taxonomies
 
 

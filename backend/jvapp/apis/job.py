@@ -1,15 +1,13 @@
-import json
 import logging
 from itertools import groupby
 
-from bs4 import BeautifulSoup
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.models.employer import EmployerJob, JobDepartment, JobTaxonomy, Taxonomy
+from jvapp.models.employer import EmployerJob, JobDepartment, Taxonomy
 from jvapp.models.location import Location
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils import ai
@@ -98,21 +96,31 @@ class JobClassificationView(JobVyneAPIView):
         RESPONSIBILITY_LIMIT = 5
         QUALIFICATION_LIMIT = 10
         TECH_QUALIFICATION_LIMIT = 10
+        
+        system_prompt = (
+            'You are helping categorize job descriptions. The use will provide an individual job description for you to categorize.\n'
+            f'Analyze the job description and categorize up to {RESPONSIBILITY_LIMIT} job responsibilities, up to {QUALIFICATION_LIMIT} required job qualifications, and up to {TECH_QUALIFICATION_LIMIT} technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
+            'Job responsibilities will likely be listed close to the word "responsibilities" in a bulleted list or comma separated list.\n'
+            'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
+            'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
+            'Technical qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
+            'Your response should be RFC8259 compliant JSON in the format:\n'
+            f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
+        )
 
         for job in jobs:
-            prompt = (
-                'Use "---" as a delimiter\n'
-                f'Create a variable called "JOB_DESCRIPTION" and set it equal to ---\'{job.job_description[:DESCRIPTION_CHAR_LIMIT]}\'---\n'
-                f'Analyze the value of JOB_DESCRIPTION and summarize up to {RESPONSIBILITY_LIMIT} job responsibilities, up to {QUALIFICATION_LIMIT} required job qualifications, and up to {TECH_QUALIFICATION_LIMIT} technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
-                'Job responsibilities will likely be listed close to the word "responsibilities" in a bulleted list or comma separated list.\n'
-                'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
-                'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
-                'Technical qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
-                'The output of your answer should be JSON in the format:\n'
-                f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
-            )
+            logger.info(f'Running job classification for job ID = {job.id}')
+            trunc_job_description = job.job_description[:DESCRIPTION_CHAR_LIMIT]
             try:
-                resp, tracker = ai.ask(prompt)
+                if is_test:
+                    print('----- SYSTEM PROMPT')
+                    print(system_prompt)
+                    print('----- USER PROMPT')
+                    print(trunc_job_description)
+                resp, tracker = ai.ask([
+                    {'role': 'system', 'content': system_prompt},
+                    {'role': 'user', 'content': trunc_job_description}
+                ], is_test=is_test)
                 job.qualifications_prompt = tracker
                 job.qualifications = resp.get('JOB_QUALIFICATIONS')
                 job.technical_qualifications = resp.get('TECHNICAL_QUALIFICATIONS')

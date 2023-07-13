@@ -419,8 +419,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
                     job, consolidated_app_requirements_by_employer[job.employer_id]
                 )
-                job_department = job.job_department.name if job.job_department else None
-                employer_jobs['jobs'][job_department or 'General'][job.job_title].append(serialized_job)
+                employer_jobs['jobs'][job.job_department_standardized][job.job_title].append(serialized_job)
         
         jobs_by_employer = list(jobs_by_employer.values())
         

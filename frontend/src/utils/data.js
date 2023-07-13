@@ -212,6 +212,10 @@ class DataUtil {
     return firstLetter + restOfString
   }
 
+  removeStringSpecialChars (text) {
+    return text.replace(/[^a-zA-Z0-9]/g, '')
+  }
+
   concatWithAnd (list) {
     if (!list || !list.length) {
       return null

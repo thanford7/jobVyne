@@ -1,7 +1,10 @@
+import datetime
 import hashlib
 import json
+import math
 import os
 
+import json5
 import openai
 import logging
 
@@ -10,20 +13,47 @@ from jvapp.models.tracking import AIRequest
 logger = logging.getLogger(__name__)
 openai.api_key = os.getenv('OPEN_AI_API_KEY')
 
-
-DEFAULT_MODEL = 'text-davinci-003'
+DEFAULT_MODEL = 'gpt-3.5-turbo'
 
 
 class PromptError(Exception):
     pass
 
+
 class PromptRequestError(PromptError):
     pass
+
 
 class PromptParseError(PromptError):
     pass
 
-def ask(prompt, model=DEFAULT_MODEL):
+
+def parse_response(openai_response, request_tracker=None):
+    if request_tracker:
+        request_tracker.response = json.dumps(openai_response)
+    content = openai_response['choices'][0]['message']['content']
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        # The OpenAI response sometimes includes a trailing comma which causes JSON decoding to fail
+        # JSON5 handles trailing commas, but is much slower so we only use it if needed
+        try:
+            data = json5.loads(content)
+        except (json.decoder.JSONDecodeError, ValueError) as ex:
+            if request_tracker:
+                request_tracker.result_status = request_tracker.RESULT_STATUS_UNPARSEABLE
+                request_tracker.save()
+            logger.info('Error occurred when parsing model response')
+            raise PromptParseError from ex
+    
+    if request_tracker:
+        request_tracker.result_status = request_tracker.RESULT_STATUS_SUCCESS
+        request_tracker.save()
+    logger.info('Model response successfully parsed')
+    return data
+    
+
+def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     """Make a request to OpenAI and return a structured result.
 
     Model descriptions: https://platform.openai.com/docs/models/gpt-3-5
@@ -33,43 +63,34 @@ def ask(prompt, model=DEFAULT_MODEL):
         aiRequest object with
     """
     # Check to see if we've made this prompt before
-    prompt_hash = hashlib.md5(bytes(prompt + model, 'UTF-8')).hexdigest()
+    prompt_hash = hashlib.md5(bytes(json.dumps(prompt) + model, 'UTF-8')).hexdigest()
     if existing := AIRequest.objects.filter(prompt_hash=prompt_hash).first():
         if existing.result_status == AIRequest.RESULT_STATUS_SUCCESS:
-            resp = json.loads(existing.response)
-            return json.loads(resp['choices'][0]['text']), existing
+            return parse_response(existing.response), existing
         if existing.result_status == AIRequest.RESULT_STATUS_UNPARSEABLE:
+            logger.info(f'Previous run of same prompt was un-parseable')
             raise PromptParseError
+    
+    start_time = datetime.datetime.now()
+    logger.info(f'Sending request to {model} model')
+    resp = openai.ChatCompletion.create(
+        model=model,
+        messages=prompt,
+        temperature=0.5,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+    end_time = datetime.datetime.now()
+    model_request_duration = math.ceil((end_time - start_time).total_seconds())
+    if is_test:
+        print(f'Received response: {resp}')
+    else:
+        logger.info(f'Received response from {model} model')
+        logger.info(f'Duration seconds: {model_request_duration}')
 
     request_tracker = AIRequest(
         prompt_hash=prompt_hash,
     )
-    try:
-        print(f'Asking {model} the following prompt:\n{prompt}')
-        resp = openai.Completion.create(
-            model=model,
-            prompt=prompt,
-            temperature=1,
-            max_tokens=2500,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0
-        )
-        request_tracker.response = json.dumps(resp)
-        print(f'Received response: {resp}')
-    except Exception as ex:
-        request_tracker.result_status = request_tracker.RESULT_STATUS_ERROR
-        request_tracker.save()
-        raise PromptRequestError from ex
-
-    try:
-        data = json.loads(resp['choices'][0]['text'])
-    except json.JSONDecodeError as ex:
-        request_tracker.result_status = request_tracker.RESULT_STATUS_UNPARSEABLE
-        request_tracker.save()
-        raise PromptParseError from ex
-
-    request_tracker.result_status = request_tracker.RESULT_STATUS_SUCCESS
-    request_tracker.save()
+    data = parse_response(resp, request_tracker=request_tracker)
     return data, request_tracker
-

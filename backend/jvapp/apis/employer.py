@@ -676,7 +676,9 @@ class EmployerJobView(JobVyneAPIView):
                     'locations',
                     'locations__city',
                     'locations__state',
-                    'locations__country'
+                    'locations__country',
+                    'taxonomy',
+                    'taxonomy__taxonomy'
                 ) \
                 .filter(employer_job_filter)
         else:
