@@ -39,6 +39,7 @@
             v-for="(jobsByTitle, jobDepartment) in employer.jobs"
           >
             <div
+              v-if="$route.name !== 'profession'"
               :id="`department-${employer.employer_id}-${dataUtil.removeStringSpecialChars(jobDepartment)}`"
               class="text-bold bg-grey-7 text-white q-px-sm q-py-xs custom-sticky"
               :class="`custom-sticky-${(isSingleEmployer) ? '1' : '2'}`"

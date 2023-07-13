@@ -120,6 +120,7 @@
                         </q-item>
                         <template v-for="(jobsByTitle, jobDepartment) in employer.jobs">
                           <q-item
+                            v-if="$route.name !== 'profession'"
                             clickable
                             class="text-italic"
                             :style="(isSingleEmployer) ? '' : 'padding-left: 30px'"
