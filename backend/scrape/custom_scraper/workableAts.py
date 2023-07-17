@@ -43,11 +43,12 @@ def _get_current_workable_file_name():
 # Workable limits the number of requests to this endpoint
 def _write_workable_xml():
     current_file_name = _get_current_workable_file_name()
-    current_workable_files = [f for f in listdir(os.getcwd()) if isfile(join(os.getcwd(), f)) and re.match('^workable_.+?\.xml', f)]
+    current_workable_files = [f for f in listdir(os.getcwd()) if
+                              isfile(join(os.getcwd(), f)) and re.match('^workable_.+?\.xml', f)]
     if current_file_name in current_workable_files:
         logger.info(f'Current workable file <{current_file_name}> already exists')
         return
-
+    
     for f in current_workable_files:
         logger.info(f'Removing Workable file - {f}')
         os.remove(f)
@@ -57,8 +58,8 @@ def _write_workable_xml():
     with open(current_file_name, 'w') as f:
         logger.info('Writing Workable file')
         f.write(workable_data.content.decode('utf-8'))
-        
-        
+
+
 def parse_workable_xml_jobs():
     _write_workable_xml()
     tree = ET.parse(_get_current_workable_file_name())
@@ -82,9 +83,9 @@ def parse_workable_xml_jobs():
         
         if job_data['employer_name'] not in company_whitelist:
             continue
-            
+        
         job_data['employer_name'] = company_whitelist[job_data['employer_name']] or job_data['employer_name']
-
+        
         job_data['city'] = [c.strip() for c in job_data['city'].split(',')][0]
         
         location = ', '.join(
@@ -117,7 +118,8 @@ def parse_workable_xml_jobs():
             job_department=job_data['job_department'],
             job_description=job_data['job_description'],
             employment_type=job_data['employment_type'],
-            first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['first_posted_date'], as_date=True)),
+            first_posted_date=get_datetime_format_or_none(
+                get_datetime_or_none(job_data['first_posted_date'], as_date=True)),
             website_domain=re.sub('https?://(www)?', '', job_data['website']) if job_data['website'] else None,
             **description_compensation_data
         )
@@ -301,7 +303,223 @@ class Akur8Scraper(WorkableScraper):
     EMPLOYER_KEY = 'akur8'
 
 
+class SkeduloScraper(WorkableScraper):
+    employer_name = 'Skedulo'
+    EMPLOYER_KEY = 'skedulo'
+
+
+class IdovenScraper(WorkableScraper):
+    employer_name = 'Idoven'
+    EMPLOYER_KEY = 'idoven'
+
+
+class BlinkScraper(WorkableScraper):
+    employer_name = 'Blink'
+    EMPLOYER_KEY = 'blink'
+
+
+class LightyearScraper(WorkableScraper):
+    employer_name = 'Lightyear'
+    EMPLOYER_KEY = 'lightyear'
+
+
+class ResortpassScraper(WorkableScraper):
+    employer_name = 'ResortPass'
+    EMPLOYER_KEY = 'resortpass'
+
+
+class BeamScraper(WorkableScraper):
+    employer_name = 'Beam'
+    EMPLOYER_KEY = 'beam'
+
+
+class ApnaScraper(WorkableScraper):
+    employer_name = 'Apna'
+    EMPLOYER_KEY = 'apna'
+
+
+class LingoaceScraper(WorkableScraper):
+    employer_name = 'LingoAce'
+    EMPLOYER_KEY = 'lingoace'
+
+
+class FairmoneyScraper(WorkableScraper):
+    employer_name = 'FairMoney'
+    EMPLOYER_KEY = 'fairmoney'
+
+
+class HexTrustScraper(WorkableScraper):
+    employer_name = 'Hex Trust'
+    EMPLOYER_KEY = 'hextrust'
+
+
+class AmogyScraper(WorkableScraper):
+    employer_name = 'Amogy'
+    EMPLOYER_KEY = 'amogy'
+
+
+class SemiosScraper(WorkableScraper):
+    employer_name = 'Semios'
+    EMPLOYER_KEY = 'semios'
+
+
+class BoohooGroupScraper(WorkableScraper):
+    employer_name = 'Boohoo Group'
+    EMPLOYER_KEY = 'boohoogroup'
+
+
+class ColdquantaScraper(WorkableScraper):
+    employer_name = 'ColdQuanta'
+    EMPLOYER_KEY = 'coldquanta'
+
+
+class ExotecScraper(WorkableScraper):
+    employer_name = 'Exotec'
+    EMPLOYER_KEY = 'exotec'
+
+
+class ProjectCanaryScraper(WorkableScraper):
+    employer_name = 'Project Canary'
+    EMPLOYER_KEY = 'projectcanary'
+
+
+class PreferredNetworksScraper(WorkableScraper):
+    employer_name = 'Preferred Networks'
+    EMPLOYER_KEY = 'preferrednetworks'
+
+
+class ClarityAiScraper(WorkableScraper):
+    employer_name = 'Clarity AI'
+    EMPLOYER_KEY = 'clarityai'
+
+
+class SharegainScraper(WorkableScraper):
+    employer_name = 'Sharegain'
+    EMPLOYER_KEY = 'sharegain'
+
+
+class ParoScraper(WorkableScraper):
+    employer_name = 'Paro'
+    EMPLOYER_KEY = 'paro'
+
+
+class EvolvScraper(WorkableScraper):
+    employer_name = 'Evolv'
+    EMPLOYER_KEY = 'evolv'
+
+
+class DroneupScraper(WorkableScraper):
+    employer_name = 'DroneUp'
+    EMPLOYER_KEY = 'droneup'
+
+
+class EquitybeeScraper(WorkableScraper):
+    employer_name = 'EquityBee'
+    EMPLOYER_KEY = 'equitybee'
+
+
+class BibitScraper(WorkableScraper):
+    employer_name = 'Bibit'
+    EMPLOYER_KEY = 'bibit'
+
+
+class TiledbScraper(WorkableScraper):
+    employer_name = 'TileDB'
+    EMPLOYER_KEY = 'tiledb'
+
+
+class GigsScraper(WorkableScraper):
+    employer_name = 'Gigs'
+    EMPLOYER_KEY = 'gigs'
+
+
+class AxelarScraper(WorkableScraper):
+    employer_name = 'Axelar'
+    EMPLOYER_KEY = 'axelar'
+
+
+class UniversalQuantumScraper(WorkableScraper):
+    employer_name = 'Universal Quantum'
+    EMPLOYER_KEY = 'universalquantum'
+
+
+class ConstructorScraper(WorkableScraper):
+    employer_name = 'Constructor'
+    EMPLOYER_KEY = 'constructor'
+
+
+class AllSpaceScraper(WorkableScraper):
+    employer_name = 'All.Space'
+    EMPLOYER_KEY = 'allspace'
+
+
+class ZoomoScraper(WorkableScraper):
+    employer_name = 'Zoomo'
+    EMPLOYER_KEY = 'zoomo'
+
+
+class PrecisionNeuroscienceScraper(WorkableScraper):
+    employer_name = 'Precision Neuroscience'
+    EMPLOYER_KEY = 'precisionneuroscience'
+
+
+class MoneyFellowsScraper(WorkableScraper):
+    employer_name = 'Money Fellows'
+    EMPLOYER_KEY = 'moneyfellows'
+
+
+class Shift4Scraper(WorkableScraper):
+    employer_name = 'Shift4'
+    EMPLOYER_KEY = 'shift4'
+
+
+class PersadoScraper(WorkableScraper):
+    employer_name = 'Persado'
+    EMPLOYER_KEY = 'persado'
+
+
+class IesoScraper(WorkableScraper):
+    employer_name = 'Ieso'
+    EMPLOYER_KEY = 'ieso'
+
+
 workable_scrapers = {
+    IesoScraper.employer_name: IesoScraper,
+    PersadoScraper.employer_name: PersadoScraper,
+    Shift4Scraper.employer_name: Shift4Scraper,
+    MoneyFellowsScraper.employer_name: MoneyFellowsScraper,
+    PrecisionNeuroscienceScraper.employer_name: PrecisionNeuroscienceScraper,
+    ZoomoScraper.employer_name: ZoomoScraper,
+    AllSpaceScraper.employer_name: AllSpaceScraper,
+    ConstructorScraper.employer_name: ConstructorScraper,
+    UniversalQuantumScraper.employer_name: UniversalQuantumScraper,
+    AxelarScraper.employer_name: AxelarScraper,
+    GigsScraper.employer_name: GigsScraper,
+    TiledbScraper.employer_name: TiledbScraper,
+    BibitScraper.employer_name: BibitScraper,
+    EquitybeeScraper.employer_name: EquitybeeScraper,
+    DroneupScraper.employer_name: DroneupScraper,
+    EvolvScraper.employer_name: EvolvScraper,
+    ParoScraper.employer_name: ParoScraper,
+    SharegainScraper.employer_name: SharegainScraper,
+    ClarityAiScraper.employer_name: ClarityAiScraper,
+    PreferredNetworksScraper.employer_name: PreferredNetworksScraper,
+    ProjectCanaryScraper.employer_name: ProjectCanaryScraper,
+    ExotecScraper.employer_name: ExotecScraper,
+    ColdquantaScraper.employer_name: ColdquantaScraper,
+    BoohooGroupScraper.employer_name: BoohooGroupScraper,
+    SemiosScraper.employer_name: SemiosScraper,
+    AmogyScraper.employer_name: AmogyScraper,
+    HexTrustScraper.employer_name: HexTrustScraper,
+    FairmoneyScraper.employer_name: FairmoneyScraper,
+    LingoaceScraper.employer_name: LingoaceScraper,
+    ApnaScraper.employer_name: ApnaScraper,
+    BeamScraper.employer_name: BeamScraper,
+    ResortpassScraper.employer_name: ResortpassScraper,
+    LightyearScraper.employer_name: LightyearScraper,
+    BlinkScraper.employer_name: BlinkScraper,
+    IdovenScraper.employer_name: IdovenScraper,
+    SkeduloScraper.employer_name: SkeduloScraper,
     Akur8Scraper.employer_name: Akur8Scraper,
     MotorwayScraper.employer_name: MotorwayScraper,
     MoladinScraper.employer_name: MoladinScraper,
