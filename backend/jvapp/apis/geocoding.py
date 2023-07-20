@@ -124,7 +124,7 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
 
     try:
         LocationLookup(
-            text=raw_location_text,
+            text=raw_location_text[:200],
             location=location,
             raw_result=raw_data
         ).save()

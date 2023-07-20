@@ -33,7 +33,7 @@ DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,bdaf-75-166-100-187.ngrok-free.app').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_SEND_EMAILS = env('IS_SEND_EMAILS', cast=bool, default=True)
@@ -59,6 +59,9 @@ if IS_LOCAL:
 elif SUBDOMAIN:
     BASE_URL = f'https://{SUBDOMAIN}.jobvyne.com'
     COMMUNICATION_ADDRESS = f'communications_{SUBDOMAIN}'
+else:
+    BASE_URL = f'https://jobvyne.com'
+    COMMUNICATION_ADDRESS = f'communications'
 
 API_PATH = 'api/v1/'
 API_URL = f'{BASE_URL}/{API_PATH}'

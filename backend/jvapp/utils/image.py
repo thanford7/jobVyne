@@ -2,9 +2,8 @@ import re
 from tempfile import NamedTemporaryFile
 from urllib.request import urlopen
 
-import cairosvg
 import requests
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from django.core.files import File
 
 from jvapp.utils.file import get_file_extension
@@ -17,7 +16,7 @@ def resize_image_with_fill(image, width, height):
     try:
         image.open()
         im = Image.open(image)
-    except FileNotFoundError:
+    except (FileNotFoundError, UnidentifiedImageError):
         return None
     ratio_w = width / im.width
     ratio_h = height / im.height
@@ -29,7 +28,7 @@ def resize_image_with_fill(image, width, height):
         # Fixed by height
         resize_width = round(ratio_h * im.width)
         resize_height = height
-    image_resize = im.resize((resize_width, resize_height), Image.ANTIALIAS)
+    image_resize = im.resize((resize_width, resize_height), Image.LANCZOS)
     background = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     offset = (round((width - resize_width) / 2), round((height - resize_height) / 2))
     background.paste(image_resize, offset)

@@ -202,7 +202,7 @@ export default {
       isLoaded: false,
       pageNumber: 1,
       jobFilters: {},
-      jobsByEmployer: {},
+      jobsByEmployer: [],
       totalEmployerJobCount: null,
       isJobsClosed: false,
       jobPagesCount: null,
@@ -278,9 +278,10 @@ export default {
       if (window.innerWidth < 600) {
         this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
       } else {
-        this.$emit('openAppSideBar')
+        this.$emit('openAppSideBar', this.jobApplication)
       }
-      scrollUtil.scrollToElement(document.getElementById(`job-${jobId}`))
+      const jobElId = `job-${this.jobApplication.employer_id}-${jobId}`
+      scrollUtil.scrollToElement(document.getElementById(jobElId))
     },
     async closeApplication () {
       this.$emit('closeAppSideBar')
@@ -400,6 +401,11 @@ export default {
     ])
     const { applications } = storeToRefs(this.authStore)
     this.applications = applications
+
+    const { jobId } = dataUtil.getQueryParams()
+    if (jobId) {
+      await this.openApplication(parseInt(jobId))
+    }
   }
 }
 </script>

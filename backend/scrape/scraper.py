@@ -10,7 +10,7 @@ from jvapp.models.employer import Employer, EmployerJob
 from scrape.base_scrapers import get_random_user_agent, get_recent_scraped_job_urls
 from scrape.custom_scraper.workableAts import workable_scrapers
 from scrape.employer_scrapers import all_scrapers, test_scrapers
-from scrape.job_processor import JobProcessor
+from scrape.job_processor import ScrapedJobProcessor
 
 logger = logging.getLogger(__name__)
 JS_LOAD_WAIT_MS = 30000 if settings.DEBUG else 60000
@@ -83,7 +83,7 @@ def run_job_scrapers(employer_names=None):
             scraper = asyncio.run(launch_scraper(scraper_class, skip_urls))
         
             # Process raw job data
-            job_processor = JobProcessor(employer)
+            job_processor = ScrapedJobProcessor(employer)
             logger.info(f'Processing jobs for {scraper_class.employer_name}')
             job_processor.process_jobs(scraper.job_items)
             logger.info(f'Finalizing all data for {scraper_class.employer_name}')

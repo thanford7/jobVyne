@@ -60,6 +60,7 @@ def send_request(model, prompt, retries=2):
     """ OpenAI has frequent service interruptions so we use exponential backoff
     """
     try_count = 0
+    e = openai.error.APIError
     while try_count <= retries:
         try:
             return openai.ChatCompletion.create(
@@ -70,12 +71,12 @@ def send_request(model, prompt, retries=2):
                 frequency_penalty=0,
                 presence_penalty=0
             )
-        except openai.error.ServiceUnavailableError as e:
+        except (openai.error.ServiceUnavailableError, openai.error.APIError) as e:
             try_count += 1
             wait_seconds = WAIT_MULTIPLE_SECONDS * try_count
             logger.warning(f'Experienced service error with OpenAI. Retrying request in {wait_seconds} seconds.')
             time.sleep(wait_seconds)
-    raise openai.error.ServiceUnavailableError
+    raise e
 
 
 def ask(prompt, model=DEFAULT_MODEL, is_test=False):

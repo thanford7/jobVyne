@@ -76,7 +76,7 @@
               :user="user"
               :employer="employer"
               :headerHeight="headerHeight"
-              @openAppSideBar="isRightDrawerOpen = true"
+              @openAppSideBar="openJobApplication"
               @closeAppSideBar="isRightDrawerOpen = false"
             />
           </q-tab-panel>
@@ -179,6 +179,9 @@ export default {
     }
   },
   methods: {
+    log (val) {
+      console.log(val)
+    },
     getFullLocation: locationUtil.getFullLocation,
     async logoutUser () {
       await this.authStore.logout(false)
@@ -207,7 +210,12 @@ export default {
       this.isLoaded = true
       Loading.hide()
     },
+    openJobApplication (jobApplication) {
+      this.jobApplication = jobApplication
+      this.isRightDrawerOpen = true
+    },
     async closeJobApplication () {
+      this.jobApplication = null
       await this.$refs.jobs.closeApplication()
     },
     openFeedbackModal () {
@@ -218,11 +226,6 @@ export default {
   },
   async mounted () {
     await this.loadData()
-
-    const { jobId } = dataUtil.getQueryParams()
-    if (jobId) {
-      this.$refs.jobs.openApplication(parseInt(jobId))
-    }
     this.headerHeight = this.$refs.header.$el.clientHeight
     this.isLoaded = true
   },

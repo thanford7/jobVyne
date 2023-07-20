@@ -74,6 +74,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     )
     referrer_employer = models.ForeignKey('Employer', null=True, blank=True, on_delete=models.SET_NULL, related_name='referral')
     referrer_user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.SET_NULL, related_name='referral')
+    # TODO: Change platform to character field
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     employer_job = models.ForeignKey(
         'EmployerJob', on_delete=models.CASCADE, related_name='job_application'

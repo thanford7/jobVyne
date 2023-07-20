@@ -334,7 +334,16 @@ class SocialLinkJobsView(JobVyneAPIView):
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
             jobs_filter &= job_subscription_filter
-            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter, is_include_fetch=False)
+            
+            # User entered jobs may be posted to social channels like Slack with a link
+            # They might not yet be approved, but we still want users to have access to the job
+            # As long as this is a direct link to the job, we will display it
+            is_allow_unapproved = len(job_subscriptions) == 1 and job_subscriptions[0].is_single_job_subscription
+            jobs = EmployerJobView.get_employer_jobs(
+                employer_job_filter=jobs_filter,
+                is_include_fetch=False,
+                is_allow_unapproved=is_allow_unapproved
+            )
             if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
                 is_jobs_closed = True
         elif profession_key:

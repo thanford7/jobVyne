@@ -13,7 +13,7 @@ from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_no
 from jvapp.utils.money import parse_compensation_text
 from scrape.base_scrapers import WorkableScraper, get_recent_scraped_job_urls
 from scrape.custom_scraper.workable_company_whitelist import company_whitelist
-from scrape.job_processor import JobItem, JobProcessor
+from scrape.job_processor import JobItem, ScrapedJobProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def parse_workable_xml_jobs():
             **description_compensation_data
         )
         if not (employer_parser := employer_parsers.get(job_item.employer_name)):
-            employer_parser = JobProcessor(employer)
+            employer_parser = ScrapedJobProcessor(employer)
             employer_parsers[job_item.employer_name] = employer_parser
         logger.info(f'Processing {job_data["employer_name"]} - {job_data["job_title"]}.')
         employer_parser.process_job(job_item)
@@ -483,7 +483,103 @@ class IesoScraper(WorkableScraper):
     EMPLOYER_KEY = 'ieso'
 
 
+class InsiteScraper(WorkableScraper):
+    employer_name = 'Insite'
+    EMPLOYER_KEY = 'insite'
+
+
+class ProphecyScraper(WorkableScraper):
+    employer_name = 'Prophecy'
+    EMPLOYER_KEY = 'prophecy'
+
+
+class EmploymentHeroScraper(WorkableScraper):
+    employer_name = 'Employment Hero'
+    EMPLOYER_KEY = 'employmenthero'
+
+
+class AldrinScraper(WorkableScraper):
+    employer_name = 'Aldrin'
+    EMPLOYER_KEY = 'aldrin'
+
+
+class WorkableCoScraper(WorkableScraper):
+    employer_name = 'Workable'
+    EMPLOYER_KEY = 'workable'
+
+
+class KudaScraper(WorkableScraper):
+    employer_name = 'Kuda'
+    EMPLOYER_KEY = 'kuda'
+
+
+class FortanixScraper(WorkableScraper):
+    employer_name = 'Fortanix'
+    EMPLOYER_KEY = 'fortanix'
+
+
+class FoodicsScraper(WorkableScraper):
+    employer_name = 'Foodics'
+    EMPLOYER_KEY = 'foodics'
+
+
+class QuizizzScraper(WorkableScraper):
+    employer_name = 'Quizizz'
+    EMPLOYER_KEY = 'quizizz'
+
+
+class TavusScraper(WorkableScraper):
+    employer_name = 'Tavus'
+    EMPLOYER_KEY = 'tavus'
+
+
+class LightmatterScraper(WorkableScraper):
+    employer_name = 'Lightmatter'
+    EMPLOYER_KEY = 'lightmatter'
+
+
+class IntuitionMachinesScraper(WorkableScraper):
+    employer_name = 'Intuition Machines'
+    EMPLOYER_KEY = 'intuitionmachines'
+
+
+class TenXScraper(WorkableScraper):
+    employer_name = '10x'
+    EMPLOYER_KEY = '10x'
+
+
+class ProxymityScraper(WorkableScraper):
+    employer_name = 'Proxymity'
+    EMPLOYER_KEY = 'proxymity'
+    
+
+class AjaibScraper(WorkableScraper):
+    employer_name = 'Ajaib'
+    EMPLOYER_KEY = 'ajaib'
+    
+    
+class HeartexScraper(WorkableScraper):
+    employer_name = 'Heartex'
+    EMPLOYER_KEY = 'heartex'
+
+
 workable_scrapers = {
+    HeartexScraper.employer_name: HeartexScraper,
+    AjaibScraper.employer_name: AjaibScraper,
+    ProxymityScraper.employer_name: ProxymityScraper,
+    TenXScraper.employer_name: TenXScraper,
+    LightmatterScraper.employer_name: LightmatterScraper,
+    IntuitionMachinesScraper.employer_name: IntuitionMachinesScraper,
+    TavusScraper.employer_name: TavusScraper,
+    QuizizzScraper.employer_name: QuizizzScraper,
+    FoodicsScraper.employer_name: FoodicsScraper,
+    FortanixScraper.employer_name: FortanixScraper,
+    KudaScraper.employer_name: KudaScraper,
+    WorkableCoScraper.employer_name: WorkableCoScraper,
+    AldrinScraper.employer_name: AldrinScraper,
+    EmploymentHeroScraper.employer_name: EmploymentHeroScraper,
+    ProphecyScraper.employer_name: ProphecyScraper,
+    InsiteScraper.employer_name: InsiteScraper,
     IesoScraper.employer_name: IesoScraper,
     PersadoScraper.employer_name: PersadoScraper,
     Shift4Scraper.employer_name: Shift4Scraper,

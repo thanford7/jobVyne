@@ -167,7 +167,7 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
             created_dt=timezone.now(),
             modified_dt=timezone.now()
         ))
-        if idx and (idx % 5000 == 0 or idx == len(jobs) - 1):
+        if (idx and (idx % 5000 == 0 or idx == len(jobs) - 1)) or len(jobs) == 1:
             logger.info(f'Total jobs ({idx + 1}). Removing existing taxonomies and saving new ones.')
             with atomic():
                 JobTaxonomy.objects.filter(job_id__in=[jt.job_id for jt in job_taxes_to_save], taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
@@ -206,6 +206,7 @@ def get_standardized_job_taxonomy(job_title: str):
     if any((
         re.match(f'{start_or_word_and_space_re}product\W.*?(manager|owner|analyst|lead|leader|management|mgr|director|expert|intern|line){space_and_word_or_end_re}', job_title),
         re.match(f'{start_or_word_and_space_re}(chief|vp|vice president|head|director|manager).+?product (officer|manage).*?', job_title),
+        re.match(f'{start_or_word_and_space_re}(chief|vp|vice president|head|director|manager).+?product$', job_title),
         re.match(f'{start_or_word_and_space_re}cpo{space_and_word_or_end_re}', job_title),
     )) and not re.match(f'{start_or_word_and_space_re}(design|support|product development|designer|engineer|engineering){space_and_word_or_end_re}', job_title):
         return get_or_create_job_title_tax('Product Management')

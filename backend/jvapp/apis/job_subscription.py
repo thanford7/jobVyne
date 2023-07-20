@@ -239,6 +239,15 @@ class JobSubscriptionView(JobVyneAPIView):
             job_subscription.save()
             job_subscription.filter_job.add(job_id)
             return job_subscription
+        
+    @staticmethod
+    def get_or_create_user_generated_subscription(employer_id):
+        try:
+            return JobSubscription.objects.get(employer_id=employer_id, is_user_entered=True)
+        except JobSubscription.DoesNotExist:
+            job_subscription = JobSubscription(employer_id=employer_id, is_user_entered=True)
+            job_subscription.save()
+            return job_subscription
     
     @staticmethod
     def create_employer_subscription(employer_id):

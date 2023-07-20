@@ -118,11 +118,13 @@ class ApplicationView(JobVyneAPIView):
         
         ## Send notification emails
         employer = application.employer_job.employer
+        referrer_user = application.social_link.owner if application.social_link else application.referrer_user
         django_context = {
             'job': application.employer_job,
             'application': application,
-            'referrer': application.social_link.owner,
-            'link_name': application.social_link.name,
+            'referrer_user': referrer_user,
+            'referrer_employer': application.referrer_employer,
+            'link_name': application.social_link.name if application.social_link else None,
             'employer': employer
         }
         if any([resume, academic_transcript]):
@@ -146,13 +148,13 @@ class ApplicationView(JobVyneAPIView):
         )
         
         # Email the referrer (if there is one)
-        if application.social_link.owner and UserNotificationPreferenceView.get_is_notification_enabled(
-            application.social_link.owner, NotificationPreferenceKey.NEW_APPLICATION.value
+        if referrer_user and UserNotificationPreferenceView.get_is_notification_enabled(
+            referrer_user, NotificationPreferenceKey.NEW_APPLICATION.value
         ):
             send_django_email(
                 f'Congratulations, you have a new referral',
                 'emails/application_submission_referrer_email.html',
-                to_email=[application.social_link.owner.email],
+                to_email=[referrer_user.email],
                 from_email=EMAIL_ADDRESS_SEND,
                 django_context={
                     'is_unsubscribe': True,
@@ -160,6 +162,8 @@ class ApplicationView(JobVyneAPIView):
                 },
                 employer=employer
             )
+            
+        # TODO: Email the referring organization if they have notification emails configured
         
         # Send a notification to the employer if they have it configured
         if employer.notification_email:

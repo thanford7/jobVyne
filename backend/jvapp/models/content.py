@@ -138,6 +138,7 @@ class JobPost(AuditFields):
     recipient = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True, related_name='recipient_job_post')
     job = models.ForeignKey('EmployerJob', on_delete=models.CASCADE, related_name='job_post')
     channel = models.CharField(max_length=30)
+    meta_data = models.JSONField(blank=True, null=True)  # Useful for storing responses, original message text, etc
     
     class Meta:
         constraints = [

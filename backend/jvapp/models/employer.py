@@ -1,7 +1,8 @@
-from enum import Enum
+from enum import Enum, IntEnum
 
 from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.db.models import UniqueConstraint
 
 from jvapp.models._customDjangoField import LowercaseCharField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
@@ -14,7 +15,7 @@ __all__ = (
     'EmployerSlack', 'Taxonomy', 'JobTaxonomy',
 )
 
-from jvapp.models.user import PermissionName
+from jvapp.models.user import JobVyneUser, PermissionName
 
 
 def get_employer_upload_location(instance, filename):
@@ -63,6 +64,9 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     has_job_scraper = models.BooleanField(default=False, blank=True)
     last_job_scrape_success_dt = models.DateTimeField(null=True, blank=True)
     has_job_scrape_failure = models.BooleanField(default=False, blank=True)
+
+    # User entered Employer
+    is_employer_approved = models.BooleanField(default=True)
     
     def __str__(self):
         return self.employer_name
@@ -191,6 +195,12 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         DAY = 'day'
         HOUR = 'hour'
         ONCE = 'once'
+        
+    class EmploymentType(Enum):
+        FULL_TIME = 'Full Time'
+        PART_TIME = 'Part Time'
+        CONTRACT = 'Contract'
+        INTERNSHIP = 'Internship'
     
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='employer_job')
     job_title = models.CharField(max_length=200)
@@ -214,6 +224,9 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     qualifications_prompt = models.ForeignKey('AIRequest', null=True, on_delete=models.SET_NULL)
 
     ats_job_key = models.CharField(max_length=50, null=True, blank=True)
+
+    # For user entered jobs, we want to review and approve before displaying on the website
+    is_job_approved = models.BooleanField(default=True)
     
     def __str__(self):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
@@ -226,12 +239,18 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
                 self.employer_id == user.employer_id
                 and user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, user.employer_id)
             )
+            or (
+                self.created_user_id and self.created_user_id == user.id
+            )
         )
 
     def get_key(self):
         location_ids = [l.id for l in self.locations.all()]
         location_ids.sort()
         return self.generate_job_key(self.job_title, tuple(location_ids))
+    
+    def is_creator(self, user):
+        return self.created_user_id and self.created_user_id == user.id
     
     @property
     def locations_text(self):
@@ -287,6 +306,36 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
             if tax.taxonomy.tax_type == Taxonomy.TAX_TYPE_JOB_TITLE:
                 return tax.taxonomy.name
         return 'Unknown'
+    
+    @property
+    def is_user_created(self):
+        for job_connection in self.job_connection.all():
+            if job_connection.is_job_creator:
+                return True
+        return False
+    
+    
+class EmployerJobConnection(AuditFields):
+    class ConnectionTypeBit(IntEnum):
+        HIRING_MEMBER = 1
+        CURRENT_EMPLOYEE = 2
+        FORMER_EMPLOYEE = 4
+        KNOW_EMPLOYEE = 8
+        NO_CONNECTION = 16
+
+    user = models.ForeignKey(JobVyneUser, on_delete=models.CASCADE, related_name='job_connection')
+    job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='job_connection')
+    connection_type = models.SmallIntegerField()
+    is_allow_contact = models.BooleanField()  # Whether users can contact the connection
+    is_job_creator = models.BooleanField(default=False)  # Only the creator can edit the job
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['user', 'job'],
+                name='unique_user_job'
+            ),
+        ]
 
 
 class Taxonomy(models.Model):

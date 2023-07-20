@@ -1,4 +1,5 @@
 import json
+import re
 
 
 class SlackBlock:
@@ -68,8 +69,10 @@ class Modal(SlackBlock):
                 input_type = input_dict['type']
                 if input_type == 'checkboxes':
                     val = InputCheckbox.get_values(input_dict)
-                elif input_type in (InputText.INPUT_TYPE, InputEmail.INPUT_TYPE, InputUrl.INPUT_TYPE):
-                    val = InputText.get_values(input_dict)
+                elif input_type in (Select.TYPE, SelectExternal.TYPE):
+                    val = SelectExternal.get_value(input_dict)
+                elif input_type in (InputText.INPUT_TYPE, InputEmail.INPUT_TYPE, InputUrl.INPUT_TYPE, InputNumber.INPUT_TYPE):
+                    val = InputText.get_value(input_dict)
                 else:
                     val = input_dict['value']
                 values[input_key] = val
@@ -88,7 +91,11 @@ class InputText(SlackBlock):
         self.action_id = action_id
         self.label = label
         self.placeholder = placeholder
+        
+        if (initial_value is not None) and (not isinstance(initial_value, str)):
+            initial_value = str(initial_value)
         self.initial_value = initial_value
+        
         self.is_optional = is_optional
         self.is_multiline = is_multiline
         self.help_text = help_text
@@ -127,8 +134,28 @@ class InputText(SlackBlock):
         return slack_object
     
     @staticmethod
-    def get_values(input_dict):
-        return input_dict['value']
+    def get_value(input_dict):
+        return input_dict.get('value')
+    
+    
+class InputNumber(InputText):
+    INPUT_TYPE = 'number_input'
+    
+    def __init__(self, *args, is_decimal_allowed=False, min_value=None, max_value=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_decimal_allowed = is_decimal_allowed
+        self.min_value = min_value
+        self.max_value = max_value
+        
+    def get_slack_object(self):
+        slack_object = super().get_slack_object()
+        slack_object['element']['is_decimal_allowed'] = self.is_decimal_allowed
+        if self.min_value is not None:
+            slack_object['element']['min_value'] = str(self.min_value)
+        if self.max_value is not None:
+            slack_object['element']['max_value'] = str(self.max_value)
+            
+        return slack_object
 
 
 class InputEmail(InputText):
@@ -182,7 +209,12 @@ class InputCheckbox(SlackBlock):
     
     
 class InputOption(SlackBlock):
+    NEW_VALUE_KEY = 'value-new'
+    NEW_VALUE_PREPEND = '(New) '
+    
     def __init__(self, label, value, description: str = None):
+        if not isinstance(value, str):
+            value = str(value)
         self.label = label
         self.value = value
         self.description = description
@@ -203,4 +235,117 @@ class InputOption(SlackBlock):
             }
         
         return slack_object
+    
+    @classmethod
+    def parse_value_text(cls, text):
+        if re.match(f'^{cls.NEW_VALUE_PREPEND}.+?$', text):
+            return text.replace(cls.NEW_VALUE_PREPEND, '').strip()
+        return text
+    
+    
+class Select(SlackBlock):
+    TYPE = 'static_select'
+    
+    def __init__(self, action_id, label, placeholder, options, focus_on_load=False, initial_option=None, **kwargs):
+        self.action_id = action_id
+        self.label = label
+        self.placeholder = placeholder
+        self.options = options
+        self.focus_on_load = focus_on_load
+        self.initial_option = initial_option
+
+    def get_slack_object(self):
+        slack_object = {
+            'type': 'input',
+            'label': {
+                'type': 'plain_text',
+                'text': self.label,
+                'emoji': True
+            },
+            'element': {
+                'type': self.TYPE,
+                'action_id': self.action_id,
+                'placeholder': {
+                    'type': 'plain_text',
+                    'text': self.placeholder
+                },
+                'options': self.options,
+                'focus_on_load': self.focus_on_load
+            }
+        }
+        
+        if self.initial_option:
+            slack_object['element']['initial_option'] = self.initial_option
+    
+        return slack_object
+
+    @staticmethod
+    def get_value(input_dict):
+        selected_option = input_dict.get('selected_option')
+        if not selected_option:
+            return None
+        return {
+            'text': selected_option['text']['text'],
+            'value': selected_option['value']
+        }
+    
+    
+class SelectExternal(SlackBlock):
+    TYPE = 'external_select'
+    
+    def __init__(self, action_id, label, placeholder, min_query_length=3, focus_on_load=False, **kwargs):
+        self.action_id = action_id
+        self.label = label
+        self.placeholder = placeholder
+        self.min_query_length = min_query_length
+        self.focus_on_load = focus_on_load
+    
+    def get_slack_object(self):
+        slack_object = {
+            'type': 'input',
+            'label': {
+                'type': 'plain_text',
+                'text': self.label,
+                'emoji': True
+            },
+            'element': {
+                'type': self.TYPE,
+                'action_id': self.action_id,
+                'placeholder': {
+                    'type': 'plain_text',
+                    'text': self.placeholder
+                },
+                'min_query_length': self.min_query_length,
+                'focus_on_load': self.focus_on_load
+            }
+        }
+        
+        return slack_object
+    
+    @staticmethod
+    def get_value(input_dict):
+        return Select.get_value(input_dict)
+        
+    
+class MultiSelectExternal(SelectExternal):
+    TYPE = 'multi_external_select'
+    
+    def __init__(self, *args, max_selected_items=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_selected_items = max_selected_items
+        
+    def get_slack_object(self):
+        slack_object = super().get_slack_object()
+        
+        if self.max_selected_items:
+            slack_object['element']['max_selected_items'] = self.max_selected_items
+            
+        return slack_object
+
+
+class SelectEmployer(SelectExternal):
+    OPTIONS_LOAD_KEY = 'options-employer'
+    
+    def __init__(self, *args, focus_on_load=False, **kwargs):
+        super().__init__(self.OPTIONS_LOAD_KEY, 'Select employer', 'Select employer', focus_on_load=focus_on_load)
         
