@@ -19,7 +19,7 @@ from playwright.async_api import expect
 
 from jvapp.models.employer import EmployerJob
 from jvapp.utils.data import capitalize, coerce_float, coerce_int, get_base_url, get_website_domain_from_url
-from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
+from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_from_unix, get_datetime_or_none
 from jvapp.utils.file import get_file_storage_engine
 from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from scrape.job_processor import JobItem
@@ -1343,6 +1343,64 @@ class ApplicantProScraper(Scraper):
             logo_url=standard_job_item.logo_url,
             website_domain=standard_job_item.website_domain,
             **compensation_data
+        )
+
+
+class EightfoldScraper(Scraper):
+    IS_API = True
+    JOBS_PER_PAGE = 10  # This looks like the max that's supported
+    
+    async def scrape_jobs(self):
+        total_jobs = None
+        start_job_idx = 0
+        jobs = []
+        while (not total_jobs) or (start_job_idx < total_jobs):
+            jobs_list, total_jobs = self.get_jobs(start_job_idx)
+            jobs += jobs_list
+            start_job_idx += self.JOBS_PER_PAGE
+        
+        for job in jobs:
+            await self.add_job_links_to_queue(self.get_job_link(job), meta_data={'job_id': job['id']})
+        
+        await self.close()
+    
+    def get_job_link(self, job_data):
+        return f'https://careers.{self.EMPLOYER_KEY}.com/careers?pid={job_data["id"]}'
+    
+    def get_jobs(self, next_page_start):
+        request_data = {
+            'sort_by': 'relevance',
+            'num': self.JOBS_PER_PAGE,
+            'start': next_page_start
+        }
+        jobs_resp = requests.get(
+            f'https://careers.{self.EMPLOYER_KEY}.com/api/apply/v2/jobs',
+            params=request_data
+        )
+        jobs_data = json.loads(jobs_resp.content)
+        return jobs_data['positions'], jobs_data['count']
+    
+    def get_raw_job_data(self, job_id):
+        job_resp = requests.get(f'https://careers.{self.EMPLOYER_KEY}.com/api/apply/v2/jobs/{job_id}')
+        return json.loads(job_resp.content)
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None):
+        job_data = self.get_raw_job_data(job_id)
+        job_description = job_data['job_description']
+        description_compensation_data = parse_compensation_text(job_description)
+        locations = job_data['locations']
+        # is_remote = job_data['location_flexibility']
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data['name'],
+            locations=locations,
+            job_department=job_data['department'] or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description,
+            employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=get_datetime_format_or_none(get_datetime_from_unix(job_data['t_create']).date()),
+            **description_compensation_data
         )
 
 

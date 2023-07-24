@@ -391,6 +391,7 @@ export default {
 
       this.updateJobFilterQueryParams()
       this.isLoaded = true
+      scrollUtil.scrollTo(0)
     }
   },
   async mounted () {
