@@ -150,20 +150,20 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
         job_filter &= ~Q(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
         jobs = EmployerJob.objects\
             .filter(job_filter)\
-            .distinct()
+            .distinct().values('id', 'job_title')
     else:
-        jobs = EmployerJob.objects.filter(job_filter)
+        jobs = EmployerJob.objects.filter(job_filter).values('id', 'job_title')
     
     logger.info(f'Running job standardization for {len(jobs)} jobs')
     job_taxes_to_save = []
     for idx, job in enumerate(jobs):
-        standardized_job_tax = get_standardized_job_taxonomy(job.job_title)
+        standardized_job_tax = get_standardized_job_taxonomy(job['job_title'])
         if not standardized_job_tax:
             # logger.info(f'Could not find standardized title for {job.job_title}')
             continue
         job_taxes_to_save.append(JobTaxonomy(
             taxonomy=standardized_job_tax,
-            job=job,
+            job_id=job['id'],
             created_dt=timezone.now(),
             modified_dt=timezone.now()
         ))

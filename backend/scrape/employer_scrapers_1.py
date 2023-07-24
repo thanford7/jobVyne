@@ -404,11 +404,6 @@ class UnderdogFantasyScraper(GreenhouseIframeScraper):
     employer_name = 'Underdog Fantasy'
 
 
-class TixrScraper(LeverScraper):
-    employer_name = 'Tixr'
-    EMPLOYER_KEY = 'Tixr'
-
-
 class Mach49Scraper(GreenhouseScraper):
     employer_name = 'Mach49'
     EMPLOYER_KEY = 'mach49'
@@ -437,11 +432,6 @@ class ConsensusScraper(LeverScraper):
 class LoopScraper(GreenhouseScraper):
     employer_name = 'Loop'
     EMPLOYER_KEY = 'loop'
-
-
-class LoopReturnsScraper(LeverScraper):
-    employer_name = 'Loop Returns'
-    EMPLOYER_KEY = 'loopreturns'
 
 
 class SentiLinkScraper(GreenhouseScraper):

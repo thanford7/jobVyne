@@ -6,6 +6,7 @@ from scrape.employer_scrapers_5 import *
 from scrape.employer_scrapers_6 import *
 from scrape.employer_scrapers_7 import *
 from scrape.employer_scrapers_8 import *
+from scrape.employer_scrapers_9 import *
 from scrape.custom_scraper.ancestry import AncestryScraper
 from scrape.custom_scraper.packsize import PacksizeScraper
 
@@ -16,6 +17,49 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    JarScraper.employer_name: JarScraper,
+    NoomScraper.employer_name: NoomScraper,
+    BinanceUsScraper.employer_name: BinanceUsScraper,
+    PlacerAiScraper.employer_name: PlacerAiScraper,
+    AlayacareScraper.employer_name: AlayacareScraper,
+    GamblingComScraper.employer_name: GamblingComScraper,
+    DelphixScraper.employer_name: DelphixScraper,
+    JustwatchScraper.employer_name: JustwatchScraper,
+    ArenaScraper.employer_name: ArenaScraper,
+    HealthCatalystScraper.employer_name: HealthCatalystScraper,
+    LucidworksScraper.employer_name: LucidworksScraper,
+    LeagueappsScraper.employer_name: LeagueappsScraper,
+    AptosScraper.employer_name: AptosScraper,
+    StocktwitsScraper.employer_name: StocktwitsScraper,
+    LookoutScraper.employer_name: LookoutScraper,
+    ZolaScraper.employer_name: ZolaScraper,
+    TempoScraper.employer_name: TempoScraper,
+    ScribdScraper.employer_name: ScribdScraper,
+    LevelScraper.employer_name: LevelScraper,
+    CarsBidsScraper.employer_name: CarsBidsScraper,
+    ChownowScraper.employer_name: ChownowScraper,
+    AndurilScraper.employer_name: AndurilScraper,
+    DronedeployScraper.employer_name: DronedeployScraper,
+    MedableScraper.employer_name: MedableScraper,
+    SaturnScraper.employer_name: SaturnScraper,
+    ArgentScraper.employer_name: ArgentScraper,
+    DunamuScraper.employer_name: DunamuScraper,
+    PayitScraper.employer_name: PayitScraper,
+    KraftonGameUnionScraper.employer_name: KraftonGameUnionScraper,
+    TruecallerScraper.employer_name: TruecallerScraper,
+    YummyScraper.employer_name: YummyScraper,
+    HqoScraper.employer_name: HqoScraper,
+    DataAiScraper.employer_name: DataAiScraper,
+    GlanceScraper.employer_name: GlanceScraper,
+    VaroScraper.employer_name: VaroScraper,
+    PetCircleScraper.employer_name: PetCircleScraper,
+    VoodooScraper.employer_name: VoodooScraper,
+    UpstoxScraper.employer_name: UpstoxScraper,
+    IbottaScraper.employer_name: IbottaScraper,
+    OnboardScraper.employer_name: OnboardScraper,
+    CohereScraper.employer_name: CohereScraper,
+    WealthfrontScraper.employer_name: WealthfrontScraper,
+    YassirScraper.employer_name: YassirScraper,
     IntrinsicScraper.employer_name: IntrinsicScraper,
     XageSecurityScraper.employer_name: XageSecurityScraper,
     TradeRepublicScraper.employer_name: TradeRepublicScraper,
