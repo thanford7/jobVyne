@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from functools import reduce
 from io import StringIO
@@ -22,6 +23,7 @@ from jvapp.apis.notification import MessageGroupView
 from jvapp.apis.social import SocialLinkView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
+from jvapp.integrations.company import get_company_info
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobConnection, EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
@@ -44,7 +46,7 @@ from jvapp.utils.sanitize import sanitize_html
 
 __all__ = (
     'EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView',
-    'EmployerSubscriptionView'
+    'EmployerSubscriptionView', 'EmployerInfoView',
 )
 
 from jvapp.utils.security import generate_user_token, get_uid_from_user
@@ -1629,3 +1631,26 @@ class EmployerJobLocationView(JobVyneAPIView):
                 locations.append(location)
         
         return Response(status=status.HTTP_200_OK, data=LocationView.get_serialized_locations(locations))
+
+
+class EmployerInfoView(JobVyneAPIView):
+    @staticmethod
+    def fill_company_info(limit):
+        unfilled_companies = Employer.objects.filter(
+            linkedin_url__isnull=True,
+        )[:limit]
+        for employer in unfilled_companies:
+            company = get_company_info(employer.employer_name, employer.email_domains)
+            if not company:
+                logging.info(f'Could not find company info for {employer.employer_name}')
+                continue
+            employer.linkedin_url = f'https://www.linkedin.com/{company.handle}'
+            employer.year_founded = company.founded or None
+            employer.industry = company.industry
+            size_parts = company.size.split('-')
+            if len(size_parts) == 2:
+                employer.size_min, employer.size_max = [sp.replace(',', '') for sp in size_parts]
+            employer.website = company.website
+            employer.ownership_type = company.type
+            employer.save()
+
