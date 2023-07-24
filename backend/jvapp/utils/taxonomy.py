@@ -170,7 +170,7 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
         if (idx and (idx % 5000 == 0 or idx == len(jobs) - 1)) or len(jobs) == 1:
             logger.info(f'Total jobs ({idx + 1}). Removing existing taxonomies and saving new ones.')
             with atomic():
-                JobTaxonomy.objects.filter(job_id__in=[jt.job_id for jt in job_taxes_to_save], taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
+                JobTaxonomy.objects.filter(job_id__in=[jt.job_id for jt in job_taxes_to_save], taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE).delete()
                 JobTaxonomy.objects.bulk_create(job_taxes_to_save, ignore_conflicts=True)
             job_taxes_to_save = []
 
