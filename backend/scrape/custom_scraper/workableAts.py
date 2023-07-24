@@ -551,19 +551,139 @@ class TenXScraper(WorkableScraper):
 class ProxymityScraper(WorkableScraper):
     employer_name = 'Proxymity'
     EMPLOYER_KEY = 'proxymity'
-    
+
 
 class AjaibScraper(WorkableScraper):
     employer_name = 'Ajaib'
     EMPLOYER_KEY = 'ajaib'
-    
-    
+
+
 class HeartexScraper(WorkableScraper):
     employer_name = 'Heartex'
     EMPLOYER_KEY = 'heartex'
 
 
+class SkyMavisScraper(WorkableScraper):
+    employer_name = 'Sky Mavis'
+    EMPLOYER_KEY = 'skymavis'
+
+
+class ClerkScraper(WorkableScraper):
+    employer_name = 'Clerk'
+    EMPLOYER_KEY = 'clerk'
+
+
+class EntainScraper(WorkableScraper):
+    employer_name = 'Entain'
+    EMPLOYER_KEY = 'entain'
+
+
+class SpatialScraper(WorkableScraper):
+    employer_name = 'Spatial'
+    EMPLOYER_KEY = 'spatial'
+
+
+class IceyeScraper(WorkableScraper):
+    employer_name = 'ICEYE'
+    EMPLOYER_KEY = 'iceye'
+
+
+class CarbyneScraper(WorkableScraper):
+    employer_name = 'Carbyne'
+    EMPLOYER_KEY = 'carbyne'
+
+
+class IslandScraper(WorkableScraper):
+    employer_name = 'Island'
+    EMPLOYER_KEY = 'island'
+
+
+class TresataScraper(WorkableScraper):
+    employer_name = 'Tresata'
+    EMPLOYER_KEY = 'tresata'
+
+
+class StakefishScraper(WorkableScraper):
+    employer_name = 'stakefish'
+    EMPLOYER_KEY = 'stakefish'
+
+
+class EleosHealthScraper(WorkableScraper):
+    employer_name = 'Eleos Health'
+    EMPLOYER_KEY = 'eleoshealth'
+
+
+class PerceptyxScraper(WorkableScraper):
+    employer_name = 'Perceptyx'
+    EMPLOYER_KEY = 'perceptyx'
+
+
+class BetterhelpScraper(WorkableScraper):
+    employer_name = 'BetterHelp'
+    EMPLOYER_KEY = 'betterhelp'
+
+
+class ReversinglabsScraper(WorkableScraper):
+    employer_name = 'ReversingLabs'
+    EMPLOYER_KEY = 'reversinglabs'
+
+
+class OxboticaScraper(WorkableScraper):
+    employer_name = 'Oxbotica'
+    EMPLOYER_KEY = 'oxbotica'
+
+
+class InspectorioScraper(WorkableScraper):
+    employer_name = 'Inspectorio'
+    EMPLOYER_KEY = 'inspectorio'
+
+
+class LearnworldsScraper(WorkableScraper):
+    employer_name = 'LearnWorlds'
+    EMPLOYER_KEY = 'learnworlds'
+
+
+class ProducepayScraper(WorkableScraper):
+    employer_name = 'ProducePay'
+    EMPLOYER_KEY = 'producepay'
+
+
+class FreelancerComScraper(WorkableScraper):
+    employer_name = 'Freelancer.com'
+    EMPLOYER_KEY = 'freelancercom'
+
+
+class ElvieScraper(WorkableScraper):
+    employer_name = 'Elvie'
+    EMPLOYER_KEY = 'elvie'
+
+
+class SmartScraper(WorkableScraper):
+    employer_name = 'Smart'
+    EMPLOYER_KEY = 'smart'
+
+
 workable_scrapers = {
+    SmartScraper.employer_name: SmartScraper,
+    ElvieScraper.employer_name: ElvieScraper,
+    FreelancerComScraper.employer_name: FreelancerComScraper,
+    ProducepayScraper.employer_name: ProducepayScraper,
+    LearnworldsScraper.employer_name: LearnworldsScraper,
+    InspectorioScraper.employer_name: InspectorioScraper,
+    OxboticaScraper.employer_name: OxboticaScraper,
+    ReversinglabsScraper.employer_name: ReversinglabsScraper,
+    BetterhelpScraper.employer_name: BetterhelpScraper,
+    EleosHealthScraper.employer_name: EleosHealthScraper,
+    PerceptyxScraper.employer_name: PerceptyxScraper,
+    StakefishScraper.employer_name: StakefishScraper,
+    CarbyneScraper.employer_name: CarbyneScraper,
+    IslandScraper.employer_name: IslandScraper,
+    TresataScraper.employer_name: TresataScraper,
+    IceyeScraper.employer_name: IceyeScraper,
+    SpatialScraper.employer_name: SpatialScraper,
+    EntainScraper.employer_name: EntainScraper,
+    ClerkScraper.employer_name: ClerkScraper,
+    SkyMavisScraper.employer_name: SkyMavisScraper,
     HeartexScraper.employer_name: HeartexScraper,
     AjaibScraper.employer_name: AjaibScraper,
     ProxymityScraper.employer_name: ProxymityScraper,
