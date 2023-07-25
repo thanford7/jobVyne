@@ -38,7 +38,7 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, \
     get_serialized_employer_referral_request
-from jvapp.utils import csv
+from jvapp.utils import csv, ai
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import ContentPlaceholders, get_domain_from_email, send_django_email
@@ -1634,12 +1634,18 @@ class EmployerJobLocationView(JobVyneAPIView):
 
 
 class EmployerInfoView(JobVyneAPIView):
+    MIN_AI_YEAR = 2020
+    DESCRIPTION_PROMPT = (
+        'You are helping describe companies in 1 sentence. '
+        'Your response should be RFC8259 compliant JSON in the format: {"name": "(name of company)", "description": "(description)"}'
+    )
+
     @staticmethod
     def fill_company_info(limit):
-        unfilled_companies = Employer.objects.filter(
+        unfilled_employers = Employer.objects.filter(
             linkedin_url__isnull=True,
         )[:limit]
-        for employer in unfilled_companies:
+        for employer in unfilled_employers:
             company = get_company_info(employer.employer_name, employer.email_domains)
             if not company:
                 logging.info(f'Could not find company info for {employer.employer_name}')
@@ -1653,4 +1659,17 @@ class EmployerInfoView(JobVyneAPIView):
             employer.website = company.website
             employer.ownership_type = company.type
             employer.save()
+
+        undescribed_employers = Employer.objects.filter(
+            description__isnull=True,
+            year_founded__lt=EmployerInfoView.MIN_AI_YEAR,
+        )[:limit]
+        for employer in undescribed_employers:
+            resp, _ = employer.description = ai.ask([
+                {'role': 'system', 'content': EmployerInfoView.DESCRIPTION_PROMPT},
+                {'role': 'user', 'content': employer.employer_name},
+            ])
+            employer.description = resp['description']
+            employer.save()
+
 
