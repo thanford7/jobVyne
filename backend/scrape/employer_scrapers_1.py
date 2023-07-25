@@ -383,11 +383,6 @@ class AddeparScraper(GreenhouseIframeScraper):
     employer_name = 'Addepar'
 
 
-class WaymarkScraper(GreenhouseScraper):
-    employer_name = 'Waymark'
-    EMPLOYER_KEY = 'waymark'
-
-
 class VivintScraper(WorkdayScraper):
     employer_name = 'Vivint'
     start_url = 'https://vivint.wd5.myworkdayjobs.com/vivintjobs/'

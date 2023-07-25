@@ -14,8 +14,8 @@
         </q-banner>
       </div>
       <div>
-        <div class="header" :class="(isIncludeLogo) ? 'header-logo' : ''">
-          <div v-if="isIncludeLogo" class="flex flex-center q-py-sm">
+        <div class="header" :class="(isIncludeJobVyneLogo) ? 'header-jv-logo' : ''" style="position: relative">
+          <div v-if="isIncludeJobVyneLogo" class="flex flex-center q-py-sm">
             <img src="~assets/jobVyneLogo.png" alt="Logo" style="height: 40px; object-fit: scale-down">
           </div>
           <slot name="title">
@@ -23,6 +23,12 @@
               <h5 class="text-gray-900">{{ title }}</h5>
             </div>
           </slot>
+          <q-img
+            v-if="!isIncludeJobVyneLogo && employer?.logo_square_88_url"
+            :src="employer.logo_square_88_url"
+            alt="Logo" width="50px"
+            style="position: absolute; top: 10px; right: 10px;"
+          />
           <div
             v-if="isIncludeSidebarToggle"
             class="flex items-center justify-end q-mr-md"
@@ -55,7 +61,7 @@ export default {
     title: {
       type: String
     },
-    isIncludeLogo: {
+    isIncludeJobVyneLogo: {
       type: Boolean,
       default: false
     },
@@ -66,27 +72,33 @@ export default {
   },
   data () {
     return {
+      employer: null,
       billingBannerMsg: null,
       utilStore: useUtilStore()
     }
   },
   async mounted () {
     const { namespace } = this.$route.params
-    if (namespace === 'employer') {
+    if (['employer', 'employee'].includes(namespace)) {
       const employerStore = useEmployerStore()
       const authStore = useAuthStore()
       await authStore.setUser()
-      await employerStore.setEmployerSubscription(authStore.propUser.employer_id)
-      const {
-        is_active: isEmployerActive,
-        has_seats: hasSeats
-      } = employerStore.getEmployerSubscription(authStore.propUser.employer_id)
-      if (!isEmployerActive || !hasSeats) {
-        if (!isEmployerActive) {
-          this.billingBannerMsg = 'Your subscription is currently not active.'
-        }
-        if (!hasSeats) {
-          this.billingBannerMsg = 'You have reached the number of allowable active employees based on your subscription.'
+      const employerId = authStore.propUser.employer_id
+      await employerStore.setEmployer(employerId)
+      this.employer = employerStore.getEmployer(employerId)
+      if (namespace === 'employer') {
+        await employerStore.setEmployerSubscription(employerId)
+        const {
+          is_active: isEmployerActive,
+          has_seats: hasSeats
+        } = employerStore.getEmployerSubscription(employerId)
+        if (!isEmployerActive || !hasSeats) {
+          if (!isEmployerActive) {
+            this.billingBannerMsg = 'Your subscription is currently not active.'
+          }
+          if (!hasSeats) {
+            this.billingBannerMsg = 'You have reached the number of allowable active employees based on your subscription.'
+          }
         }
       }
     }
@@ -100,7 +112,7 @@ export default {
   grid-template-columns: 75% 25%;
   grid-column-gap: 5px;
 
-  &.header-logo {
+  &.header-jv-logo {
     grid-template-columns: 25% 50% 25%;
     @media (max-width: 767px) {
       grid-template-columns: 1fr;

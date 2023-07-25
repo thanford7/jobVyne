@@ -132,7 +132,7 @@ class SlackBasePoster:
             job_link = SocialLinkView.get_or_create_single_job_link(job, employer_id=self.slack_cfg.employer.id)
             job_info = {
                 'type': 'section',
-                'block_id': 'jobs-list',
+                'block_id': f'jobs-list-{job.id}',
                 'fields': [
                     {
                         'type': 'mrkdwn',

@@ -394,7 +394,7 @@ class Scraper:
             
                 #Can be used to get company logo instead of manually adding
                 company_data = job_data.get('hiringOrganization')
-                if company_data:
+                if company_data and isinstance(company_data, dict):
                     job_item.logo_url = company_data.get('logo')
                     if website_url := company_data.get('sameAs'):
                         website_domain = get_website_domain_from_url(website_url)
@@ -1401,6 +1401,62 @@ class EightfoldScraper(Scraper):
             employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=get_datetime_format_or_none(get_datetime_from_unix(job_data['t_create']).date()),
             **description_compensation_data
+        )
+
+
+class JobviteScraper(Scraper):
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html_from_url(self.get_start_url())
+        await self.add_job_links_to_queue(
+            html_dom.xpath('//table[@class="jv-job-list"]//tr//a/@href').getall()
+        )
+        await self.close()
+    
+    def get_start_url(self):
+        return f'https://jobs.jobvite.com/careers/{self.EMPLOYER_KEY}/'
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        meta_data = html.xpath('//p[@class="jv-job-detail-meta"]/text()').getall()
+        
+        locations = [
+            l.strip() for l in meta_data[1:]
+        ] if meta_data and len(meta_data) > 1 else None
+        print(f'Locations: {locations}')
+        
+        standard_job_item = self.get_google_standard_job_item(html)
+        if not standard_job_item:
+            logger.info('Unable to parse JobItem from document. No standard job data (ld+json).')
+            return None
+        if not any((locations, standard_job_item.locations)):
+            logger.info('Unable to parse JobItem from document. No location found.')
+            return None
+        
+        job_title = (html.xpath('//h2[@class="jv-header"]//text()').get() or standard_job_item.job_title).strip()
+        
+        job_department = meta_data[0]
+        if job_department:
+            job_department = job_department.strip()
+        
+        job_description = html.xpath('//div[@class="jv-job-detail-description"]').get()
+        description_compensation_data = parse_compensation_text(job_description)
+        
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_title,
+            locations=locations if locations else standard_job_item.locations,
+            job_department=job_department or standard_job_item.job_department,
+            job_description=job_description or standard_job_item.job_description,
+            employment_type=standard_job_item.employment_type,
+            first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
+            **compensation_data
         )
 
 

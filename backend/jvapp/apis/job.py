@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from itertools import groupby
 
@@ -56,6 +57,12 @@ class LocationView(JobVyneAPIView):
 
 
 class JobClassificationView(JobVyneAPIView):
+    DESCRIPTION_CHAR_LIMIT = 6000  # Prevent exceeding token limit in OpenAI
+    RESPONSIBILITY_LIMIT = 5
+    QUALIFICATION_LIMIT = 10
+    TECH_QUALIFICATION_LIMIT = 10
+    CONCURRENT_REQUESTS = 10
+    
     def get(self, request):
         taxonomies = Taxonomy.objects.all().order_by('tax_type')
         taxonomies_by_type = groupby(taxonomies, lambda t: t.tax_type)
@@ -92,14 +99,9 @@ class JobClassificationView(JobVyneAPIView):
         if limit:
             jobs = jobs[:limit]
 
-        DESCRIPTION_CHAR_LIMIT = 6000  # Prevent exceeding token limit in OpenAI
-        RESPONSIBILITY_LIMIT = 5
-        QUALIFICATION_LIMIT = 10
-        TECH_QUALIFICATION_LIMIT = 10
-        
         system_prompt = (
             'You are helping categorize job descriptions. The use will provide an individual job description for you to categorize.\n'
-            f'Analyze the job description and categorize up to {RESPONSIBILITY_LIMIT} job responsibilities, up to {QUALIFICATION_LIMIT} required job qualifications, and up to {TECH_QUALIFICATION_LIMIT} technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
+            f'Analyze the job description and categorize up to {JobClassificationView.RESPONSIBILITY_LIMIT} job responsibilities, up to {JobClassificationView.QUALIFICATION_LIMIT} required job qualifications, and up to {JobClassificationView.TECH_QUALIFICATION_LIMIT} technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
             'Job responsibilities will likely be listed close to the word "responsibilities" in a bulleted list or comma separated list.\n'
             'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
             'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
@@ -107,17 +109,35 @@ class JobClassificationView(JobVyneAPIView):
             'Your response should be RFC8259 compliant JSON in the format:\n'
             f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
         )
+        
+        job_idx = 0
+        while job_idx < len(jobs):
+            jobs_to_process = jobs[job_idx:job_idx+JobClassificationView.CONCURRENT_REQUESTS]
+            asyncio.run(
+                JobClassificationView.process_jobs(jobs_to_process, system_prompt, is_test)
+            )
 
-        for job in jobs:
+            if not is_test:
+                EmployerJob.objects.bulk_update(
+                    jobs_to_process,
+                    ['qualifications_prompt', 'qualifications', 'technical_qualifications', 'responsibilities']
+                )
+                
+            job_idx += JobClassificationView.CONCURRENT_REQUESTS
+                
+    @staticmethod
+    async def summarize_job(system_prompt, is_test, queue):
+        while True:
+            job = await queue.get()
             logger.info(f'Running job classification for job ID = {job.id}')
-            trunc_job_description = job.job_description[:DESCRIPTION_CHAR_LIMIT]
+            trunc_job_description = job.job_description[:JobClassificationView.DESCRIPTION_CHAR_LIMIT]
             try:
                 if is_test:
                     print('----- SYSTEM PROMPT')
                     print(system_prompt)
                     print('----- USER PROMPT')
                     print(trunc_job_description)
-                resp, tracker = ai.ask([
+                resp, tracker = await ai.ask([
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': trunc_job_description}
                 ], is_test=is_test)
@@ -127,7 +147,32 @@ class JobClassificationView(JobVyneAPIView):
                 job.responsibilities = resp.get('JOB_RESPONSIBILITIES')
             except PromptError:
                 pass
+        
+            queue.task_done()
+        
+    @staticmethod
+    async def process_jobs(jobs, system_prompt, is_test):
+        queue = asyncio.Queue()
+        workers = [
+            asyncio.create_task(JobClassificationView.summarize_job(system_prompt, is_test, queue))
+            for _ in range(JobClassificationView.CONCURRENT_REQUESTS)
+        ]
+        
+        for job in jobs:
+            await queue.put(job)
 
-            if not is_test:
-                job.save()
+        # Wait until the queue is fully processed
+        if not queue.empty():
+            logger.info(f'Waiting for job queue to finish - Currently {queue.qsize()}')
+            done, _ = await asyncio.wait([queue.join(), *workers], return_when=asyncio.FIRST_COMPLETED)
+            consumers_raised = set(done) & set(workers)
+            if consumers_raised:
+                logger.info(f'Found {len(consumers_raised)} consumers that raised exceptions')
+                await consumers_raised.pop()  # propagate the exception
 
+        for worker in workers:
+            worker.cancel()
+        
+        # Wait until all workers are cancelled
+        await asyncio.gather(*workers, return_exceptions=True)
+        logger.info(f'Completed summarizing {len(jobs)} jobs')
