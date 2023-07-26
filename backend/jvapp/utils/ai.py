@@ -89,7 +89,7 @@ async def ask(prompt, model=DEFAULT_MODEL, is_test=False):
 
     Returns:
         dict that is a parse of the response text from JSON
-        aiRequest object with
+        AIRequest object with information about
     """
     # Check to see if we've made this prompt before
     prompt_hash = hashlib.md5(bytes(json.dumps(prompt) + model, 'UTF-8')).hexdigest()

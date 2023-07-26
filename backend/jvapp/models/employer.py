@@ -39,7 +39,17 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     company_jobs_page_url = models.CharField(max_length=100, null=True, blank=True)  # Used to redirect users if employer's account is inactive
     is_manual_job_entry = models.BooleanField(default=False, blank=True)  # Whether HR users can manually add jobs
     is_use_job_url = models.BooleanField(default=False, blank=True)  # For employers with no relationship to JobVyne we need to redirect users to the job page
-    
+
+    # Company data
+    description = models.TextField(null=True)
+    website = models.URLField(null=True)
+    industry = models.CharField(max_length=100, null=True)
+    size_min = models.IntegerField(null=True)
+    size_max = models.IntegerField(null=True)
+    ownership_type = models.CharField(max_length=50, null=True)
+    year_founded = models.IntegerField(null=True)
+    linkedin_url = models.URLField(null=True)
+
     # Brand colors - saved in hex form (e.g. #32a852)
     color_primary = models.CharField(max_length=9, null=True, blank=True)
     color_secondary = models.CharField(max_length=9, null=True, blank=True)

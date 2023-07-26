@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from functools import reduce
 from io import StringIO
@@ -22,6 +23,7 @@ from jvapp.apis.notification import MessageGroupView
 from jvapp.apis.social import SocialLinkView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
+from jvapp.integrations.company import get_company_info
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobConnection, EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
@@ -36,7 +38,7 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, \
     get_serialized_employer_referral_request
-from jvapp.utils import csv
+from jvapp.utils import csv, ai
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import ContentPlaceholders, get_domain_from_email, send_django_email
@@ -44,7 +46,7 @@ from jvapp.utils.sanitize import sanitize_html
 
 __all__ = (
     'EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView',
-    'EmployerSubscriptionView'
+    'EmployerSubscriptionView', 'EmployerInfoView',
 )
 
 from jvapp.utils.security import generate_user_token, get_uid_from_user
@@ -1629,3 +1631,45 @@ class EmployerJobLocationView(JobVyneAPIView):
                 locations.append(location)
         
         return Response(status=status.HTTP_200_OK, data=LocationView.get_serialized_locations(locations))
+
+
+class EmployerInfoView(JobVyneAPIView):
+    MIN_AI_YEAR = 2020
+    DESCRIPTION_PROMPT = (
+        'You are helping describe companies in 1 sentence. '
+        'Your response should be RFC8259 compliant JSON in the format: {"name": "(name of company)", "description": "(description)"}'
+    )
+
+    @staticmethod
+    def fill_company_info(limit):
+        unfilled_employers = Employer.objects.filter(
+            linkedin_url__isnull=True,
+        )[:limit]
+        for employer in unfilled_employers:
+            company = get_company_info(employer.employer_name, employer.email_domains)
+            if not company:
+                logging.info(f'Could not find company info for {employer.employer_name}')
+                continue
+            employer.linkedin_url = f'https://www.linkedin.com/{company.handle}'
+            employer.year_founded = company.founded or None
+            employer.industry = company.industry
+            size_parts = company.size.split('-')
+            if len(size_parts) == 2:
+                employer.size_min, employer.size_max = [sp.replace(',', '') for sp in size_parts]
+            employer.website = company.website
+            employer.ownership_type = company.type
+            employer.save()
+
+        undescribed_employers = Employer.objects.filter(
+            description__isnull=True,
+            year_founded__lt=EmployerInfoView.MIN_AI_YEAR,
+        )[:limit]
+        for employer in undescribed_employers:
+            resp, _ = employer.description = ai.ask([
+                {'role': 'system', 'content': EmployerInfoView.DESCRIPTION_PROMPT},
+                {'role': 'user', 'content': employer.employer_name},
+            ])
+            employer.description = resp['description']
+            employer.save()
+
+
