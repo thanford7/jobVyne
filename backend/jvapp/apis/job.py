@@ -57,7 +57,7 @@ class LocationView(JobVyneAPIView):
 
 
 class JobClassificationView(JobVyneAPIView):
-    DESCRIPTION_CHAR_LIMIT = 6000  # Prevent exceeding token limit in OpenAI
+    DESCRIPTION_CHAR_LIMIT = 5100  # Prevent exceeding token limit in OpenAI
     RESPONSIBILITY_LIMIT = 5
     QUALIFICATION_LIMIT = 10
     TECH_QUALIFICATION_LIMIT = 10
@@ -106,7 +106,7 @@ class JobClassificationView(JobVyneAPIView):
             'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
             'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
             'Technical qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
-            'Your response should be RFC8259 compliant JSON in the format:\n'
+            'Your response should make sure to use proper capitalization and punctuation, especially for proper nouns. Your response should be RFC8259 compliant JSON in the format:\n'
             f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
         )
         
