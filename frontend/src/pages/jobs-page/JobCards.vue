@@ -29,6 +29,9 @@
                 <div class="h-100 flex items-center">
                   <h5 class="w-100 q-mb-none">{{ employer.employer_name }}</h5>
                   <div>
+                    {{ employer.employer_description }}
+                  </div>
+                  <div>
                     <a :href="`/co/${employer.employer_key}`" target="_blank">View all jobs</a>
                   </div>
                 </div>
@@ -54,7 +57,7 @@
               >
                 <h6
                   class="bg-white custom-sticky"
-                  :class="`custom-sticky-${(isSingleEmployer) ? '2' : '3'}`"
+                  :class="`custom-sticky-${(isSingleEmployer || $route.name === 'profession') ? '2' : '3'}`"
                 >
                   {{ jobTitle }}
                 </h6>

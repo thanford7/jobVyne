@@ -11,6 +11,19 @@
                  style="height: 40px; max-width: 120px; object-fit: scale-down">
           </q-toolbar-title>
         </q-toolbar>
+        <template v-if="isEmployerPage">
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-none flex justify-center text-h6"
+          >
+            {{ employer.name }}
+          </div>
+          <div
+            v-if="employer.description"
+            class="col-12 col-md-11 col-lg-8 q-px-none flex justify-center"
+          >
+            {{ employer.description }}
+          </div>
+        </template>
         <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
           <div class="q-mr-md clickable" :style="employerStyleUtil.getTabStyle(employer)" @click="openFeedbackModal()">
             <div class="flex flex-center">
@@ -176,6 +189,9 @@ export default {
     },
     isShowEmployeeProfile () {
       return Boolean(this.profile && this.profile.is_profile_viewable && this.profile.profile_responses.length)
+    },
+    isEmployerPage () {
+      return ['company', 'group'].includes(this.$route.name)
     }
   },
   methods: {

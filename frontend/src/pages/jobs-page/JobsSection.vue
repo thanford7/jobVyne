@@ -171,7 +171,6 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
-import employerTypeUtil from 'src/utils/employer-types.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -222,7 +221,7 @@ export default {
       return dataUtil.isEmpty(this.jobsByEmployer)
     },
     isSingleEmployer () {
-      return this.jobsByEmployer.length === 1 && employerTypeUtil.isTypeEmployer(this.employer?.organization_type)
+      return this.$route.name === 'company'
     }
   },
   watch: {

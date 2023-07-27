@@ -133,10 +133,10 @@ class JobClassificationView(JobVyneAPIView):
             trunc_job_description = job.job_description[:JobClassificationView.DESCRIPTION_CHAR_LIMIT]
             try:
                 if is_test:
-                    print('----- SYSTEM PROMPT')
-                    print(system_prompt)
-                    print('----- USER PROMPT')
-                    print(trunc_job_description)
+                    logger.info('----- SYSTEM PROMPT')
+                    logger.info(system_prompt)
+                    logger.info('----- USER PROMPT')
+                    logger.info(trunc_job_description)
                 resp, tracker = await ai.ask([
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': trunc_job_description}

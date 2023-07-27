@@ -419,6 +419,11 @@ class SocialLinkJobsView(JobVyneAPIView):
                         'employer_name': job.employer.employer_name,
                         'employer_key': job.employer.employer_key,
                         'employer_logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
+                        'employer_description': job.employer.description,
+                        'industry': job.employer.industry,
+                        'employee_count_min': job.employer.size_min,
+                        'employee_count_max': job.employer.size_max,
+                        'year_founded': job.employer.year_founded,
                         'is_use_job_url': job.employer.is_use_job_url,
                         'jobs': defaultdict(lambda: defaultdict(list))
                     }

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections import defaultdict
 from functools import reduce
@@ -23,12 +24,12 @@ from jvapp.apis.notification import MessageGroupView
 from jvapp.apis.social import SocialLinkView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
-from jvapp.integrations.company import get_company_info
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobConnection, EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
     EmployerFileTag
+from jvapp.models.external import ExternalCompanyData
 from jvapp.models.job_seeker import JobApplication
 from jvapp.models.social import SocialLink
 from jvapp.models.tracking import MessageThread, MessageThreadContext
@@ -39,6 +40,7 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
     get_serialized_employer_file_tag, get_serialized_employer_job, \
     get_serialized_employer_referral_request
 from jvapp.utils import csv, ai
+from jvapp.utils.ai import PromptError
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import ContentPlaceholders, get_domain_from_email, send_django_email
@@ -53,6 +55,7 @@ from jvapp.utils.security import generate_user_token, get_uid_from_user
 from jvapp.utils.slack import raise_slack_exception_if_error
 
 BATCH_UPDATE_SIZE = 100
+logger = logging.getLogger(__name__)
 
 
 class EmployerView(JobVyneAPIView):
@@ -128,7 +131,7 @@ class EmployerView(JobVyneAPIView):
         )
         
         employers = Employer.objects \
-            .select_related('employer_size', 'default_bonus_currency') \
+            .select_related('default_bonus_currency') \
             .prefetch_related(
                 'subscription',
                 'employee',
@@ -1634,20 +1637,26 @@ class EmployerJobLocationView(JobVyneAPIView):
 
 
 class EmployerInfoView(JobVyneAPIView):
+    CONCURRENT_REQUESTS = 10
     MIN_AI_YEAR = 2020
     DESCRIPTION_PROMPT = (
         'You are helping describe companies in 1 sentence. '
+        'The description should begin with "(name of company) is a" and proceed with the description. '
         'Your response should be RFC8259 compliant JSON in the format: {"name": "(name of company)", "description": "(description)"}'
     )
 
     @staticmethod
-    def fill_company_info(limit):
+    def fill_company_info(limit=None):
         unfilled_employers = Employer.objects.filter(
-            linkedin_url__isnull=True,
-        )[:limit]
+            linkedin_url__isnull=True, organization_type=Employer.ORG_TYPE_EMPLOYER
+        )
+        if limit:
+            unfilled_employers = unfilled_employers[:limit]
         for employer in unfilled_employers:
-            company = get_company_info(employer.employer_name, employer.email_domains)
-            if not company:
+            company_filter = Q(company_name__iexact=employer.employer_name) | Q(website__iexact=employer.email_domains)
+            try:
+                company = ExternalCompanyData.objects.get(company_filter)
+            except ExternalCompanyData.DoesNotExist:
                 logging.info(f'Could not find company info for {employer.employer_name}')
                 continue
             employer.linkedin_url = f'https://www.linkedin.com/{company.handle}'
@@ -1659,17 +1668,67 @@ class EmployerInfoView(JobVyneAPIView):
             employer.website = company.website
             employer.ownership_type = company.type
             employer.save()
+        
+        employer_filter = Q(description__isnull=True) & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
+        employer_filter &= (
+            Q(year_founded__lte=EmployerInfoView.MIN_AI_YEAR) |
+            Q(year_founded__isnull=True)
+        )
+        undescribed_employers = Employer.objects.filter(employer_filter)
+        if limit:
+            undescribed_employers = undescribed_employers[:limit]
+        employer_idx = 0
+        while employer_idx < len(undescribed_employers):
+            employers_to_process = undescribed_employers[employer_idx:employer_idx + EmployerInfoView.CONCURRENT_REQUESTS]
+            asyncio.run(
+                EmployerInfoView.process_employers(employers_to_process)
+            )
+    
+            Employer.objects.bulk_update(
+                employers_to_process, ['description']
+            )
+    
+            employer_idx += EmployerInfoView.CONCURRENT_REQUESTS
 
-        undescribed_employers = Employer.objects.filter(
-            description__isnull=True,
-            year_founded__lt=EmployerInfoView.MIN_AI_YEAR,
-        )[:limit]
-        for employer in undescribed_employers:
-            resp, _ = employer.description = ai.ask([
-                {'role': 'system', 'content': EmployerInfoView.DESCRIPTION_PROMPT},
-                {'role': 'user', 'content': employer.employer_name},
-            ])
-            employer.description = resp['description']
-            employer.save()
+    @staticmethod
+    async def summarize_employer(queue):
+        while True:
+            employer = await queue.get()
+            logger.info(f'Running employer description for {employer.employer_name}')
+            try:
+                resp, tracker = await ai.ask([
+                    {'role': 'system', 'content': EmployerInfoView.DESCRIPTION_PROMPT},
+                    {'role': 'user', 'content': employer.employer_name}
+                ], is_test=False)
+                employer.description = resp['description']
+            except PromptError:
+                pass
+        
+            queue.task_done()
 
-
+    @staticmethod
+    async def process_employers(employers):
+        queue = asyncio.Queue()
+        workers = [
+            asyncio.create_task(EmployerInfoView.summarize_employer(queue))
+            for _ in range(EmployerInfoView.CONCURRENT_REQUESTS)
+        ]
+    
+        for employer in employers:
+            await queue.put(employer)
+    
+        # Wait until the queue is fully processed
+        if not queue.empty():
+            logger.info(f'Waiting for job queue to finish - Currently {queue.qsize()}')
+            done, _ = await asyncio.wait([queue.join(), *workers], return_when=asyncio.FIRST_COMPLETED)
+            consumers_raised = set(done) & set(workers)
+            if consumers_raised:
+                logger.info(f'Found {len(consumers_raised)} consumers that raised exceptions')
+                await consumers_raised.pop()  # propagate the exception
+    
+        for worker in workers:
+            worker.cancel()
+    
+        # Wait until all workers are cancelled
+        await asyncio.gather(*workers, return_exceptions=True)
+        logger.info(f'Completed summarizing {len(employers)} employers')

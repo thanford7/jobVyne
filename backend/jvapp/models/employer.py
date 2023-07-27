@@ -8,7 +8,7 @@ from jvapp.models._customDjangoField import LowercaseCharField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
 
 __all__ = (
-    'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
+    'Employer', 'EmployerAts', 'EmployerJob', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
@@ -33,7 +33,6 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer_key = models.CharField(max_length=160, unique=True, null=True, blank=True)
     logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     logo_square_88 = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
-    employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
     email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
     notification_email = models.CharField(max_length=50, null=True, blank=True)  # If present, an email will be sent to this address when a new application is created
     company_jobs_page_url = models.CharField(max_length=100, null=True, blank=True)  # Used to redirect users if employer's account is inactive
@@ -587,13 +586,6 @@ class EmployerFileTag(models.Model, JobVynePermissionsMixin):
                 and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
             )
         )
-
-
-class EmployerSize(models.Model):
-    size = models.CharField(max_length=25, unique=True)
-    
-    def __str__(self):
-        return self.size
 
 
 class JobDepartment(models.Model):

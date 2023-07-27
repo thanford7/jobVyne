@@ -130,31 +130,18 @@ class SlackBasePoster:
         blocks = []
         for job in jobs:
             job_link = SocialLinkView.get_or_create_single_job_link(job, employer_id=self.slack_cfg.employer.id)
+            
             job_info = {
                 'type': 'section',
-                'block_id': f'jobs-list-{job.id}',
-                'fields': [
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Job title:*\n<{job_link.get_link_url(platform_name="slack")}|{job.job_title}>'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Company:*\n{job.employer.employer_name}'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Location:*\n{job.locations_text}'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Salary:*\n{job.salary_text}'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Post date:*\n{get_datetime_format_or_none(job.open_date)}'
-                    }
-                ],
+                'block_id': f'jobs-list-summary-{job.id}',
+                'text': {
+                    'type': 'mrkdwn',
+                    'text': (
+                        f'*<{job_link.get_link_url(platform_name="slack")}|{job.job_title}>*\n'
+                        f'*{job.employer.employer_name}*\n'
+                        f'{job.employer.description if job.employer.description else ""}'
+                    )
+                }
             }
             if job.employer.logo_square_88:
                 job_info['accessory'] = {
@@ -162,7 +149,9 @@ class SlackBasePoster:
                     'image_url': job.employer.logo_square_88.url,
                     'alt_text': f'{job.employer.employer_name} logo'
                 }
-            
+                
+            blocks.append(job_info)
+
             # TODO: Add actions for:
             #  user to indicate they work at the given company
             #  user to follow company
@@ -182,7 +171,27 @@ class SlackBasePoster:
             #         },
             #     ]
             # }
-            blocks.append(job_info)
+            
+            job_details = {
+                'type': 'section',
+                'block_id': f'jobs-list-details-{job.id}',
+                'fields': [
+                    {
+                        'type': 'mrkdwn',
+                        'text': f'*Location:*\n{job.locations_text}'
+                    },
+                    {
+                        'type': 'mrkdwn',
+                        'text': f'*Salary:*\n{job.salary_text}'
+                    },
+                    {
+                        'type': 'mrkdwn',
+                        'text': f'*Post date:*\n{get_datetime_format_or_none(job.open_date)}'
+                    }
+                ],
+            }
+            
+            blocks.append(job_details)
         
         general_job_link = SocialLink.objects.get(employer_id=self.slack_cfg.employer.id, owner_id__isnull=True,
                                                   is_default=True)
@@ -212,7 +221,10 @@ class SlackJobPoster(SlackBasePoster):
                 'type': 'section',
                 'text': {
                     'type': 'mrkdwn',
-                    'text': ':grapes: JobVyne has a fresh batch of jobs ready to be plucked and enjoyed with a fresh glass of "get hired".'
+                    'text': (
+                        ':grapes: JobVyne has a fresh batch of jobs ready to be plucked and enjoyed with a fresh glass of "get hired".\n'
+                        'Have a job you want to post? Use `/jv-job`'
+                    )
                 }
             },
             {'type': 'divider'},

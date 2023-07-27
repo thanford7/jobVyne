@@ -1,16 +1,24 @@
 from django.core.management import BaseCommand
 
+from jvapp.apis.employer import EmployerInfoView
 from jvapp.apis.job import JobClassificationView
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
-            '--limit',
+            '--job_limit',
             type=int,
             help='Max number of jobs to bucketize',
         )
+        parser.add_argument(
+            '--employer_limit',
+            type=int,
+            help='Max number of employers to summarize',
+        )
 
     def handle(self, *args, **options):
-        limit = options['limit']
-        JobClassificationView.classify_jobs(limit, is_test=False)
+        job_limit = options['job_limit']
+        employer_limit = options['employer_limit']
+        EmployerInfoView.fill_company_info(limit=employer_limit)
+        JobClassificationView.classify_jobs(job_limit, is_test=False)

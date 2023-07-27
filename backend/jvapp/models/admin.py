@@ -48,7 +48,7 @@ class UserAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(Employer, EmployerJob, EmployerAuthGroup, EmployerPermission, EmployerSize, JobDepartment)
+@admin.register(Employer, EmployerJob, EmployerAuthGroup, EmployerPermission, JobDepartment)
 class EmployerAdmin(admin.ModelAdmin):
     pass
 
