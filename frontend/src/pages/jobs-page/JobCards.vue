@@ -22,7 +22,7 @@
             <div class="row justify-center">
               <div v-if="employer.employer_logo" class="col-2">
                 <div class="h-100 flex items-start align-center q-my-sm q-mr-md">
-                  <q-img :src="employer.employer_logo" fit="contain" style="max-height: 80px;"/>
+                  <q-img :src="employer.employer_logo" fit="contain" style="height: 80px;"/>
                 </div>
               </div>
               <div class="q-pl-lg" :class="(employer.employer_logo) ? 'col-10' : 'col-12'">
