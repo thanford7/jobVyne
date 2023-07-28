@@ -918,11 +918,6 @@ class StellarHealthScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'stellarhealth'
 
 
-class SixSenseScraper(GreenhouseIframeScraper):
-    employer_name = '6sense'
-    EMPLOYER_KEY = '6sense'
-
-
 class BillionToOneScraper(GreenhouseScraper):
     employer_name = 'BillionToOne'
     EMPLOYER_KEY = 'billiontoone'

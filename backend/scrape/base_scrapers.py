@@ -1460,6 +1460,93 @@ class JobviteScraper(Scraper):
         )
 
 
+class RipplingScraper(Scraper):
+    
+    async def scrape_jobs(self):
+        jobs = self.get_jobs()
+        for job in jobs:
+            await self.add_job_links_to_queue(job['url'], meta_data={
+                'job_department': job['department']['label'],
+                'job_title': job['name'],
+                'location': job['workLocation']['label']
+            })
+        
+        await self.close()
+    
+    def get_jobs(self):
+        jobs_resp = requests.get(
+            f'https://app.rippling.com/api/ats2_provisioning/api/v1/board/{self.EMPLOYER_KEY}/jobs',
+        )
+        return json.loads(jobs_resp.content)
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_title=None, location=None):
+        description = html.xpath('//div[@class="ATS_htmlPreview"]')
+        description_compensation_data = parse_compensation_text(description)
+        standard_job_item = self.get_google_standard_job_item(html)
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_title,
+            locations=[location],
+            job_department=job_department,
+            job_description=description,
+            employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=standard_job_item.first_posted_date,
+            **compensation_data
+        )
+
+
+# NOTE: This is different from RipplingScraper!
+class RipplingAtsScraper(Scraper):
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html_from_url(self.get_start_url())
+        await self.add_job_links_to_queue(
+            html_dom.xpath('//div[@class="jobs-list-container"]//a[@class="mobile-apply-link"]/@href').getall(),
+        )
+        await self.close()
+    
+    def get_start_url(self):
+        return f'https://{self.EMPLOYER_KEY}.rippling-ats.com/'
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        locations = [
+            l.strip() for l in
+            html.xpath('//span[@class="job-content-location"]/text()').getall()
+        ]
+        print(f'Locations: {locations}')
+        standard_job_item = self.get_google_standard_job_item(html)
+        locations = locations or standard_job_item.locations
+        if not locations:
+            logger.info('Unable to parse JobItem from document. No location found.')
+            return None
+        
+        job_description = html.xpath('//div[contains(@class, "job-content-body")]').get()
+        compensation_text = html.xpath('//div[contains(@class, "job-content-salary")]//text()').get()
+        description_compensation_data = parse_compensation_text(compensation_text or job_description)
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=html.xpath('//div[@class="job-title-container"]//h2/text()').get() or standard_job_item.job_title,
+            locations=locations,
+            job_department=standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description or standard_job_item.job_description,
+            employment_type=standard_job_item.employment_type,
+            first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
+            **compensation_data
+        )
+
+
 class StandardScraper(Scraper):
     jobs_xpath_sel = None
     

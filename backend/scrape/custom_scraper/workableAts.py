@@ -663,7 +663,127 @@ class SmartScraper(WorkableScraper):
     EMPLOYER_KEY = 'smart'
 
 
+class SquareEnixScraper(WorkableScraper):
+    employer_name = 'Square Enix'
+    EMPLOYER_KEY = 'squareenix'
+
+
+class SpenmoScraper(WorkableScraper):
+    employer_name = 'Spenmo'
+    EMPLOYER_KEY = 'spenmo'
+
+
+class FinexioScraper(WorkableScraper):
+    employer_name = 'Finexio'
+    EMPLOYER_KEY = 'finexio'
+
+
+class EntropikScraper(WorkableScraper):
+    employer_name = 'Entropik'
+    EMPLOYER_KEY = 'entropik'
+
+
+class BitstampScraper(WorkableScraper):
+    employer_name = 'Bitstamp'
+    EMPLOYER_KEY = 'bitstamp'
+
+
+class FundamentalvrScraper(WorkableScraper):
+    employer_name = 'FundamentalVR'
+    EMPLOYER_KEY = 'fundamentalvr'
+
+
+class PerlegoScraper(WorkableScraper):
+    employer_name = 'Perlego'
+    EMPLOYER_KEY = 'perlego'
+
+
+class KrooScraper(WorkableScraper):
+    employer_name = 'Kroo'
+    EMPLOYER_KEY = 'kroo'
+
+
+class TransfermateScraper(WorkableScraper):
+    employer_name = 'TransferMate'
+    EMPLOYER_KEY = 'transfermate'
+
+
+class SirionlabsScraper(WorkableScraper):
+    employer_name = 'SirionLabs'
+    EMPLOYER_KEY = 'sirionlabs'
+
+
+class MeasurablScraper(WorkableScraper):
+    employer_name = 'Measurabl'
+    EMPLOYER_KEY = 'measurabl'
+
+
+class OxfordQuantumScraper(WorkableScraper):
+    employer_name = 'Oxford Quantum'
+    EMPLOYER_KEY = 'oxfordquantum'
+
+
+class MedwingScraper(WorkableScraper):
+    employer_name = 'Medwing'
+    EMPLOYER_KEY = 'medwing'
+
+
+class HackTheBoxScraper(WorkableScraper):
+    employer_name = 'Hack the Box'
+    EMPLOYER_KEY = 'hackthebox'
+
+
+class TadoScraper(WorkableScraper):
+    employer_name = 'Tado'
+    EMPLOYER_KEY = 'tado'
+
+
+class SharesScraper(WorkableScraper):
+    employer_name = 'Shares'
+    EMPLOYER_KEY = 'shares'
+
+
+class EterlastScraper(WorkableScraper):
+    employer_name = 'Eterlast'
+    EMPLOYER_KEY = 'eterlast'
+
+
+class VerticeScraper(WorkableScraper):
+    employer_name = 'Vertice'
+    EMPLOYER_KEY = 'vertice'
+
+
+class Carry1stScraper(WorkableScraper):
+    employer_name = 'Carry1st'
+    EMPLOYER_KEY = 'carry1st'
+
+
+class SaryScraper(WorkableScraper):
+    employer_name = 'Sary'
+    EMPLOYER_KEY = 'sary'
+
+
 workable_scrapers = {
+    SaryScraper.employer_name: SaryScraper,
+    Carry1stScraper.employer_name: Carry1stScraper,
+    EterlastScraper.employer_name: EterlastScraper,
+    VerticeScraper.employer_name: VerticeScraper,
+    SharesScraper.employer_name: SharesScraper,
+    TadoScraper.employer_name: TadoScraper,
+    HackTheBoxScraper.employer_name: HackTheBoxScraper,
+    MedwingScraper.employer_name: MedwingScraper,
+    OxfordQuantumScraper.employer_name: OxfordQuantumScraper,
+    MeasurablScraper.employer_name: MeasurablScraper,
+    SirionlabsScraper.employer_name: SirionlabsScraper,
+    TransfermateScraper.employer_name: TransfermateScraper,
+    KrooScraper.employer_name: KrooScraper,
+    PerlegoScraper.employer_name: PerlegoScraper,
+    FundamentalvrScraper.employer_name: FundamentalvrScraper,
+    BitstampScraper.employer_name: BitstampScraper,
+    EntropikScraper.employer_name: EntropikScraper,
+    FinexioScraper.employer_name: FinexioScraper,
+    SpenmoScraper.employer_name: SpenmoScraper,
+    SquareEnixScraper.employer_name: SquareEnixScraper,
     SmartScraper.employer_name: SmartScraper,
     ElvieScraper.employer_name: ElvieScraper,
     FreelancerComScraper.employer_name: FreelancerComScraper,

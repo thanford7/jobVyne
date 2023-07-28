@@ -105,12 +105,12 @@ class JobSeekerModalViews(SlackMultiViewModal):
                 'Receive daily job recommendations',
                 UserSocialSubscription.SubscriptionType.jobs.value,
                 description='Up to 10 new job recommendations per day will be sent via direct Slack message'
-            ).get_slack_object(),
+            ),
             InputOption(
                 'Connect with hiring managers (upcoming feature)',
                 UserSocialSubscription.SubscriptionType.connect_managers.value,
                 description='Your name, email, and LinkedIn will be shown to hiring managers'
-            ).get_slack_object(),
+            ),
         ]
         subscription_checkboxes = InputCheckbox(
             self.SUBSCRIPTION_OPTIONS_KEY,
