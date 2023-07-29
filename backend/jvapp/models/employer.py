@@ -40,14 +40,14 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     is_use_job_url = models.BooleanField(default=False, blank=True)  # For employers with no relationship to JobVyne we need to redirect users to the job page
 
     # Company data
-    description = models.TextField(null=True)
-    website = models.URLField(null=True)
-    industry = models.CharField(max_length=100, null=True)
-    size_min = models.IntegerField(null=True)
-    size_max = models.IntegerField(null=True)
-    ownership_type = models.CharField(max_length=50, null=True)
-    year_founded = models.IntegerField(null=True)
-    linkedin_url = models.URLField(null=True)
+    description = models.TextField(null=True, blank=True)
+    website = models.URLField(null=True, blank=True)
+    industry = models.CharField(max_length=100, null=True, blank=True)
+    size_min = models.IntegerField(null=True, blank=True)
+    size_max = models.IntegerField(null=True, blank=True)
+    ownership_type = models.CharField(max_length=50, null=True, blank=True)
+    year_founded = models.IntegerField(null=True, blank=True)
+    linkedin_handle = models.CharField(max_length=50, null=True, blank=True)
 
     # Brand colors - saved in hex form (e.g. #32a852)
     color_primary = models.CharField(max_length=9, null=True, blank=True)

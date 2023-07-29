@@ -1646,29 +1646,45 @@ class EmployerInfoView(JobVyneAPIView):
     )
 
     @staticmethod
-    def fill_company_info(limit=None):
+    def fill_employer_info(limit=None):
         unfilled_employers = Employer.objects.filter(
-            linkedin_url__isnull=True, organization_type=Employer.ORG_TYPE_EMPLOYER
+            linkedin_handle__isnull=True, organization_type=Employer.ORG_TYPE_EMPLOYER
         )
         if limit:
             unfilled_employers = unfilled_employers[:limit]
+            
+        employers_to_save = []
         for employer in unfilled_employers:
             company_filter = Q(company_name__iexact=employer.employer_name) | Q(website__iexact=employer.email_domains)
-            try:
-                company = ExternalCompanyData.objects.get(company_filter)
-            except ExternalCompanyData.DoesNotExist:
+            company_matches = ExternalCompanyData.objects.filter(company_filter)
+            if not company_matches:
                 logging.info(f'Could not find company info for {employer.employer_name}')
                 continue
-            employer.linkedin_url = f'https://www.linkedin.com/{company.handle}'
-            employer.year_founded = company.founded or None
+            company = company_matches[0]
+            
+            # Sometimes there can be multiple matches on company name
+            # Company website is more definitive
+            if len(company_matches) > 1:
+                for co in company_matches:
+                    if co.website == employer.email_domains:
+                        company = co
+            
+            employer.linkedin_handle = company.linkedin_handle
+            employer.year_founded = company.founded_year or None
             employer.industry = company.industry
-            size_parts = company.size.split('-')
-            if len(size_parts) == 2:
-                employer.size_min, employer.size_max = [sp.replace(',', '') for sp in size_parts]
+            employer.size_min = company.size_min
+            employer.size_max = company.size_max
             employer.website = company.website
-            employer.ownership_type = company.type
-            employer.save()
+            employer.ownership_type = company.company_type
+            employers_to_save.append(employer)
+            
+        Employer.objects.bulk_update(employers_to_save, [
+            'linkedin_handle', 'year_founded', 'industry', 'size_min', 'size_max',
+            'website', 'ownership_type'
+        ])
         
+    @staticmethod
+    def fill_employer_description(limit=None):
         employer_filter = Q(description__isnull=True) & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
         employer_filter &= (
             Q(year_founded__lte=EmployerInfoView.MIN_AI_YEAR) |
@@ -1687,7 +1703,6 @@ class EmployerInfoView(JobVyneAPIView):
             Employer.objects.bulk_update(
                 employers_to_process, ['description']
             )
-    
             employer_idx += EmployerInfoView.CONCURRENT_REQUESTS
 
     @staticmethod
