@@ -1646,10 +1646,11 @@ class EmployerInfoView(JobVyneAPIView):
     )
 
     @staticmethod
-    def fill_employer_info(limit=None):
-        unfilled_employers = Employer.objects.filter(
-            linkedin_handle__isnull=True, organization_type=Employer.ORG_TYPE_EMPLOYER
+    def fill_employer_info(limit=None, employer_filter=None):
+        employer_filter = employer_filter or (
+            Q(linkedin_handle__isnull=True) & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
         )
+        unfilled_employers = Employer.objects.filter(employer_filter)
         if limit:
             unfilled_employers = unfilled_employers[:limit]
             
@@ -1677,15 +1678,16 @@ class EmployerInfoView(JobVyneAPIView):
             employer.website = company.website
             employer.ownership_type = company.company_type
             employers_to_save.append(employer)
-            
-        Employer.objects.bulk_update(employers_to_save, [
-            'linkedin_handle', 'year_founded', 'industry', 'size_min', 'size_max',
-            'website', 'ownership_type'
-        ])
+        
+        if employers_to_save:
+            Employer.objects.bulk_update(employers_to_save, [
+                'linkedin_handle', 'year_founded', 'industry', 'size_min', 'size_max',
+                'website', 'ownership_type'
+            ])
         
     @staticmethod
-    def fill_employer_description(limit=None):
-        employer_filter = Q(description__isnull=True) & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
+    def fill_employer_description(limit=None, employer_filter=None):
+        employer_filter = employer_filter or (Q(description__isnull=True) & Q(organization_type=Employer.ORG_TYPE_EMPLOYER))
         employer_filter &= (
             Q(year_founded__lte=EmployerInfoView.MIN_AI_YEAR) |
             Q(year_founded__isnull=True)

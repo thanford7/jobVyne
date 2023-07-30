@@ -186,4 +186,5 @@ company_whitelist = {
     'Vertice': None,
     'Carry1st': None,
     'Sary': None,
+    'AvantStay': None,
 }

@@ -761,9 +761,15 @@ class Carry1stScraper(WorkableScraper):
 class SaryScraper(WorkableScraper):
     employer_name = 'Sary'
     EMPLOYER_KEY = 'sary'
+    
+    
+class AvantstayScraper(WorkableScraper):
+    employer_name = 'AvantStay'
+    EMPLOYER_KEY = 'avantstay'
 
 
 workable_scrapers = {
+    AvantstayScraper.employer_name: AvantstayScraper,
     SaryScraper.employer_name: SaryScraper,
     Carry1stScraper.employer_name: Carry1stScraper,
     EterlastScraper.employer_name: EterlastScraper,

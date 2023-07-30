@@ -167,7 +167,7 @@ class NylasScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'nylas'
 
 
-class PerpayScraper(LeverScraper):
+class PerpayScraper(GreenhouseScraper):
     employer_name = 'Perpay'
     EMPLOYER_KEY = 'perpay'
 

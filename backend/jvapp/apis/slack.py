@@ -192,10 +192,10 @@ class SlackBasePoster:
             }
             
             blocks.append(job_details)
+            blocks.append({'type': 'divider'})
         
         general_job_link = SocialLink.objects.get(employer_id=self.slack_cfg.employer.id, owner_id__isnull=True,
                                                   is_default=True)
-        blocks.append({'type': 'divider'})
         blocks.append({
             'type': 'section',
             'text': {

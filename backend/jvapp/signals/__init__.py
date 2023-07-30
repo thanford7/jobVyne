@@ -8,6 +8,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from jvapp.apis.employer import EmployerInfoView
 from jvapp.apis.job_seeker import ApplicationTemplateView
 from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.social import SocialLinkView
@@ -203,6 +204,13 @@ def create_employer_key(sender, instance, created, *args, **kwargs):
         if Employer.objects.filter(existing_employer_filter):
             instance.employer_key = f'{instance.employer_key}{instance.id}'
         instance.save()
+        
+
+@receiver(post_save, sender=Employer)
+def create_employer_key(sender, instance, created, *args, **kwargs):
+    if instance.email_domains and not instance.description:
+        EmployerInfoView.fill_employer_info(employer_filter=Q(id=instance.id))
+        EmployerInfoView.fill_employer_description(employer_filter=Q(id=instance.id))
         
         
 @receiver(pre_save, sender=JobApplication)
