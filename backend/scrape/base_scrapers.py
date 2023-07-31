@@ -679,12 +679,17 @@ class GreenhouseApiScraper(GreenhouseScraper):
         compensation_data = merge_compensation_data(
             [compensation_data, description_compensation_data]
         )
+        
+        locations = []
+        if job_data['location']:
+            locations.append(job_data['location']['name'])
+        locations += [o['location'] or o['name'] for o in job_data['offices']]
 
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
             job_title=job_data['title'],
-            locations=self.process_locations([o['location'] or o['name'] for o in job_data['offices']]),
+            locations=self.process_locations(locations),
             job_department=job_data['departments'][0]['name'] if job_data['departments'] else self.DEFAULT_JOB_DEPARTMENT,
             job_description=job_description,
             employment_type=self.DEFAULT_EMPLOYMENT_TYPE,

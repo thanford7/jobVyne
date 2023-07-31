@@ -88,10 +88,10 @@ class JobProcessor:
     def get_job_locations(self, job_item: JobItem):
         if job_item.locations and (not isinstance(job_item.locations, list)):
             job_item.locations = [job_item.locations]
-        locations = [
+        locations = list(set([
             self.location_parser.get_location(self.add_remote_to_location(loc, job_item.job_title))
             for loc in set(job_item.locations)
-        ]
+        ]))
         location_ids = [l.id for l in locations]
         location_ids.sort()
         location_ids = tuple(location_ids)

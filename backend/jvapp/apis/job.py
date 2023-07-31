@@ -100,10 +100,9 @@ class JobClassificationView(JobVyneAPIView):
             jobs = jobs[:limit]
 
         system_prompt = (
-            'You are helping categorize job descriptions. The use will provide an individual job description for you to categorize.\n'
+            'You are helping categorize job descriptions. The user will provide an individual job description for you to categorize.\n'
             f'Analyze the job description and categorize up to {JobClassificationView.RESPONSIBILITY_LIMIT} job responsibilities, up to {JobClassificationView.QUALIFICATION_LIMIT} required job qualifications, and up to {JobClassificationView.TECH_QUALIFICATION_LIMIT} technical qualifications. Examples of technical qualifications include software coding languages, industry certifications, and software tools. Do not list technical qualifications in the job qualifications.\n'
             'Job responsibilities will likely be listed close to the word "responsibilities" in a bulleted list or comma separated list.\n'
-            'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
             'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
             'Technical qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
             'Your response should make sure to use proper capitalization and punctuation, especially for proper nouns. Your response should be RFC8259 compliant JSON in the format:\n'
