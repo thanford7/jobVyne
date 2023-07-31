@@ -1263,6 +1263,77 @@ class SmartRecruitersScraper(Scraper):
         )
 
 
+class SmartRecruitersApiScraper(Scraper):
+    IS_API = True
+    JOBS_PER_PAGE = 100  # This is the max
+    
+    async def scrape_jobs(self):
+        total_jobs = None
+        start_job_idx = 0
+        jobs = []
+        while (not total_jobs) or (start_job_idx < total_jobs):
+            jobs_list, total_jobs = self.get_jobs(start_job_idx)
+            jobs += jobs_list
+            start_job_idx += self.JOBS_PER_PAGE
+        
+        for job in jobs:
+            await self.add_job_links_to_queue(self.get_job_link(job['id']), meta_data={'job_id': job['id']})
+        
+        await self.close()
+    
+    def get_job_link(self, job_id):
+        return f'https://jobs.smartrecruiters.com/{self.EMPLOYER_KEY}/{job_id}'
+    
+    def get_jobs(self, job_idx):
+        request_data = {
+            'limit': self.JOBS_PER_PAGE,
+            'offset': job_idx
+        }
+        jobs_resp = requests.get(
+            f'https://api.smartrecruiters.com/v1/companies/{self.EMPLOYER_KEY}/postings',
+            params=request_data
+        )
+        jobs_data = json.loads(jobs_resp.content)
+        return jobs_data['content'], jobs_data['totalFound']
+    
+    def get_raw_job_data(self, job_id):
+        job_resp = requests.get(f'https://api.smartrecruiters.com/v1/companies/{self.EMPLOYER_KEY}/postings/{job_id}')
+        return json.loads(job_resp.content)
+    
+    def get_job_description_section(self, jd_section):
+        return f'<h6>{jd_section["title"]}</h6>{jd_section["text"]}'
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None):
+        job_data = self.get_raw_job_data(job_id)
+        job_description_data = job_data['jobAd']['sections']
+        job_description = ''.join([
+            self.get_job_description_section(s) for s in [
+                job_description_data['companyDescription'],
+                job_description_data['jobDescription'],
+                job_description_data['qualifications'],
+                job_description_data['additionalInformation'],
+            ]
+        ])
+        description_compensation_data = parse_compensation_text(job_description)
+        location_parts = ['address', 'city', 'region', 'country', 'postalCode']
+        location_data = job_data['location']
+        location_text = ', '.join([location_data.get(p) for p in location_parts if location_data.get(p)])
+        if location_data['remote']:
+            location_text = f'Remote: {location_text}'
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data['name'],
+            locations=[location_text],
+            job_department=job_data['function']['label'] or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description,
+            employment_type=job_data['typeOfEmployment']['label'] or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['releasedDate'], as_date=True)),
+            **description_compensation_data
+        )
+
+
 class PaylocityScraper(Scraper):
     IS_JS_REQUIRED = True
     job_item_page_wait_sel = '.job-preview-header'

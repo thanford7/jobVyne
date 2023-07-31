@@ -45,13 +45,13 @@ async def parse_response(openai_response, request_tracker=None):
         except (json.decoder.JSONDecodeError, ValueError) as ex:
             if request_tracker:
                 request_tracker.result_status = request_tracker.RESULT_STATUS_UNPARSEABLE
-                await sync_to_async(request_tracker.save)()
+                await sync_to_async(request_tracker.save, thread_sensitive=False)()
             logger.info('Error occurred when parsing model response')
             raise PromptParseError from ex
     
     if request_tracker:
         request_tracker.result_status = request_tracker.RESULT_STATUS_SUCCESS
-        await sync_to_async(request_tracker.save)()
+        await sync_to_async(request_tracker.save, thread_sensitive=False)()
     logger.info('Model response successfully parsed')
     return data
 
@@ -93,7 +93,7 @@ async def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     """
     # Check to see if we've made this prompt before
     prompt_hash = hashlib.md5(bytes(json.dumps(prompt) + model, 'UTF-8')).hexdigest()
-    if existing := await sync_to_async(AIRequest.objects.filter(prompt_hash=prompt_hash).first)():
+    if existing := await sync_to_async(AIRequest.objects.filter(prompt_hash=prompt_hash).first, thread_sensitive=False)():
         if existing.result_status == AIRequest.RESULT_STATUS_SUCCESS:
             resp = await parse_response(json.loads(existing.response))
             return resp, existing
