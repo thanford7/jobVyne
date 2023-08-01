@@ -446,10 +446,12 @@ class SlackBaseView(JobVyneAPIView):
             linkedin_url = slack_user_profile.get('linkedin_url')
             first_name = slack_user_profile['first_name']
             last_name = slack_user_profile['last_name']
+            home_post_code = slack_user_profile.get('home_post_code')
             for val, attr in (
-                    (linkedin_url, 'linkedin_url'),
-                    (first_name, 'first_name'),
-                    (last_name, 'last_name')
+                (linkedin_url, 'linkedin_url'),
+                (first_name, 'first_name'),
+                (last_name, 'last_name'),
+                (home_post_code, 'home_post_code')
             ):
                 if val and val != getattr(user, attr):
                     setattr(user, attr, val)

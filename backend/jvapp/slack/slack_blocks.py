@@ -79,6 +79,20 @@ class Modal(SlackBlock):
         return values
     
     
+class SectionText(SlackBlock):
+    def __init__(self, text):
+        self.text = text
+        
+    def get_slack_object(self):
+        return {
+            'type': 'section',
+            'text': {
+                'type': 'mrkdwn',
+                'text': self.text
+            }
+        }
+    
+    
 class InputText(SlackBlock):
     INPUT_TYPE = 'plain_text_input'
     

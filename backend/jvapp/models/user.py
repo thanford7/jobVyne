@@ -17,6 +17,7 @@ from django.utils import crypto, timezone
 from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
+from jvapp.models.location import REMOTE_TYPES
 from jvapp.utils.email import get_domain_from_email
 from jvapp.utils.file import get_user_upload_location
 
@@ -110,6 +111,9 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     USER_TYPE_INFLUENCER = 0x8
     USER_TYPE_EMPLOYER = 0x10
     
+    JOB_SEARCH_TYPE_ACTIVE = 0x1
+    JOB_SEARCH_TYPE_PASSIVE = 0x2
+    
     ALL_USER_TYPES = [
         USER_TYPE_ADMIN,
         USER_TYPE_CANDIDATE,
@@ -147,6 +151,14 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     job_title = models.CharField(max_length=100, null=True, blank=True)
     home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
     employment_start_date = models.DateField(null=True, blank=True)
+
+    home_post_code = models.CharField(max_length=10, null=True, blank=True)
+    work_remote_type_bit = models.SmallIntegerField(default=REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value)
+    job_search_type_bit = models.SmallIntegerField(default=0)
+    is_job_search_visible = models.BooleanField(default=False)
+    membership_groups = models.ManyToManyField('Employer', related_name='group_member')
+    membership_professions = models.ManyToManyField('Taxonomy', related_name='profession_member')
+    membership_employers = models.ManyToManyField('Employer', related_name='employer_member')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -400,7 +412,6 @@ class UserSocialSubscription(AuditFields):
     """
     class SubscriptionType(Enum):
         jobs = 'JOBS'
-        connect_managers = 'CONNECT_MANAGERS'  # Job seekers can opt to be shown to managers
         events = 'EVENTS'
         news = 'NEWS'
         

@@ -57,7 +57,7 @@ class LocationView(JobVyneAPIView):
 
 
 class JobClassificationView(JobVyneAPIView):
-    DESCRIPTION_CHAR_LIMIT = 5100  # Prevent exceeding token limit in OpenAI
+    DESCRIPTION_CHAR_LIMIT = 4500  # Prevent exceeding token limit in OpenAI. 1 token = 4 chars
     RESPONSIBILITY_LIMIT = 5
     QUALIFICATION_LIMIT = 10
     TECH_QUALIFICATION_LIMIT = 10

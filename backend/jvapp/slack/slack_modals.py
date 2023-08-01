@@ -6,12 +6,13 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import JobPost
 from jvapp.models.currency import Currency
 from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection
+from jvapp.models.location import REMOTE_TYPES
 from jvapp.models.user import JobVyneUser, UserSocialSubscription
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
 from jvapp.utils.oauth import OauthProviders
 from jvapp.slack.slack_blocks import Divider, InputCheckbox, InputEmail, InputNumber, InputOption, InputText, InputUrl, \
     Modal, \
-    Select, SelectEmployer
+    SectionText, Select, SelectEmployer
 from scrape.job_processor import JobItem, UserCreatedJobProcessor
 
 
@@ -53,6 +54,7 @@ class SlackMultiViewModal:
 class JobSeekerModalViews(SlackMultiViewModal):
     BASE_CALLBACK_ID = 'job-seeker'
     SUBSCRIPTION_OPTIONS_KEY = 'job_seeker_subscription'
+    CONNECT_WITH_MANAGERS_KEY = 'CONNECT'
     
     def __init__(self, slack_user_profile, user, metadata):
         self.slack_user_profile = slack_user_profile
@@ -97,6 +99,13 @@ class JobSeekerModalViews(SlackMultiViewModal):
                 'Email',
                 initial_value=self.slack_user_profile['email'],
             ).get_slack_object(),
+            InputText(
+                'home_post_code',
+                'Home Postal Code',
+                'Postal Code',
+                initial_value=self.user.home_post_code if self.user else None,
+                help_text='This is used to find jobs and events close to your location'
+            ).get_slack_object(),
         ]
         
         # second modal
@@ -108,7 +117,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
             ),
             InputOption(
                 'Connect with hiring managers (upcoming feature)',
-                UserSocialSubscription.SubscriptionType.connect_managers.value,
+                self.CONNECT_WITH_MANAGERS_KEY,
                 description='Your name, email, and LinkedIn will be shown to hiring managers'
             ),
         ]
@@ -119,15 +128,36 @@ class JobSeekerModalViews(SlackMultiViewModal):
             initial_option_values=[opt.value for opt in subscription_options],
             is_optional=True
         )
+
+        default_remote_work_option = InputOption('Any', REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value).get_slack_object()
+        remote_work_options = [
+            default_remote_work_option,
+            InputOption('On-site Only', REMOTE_TYPES.NO.value).get_slack_object(),
+            InputOption('Remote Only', REMOTE_TYPES.YES.value).get_slack_object()
+        ]
+        
+        default_job_search_status = InputOption('Active', JobVyneUser.JOB_SEARCH_TYPE_ACTIVE).get_slack_object()
+        job_search_status_options = [
+            default_job_search_status,
+            InputOption('Passive', JobVyneUser.JOB_SEARCH_TYPE_PASSIVE).get_slack_object(),
+            InputOption('Not Looking', 0).get_slack_object(),
+        ]
+        
         subscription_blocks = [
-            {
-                'type': 'section',
-                'text': {
-                    'type': 'mrkdwn',
-                    'text': 'Let JobVyne connect you to job opportunities and hiring managers!'
-                }
-            },
+            SectionText(
+                'Let JobVyne connect you to job opportunities and hiring managers!'
+            ).get_slack_object(),
             Divider().get_slack_object(),
+            Select(
+                'job_search_type_bit', 'Job Search Status', 'Status',
+                job_search_status_options,
+                initial_option=default_job_search_status
+            ).get_slack_object(),
+            Select(
+                'work_remote_type_bit', 'Remote Work Preference', 'Preference',
+                remote_work_options,
+                initial_option=default_remote_work_option
+            ).get_slack_object(),
             subscription_checkboxes.get_slack_object()
         ]
         
@@ -150,16 +180,26 @@ class JobSeekerModalViews(SlackMultiViewModal):
     
     def finalize_modal(self, form_data, user=None, slack_cfg=None, slack_user_profile=None):
         assert all((user, slack_cfg, slack_user_profile))
+
+        subscription_changes = []
         selected_subscriptions = form_data[self.SUBSCRIPTION_OPTIONS_KEY]
+        user.job_search_type_bit = coerce_int(form_data['job_search_type_bit']['value'])
+        user.work_remote_type_bit = coerce_int(form_data['work_remote_type_bit']['value'])
+        if self.CONNECT_WITH_MANAGERS_KEY in selected_subscriptions:
+            if not user.is_job_search_visible:
+                user.is_job_search_visible = True
+                subscription_changes.append('➕ Added connection to hiring managers')
+        elif user.is_job_search_visible:
+            user.is_job_search_visible = False
+            subscription_changes.append('➖ Removed connection to hiring managers')
+        user.save()
+            
         current_user_subscriptions = {
             sub.subscription_type: sub for sub in
             user.social_subscription.filter(provider=OauthProviders.slack.value)
         }
         current_job_sub = current_user_subscriptions.get(UserSocialSubscription.SubscriptionType.jobs.value)
-        current_connection_sub = current_user_subscriptions.get(
-            UserSocialSubscription.SubscriptionType.connect_managers.value)
         
-        subscription_changes = []
         subscription_data = {
             'slack_cfg_id': slack_cfg.id,
             'slack_user_id': form_data['slack_user_id'],
@@ -177,19 +217,6 @@ class JobSeekerModalViews(SlackMultiViewModal):
         elif current_job_sub:
             current_job_sub.delete()
             subscription_changes.append('➖ Removed subscription to daily job recommendations')
-        
-        if UserSocialSubscription.SubscriptionType.connect_managers.value in selected_subscriptions:
-            if not current_connection_sub:
-                UserSocialSubscription(
-                    user=user,
-                    provider=OauthProviders.slack.value,
-                    subscription_type=UserSocialSubscription.SubscriptionType.connect_managers.value,
-                    subscription_data=subscription_data
-                ).save()
-                subscription_changes.append('➕ Added connection to hiring managers')
-        elif current_connection_sub:
-            current_connection_sub.delete()
-            subscription_changes.append('➖ Removed connection to hiring managers')
         
         if subscription_changes:
             final_text = 'The following changes were made to your subscriptions:\n'
