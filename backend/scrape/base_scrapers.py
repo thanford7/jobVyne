@@ -311,7 +311,7 @@ class Scraper:
         if is_relative_url:
             url = self.base_url + url
         url = re.sub('[,"\']', '', unquote(url))
-        url = re.sub('\s', '%A0', url)  # Make spaces in strings safe
+        url = re.sub('\s', '%20', url)  # Make spaces in strings safe
         if self.IS_REMOVE_QUERY_PARAMS:
             url = url.split('?')[0]
         return url

@@ -580,11 +580,6 @@ class UniversalHydrogenScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'universalhydrogen'
 
 
-class InovalonScraper(GreenhouseApiScraper):
-    employer_name = 'Inovalon'
-    EMPLOYER_KEY = 'inovalon'
-
-
 class WalkmeScraper(LeverScraper):
     employer_name = 'WalkMe'
     EMPLOYER_KEY = 'walkme'
@@ -613,12 +608,6 @@ class ZwiftScraper(GreenhouseApiScraper):
 class BitsoScraper(GreenhouseApiScraper):
     employer_name = 'Bitso'
     EMPLOYER_KEY = 'bitso'
-
-
-class PluralsightScraper(WorkdayScraper):
-    employer_name = 'Pluralsight'
-    start_url = 'https://pluralsight.wd1.myworkdayjobs.com/en-US/Careers/'
-    has_job_departments = False
 
 
 class EquipScraper(LeverScraper):
@@ -654,11 +643,6 @@ class HeroesScraper(GreenhouseScraper):
 class ZampFinanceScraper(AshbyHQScraper):
     employer_name = 'Zamp Finance'
     EMPLOYER_KEY = 'zamp'
-
-
-class AtticusScraper(GreenhouseScraper):
-    employer_name = 'Atticus'
-    EMPLOYER_KEY = 'atticus'
 
 
 class PublicScraper(GreenhouseScraper):

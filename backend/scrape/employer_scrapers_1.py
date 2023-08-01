@@ -848,11 +848,6 @@ class RedditScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'reddit'
 
 
-class ChiefScraper(GreenhouseScraper):
-    employer_name = 'Chief'
-    EMPLOYER_KEY = 'chief'
-
-
 class LocusScraper(SmartRecruitersScraper):
     employer_name = 'Locus Robotics'
     EMPLOYER_KEY = 'LocusRobotics'
@@ -896,11 +891,6 @@ class PulumiScraper(GreenhouseScraper):
 class SmartAssetScraper(GreenhouseScraper):
     employer_name = 'SmartAsset'
     EMPLOYER_KEY = 'smartasset'
-
-
-class InstabaseScraper(GreenhouseIframeScraper):
-    employer_name = 'Instabase'
-    EMPLOYER_KEY = 'instabase'
 
 
 class BioRenderScraper(LeverScraper):
