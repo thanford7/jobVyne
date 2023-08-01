@@ -868,11 +868,6 @@ class StairwellScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'stairwell'
 
 
-class StitchFixScraper(GreenhouseIframeScraper):
-    employer_name = 'Stitch Fix'
-    EMPLOYER_KEY = 'stitchfix'
-
-
 class StordScraper(GreenhouseScraper):
     employer_name = 'Stord'
     EMPLOYER_KEY = 'stord13'

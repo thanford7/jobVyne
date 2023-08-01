@@ -8,15 +8,63 @@ from scrape.employer_scrapers_7 import *
 from scrape.employer_scrapers_8 import *
 from scrape.employer_scrapers_9 import *
 from scrape.employer_scrapers_10 import *
+from scrape.employer_scrapers_11 import *
 from scrape.custom_scraper.ancestry import AncestryScraper
 from scrape.custom_scraper.packsize import PacksizeScraper
 
 # TODO: Build PhenomPeople ATS scraper - https://careers.adobe.com/us/en/c/
 
 test_scrapers = {
+    # RoseRocketScraper.employer_name: RoseRocketScraper,
 }
 
 all_scrapers = {
+    UsergemsScraper.employer_name: UsergemsScraper,
+    KaratScraper.employer_name: KaratScraper,
+    EsperScraper.employer_name: EsperScraper,
+    BitriseScraper.employer_name: BitriseScraper,
+    HgInsightsScraper.employer_name: HgInsightsScraper,
+    UberallScraper.employer_name: UberallScraper,
+    ZyloScraper.employer_name: ZyloScraper,
+    GalaGamesScraper.employer_name: GalaGamesScraper,
+    OrdergrooveScraper.employer_name: OrdergrooveScraper,
+    CrunchbaseScraper.employer_name: CrunchbaseScraper,
+    GirlsWhoCodeScraper.employer_name: GirlsWhoCodeScraper,
+    YotpoScraper.employer_name: YotpoScraper,
+    OpeninvestScraper.employer_name: OpeninvestScraper,
+    SparkcognitionScraper.employer_name: SparkcognitionScraper,
+    AssemblyaiScraper.employer_name: AssemblyaiScraper,
+    MagicEdenScraper.employer_name: MagicEdenScraper,
+    MixpanelScraper.employer_name: MixpanelScraper,
+    PatchScraper.employer_name: PatchScraper,
+    AcquiaScraper.employer_name: AcquiaScraper,
+    TerraScraper.employer_name: TerraScraper,
+    StandardMetricsScraper.employer_name: StandardMetricsScraper,
+    SecureframeScraper.employer_name: SecureframeScraper,
+    VidmobScraper.employer_name: VidmobScraper,
+    SonarScraper.employer_name: SonarScraper,
+    CoiledScraper.employer_name: CoiledScraper,
+    UptycsScraper.employer_name: UptycsScraper,
+    SupraoraclesScraper.employer_name: SupraoraclesScraper,
+    MonteCarloScraper.employer_name: MonteCarloScraper,
+    TrayIoScraper.employer_name: TrayIoScraper,
+    ClarifyHealthScraper.employer_name: ClarifyHealthScraper,
+    MiloScraper.employer_name: MiloScraper,
+    BoostupAiScraper.employer_name: BoostupAiScraper,
+    PrismaScraper.employer_name: PrismaScraper,
+    HeapScraper.employer_name: HeapScraper,
+    MazeScraper.employer_name: MazeScraper,
+    UnqorkScraper.employer_name: UnqorkScraper,
+    IncidentIoScraper.employer_name: IncidentIoScraper,
+    PrimarybidScraper.employer_name: PrimarybidScraper,
+    SwiftNavigationScraper.employer_name: SwiftNavigationScraper,
+    AeraTechnologyScraper.employer_name: AeraTechnologyScraper,
+    SingleopsScraper.employer_name: SingleopsScraper,
+    ObserveAiScraper.employer_name: ObserveAiScraper,
+    FlipdishScraper.employer_name: FlipdishScraper,
+    CoinshiftScraper.employer_name: CoinshiftScraper,
+    CapchaseScraper.employer_name: CapchaseScraper,
+    AgreenaScraper.employer_name: AgreenaScraper,
     OmioScraper.employer_name: OmioScraper,
     SorareScraper.employer_name: SorareScraper,
     BraintrustScraper.employer_name: BraintrustScraper,

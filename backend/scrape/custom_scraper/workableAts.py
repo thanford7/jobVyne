@@ -761,14 +761,259 @@ class Carry1stScraper(WorkableScraper):
 class SaryScraper(WorkableScraper):
     employer_name = 'Sary'
     EMPLOYER_KEY = 'sary'
-    
-    
+
+
 class AvantstayScraper(WorkableScraper):
     employer_name = 'AvantStay'
     EMPLOYER_KEY = 'avantstay'
 
 
+class LeetcodeScraper(WorkableScraper):
+    employer_name = 'Leetcode'
+    EMPLOYER_KEY = 'leetcode'
+
+
+class DiveplaneScraper(WorkableScraper):
+    employer_name = 'Diveplane'
+    EMPLOYER_KEY = 'diveplane'
+
+
+class HydrosatScraper(WorkableScraper):
+    employer_name = 'Hydrosat'
+    EMPLOYER_KEY = 'hydrosat'
+
+
+class DextScraper(WorkableScraper):
+    employer_name = 'Dext'
+    EMPLOYER_KEY = 'dext'
+
+
+class SignalAiScraper(WorkableScraper):
+    employer_name = 'Signal AI'
+    EMPLOYER_KEY = 'signalai'
+
+
+class OmetriaScraper(WorkableScraper):
+    employer_name = 'Ometria'
+    EMPLOYER_KEY = 'ometria'
+
+
+class N8nScraper(WorkableScraper):
+    employer_name = 'n8n'
+    EMPLOYER_KEY = 'n8n'
+
+
+class ClubrareScraper(WorkableScraper):
+    employer_name = 'ClubRare'
+    EMPLOYER_KEY = 'clubrare'
+
+
+class RisingwaveLabsScraper(WorkableScraper):
+    employer_name = 'RisingWave Labs'
+    EMPLOYER_KEY = 'risingwavelabs'
+
+
+class NearScraper(WorkableScraper):
+    employer_name = 'Near'
+    EMPLOYER_KEY = 'near'
+
+
+class LoggiScraper(WorkableScraper):
+    employer_name = 'Loggi'
+    EMPLOYER_KEY = 'loggi'
+
+
+class NillionScraper(WorkableScraper):
+    employer_name = 'Nillion'
+    EMPLOYER_KEY = 'nillion'
+
+
+class SuperfluidScraper(WorkableScraper):
+    employer_name = 'Superfluid'
+    EMPLOYER_KEY = 'superfluid'
+
+
+class OnomondoScraper(WorkableScraper):
+    employer_name = 'Onomondo'
+    EMPLOYER_KEY = 'onomondo'
+
+
+class MinaFoundationScraper(WorkableScraper):
+    employer_name = 'Mina Foundation'
+    EMPLOYER_KEY = 'minafoundation'
+
+
+class BooksyScraper(WorkableScraper):
+    employer_name = 'Booksy'
+    EMPLOYER_KEY = 'booksy'
+
+
+class DawnAerospaceScraper(WorkableScraper):
+    employer_name = 'Dawn Aerospace'
+    EMPLOYER_KEY = 'dawnaerospace'
+
+
+class FreshaScraper(WorkableScraper):
+    employer_name = 'Fresha'
+    EMPLOYER_KEY = 'fresha'
+
+
+class NovataScraper(WorkableScraper):
+    employer_name = 'Novata'
+    EMPLOYER_KEY = 'novata'
+
+
+class SenseonScraper(WorkableScraper):
+    employer_name = 'SenseOn'
+    EMPLOYER_KEY = 'senseon'
+
+
+class EllipticScraper(WorkableScraper):
+    employer_name = 'Elliptic'
+    EMPLOYER_KEY = 'elliptic'
+
+
+class FlorenceHealthScraper(WorkableScraper):
+    employer_name = 'Florence Health'
+    EMPLOYER_KEY = 'florencehealth'
+
+
+class EveryrealmScraper(WorkableScraper):
+    employer_name = 'Everyrealm'
+    EMPLOYER_KEY = 'everyrealm'
+
+
+class PerfectStormScraper(WorkableScraper):
+    employer_name = 'Perfect Storm'
+    EMPLOYER_KEY = 'perfectstorm'
+
+
+class MagicSpoonScraper(WorkableScraper):
+    employer_name = 'Magic Spoon'
+    EMPLOYER_KEY = 'magicspoon'
+
+
+class N3tworkScraper(WorkableScraper):
+    employer_name = 'N3TWORK'
+    EMPLOYER_KEY = 'n3twork'
+
+
+class PlumScraper(WorkableScraper):
+    employer_name = 'Plum'
+    EMPLOYER_KEY = 'plum'
+
+
+class LandaScraper(WorkableScraper):
+    employer_name = 'Landa'
+    EMPLOYER_KEY = 'landa'
+
+
+class InteractiveInvestorScraper(WorkableScraper):
+    employer_name = 'interactive investor'
+    EMPLOYER_KEY = 'interactiveinvestor'
+
+
+class UkioScraper(WorkableScraper):
+    employer_name = 'Ukio'
+    EMPLOYER_KEY = 'ukio'
+
+
+class ArcScraper(WorkableScraper):
+    employer_name = 'Arc'
+    EMPLOYER_KEY = 'arc'
+
+
+class TesseractScraper(WorkableScraper):
+    employer_name = 'Tesseract'
+    EMPLOYER_KEY = 'tesseract'
+
+
+class XploreScraper(WorkableScraper):
+    employer_name = 'Xplore'
+    EMPLOYER_KEY = 'xplore'
+
+
+class OuraScraper(WorkableScraper):
+    employer_name = 'Oura'
+    EMPLOYER_KEY = 'oura'
+
+
+class GourmeyScraper(WorkableScraper):
+    employer_name = 'Gourmey'
+    EMPLOYER_KEY = 'gourmey'
+
+
+class VividMoneyScraper(WorkableScraper):
+    employer_name = 'Vivid Money'
+    EMPLOYER_KEY = 'vividmoney'
+
+
+class MarleySpoonScraper(WorkableScraper):
+    employer_name = 'Marley Spoon'
+    EMPLOYER_KEY = 'marleyspoon'
+
+
+class NmiScraper(WorkableScraper):
+    employer_name = 'NMI'
+    EMPLOYER_KEY = 'nmi'
+
+
+class CodiScraper(WorkableScraper):
+    employer_name = 'Codi'
+    EMPLOYER_KEY = 'codi'
+
+
+class AliceAndBobScraper(WorkableScraper):
+    employer_name = 'Alice&Bob'
+    EMPLOYER_KEY = 'alicebob'
+    
+    
+class LeenaAiScraper(WorkableScraper):
+    employer_name = 'Leena AI'
+    EMPLOYER_KEY = 'leenaai'
+
+
 workable_scrapers = {
+    AliceAndBobScraper.employer_name: AliceAndBobScraper,
+    CodiScraper.employer_name: CodiScraper,
+    MarleySpoonScraper.employer_name: MarleySpoonScraper,
+    NmiScraper.employer_name: NmiScraper,
+    VividMoneyScraper.employer_name: VividMoneyScraper,
+    GourmeyScraper.employer_name: GourmeyScraper,
+    OuraScraper.employer_name: OuraScraper,
+    XploreScraper.employer_name: XploreScraper,
+    TesseractScraper.employer_name: TesseractScraper,
+    ArcScraper.employer_name: ArcScraper,
+    UkioScraper.employer_name: UkioScraper,
+    InteractiveInvestorScraper.employer_name: InteractiveInvestorScraper,
+    LandaScraper.employer_name: LandaScraper,
+    PlumScraper.employer_name: PlumScraper,
+    N3tworkScraper.employer_name: N3tworkScraper,
+    MagicSpoonScraper.employer_name: MagicSpoonScraper,
+    PerfectStormScraper.employer_name: PerfectStormScraper,
+    EveryrealmScraper.employer_name: EveryrealmScraper,
+    FlorenceHealthScraper.employer_name: FlorenceHealthScraper,
+    EllipticScraper.employer_name: EllipticScraper,
+    SenseonScraper.employer_name: SenseonScraper,
+    NovataScraper.employer_name: NovataScraper,
+    FreshaScraper.employer_name: FreshaScraper,
+    DawnAerospaceScraper.employer_name: DawnAerospaceScraper,
+    MinaFoundationScraper.employer_name: MinaFoundationScraper,
+    BooksyScraper.employer_name: BooksyScraper,
+    OnomondoScraper.employer_name: OnomondoScraper,
+    SuperfluidScraper.employer_name: SuperfluidScraper,
+    NillionScraper.employer_name: NillionScraper,
+    LoggiScraper.employer_name: LoggiScraper,
+    NearScraper.employer_name: NearScraper,
+    RisingwaveLabsScraper.employer_name: RisingwaveLabsScraper,
+    ClubrareScraper.employer_name: ClubrareScraper,
+    N8nScraper.employer_name: N8nScraper,
+    OmetriaScraper.employer_name: OmetriaScraper,
+    SignalAiScraper.employer_name: SignalAiScraper,
+    DextScraper.employer_name: DextScraper,
+    HydrosatScraper.employer_name: HydrosatScraper,
+    DiveplaneScraper.employer_name: DiveplaneScraper,
+    LeetcodeScraper.employer_name: LeetcodeScraper,
     AvantstayScraper.employer_name: AvantstayScraper,
     SaryScraper.employer_name: SaryScraper,
     Carry1stScraper.employer_name: Carry1stScraper,
