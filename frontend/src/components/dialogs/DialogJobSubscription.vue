@@ -19,7 +19,7 @@
           </q-input>
         </div>
         <div class="col-12">
-          <SelectJobTitle v-model="formData.job_titles" :is-multi="true" :is-required="true"/>
+          <SelectJobProfession v-model="formData.job_professions" :is-multi="true" :is-required="true"/>
         </div>
         <div class="col-12">
           <SelectEmployer v-model="formData.employers" :is-multi="true"/>
@@ -43,7 +43,7 @@
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import InputLocation from 'components/inputs/InputLocation.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
-import SelectJobTitle from 'components/inputs/SelectJobTitle.vue'
+import SelectJobProfession from 'components/inputs/SelectJobProfession.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import { getAjaxFormData } from 'src/utils/requests.js'
 
@@ -52,7 +52,7 @@ export default {
   extends: DialogBase,
   inheritAttrs: false,
   components: {
-    SelectJobTitle,
+    SelectJobProfession,
     DialogBase,
     InputLocation,
     SelectEmployer,
@@ -81,7 +81,7 @@ export default {
       this.formData = Object.assign({ title: this.jobSubscription.title }, this.jobSubscription.filters)
 
       // Turn filter objects into flat IDs
-      const flattenFilterItems = ['jobs', 'employers', 'job_titles']
+      const flattenFilterItems = ['jobs', 'employers', 'job_professions']
       flattenFilterItems.forEach((filterKey) => {
         this.formData[filterKey] = this.formData[filterKey].map((item) => item.id)
       })

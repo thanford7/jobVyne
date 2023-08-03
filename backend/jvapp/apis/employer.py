@@ -10,6 +10,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
+from openai.error import RateLimitError
 from rest_framework import status
 from rest_framework.response import Response
 from slack_sdk import WebClient
@@ -249,7 +250,7 @@ class EmployerSlackView(JobVyneAPIView):
             return get_error_response('An employer ID is required')
         if not self.user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, employer_id):
             return get_error_response('You do not have permission for this operation')
-        slack_cfg = EmployerSlack.objects.get(id=slack_cfg_id)
+        slack_cfg = EmployerSlack.objects.select_related('employer').get(id=slack_cfg_id)
         self.update_slack_cfg(self.user, slack_cfg, self.data)
         
         # Slack bot needs to be part of the channel to post to it
@@ -294,7 +295,7 @@ class EmployerSlackView(JobVyneAPIView):
     
     @staticmethod
     def get_slack_cfg(employer_id):
-        slack_cfg = EmployerSlack.objects.filter(employer_id=employer_id)
+        slack_cfg = EmployerSlack.objects.select_related('employer').filter(employer_id=employer_id)
         if slack_cfg:
             return slack_cfg[0]
         return None
@@ -1718,7 +1719,7 @@ class EmployerInfoView(JobVyneAPIView):
                     {'role': 'user', 'content': employer.employer_name}
                 ], is_test=False)
                 employer.description = resp['description']
-            except PromptError:
+            except (PromptError, RateLimitError):
                 pass
         
             queue.task_done()

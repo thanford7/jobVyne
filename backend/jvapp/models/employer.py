@@ -359,15 +359,19 @@ class Taxonomy(models.Model):
     
     tax_type = models.CharField(max_length=20)
     name = models.CharField(max_length=100)
-    key = models.CharField(max_length=50, null=True, blank=True)
+    key = models.CharField(max_length=50, unique=True, null=True, blank=True)
     # TODO: Add descriptions for job levels category
     description = models.CharField(max_length=2000, null=True, blank=True)
+    sort_order = models.SmallIntegerField(null=True, blank=True)
 
     class Meta:
         unique_together = ('tax_type', 'name')
 
     def __str__(self):
         return f'{self.tax_type}: {self.name}'
+    
+    def get_unique_key(self):
+        return self.tax_type, self.name
 
 
 class JobTaxonomy(AuditFields):

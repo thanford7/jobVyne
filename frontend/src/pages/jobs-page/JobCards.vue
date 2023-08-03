@@ -28,7 +28,7 @@
               <div class="q-pl-lg" :class="(employer.employer_logo) ? 'col-10' : 'col-12'">
                 <div class="h-100 flex items-center">
                   <h5 class="w-100 q-mb-none">{{ employer.employer_name }}</h5>
-                  <div>
+                  <div class="w-100">
                     {{ employer.employer_description }}
                   </div>
                   <div>

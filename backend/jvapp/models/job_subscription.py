@@ -15,7 +15,7 @@ class JobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
     is_single_employer = models.BooleanField(default=False)  # Used for an employer's own jobs
     is_user_entered = models.BooleanField(default=False)  # Used for members of a group entering a new job
     title = models.CharField(max_length=200)
-    filter_job_titles = models.ManyToManyField('Taxonomy')
+    filter_job_professions = models.ManyToManyField('Taxonomy')
     filter_location = models.ManyToManyField('Location')
     filter_range_miles = models.SmallIntegerField(null=True, blank=True)
     filter_job = models.ManyToManyField('EmployerJob')

@@ -129,6 +129,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
     linkedin_url = models.CharField(max_length=200, null=True, blank=True)
+    professional_site_url = models.URLField(null=True, blank=True)
     phone_number = models.CharField(max_length=25, null=True, blank=True)
     profile_picture = models.ImageField(upload_to=get_user_upload_location, null=True, blank=True)
     is_email_verified = models.BooleanField(default=False)
@@ -156,6 +157,10 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     work_remote_type_bit = models.SmallIntegerField(default=REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value)
     job_search_type_bit = models.SmallIntegerField(default=0)
     is_job_search_visible = models.BooleanField(default=False)
+    job_search_level = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL, related_name='level_job_seeker')
+    job_search_industries = models.ManyToManyField('Taxonomy', related_name='industry_job_seeker')
+    job_search_professions = models.ManyToManyField('Taxonomy', related_name='profession_job_seeker')
+    job_search_qualifications = models.CharField(max_length=1000, null=True, blank=True)
     membership_groups = models.ManyToManyField('Employer', related_name='group_member')
     membership_professions = models.ManyToManyField('Taxonomy', related_name='profession_member')
     membership_employers = models.ManyToManyField('Employer', related_name='employer_member')

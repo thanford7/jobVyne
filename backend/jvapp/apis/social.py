@@ -15,8 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
-from jvapp.apis.geocoding import get_raw_location
-from jvapp.apis.taxonomy import TaxonomyJobTitleView
+from jvapp.apis.taxonomy import TaxonomyJobProfessionView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, Taxonomy
 from jvapp.models.job_seeker import JobApplication
@@ -348,7 +347,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 is_jobs_closed = True
         elif profession_key:
             try:
-                taxonomy = TaxonomyJobTitleView.get_job_title_taxonomy(tax_key=profession_key)
+                taxonomy = TaxonomyJobProfessionView.get_job_title_taxonomy(tax_key=profession_key)
             except Taxonomy.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy=taxonomy)
@@ -493,7 +492,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 remote_filter &= (Q(locations__country__name=country) | Q(locations__country__name__isnull=True))
         
         if remote_type_bit and (remote_type_bit & REMOTE_TYPES.NO.value) and not (remote_type_bit & REMOTE_TYPES.YES.value):
-            location_filter &= Q(locations__is_remote=False)
+            remote_filter = Q(locations__is_remote=False)
         
         if remote_filter and location_filter:
             if remote_type_bit:

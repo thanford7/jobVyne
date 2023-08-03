@@ -252,7 +252,7 @@ class AdminEmployerView(JobVyneAPIView):
             'name': employer.employer_name,
             'organization_type': employer.organization_type,
             'job_board_url': employer.default_job_board[0].get_link_url() if employer.default_job_board else None,
-            'logo_url': employer.logo.url if employer.logo else None,
+            'logo_url': employer.logo_square_88.url if employer.logo_square_88 else None,
             'joined_date': get_datetime_format_or_none(employer.created_dt),
             'email_domains': employer.email_domains,
             'is_use_job_url': employer.is_use_job_url,

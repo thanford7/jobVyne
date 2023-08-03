@@ -47,6 +47,10 @@
                   :props="props"
                 >
                   <template v-if="col.name === 'employerName'">
+                    <q-img
+                      :src="props.row.logo_url" class="q-mr-sm"
+                      alt="Employer logo" height="30px" width="30px" style="display: inline-block"
+                    />
                     <a :href="props.row.job_board_url" target="_blank">{{ props.row.name }}</a>
                   </template>
                   <template v-else-if="col.name === 'subscriptionStatus'">

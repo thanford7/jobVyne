@@ -90,7 +90,7 @@ class JobSubscriptionView(JobVyneAPIView):
                 'filter_location__country',
                 'filter_job',
                 'filter_employer',
-                'filter_job_titles'
+                'filter_job_professions'
             ) \
             .filter(subscription_filter)
         
@@ -131,15 +131,15 @@ class JobSubscriptionView(JobVyneAPIView):
             job_subscription.save()
             
             # Add new filters
-            if job_title_ids := data.get('job_titles'):
-                filter_job_titles = []
-                filter_model = job_subscription.filter_job_titles.through
+            if job_title_ids := data.get('job_professions'):
+                filter_job_professions = []
+                filter_model = job_subscription.filter_job_professions.through
                 for job_title_id in job_title_ids:
-                    filter_job_titles.append(filter_model(
+                    filter_job_professions.append(filter_model(
                         jobsubscription_id=job_subscription.id,
                         taxonomy_id=job_title_id
                     ))
-                filter_model.objects.bulk_create(filter_job_titles)
+                filter_model.objects.bulk_create(filter_job_professions)
             if locations:
                 filter_locations = []
                 filter_model = job_subscription.filter_location.through
@@ -178,6 +178,16 @@ class JobSubscriptionView(JobVyneAPIView):
         ]
     
     @staticmethod
+    def get_combined_job_professions_from_subscriptions(job_subscriptions):
+        if not job_subscriptions:
+            return []
+        job_professions = set()
+        for sub in job_subscriptions:
+            for profession in sub.filter_job_professions.all():
+                job_professions.add(profession)
+        return list(job_professions)
+    
+    @staticmethod
     def get_combined_job_subscription_filter(job_subscriptions):
         if not job_subscriptions:
             return Q()
@@ -187,7 +197,7 @@ class JobSubscriptionView(JobVyneAPIView):
     @staticmethod
     def get_job_filter(job_subscription):
         job_filter = Q()
-        if job_title_ids := [jt.id for jt in job_subscription.filter_job_titles.all()]:
+        if job_title_ids := [jt.id for jt in job_subscription.filter_job_professions.all()]:
             job_filter &= Q(taxonomy__taxonomy_id__in=job_title_ids)
         if job_ids := [j.id for j in job_subscription.filter_job.all()]:
             job_filter &= Q(id__in=job_ids)

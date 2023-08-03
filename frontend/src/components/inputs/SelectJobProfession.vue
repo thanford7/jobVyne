@@ -4,11 +4,11 @@
     :loading="isLoading"
     :multiple="isMulti"
     filled emit-value map-options use-chips use-input
-    :options="filteredJobTitles"
+    :options="filteredJobProfessions"
     option-value="id"
     option-label="name"
     :label="`Job title${(isMulti) ? 's' : ''}`"
-    @filter="filterTitles"
+    @filter="filterProfessions"
     input-debounce="0"
     lazy-rules
     :rules="(isRequired) ? [
@@ -23,7 +23,7 @@
 import { useTaxonomyStore } from 'stores/taxonomy-store.js'
 
 export default {
-  name: 'SelectJobTitle',
+  name: 'SelectJobProfession',
   props: {
     isMulti: Boolean,
     isRequired: {
@@ -34,21 +34,21 @@ export default {
   data () {
     return {
       filterTxt: null,
-      jobTitles: [],
+      jobProfessions: [],
       isLoading: false
     }
   },
   computed: {
-    filteredJobTitles () {
+    filteredJobProfessions () {
       if (!this.filterTxt || !this.filterTxt.length) {
-        return this.jobTitles
+        return this.jobProfessions
       }
       const filterRegex = new RegExp(`.*?${this.filterTxt}.*?`, 'i')
-      return this.jobTitles.filter((jt) => jt.name.match(filterRegex))
+      return this.jobProfessions.filter((jt) => jt.name.match(filterRegex))
     }
   },
   methods: {
-    filterTitles (filterTxt, update) {
+    filterProfessions (filterTxt, update) {
       update(() => {
         this.filterTxt = filterTxt
       })
@@ -57,8 +57,8 @@ export default {
   async mounted () {
     this.isLoading = true
     const taxStore = useTaxonomyStore()
-    await taxStore.setJobTitles()
-    this.jobTitles = taxStore.getJobTitles()
+    await taxStore.setJobProfessions()
+    this.jobProfessions = taxStore.getJobProfessions()
     this.isLoading = false
   }
 }

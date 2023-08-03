@@ -9,7 +9,7 @@ def get_serialized_job_subscription(job_subscription: JobSubscription):
         'is_single_employer': job_subscription.is_single_employer,
         'title': job_subscription.title,
         'filters': {
-            'job_titles': [{'id': jt.id, 'name': jt.name} for jt in job_subscription.filter_job_titles.all()],
+            'job_professions': [{'id': jt.id, 'name': jt.name} for jt in job_subscription.filter_job_professions.all()],
             'locations': [get_serialized_location(l) for l in job_subscription.filter_location.all()],
             'range_miles': job_subscription.filter_range_miles,
             'jobs': [{'title': j.job_title, 'id': j.id} for j in job_subscription.filter_job.all()],

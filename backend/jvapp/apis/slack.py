@@ -18,6 +18,7 @@ from slack_sdk import WebClient
 from jobVyne.multiPartJsonParser import RawFormParser
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response
 from jvapp.apis.employer import EmployerJobView, EmployerSlackView
+from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.social import SocialLinkPostJobsView, SocialLinkView
 from jvapp.models.content import JobPost
 from jvapp.models.employer import Employer, EmployerJobConnection, EmployerSlack
@@ -94,7 +95,7 @@ class SlackBasePoster:
             self.max_jobs, self.post_channel,
             employer_id=self.employer_id, owner_id=self.owner_id, recipient_id=self.recipient_id
         )
-
+    
     def generate_job_post(self, job, resp, message_blocks):
         meta_data = {
             'message_blocks': message_blocks,
@@ -149,9 +150,9 @@ class SlackBasePoster:
                     'image_url': job.employer.logo_square_88.url,
                     'alt_text': f'{job.employer.employer_name} logo'
                 }
-                
+            
             blocks.append(job_info)
-
+            
             # TODO: Add actions for:
             #  user to indicate they work at the given company
             #  user to follow company
@@ -231,8 +232,8 @@ class SlackJobPoster(SlackBasePoster):
             *self._get_slack_message_jobs_list(jobs)
         ]
         return blocks
-    
-    
+
+
 class SlackUserGeneratedJobPoster(SlackBasePoster):
     
     def get_jobs_for_post(self, job, *args, **kwargs):
@@ -244,7 +245,7 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
             return None
         except JobPost.DoesNotExist:
             return [job]
-        
+    
     def build_message(self, jobs, slack_user_profile=None, job_connection=None, **kwargs):
         assert slack_user_profile and job_connection
         connection_descriptions = {
@@ -430,10 +431,28 @@ class SlackBaseView(JobVyneAPIView):
         return convert_url_to_image(profile_picture_url, 'slack_profile_512.png')
     
     @staticmethod
-    def get_or_create_jobvyne_user(slack_user_profile, user_type_bits, employer_id=None):
+    def subscribe_user_to_groups(user: JobVyneUser, slack_cfg: EmployerSlack):
+        if slack_cfg.employer.organization_type == Employer.ORG_TYPE_GROUP:
+            user.membership_groups.add(slack_cfg.employer)
+            job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=slack_cfg.employer_id)
+            professions = JobSubscriptionView.get_combined_job_professions_from_subscriptions(job_subscriptions)
+            user.membership_professions.add(*professions)
+        else:
+            user.membership_employers.add(slack_cfg.employer)
+    
+    @staticmethod
+    def get_or_create_jobvyne_user(slack_user_profile, user_type_bits, slack_cfg, employer_id=None):
         try:
             user_filter = Q(email=slack_user_profile['email']) | Q(business_email=slack_user_profile['email'])
-            user = JobVyneUser.objects.get(user_filter)
+            user = (
+                JobVyneUser.objects
+                .prefetch_related(
+                    'job_search_industries',
+                    'job_search_professions'
+                )
+                .select_related('job_search_level')
+                .get(user_filter)
+            )
             is_updated = False
             if (user.user_type_bits & user_type_bits) != user_type_bits:
                 user.user_type_bits |= user_type_bits
@@ -447,11 +466,13 @@ class SlackBaseView(JobVyneAPIView):
             first_name = slack_user_profile['first_name']
             last_name = slack_user_profile['last_name']
             home_post_code = slack_user_profile.get('home_post_code')
+            professional_site_url = slack_user_profile.get('professional_site_url')
             for val, attr in (
-                (linkedin_url, 'linkedin_url'),
-                (first_name, 'first_name'),
-                (last_name, 'last_name'),
-                (home_post_code, 'home_post_code')
+                    (linkedin_url, 'linkedin_url'),
+                    (first_name, 'first_name'),
+                    (last_name, 'last_name'),
+                    (home_post_code, 'home_post_code'),
+                    (professional_site_url, 'professional_site_url')
             ):
                 if val and val != getattr(user, attr):
                     setattr(user, attr, val)
@@ -476,6 +497,8 @@ class SlackBaseView(JobVyneAPIView):
                 employer_id=employer_id,
                 profile_picture=profile_picture
             )
+        
+        SlackBaseView.subscribe_user_to_groups(user, slack_cfg)
         
         return user
 
@@ -690,6 +713,7 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             user = SlackBaseView.get_or_create_jobvyne_user(
                 self.slack_user_profile,
                 JobVyneUser.USER_TYPE_EMPLOYEE,
+                self.slack_cfg,
                 employer_id=self.slack_cfg.employer_id
             )
             job = EmployerJobView.get_employer_jobs(employer_job_id=button_data['job_id'])
@@ -745,15 +769,17 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             # override slack user profile with user input values
             user = SlackBaseView.get_or_create_jobvyne_user(
                 {**self.slack_user_profile, **metadata},
-                JobVyneUser.USER_TYPE_CANDIDATE
+                JobVyneUser.USER_TYPE_CANDIDATE,
+                self.slack_cfg
             )
             
             modal_views = JobSeekerModalViews(self.slack_user_profile, user, metadata)
-            modal_view = modal_views.get_modal_view_slack_object(callback_id=action_id)
+            modal_view = modal_views.get_modal_view(callback_id=action_id, is_slack_object_only=False)
             if modal_view:
+                modal_view.process_data(user)
                 return Response(status=status.HTTP_200_OK, data={
                     'response_action': 'update',
-                    'view': modal_view
+                    'view': modal_view.get_slack_object()
                 })
             else:
                 confirmation_modal = modal_views.finalize_modal(
@@ -768,18 +794,19 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             metadata = {}
             if raw_metadata := self.data['view']['private_metadata']:
                 metadata = json.loads(raw_metadata)
-    
+            
             metadata = {**metadata, **Modal.get_modal_values(self.data)}
             
             user = SlackBaseView.get_or_create_jobvyne_user(
-                self.slack_user_profile, JobVyneUser.USER_TYPE_INFLUENCER
+                self.slack_user_profile, JobVyneUser.USER_TYPE_INFLUENCER, self.slack_cfg
             )
             modal_views = JobModalViews(self.slack_user_profile, user, metadata)
-            modal_view = modal_views.get_modal_view_slack_object(callback_id=action_id)
+            modal_view = modal_views.get_modal_view(callback_id=action_id, is_slack_object_only=False)
             if modal_view:
+                modal_view.process_data(user)
                 return Response(status=status.HTTP_200_OK, data={
                     'response_action': 'update',
-                    'view': modal_view
+                    'view': modal_view.get_slack_object()
                 })
             else:
                 confirmation_modal = modal_views.finalize_modal(
@@ -827,12 +854,12 @@ class SlackCommandJobSeekerView(SlackExternalBaseView):
     def post(self, request):
         slack_user_profile = SlackBaseView.get_user_profile(self.data['user_id'], self.slack_client)
         user = SlackBaseView.get_or_create_jobvyne_user(
-            self.slack_user_profile, JobVyneUser.USER_TYPE_CANDIDATE
+            self.slack_user_profile, JobVyneUser.USER_TYPE_CANDIDATE, self.slack_cfg
         )
         modal_views = JobSeekerModalViews(slack_user_profile, user, {'slack_user_id': self.slack_user_id})
         
         self.slack_client.views_open(
-            view=modal_views.get_modal_view_slack_object(modal_idx=0, is_next=False),
+            view=modal_views.get_modal_view(modal_idx=0, is_next=False),
             trigger_id=self.data['trigger_id']
         )
         
@@ -874,7 +901,7 @@ class SlackCommandJobView(SlackExternalBaseView):
     def post(self, request):
         slack_user_profile = SlackBaseView.get_user_profile(self.data['user_id'], self.slack_client)
         user = SlackBaseView.get_or_create_jobvyne_user(
-            self.slack_user_profile, JobVyneUser.USER_TYPE_INFLUENCER
+            self.slack_user_profile, JobVyneUser.USER_TYPE_INFLUENCER, self.slack_cfg
         )
         job_post_channel = None
         if self.slack_cfg.jobs_post_channel:
@@ -887,7 +914,7 @@ class SlackCommandJobView(SlackExternalBaseView):
         })
         
         self.slack_client.views_open(
-            view=modal_views.get_modal_view_slack_object(modal_idx=0, is_next=False),
+            view=modal_views.get_modal_view(modal_idx=0, is_next=False),
             trigger_id=self.data['trigger_id']
         )
         

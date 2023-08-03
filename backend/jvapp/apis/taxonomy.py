@@ -7,7 +7,7 @@ from jvapp.apis._apiBase import JobVyneAPIView, get_success_response, get_warnin
 from jvapp.models.employer import Taxonomy
 
 
-class TaxonomyJobTitleView(JobVyneAPIView):
+class TaxonomyJobProfessionView(JobVyneAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     
     def get(self, request):

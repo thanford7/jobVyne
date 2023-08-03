@@ -1,11 +1,11 @@
 <template>
   <div>
-    <template v-if="jobSubscription.filters.job_titles">
+    <template v-if="jobSubscription.filters.job_professions">
       <q-chip
-      v-for="jobTitle in jobSubscription.filters.job_titles"
+      v-for="jobProfession in jobSubscription.filters.job_professions"
       dense
     >
-      {{ jobTitle.name }}
+      {{ jobProfession.name }}
     </q-chip>
     </template>
     <LocationChip :locations="jobSubscription.filters.locations" :is-dense="true"/>

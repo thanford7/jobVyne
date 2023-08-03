@@ -1,7 +1,8 @@
 from django.urls import path, re_path
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, donation_org, email, employer, job_seeker, job, jobs, job_subscription,
+    admin, ats, auth, community, content, currency, data, donation_org, email, employer, job_seeker, job, jobs,
+    job_subscription,
     karma, message, notification, sales, slack, social, stripe, taxonomy, test, tracking, user
 )
 from jvapp.apis.geocoding import LocationSearchView
@@ -14,6 +15,7 @@ urlpatterns = [
     path('admin/job-scraper/', admin.AdminJobScrapersView.as_view()),
     path('admin/taxonomy-update/', admin.AdminTaxonomyView.as_view()),
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
+    path('community/members/', community.CommunityMemberView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
     path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
@@ -56,7 +58,7 @@ urlpatterns = [
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
-    path('taxonomy/job-title/', taxonomy.TaxonomyJobTitleView.as_view()),
+    path('taxonomy/job-profession/', taxonomy.TaxonomyJobProfessionView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
     re_path('^user/employee-checklist/(?P<user_id>[0-9]+)?/?$', user.UserEmployeeChecklistView.as_view()),
     path('user/profile/', user.UserProfileView.as_view()),

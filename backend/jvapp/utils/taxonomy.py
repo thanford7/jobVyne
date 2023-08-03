@@ -10,124 +10,120 @@ from jvapp.models.employer import EmployerJob, JobTaxonomy, Taxonomy
 
 logger = logging.getLogger(__name__)
 
-JOB_TITLES = [
-    # (name, key)
-    ('Executive Assistant', 'ea'),
-    ('Chief of Staff', 'cos'),
-    ('Law', 'law'),
-    ('Government & Regulation', 'gov'),
-    ('Product Management', 'product-management'),
-    ('Product Marketing', 'product-marketing'),
-    ('Customer Success', 'customer-success'),
-    ('Account Management', 'account-management'),
-    ('Client Solutions', 'client-solutions'),
-    ('Customer Support', 'customer-support'),
-    ('Human Resources', 'hr'),
-    ('Talent Acquisition', 'ta'),
-    ('Hardware Engineering', 'eng-hardware'),
-    ('Software Engineering', 'eng-software'),
-    ('Front-End Development', 'eng-frontend'),
-    ('Back-End Development', 'eng-backend'),
-    ('Mobile Development', 'eng-mobile'),
-    ('Devops Engineering', 'devops'),
-    ('QA Engineering', 'qa'),
-    ('IT (Non-Engineering)', 'it'),
-    ('Data Analysis', 'data-analysis'),
-    ('Data Science', 'data-science'),
-    ('Machine Learning / AI Engineering', 'ml'),
-    ('Data Engineering', 'eng-data'),
-    ('Database Administration', 'dba'),
-    ('SDR / BDR', 'sdr'),
-    ('Sales Executive', 'sales'),
-    ('Business/Corporate Development', 'bus-dev'),
-    ('Marketing', 'marketing'),
-    ('Growth Marketing', 'marketing-growth'),
-    ('Digital Marketing', 'marketing-digital'),
-    ('SEO', 'marketing-seo'),
-    ('Event Marketing', 'marketing-events'),
-    ('Public Relations', 'pr'),
-    ('Market Research', 'marketing-research'),
-    ('UI/UX', 'ui'),
-    ('Product Design', 'product-design'),
-    ('Project Management', 'project-management'),
-    ('Business Analysis', 'business-analysis'),
-    ('Strategy & Operations', 'strategy-ops'),
-    ('Growth', 'growth'),
-    ('Finance', 'finance'),
-    ('Accounting', 'accounting')
+JOB_PROFESSIONS = [
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Executive Assistant', key='ea'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Chief of Staff', key='cos'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Law', key='law'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Government & Regulation', key='gov'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Product Management', key='product-management'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Product Marketing', key='product-marketing'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Customer Success', key='customer-success'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Account Management', key='account-management'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Client Solutions', key='client-solutions'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Customer Support', key='customer-support'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Human Resources', key='hr'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Talent Acquisition', key='ta'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Hardware Engineering', key='eng-hardware'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Software Engineering', key='eng-software'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Front-End Development', key='eng-frontend'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Back-End Development', key='eng-backend'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Mobile Development', key='eng-mobile'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Devops Engineering', key='devops'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='QA Engineering', key='qa'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='IT (Non-Engineering)', key='it'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Data Analysis', key='data-analysis'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Data Science', key='data-science'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Machine Learning / AI Engineering', key='ml'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Data Engineering', key='eng-data'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Database Administration', key='dba'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='SDR / BDR', key='sdr'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Sales Executive', key='sales'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Business/Corporate Development', key='bus-dev'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Marketing', key='marketing'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Growth Marketing', key='marketing-growth'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Digital Marketing', key='marketing-digital'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='SEO', key='marketing-seo'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Event Marketing', key='marketing-events'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Public Relations', key='pr'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Market Research', key='marketing-research'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='UI/UX', key='ui'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Product Design', key='product-design'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Project Management', key='project-management'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Business Analysis', key='business-analysis'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Strategy & Operations', key='strategy-ops'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Growth', key='growth'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Finance', key='finance'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Accounting', key='accounting')
 ]
 
 INDUSTRIES = [
-    'Real Estate',
-    'B2B',
-    'B2C',
-    'Agriculture',
-    'Education',
-    'Software',
-    'Artificial Intelligence',
-    'Finance',
-    'Hardware',
-    'Manufacturing',
-    'Transportation',
-    'Life Sciences',
-    'Mining',
-    'Energy',
-    'Non-Profit',
-    'Media & Entertainment',
-    'Construction',
-    'Insurance',
-    'Retail',
-    'Hospitality and Tourism',
-    'Food',
-    'Healthcare',
-    'Management Consulting',
-    'Fashion',
-    'Law',
-    'Marketing',
-    'Technology',
-    'Robotics',
-    'Consumer Goods',
-    'Telecommunications',
-    'Chemicals',
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Real Estate'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='B2B'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='B2C'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Agriculture'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Education'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Software'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Artificial Intelligence'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Finance'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Hardware'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Manufacturing'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Transportation'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Life Sciences'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Mining'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Energy'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Non-Profit'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Media & Entertainment'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Construction'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Insurance'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Retail'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Hospitality and Tourism'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Food'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Healthcare'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Management Consulting'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Fashion'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Law'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Marketing'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Technology'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Robotics'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Consumer Goods'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Telecommunications'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_INDUSTRY, name='Chemicals'),
 ]
 
 JOB_LEVELS = [
-    'Intern',
-    'Entry Individual Contributor',
-    'Senior Individual Contributor',
-    'Manager / Director',
-    'Vice President',
-    'C-Suite',
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL, name='Intern', sort_order=1),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL, name='Entry Individual Contributor', sort_order=2),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL, name='Senior Individual Contributor', sort_order=3),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL, name='Manager / Director', sort_order=4),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL, name='Vice President', sort_order=5),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL, name='C-Suite', sort_order=6),
 ]
 
-taxonomy_cfgs = set()
-for job_title in JOB_TITLES:
-    taxonomy_cfgs.add((Taxonomy.TAX_TYPE_JOB_TITLE, job_title[0], job_title[1]))
-for industry in INDUSTRIES:
-    taxonomy_cfgs.add((Taxonomy.TAX_TYPE_INDUSTRY, industry))
-for job_level in JOB_LEVELS:
-    taxonomy_cfgs.add((Taxonomy.TAX_TYPE_JOB_LEVEL, job_level))
+ALL_TAXONOMIES = {
+    tax.get_unique_key(): tax for tax in JOB_LEVELS + INDUSTRIES + JOB_PROFESSIONS
+}
 
 
 def update_taxonomies(*args, **kwargs):
-    current_taxonomies = {(t.tax_type, t.name): t for t in Taxonomy.objects.all()}
+    current_taxonomies = {t.get_unique_key(): t for t in Taxonomy.objects.all()}
     tax_to_add = []
     tax_to_update = []
     tax_to_delete = []
-    for tax_cfg in taxonomy_cfgs:
-        if existing_tax := current_taxonomies.get(tax_cfg[:2]):
-            if len(tax_cfg) == 3 and not existing_tax.key:
-                existing_tax.key = tax_cfg[2]
-                tax_to_update.append(existing_tax)
+    for tax_key, tax in ALL_TAXONOMIES.items():
+        if existing_tax := current_taxonomies.get(tax_key):
+            existing_tax.key = tax.key
+            existing_tax.description = tax.description
+            existing_tax.sort_order = tax.sort_order
+            tax_to_update.append(existing_tax)
         else:
-            tax_to_add.append(Taxonomy(tax_type=tax_cfg[0], name=tax_cfg[1]))
+            tax_to_add.append(tax)
     
     for tax_key, current_tax in current_taxonomies.items():
-        if tax_key not in [tc[:2] for tc in taxonomy_cfgs]:
+        if tax_key not in ALL_TAXONOMIES:
             tax_to_delete.append(current_tax.id)
     
     Taxonomy.objects.bulk_create(tax_to_add)
-    Taxonomy.objects.bulk_update(tax_to_update, ['key'])
+    Taxonomy.objects.bulk_update(tax_to_update, ['key', 'description', 'sort_order'])
     Taxonomy.objects.filter(id__in=tax_to_delete).delete()
     
     

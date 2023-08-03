@@ -48,6 +48,10 @@
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
+            <q-tab
+              v-if="employerTypeUtil.isTypeGroup(employer.organization_type)"
+              id="jv-tab-community" name="community" label="Community"
+            />
             <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me"
                    :label="`About ${profile?.first_name}`"/>
           </q-tabs>
@@ -93,6 +97,12 @@
               @closeAppSideBar="isRightDrawerOpen = false"
             />
           </q-tab-panel>
+          <q-tab-panel name="community">
+            <CommunitySection
+              :user="user"
+              :employer="employer"
+            />
+          </q-tab-panel>
           <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
             <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
               <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
@@ -136,8 +146,10 @@
 <script>
 import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
+import CommunitySection from 'pages/jobs-page/CommunitySection.vue'
 import JobsSection from 'pages/jobs-page/JobsSection.vue'
 import employerStyleUtil from 'src/utils/employer-styles.js'
+import employerTypeUtil from 'src/utils/employer-types.js'
 import scrollUtil from 'src/utils/scroll.js'
 import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
@@ -169,12 +181,14 @@ export default {
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
+      employerTypeUtil,
       locationUtil,
       scrollUtil,
       userUtil
     }
   },
   components: {
+    CommunitySection,
     JobsSection,
     ResponsiveWidth,
     CustomFooter,

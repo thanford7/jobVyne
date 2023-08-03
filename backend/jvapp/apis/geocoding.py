@@ -90,6 +90,7 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
     city_name = location_dict.get('city')
     state_name = location_dict.get('state')
     country_name = location_dict.get('country')
+    raw_location_text = raw_location_text or location_dict['text']
     if not any([city_name, state_name, country_name]):
         try:
             location = Location.objects.get(text__iexact='Unknown')
