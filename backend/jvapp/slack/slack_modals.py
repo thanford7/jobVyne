@@ -5,7 +5,7 @@ from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import JobPost
 from jvapp.models.currency import Currency
-from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, Taxonomy
+from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, Taxonomy, ConnectionTypeBit
 from jvapp.models.location import REMOTE_TYPES
 from jvapp.models.user import JobVyneUser, UserSocialSubscription
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
@@ -406,7 +406,7 @@ class JobModalViews(SlackMultiViewModal):
                 'Locations',
                 help_text='Separate locations with a pipe (|). If remote is an option, include the word "Remote"'
             ).get_slack_object(),
-            InputUrl(
+            InputText(
                 'job-application-url',
                 'Job Application URL',
                 'URL',
@@ -507,23 +507,23 @@ class JobModalViews(SlackMultiViewModal):
         connection_options = [
             InputOption(
                 'I am hiring for this job',
-                EmployerJobConnection.ConnectionTypeBit.HIRING_MEMBER.value,
+                ConnectionTypeBit.HIRING_MEMBER.value,
             ).get_slack_object(),
             InputOption(
                 'I work at this company',
-                EmployerJobConnection.ConnectionTypeBit.CURRENT_EMPLOYEE.value,
+                ConnectionTypeBit.CURRENT_EMPLOYEE.value,
             ).get_slack_object(),
             InputOption(
                 'I previously worked at this company',
-                EmployerJobConnection.ConnectionTypeBit.FORMER_EMPLOYEE.value,
+                ConnectionTypeBit.FORMER_EMPLOYEE.value,
             ).get_slack_object(),
             InputOption(
                 'I know someone at this company',
-                EmployerJobConnection.ConnectionTypeBit.KNOW_EMPLOYEE.value,
+                ConnectionTypeBit.KNOW_EMPLOYEE.value,
             ).get_slack_object(),
             InputOption(
                 'I have no connection to this company',
-                EmployerJobConnection.ConnectionTypeBit.NO_CONNECTION.value,
+                ConnectionTypeBit.NO_CONNECTION.value,
             ).get_slack_object(),
         ]
         
@@ -577,13 +577,14 @@ class JobModalViews(SlackMultiViewModal):
         if employer_id:
             employer = Employer.objects.get(id=employer_id)
         else:
-            employer_name = InputOption.parse_value_text(employer_field['text'])
+            employer_name = employer_field['text']
             employer = Employer(
                 organization_type=Employer.ORG_TYPE_EMPLOYER,
                 employer_name=employer_name,
                 is_employer_approved=False
             )
             employer.save()
+            form_data['options-employer']['value'] = employer.id
         return employer
     
     def get_or_create_job(self, form_data, ignore_fields=None):
@@ -604,8 +605,8 @@ class JobModalViews(SlackMultiViewModal):
         connection_type = coerce_int(form_data[self.CONNECTION_OPTIONS_KEY]['value'])
         is_employer_update = False
         if connection_type in (
-                EmployerJobConnection.ConnectionTypeBit.HIRING_MEMBER.value,
-                EmployerJobConnection.ConnectionTypeBit.CURRENT_EMPLOYEE.value
+                ConnectionTypeBit.HIRING_MEMBER.value,
+                ConnectionTypeBit.CURRENT_EMPLOYEE.value
         ):
             user.user_type_bits |= JobVyneUser.USER_TYPE_EMPLOYEE
             is_employer_update = user.employer_id == self.employer.id
@@ -632,15 +633,15 @@ class JobModalViews(SlackMultiViewModal):
         if is_employer_update:
             updates.append(f'✔️ Updated your user profile to be an employee of {self.employer.employer_name}')
         
-        if connection_type == EmployerJobConnection.ConnectionTypeBit.HIRING_MEMBER.value:
+        if connection_type == ConnectionTypeBit.HIRING_MEMBER.value:
             updates.append('✔️ Indicated that you are part of the hiring team for this job')
-        elif connection_type == EmployerJobConnection.ConnectionTypeBit.CURRENT_EMPLOYEE.value:
+        elif connection_type == ConnectionTypeBit.CURRENT_EMPLOYEE.value:
             updates.append('✔️ Indicated that you work at the employer for this job')
-        elif connection_type == EmployerJobConnection.ConnectionTypeBit.FORMER_EMPLOYEE.value:
+        elif connection_type == ConnectionTypeBit.FORMER_EMPLOYEE.value:
             updates.append('✔️ Indicated that you previously worked at the employer for this job')
-        elif connection_type == EmployerJobConnection.ConnectionTypeBit.KNOW_EMPLOYEE.value:
+        elif connection_type == ConnectionTypeBit.KNOW_EMPLOYEE.value:
             updates.append('✔️ Indicated that you know someone who works at the employer for this job')
-        elif connection_type == EmployerJobConnection.ConnectionTypeBit.NO_CONNECTION.value:
+        elif connection_type == ConnectionTypeBit.NO_CONNECTION.value:
             updates.append('✔️ Indicated that you have no connection with the employer for this job')
         
         updates.append(
@@ -664,8 +665,7 @@ class JobModalViews(SlackMultiViewModal):
             final_update_text += f'\n{update}'
         
         final_notes = [
-            # TODO: Update URL with query param for the connections tab
-            f'ℹ️ To view an active list of job seekers, visit <{settings.BASE_URL}/group/{self.employer.employer_key}/|JobVyne for {self.employer.employer_name}>'
+            f'ℹ️ To view an active list of job seekers, visit <{settings.BASE_URL}/group/{slack_cfg.employer.employer_key}/?tab=community|JobVyne for {slack_cfg.employer.employer_name}>'
         ]
         if self.job.is_user_created:
             if self.job.is_creator(user):

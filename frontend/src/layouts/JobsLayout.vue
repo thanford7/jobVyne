@@ -49,7 +49,7 @@
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
             <q-tab
-              v-if="employerTypeUtil.isTypeGroup(employer.organization_type)"
+              v-if="employerTypeUtil.isTypeGroup(employer?.organization_type)"
               id="jv-tab-community" name="community" label="Community"
             />
             <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me"
@@ -208,6 +208,11 @@ export default {
       return ['company', 'group'].includes(this.$route.name)
     }
   },
+  watch: {
+    tab () {
+      this.$router.replace({ name: this.$route.name, params: this.$route.params, query: { ...this.$route.query, tab: this.tab } })
+    }
+  },
   methods: {
     log (val) {
       console.log(val)
@@ -257,6 +262,10 @@ export default {
   async mounted () {
     await this.loadData()
     this.headerHeight = this.$refs.header.$el.clientHeight
+    const { tab } = this.$route.query
+    if (tab) {
+      this.tab = tab
+    }
     this.isLoaded = true
   },
   preFetch () {

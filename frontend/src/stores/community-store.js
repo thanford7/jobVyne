@@ -7,7 +7,7 @@ export const useCommunityStore = defineStore('community', {
   }),
 
   actions: {
-    async setMembers (memberType, { employerId = null, professionKey = null, isForceRefresh = false }) {
+    async setMembers ({ memberType = null, employerId = null, professionKey = null, isForceRefresh = false }) {
       const key = makeApiRequestKey(memberType, employerId, professionKey)
       if (this.members[key] && !isForceRefresh) {
         return
@@ -17,7 +17,7 @@ export const useCommunityStore = defineStore('community', {
       })
       this.members[key] = resp.data
     },
-    getMembers (memberType, { employerId = null, professionKey = null }) {
+    getMembers ({ memberType = null, employerId = null, professionKey = null }) {
       const key = makeApiRequestKey(memberType, employerId, professionKey)
       return this.members[key] || []
     }

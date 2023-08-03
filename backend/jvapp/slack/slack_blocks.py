@@ -80,10 +80,14 @@ class Modal(SlackBlock):
                 input_type = input_dict['type']
                 if input_type == 'checkboxes':
                     val = InputCheckbox.get_values(input_dict)
-                elif input_type in (Select.TYPE, SelectExternal.TYPE):
+                elif input_type == Select.TYPE:
                     val = Select.get_value(input_dict)
-                elif input_type in (SelectMulti.TYPE, SelectMultiExternal.TYPE):
+                elif input_type == SelectExternal.TYPE:
+                    val = SelectExternal.get_value(input_dict)
+                elif input_type == SelectMulti.TYPE:
                     val = SelectMulti.get_value(input_dict)
+                elif input_type == SelectMultiExternal.TYPE:
+                    val = SelectMultiExternal.get_value(input_dict)
                 elif input_type in (
                 InputText.INPUT_TYPE, InputEmail.INPUT_TYPE, InputUrl.INPUT_TYPE, InputNumber.INPUT_TYPE):
                     val = InputText.get_value(input_dict)
@@ -269,7 +273,7 @@ class InputOption(SlackBlock):
     
     @classmethod
     def parse_value_text(cls, text):
-        if re.match(f'^{cls.NEW_VALUE_PREPEND}.+?$', text):
+        if text.startswith(cls.NEW_VALUE_PREPEND):
             return text.replace(cls.NEW_VALUE_PREPEND, '').strip()
         return text
 
@@ -393,7 +397,10 @@ class SelectExternal(SlackBlock):
     
     @staticmethod
     def get_value(input_dict):
-        return Select.get_value(input_dict)
+        val = Select.get_value(input_dict)
+        # External select allows user entered values so we need to clean it up
+        val['text'] = InputOption.parse_value_text(val['text'])
+        return val
 
 
 class SelectMultiExternal(SelectExternal):
@@ -410,6 +417,14 @@ class SelectMultiExternal(SelectExternal):
             slack_object['element']['max_selected_items'] = self.max_selected_items
         
         return slack_object
+    
+    @staticmethod
+    def get_value(input_dict):
+        values = SelectMulti.get_value(input_dict)
+        # External select allows user entered values so we need to clean it up
+        for val in values:
+            val['text'] = InputOption.parse_value_text(val['text'])
+        return values
 
 
 class SelectEmployer(SelectExternal):

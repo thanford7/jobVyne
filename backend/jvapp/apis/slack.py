@@ -21,7 +21,7 @@ from jvapp.apis.employer import EmployerJobView, EmployerSlackView
 from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.social import SocialLinkPostJobsView, SocialLinkView
 from jvapp.models.content import JobPost
-from jvapp.models.employer import Employer, EmployerJobConnection, EmployerSlack
+from jvapp.models.employer import Employer, EmployerSlack, ConnectionTypeBit
 from jvapp.models.social import SocialLink
 from jvapp.models.user import JobVyneUser, PermissionName, UserSocialSubscription
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
@@ -224,7 +224,8 @@ class SlackJobPoster(SlackBasePoster):
                     'type': 'mrkdwn',
                     'text': (
                         ':grapes: JobVyne has a fresh batch of jobs ready to be plucked and enjoyed with a fresh glass of "get hired".\n'
-                        'Have a job you want to post? Use `/jv-job`'
+                        'Have a job you want to post? Use `/jv-job`\n'
+                        'Looking for a job? Use `/jv-job-seeker` to connect with hiring managers'
                     )
                 }
             },
@@ -249,11 +250,11 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
     def build_message(self, jobs, slack_user_profile=None, job_connection=None, **kwargs):
         assert slack_user_profile and job_connection
         connection_descriptions = {
-            EmployerJobConnection.ConnectionTypeBit.HIRING_MEMBER.value: 'is part of the hiring team',
-            EmployerJobConnection.ConnectionTypeBit.CURRENT_EMPLOYEE.value: 'works at the employer',
-            EmployerJobConnection.ConnectionTypeBit.FORMER_EMPLOYEE.value: 'previously worked at the employer',
-            EmployerJobConnection.ConnectionTypeBit.KNOW_EMPLOYEE.value: 'knows someone who works at the employer',
-            EmployerJobConnection.ConnectionTypeBit.NO_CONNECTION.value: 'has no connection with the employer',
+            ConnectionTypeBit.HIRING_MEMBER.value: 'is part of the hiring team',
+            ConnectionTypeBit.CURRENT_EMPLOYEE.value: 'works at the employer',
+            ConnectionTypeBit.FORMER_EMPLOYEE.value: 'previously worked at the employer',
+            ConnectionTypeBit.KNOW_EMPLOYEE.value: 'knows someone who works at the employer',
+            ConnectionTypeBit.NO_CONNECTION.value: 'has no connection with the employer',
         }
         connection_description = connection_descriptions[job_connection.connection_type] + ' for this job'
         connection_details = [

@@ -114,6 +114,10 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     JOB_SEARCH_TYPE_ACTIVE = 0x1
     JOB_SEARCH_TYPE_PASSIVE = 0x2
     
+    # Keep in sync with community.js member types
+    MEMBER_TYPE_JOB_SEEKER = 0x1
+    MEMBER_TYPE_HIRING_MGR = 0x2
+    
     ALL_USER_TYPES = [
         USER_TYPE_ADMIN,
         USER_TYPE_CANDIDATE,
@@ -267,6 +271,18 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     @property
     def is_active_employee(self):
         return self.has_employee_seat and (not self.is_employer_deactivated)
+    
+    @property
+    def is_hiring_manager(self):
+        from jvapp.models.employer import ConnectionTypeBit  # Avoid circular import
+        return any((
+            jc.connection_type & ConnectionTypeBit.HIRING_MEMBER
+            for jc in self.job_connection.all()
+        ))
+    
+    @property
+    def is_can_contact(self):
+        return any((jc.is_allow_contact for jc in self.job_connection.all())) or self.is_job_search_visible
 
     @property
     def is_employer_verified(self):

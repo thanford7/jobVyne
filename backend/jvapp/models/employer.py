@@ -324,13 +324,16 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         return False
     
     
+# Keep in sync with community.js
+class ConnectionTypeBit(IntEnum):
+    HIRING_MEMBER = 1
+    CURRENT_EMPLOYEE = 2
+    FORMER_EMPLOYEE = 4
+    KNOW_EMPLOYEE = 8
+    NO_CONNECTION = 16
+    
+
 class EmployerJobConnection(AuditFields):
-    class ConnectionTypeBit(IntEnum):
-        HIRING_MEMBER = 1
-        CURRENT_EMPLOYEE = 2
-        FORMER_EMPLOYEE = 4
-        KNOW_EMPLOYEE = 8
-        NO_CONNECTION = 16
 
     user = models.ForeignKey(JobVyneUser, on_delete=models.CASCADE, related_name='job_connection')
     job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='job_connection')
