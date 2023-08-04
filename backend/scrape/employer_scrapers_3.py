@@ -691,11 +691,6 @@ class HarnessScraper(LeverScraper):
     EMPLOYER_KEY = 'harness'
 
 
-class TaxfyleScraper(LeverScraper):
-    employer_name = 'Taxfyle'
-    EMPLOYER_KEY = 'taxfyle'
-
-
 class TiltingPointScraper(GreenhouseApiScraper):
     employer_name = 'Tilting Point'
     EMPLOYER_KEY = 'tiltingpoint'

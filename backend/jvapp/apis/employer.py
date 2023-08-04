@@ -629,18 +629,18 @@ class EmployerJobView(JobVyneAPIView):
             employer_job.salary_currency_name = salary_currency
         
         # Handle job department - if ID is a string, this is a new department for this employer
-        job_department = data['job_department']
-        try:
-            employer_job.job_department_id = int(job_department['id'])
-        except ValueError:
-            # Check whether job department has already been created by a different employer
-            job_departments = JobDepartment.objects.filter(name__iexact=job_department['id'])
-            if job_departments:
-                employer_job.job_department = job_departments[0]
-            else:
-                new_job_department = JobDepartment(name=job_department['id'])
-                new_job_department.save()
-                employer_job.job_department = new_job_department
+        if job_department := data['job_department']:
+            try:
+                employer_job.job_department_id = int(job_department['id'])
+            except ValueError:
+                # Check whether job department has already been created by a different employer
+                job_departments = JobDepartment.objects.filter(name__iexact=job_department['id'])
+                if job_departments:
+                    employer_job.job_department = job_departments[0]
+                else:
+                    new_job_department = JobDepartment(name=job_department['id'])
+                    new_job_department.save()
+                    employer_job.job_department = new_job_department
         
         # Remove existing locations if this is an existing job
         if employer_job.id:

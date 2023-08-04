@@ -347,7 +347,7 @@ class MetalScraper(LeverScraper):
     EMPLOYER_KEY = 'metallicus'
 
 
-class JuniperSquareScraper(GreenhouseApiScraper):
+class JuniperSquareScraper(AshbyHQScraper):
     employer_name = 'Juniper Square'
     EMPLOYER_KEY = 'junipersquare'
 

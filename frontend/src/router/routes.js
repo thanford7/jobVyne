@@ -88,6 +88,12 @@ const routes = [
         component: () => import('pages/admin/EmployersPage.vue')
       },
       {
+        path: 'user-jobs',
+        name: 'admin-user-jobs',
+        meta: { userTypeBits: USER_TYPES.Admin },
+        component: () => import('pages/admin/user-jobs-page/UserJobsPage.vue')
+      },
+      {
         path: 'scrapers',
         name: 'admin-scrapers',
         meta: { userTypeBits: USER_TYPES.Admin },

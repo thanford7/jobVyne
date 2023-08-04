@@ -195,6 +195,9 @@ class UserCreatedJobProcessor(JobProcessor):
         self.update_job(new_job, job_item)
         new_job.locations.set(locations)
         run_job_title_standardization(job_filter=Q(id=new_job.id))
+        
+        # TODO: Send email to JobVyne admin team to approve job
+        
         return new_job, True
 
 

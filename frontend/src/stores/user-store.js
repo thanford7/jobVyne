@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
+import { makeApiRequestKey } from 'src/utils/requests.js'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     userProfile: {}, // key: {profile}
-    userEmployeeChecklist: {}
+    userEmployeeChecklist: {},
+    userCreatedJobs: {} // key: pagedUserData
   }),
 
   actions: {
@@ -26,8 +28,26 @@ export const useUserStore = defineStore('user', {
       const resp = await this.$api.get(`user/employee-checklist/${userId}/`)
       this.userEmployeeChecklist = resp.data
     },
+    async setPaginatedUserCreatedJobs ({ pageCount = 1, userId = null, isApproved = null, isClosed = false, isForceRefresh = false }) {
+      const key = makeApiRequestKey(pageCount, userId, isApproved, isClosed)
+      if (this.userCreatedJobs[key] && !isForceRefresh) {
+        return
+      }
+      const resp = await this.$api.get('user/created-jobs/', {
+        params: {
+          page_count: pageCount,
+          user_id: userId,
+          is_approved: isApproved
+        }
+      })
+      this.userCreatedJobs[key] = resp.data
+    },
     getUserProfile ({ userId = null, socialLinkId = null }) {
       return this.userProfile[userId || socialLinkId]
+    },
+    getPaginatedUserCreatedJobs ({ pageCount = 1, userId = null, isApproved = null, isClosed = false }) {
+      const key = makeApiRequestKey(pageCount, userId, isApproved, isClosed)
+      return this.userCreatedJobs[key] || []
     }
   }
 })

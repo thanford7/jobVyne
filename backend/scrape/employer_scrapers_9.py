@@ -722,11 +722,6 @@ class MetalabScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'metalab'
 
 
-class YellowAiScraper(LeverScraper):
-    employer_name = 'Yellow.ai'
-    EMPLOYER_KEY = 'yellowai'
-
-
 class BrightflowAiScraper(GreenhouseScraper):
     employer_name = 'Brightflow AI'
     EMPLOYER_KEY = 'brightflowai'

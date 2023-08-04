@@ -54,6 +54,12 @@ class PagePermissionsUtil {
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           },
           {
+            icon: 'work',
+            key: 'admin-user-jobs',
+            label: 'User Jobs',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
+          },
+          {
             icon: 'people',
             key: 'admin-users',
             label: 'Users',

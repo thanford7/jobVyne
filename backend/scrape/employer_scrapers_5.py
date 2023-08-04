@@ -647,9 +647,9 @@ class SendcloudScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'sendcloud'
 
 
-class SiftScraper(GreenhouseScraper):
+class SiftScraper(AshbyHQScraper):
     employer_name = 'Sift'
-    EMPLOYER_KEY = 'siftscience'
+    EMPLOYER_KEY = 'sift'
 
 
 class RepriseScraper(GreenhouseApiScraper):

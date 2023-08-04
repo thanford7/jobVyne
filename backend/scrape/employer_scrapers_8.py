@@ -1135,9 +1135,10 @@ class WetransferScraper(AshbyHQScraper):
     EMPLOYER_KEY = 'wetransfer'
 
 
-class RemitlyScraper(GreenhouseApiScraper):
+class RemitlyScraper(WorkdayScraper):
     employer_name = 'Remitly'
-    EMPLOYER_KEY = 'remitly'
+    start_url = 'https://remitly.wd5.myworkdayjobs.com/en-US/Remitly_Careers/'
+    has_job_departments = False
 
 
 class SkydanceMediaScraper(LeverScraper):

@@ -13,7 +13,7 @@ from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
 from jvapp.apis.job_seeker import ApplicationView
 from jvapp.apis.user import UserView
 from jvapp.management.commands.ats_data_pull import save_ats_data
-from jvapp.models.employer import Employer, EmployerAts, EmployerAuthGroup, EmployerSubscription
+from jvapp.models.employer import Employer, EmployerAts, EmployerAuthGroup, EmployerJob, EmployerSubscription
 from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
@@ -345,6 +345,24 @@ class AdminUserView(JobVyneAPIView):
         }
         
         return Response(status=status.HTTP_200_OK, data=data)
+    
+    
+class AdminUserCreatedJobApprovalView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def post(self, request):
+        job_ids = self.data['job_ids']
+        is_approved = self.data['is_approved']
+        if job_ids and (not isinstance(job_ids, list)):
+            job_ids = [job_ids]
+        
+        jobs = EmployerJob.objects.filter(id__in=job_ids)
+        for job in jobs:
+            job.is_job_approved = is_approved
+        
+        EmployerJob.objects.bulk_update(jobs, ['is_job_approved'])
+        
+        return get_success_response(f'{len(jobs)} jobs were {"approved" if is_approved else "un-approved"}')
     
     
 class AdminTaxonomyView(JobVyneAPIView):
