@@ -1,7 +1,12 @@
 import json
 import re
 
+from django.db.models import Q
+from django.utils import timezone
+
 from jvapp.models import JobVyneUser
+from jvapp.models.employer import EmployerJob
+from jvapp.utils.data import coerce_int
 
 
 class SlackBlock:
@@ -15,22 +20,19 @@ class Divider(SlackBlock):
 
 
 class Modal(SlackBlock):
-    MODAL_IDX_SEPARATOR = '--'
     
     def __init__(
         self, title, callback_id, submit_text, blocks,
-        private_metadata: dict = None, validation_fns: list = None, process_data_fn: callable = None
+        is_final=False, metadata: dict = None, validation_fns: list = None, process_data_fn: callable = None
     ):
         self.title = title
         self.callback_id = callback_id
         self.submit_text = submit_text
         self.blocks = blocks
-        self.private_metadata = private_metadata
+        self.is_final = is_final
+        self.metadata = metadata
         self.validation_fns = validation_fns or []
         self.process_data_fn = process_data_fn
-    
-    def set_modal_view_idx(self, idx):
-        self.callback_id = f'{self.callback_id}{self.MODAL_IDX_SEPARATOR}{idx}'
     
     def get_slack_object(self):
         slack_object = {
@@ -48,15 +50,15 @@ class Modal(SlackBlock):
                 'type': 'plain_text',
                 'text': self.submit_text
             }
-        if self.private_metadata:
-            slack_object['private_metadata'] = json.dumps(self.private_metadata)
+        if self.metadata:
+            slack_object['private_metadata'] = json.dumps(self.metadata)
         
         return slack_object
     
     def process_data(self, user: JobVyneUser):
         if not self.process_data_fn:
             return
-        self.process_data_fn(user, self.private_metadata)
+        self.process_data_fn(user, self.metadata)
     
     def get_modal_errors(self, form_data):
         errors = []
@@ -365,6 +367,7 @@ class SelectMulti(Select):
 
 class SelectExternal(SlackBlock):
     TYPE = 'external_select'
+    OPTIONS_LIMIT = 100
     
     def __init__(self, action_id, label, placeholder, min_query_length=3, focus_on_load=False, **kwargs):
         self.action_id = action_id
@@ -432,3 +435,64 @@ class SelectEmployer(SelectExternal):
     
     def __init__(self, *args, focus_on_load=False, **kwargs):
         super().__init__(self.OPTIONS_LOAD_KEY, 'Select employer', 'Select employer', focus_on_load=focus_on_load)
+        
+    def get_form_value(self, form_data):
+        val = form_data.get(self.OPTIONS_LOAD_KEY)
+        return val['value'] if val else None
+    
+    def get_form_text(self, form_data):
+        val = form_data.get(self.OPTIONS_LOAD_KEY)
+        return val['text'] if val else None
+    
+
+class SelectEmployerJob(SelectExternal):
+    OPTIONS_LOAD_KEY_PREPEND = 'options-employer-job'
+    EMPLOYER_ID_SPLIT = '--'
+    
+    def __init__(self, *args, employer_id=None, focus_on_load=False, **kwargs):
+        assert employer_id
+        self.employer_id = employer_id
+        super().__init__(
+            self.get_options_load_key(), 'Select job', 'Select job',
+            focus_on_load=focus_on_load, min_query_length=0
+        )
+        
+    def get_form_value(self, form_data):
+        val = form_data.get(self.get_options_load_key())
+        return val['value'] if val else None
+    
+    def set_form_value(self, form_data, job_id):
+        val = form_data.get(self.get_options_load_key())
+        val['value'] = job_id
+    
+    def get_options_load_key(self):
+        return f'{self.OPTIONS_LOAD_KEY_PREPEND}{self.EMPLOYER_ID_SPLIT}{self.employer_id}'
+    
+    @classmethod
+    def get_employer_id(cls, options_load_key):
+        return coerce_int(options_load_key.split(cls.EMPLOYER_ID_SPLIT)[-1])
+    
+    @classmethod
+    def get_employer_jobs(cls, employer_id=None, options_load_key=None, regex_pattern=None):
+        assert employer_id or options_load_key
+        employer_id = employer_id or SelectEmployerJob.get_employer_id(options_load_key)
+        employer_job_filter = (
+                Q(employer_id=employer_id)
+                & (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+        )
+        if regex_pattern:
+            employer_job_filter &= Q(job_title__iregex=regex_pattern)
+        employer_jobs = (
+            EmployerJob.objects
+            .prefetch_related('locations')
+            .filter(employer_job_filter)
+        )
+        
+        # If we are loading jobs for the first time, we present the most recent because that
+        # is likely what the user is looking for
+        if not options_load_key:
+            employer_jobs.order_by('-open_date')
+        else:
+            employer_jobs.order_by('job_title', 'id')
+        
+        return employer_jobs[:SelectExternal.OPTIONS_LIMIT]

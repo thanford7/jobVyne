@@ -189,7 +189,7 @@ export default {
         }
       ]
 
-      if (this.isClosedJobs) {
+      if (this.formData.isClosedJobs) {
         columns.push({
           name: 'close_date',
           field: 'close_date',

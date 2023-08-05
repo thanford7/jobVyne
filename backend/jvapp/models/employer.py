@@ -74,8 +74,8 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     last_job_scrape_success_dt = models.DateTimeField(null=True, blank=True)
     has_job_scrape_failure = models.BooleanField(default=False, blank=True)
 
-    # User entered Employer
-    is_employer_approved = models.BooleanField(default=True)
+    # User entered Employer through a social platform
+    is_user_created = models.BooleanField(default=False)
     
     def __str__(self):
         return self.employer_name
@@ -258,9 +258,6 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         location_ids.sort()
         return self.generate_job_key(self.job_title, tuple(location_ids))
     
-    def is_creator(self, user):
-        return self.created_user_id and self.created_user_id == user.id
-    
     @property
     def locations_text(self):
         job_locations_text = ''
@@ -318,10 +315,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     @property
     def is_user_created(self):
-        for job_connection in self.job_connection.all():
-            if job_connection.is_job_creator:
-                return True
-        return False
+        return bool(self.created_user_id)
     
     
 # Keep in sync with community.js
@@ -339,7 +333,6 @@ class EmployerJobConnection(AuditFields):
     job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='job_connection')
     connection_type = models.SmallIntegerField()
     is_allow_contact = models.BooleanField()  # Whether users can contact the connection
-    is_job_creator = models.BooleanField(default=False)  # Only the creator can edit the job
     
     class Meta:
         constraints = [

@@ -37,7 +37,8 @@ export const useUserStore = defineStore('user', {
         params: {
           page_count: pageCount,
           user_id: userId,
-          is_approved: isApproved
+          is_approved: isApproved,
+          is_closed: isClosed
         }
       })
       this.userCreatedJobs[key] = resp.data

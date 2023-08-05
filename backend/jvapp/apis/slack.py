@@ -21,7 +21,7 @@ from jvapp.apis.employer import EmployerJobView, EmployerSlackView
 from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.social import SocialLinkPostJobsView, SocialLinkView
 from jvapp.models.content import JobPost
-from jvapp.models.employer import Employer, EmployerSlack, ConnectionTypeBit
+from jvapp.models.employer import Employer, EmployerJob, EmployerSlack, ConnectionTypeBit
 from jvapp.models.social import SocialLink
 from jvapp.models.user import JobVyneUser, PermissionName, UserSocialSubscription
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
@@ -32,7 +32,7 @@ from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.image import convert_url_to_image
 from jvapp.utils.oauth import OauthProviders
 from jvapp.utils.slack import raise_slack_exception_if_error
-from jvapp.slack.slack_blocks import InputOption, Modal, SelectEmployer
+from jvapp.slack.slack_blocks import InputOption, Modal, SelectEmployer, SelectEmployerJob
 from jvapp.slack.slack_modals import JobModalViews, JobSeekerModalViews
 
 logger = logging.getLogger(__name__)
@@ -668,21 +668,30 @@ class SlackExternalBaseView(APIView):
 class SlackOptionsInboundView(SlackExternalBaseView):
     """Loads option data into a Slack select menu
     """
+    OPTIONS_LIMIT = 100
     
     def post(self, request):
         search_text = self.data['value']
         options = self.get_options(self.data['action_id'], search_text)
-        options = self.add_new_option(options, search_text)
         return JsonResponse({"options": options}, status=status.HTTP_200_OK)
     
     @staticmethod
     def get_options(action_id, search_text):
         regex_pattern = f'^.*{search_text}.*$'
         if action_id == SelectEmployer.OPTIONS_LOAD_KEY:
-            return [
+            options = [
                 InputOption(employer.employer_name, employer.id).get_slack_object() for employer in
                 Employer.objects.filter(Q(employer_name__iregex=regex_pattern))
             ]
+            options = SlackOptionsInboundView.add_new_option(options, search_text)
+            return options
+        elif SelectEmployerJob.OPTIONS_LOAD_KEY_PREPEND in action_id:
+            employer_jobs = SelectEmployerJob.get_employer_jobs(options_load_key=action_id)
+            return [
+                InputOption(job.job_title, job.id, description=job.locations_text).get_slack_object() for job in
+                employer_jobs
+            ]
+        
         raise ValueError(f'Unknown option request for action ID = {action_id}')
     
     @staticmethod
@@ -774,23 +783,14 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                 self.slack_cfg
             )
             
-            modal_views = JobSeekerModalViews(self.slack_user_profile, user, metadata)
-            modal_view = modal_views.get_modal_view(callback_id=action_id, is_slack_object_only=False)
-            if modal_view:
-                modal_view.process_data(user)
-                return Response(status=status.HTTP_200_OK, data={
-                    'response_action': 'update',
-                    'view': modal_view.get_slack_object()
-                })
-            else:
-                confirmation_modal = modal_views.finalize_modal(
-                    metadata,
-                    user=user, slack_cfg=self.slack_cfg, slack_user_profile=self.slack_user_profile
-                )
-                return Response(status=status.HTTP_200_OK, data={
-                    'response_action': 'update',
-                    'view': confirmation_modal
-                })
+            modal_views = JobSeekerModalViews(
+                self.slack_user_profile, user, metadata, self.slack_cfg,
+                action_id=action_id
+            )
+            return Response(status=status.HTTP_200_OK, data={
+                'response_action': 'update',
+                'view': modal_views.modal_view
+            })
         elif JobModalViews.is_modal_view(action_id):
             metadata = {}
             if raw_metadata := self.data['view']['private_metadata']:
@@ -801,23 +801,11 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             user = SlackBaseView.get_or_create_jobvyne_user(
                 self.slack_user_profile, JobVyneUser.USER_TYPE_INFLUENCER, self.slack_cfg
             )
-            modal_views = JobModalViews(self.slack_user_profile, user, metadata)
-            modal_view = modal_views.get_modal_view(callback_id=action_id, is_slack_object_only=False)
-            if modal_view:
-                modal_view.process_data(user)
-                return Response(status=status.HTTP_200_OK, data={
-                    'response_action': 'update',
-                    'view': modal_view.get_slack_object()
-                })
-            else:
-                confirmation_modal = modal_views.finalize_modal(
-                    metadata,
-                    user=user, slack_cfg=self.slack_cfg, slack_user_profile=self.slack_user_profile
-                )
-                return Response(status=status.HTTP_200_OK, data={
-                    'response_action': 'update',
-                    'view': confirmation_modal
-                })
+            modal_views = JobModalViews(self.slack_user_profile, user, metadata, self.slack_cfg, action_id=action_id)
+            return Response(status=status.HTTP_200_OK, data={
+                'response_action': 'update',
+                'view': modal_views.modal_view
+            })
         return Response(status=status.HTTP_200_OK)
 
 
@@ -857,10 +845,12 @@ class SlackCommandJobSeekerView(SlackExternalBaseView):
         user = SlackBaseView.get_or_create_jobvyne_user(
             self.slack_user_profile, JobVyneUser.USER_TYPE_CANDIDATE, self.slack_cfg
         )
-        modal_views = JobSeekerModalViews(slack_user_profile, user, {'slack_user_id': self.slack_user_id})
+        modal_views = JobSeekerModalViews(
+            slack_user_profile, user, {'slack_user_id': self.slack_user_id}, self.slack_cfg
+        )
         
         self.slack_client.views_open(
-            view=modal_views.get_modal_view(modal_idx=0, is_next=False),
+            view=modal_views.modal_view,
             trigger_id=self.data['trigger_id']
         )
         
@@ -912,10 +902,10 @@ class SlackCommandJobView(SlackExternalBaseView):
             'post_channel_name': job_post_channel['channel']['name'] if job_post_channel else None,
             'group_name': self.slack_cfg.employer.employer_name,
             'group_id': self.slack_cfg.employer_id
-        })
+        }, self.slack_cfg)
         
         self.slack_client.views_open(
-            view=modal_views.get_modal_view(modal_idx=0, is_next=False),
+            view=modal_views.modal_view,
             trigger_id=self.data['trigger_id']
         )
         

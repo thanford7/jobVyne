@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from jvapp.apis.geocoding import LocationParser
+from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import EmployerJob, JobDepartment
 from jvapp.utils.file import get_file_extension
 from jvapp.utils.image import convert_url_to_image
@@ -139,6 +140,8 @@ class JobProcessor:
         if self.IS_JOB_SCRAPED:
             job.is_job_approved = True
             job.created_user = None
+        else:
+            job.is_job_approved = False
         
         job.open_date = job.open_date or job_item.first_posted_date or timezone.now().date()
         job.close_date = None
@@ -184,7 +187,7 @@ class UserCreatedJobProcessor(JobProcessor):
         existing_job_by_url = self.jobs_by_url.get(job_item.application_url)
         existing_job = existing_job_by_key or existing_job_by_url
         if existing_job:
-            if existing_job.is_user_created and existing_job.is_creator(user):
+            if existing_job.jv_check_permission(PermissionTypes.EDIT.value, user):
                 self.update_job(existing_job, job_item)
             if existing_job_by_url:
                 existing_job.locations.set(locations)
@@ -195,8 +198,6 @@ class UserCreatedJobProcessor(JobProcessor):
         self.update_job(new_job, job_item)
         new_job.locations.set(locations)
         run_job_title_standardization(job_filter=Q(id=new_job.id))
-        
-        # TODO: Send email to JobVyne admin team to approve job
         
         return new_job, True
 

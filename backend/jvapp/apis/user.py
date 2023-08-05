@@ -307,9 +307,10 @@ class UserCreatedJobView(JobVyneAPIView):
         
         if not job_filter:
             job_filter = Q()
-        job_filter &= Q(job_connection__is_job_creator=True)
         if user_id:
             job_filter &= Q(created_user_id=user_id)
+        else:
+            job_filter &= Q(created_user_id__isnull=False)
         if is_approved is not None:
             job_filter &= Q(is_job_approved=is_approved)
         if is_closed is not None:
@@ -355,7 +356,7 @@ class UserCreatedJobView(JobVyneAPIView):
             'can_edit': job.jv_check_permission(PermissionTypes.EDIT.value, user)
         }
         
-        if user.is_admin:
+        if user.is_admin and job.created_user:
             user_job['created_by'] = f'{job.created_user.full_name} ({job.created_user.id})'
             user_job['created_by_email'] = job.created_user.email
         

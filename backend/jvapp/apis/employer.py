@@ -737,8 +737,7 @@ class EmployerJobConnectionView(JobVyneAPIView):
         
         set_object_attributes(job_connection, data, {
             'connection_type': None,
-            'is_allow_contact': None,
-            'is_job_creator': None
+            'is_allow_contact': None
         })
         is_new = not job_connection.id
         job_connection.save()

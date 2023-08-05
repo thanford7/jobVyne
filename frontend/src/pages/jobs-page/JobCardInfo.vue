@@ -58,7 +58,7 @@
       </div>
       <div class="q-gutter-sm q-pt-md q-pb-sm">
         <q-btn
-          v-if="!job.qualifications?.length"
+          v-if="!job.qualifications?.length && job.job_description"
           ripple
           label="Show job description"
           color="grey-5"
