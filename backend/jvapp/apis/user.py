@@ -298,6 +298,8 @@ class UserCreatedJobView(JobVyneAPIView):
         if not job.is_user_created:
             return get_error_response('This job cannot be deleted. Instead you can edit it and set the "close date"')
         
+        job.delete()
+        
         return get_success_response('Job was deleted')
     
     @staticmethod
