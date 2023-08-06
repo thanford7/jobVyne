@@ -26,12 +26,16 @@ export const CONNECTION_TYPES = {
 
 class CommunityUtil {
   get_member_type_label (memberTypeBits) {
-    return Object.entries(MEMBER_TYPES).reduce((labels, [memberTypeBit, memberType]) => {
+    let memberTypeLabel = Object.entries(MEMBER_TYPES).reduce((labels, [memberTypeBit, memberType]) => {
       if (memberTypeBit & memberTypeBits) {
         labels.push(memberType.name)
       }
       return labels
     }, []).join(', ')
+    if (!memberTypeLabel) {
+      memberTypeLabel = MEMBER_TYPES[MEMBER_TYPE_ALL].name
+    }
+    return memberTypeLabel
   }
 
   isJobSeeker (memberTypeBits) {

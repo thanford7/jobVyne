@@ -86,7 +86,7 @@ def parse_location_resp(raw_data, is_best_result=True):
     return parsed_results
 
 
-def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=None, raw_data=None):
+def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=None, raw_data=None, is_save_location_lookup=True):
     city_name = location_dict.get('city')
     state_name = location_dict.get('state')
     country_name = location_dict.get('country')
@@ -122,23 +122,27 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
                 geometry=Location.get_geometry_point(latitude, longitude)
             )
             location.save()
-
-    try:
-        LocationLookup(
-            text=raw_location_text[:200],
-            location=location,
-            raw_result=raw_data
-        ).save()
-    except IntegrityError:
-        pass
-
+    
+    if is_save_location_lookup:
+        try:
+            LocationLookup(
+                text=raw_location_text[:200],
+                location=location,
+                raw_result=raw_data
+            ).save()
+        except IntegrityError:
+            pass
+    
     return location
 
 
 class LocationParser:
     
-    def __init__(self):
-        self.location_lookups = {l.text.lower(): l.location for l in LocationLookup.objects.select_related('location').all()}
+    def __init__(self, is_use_location_caching=True):
+        self.is_use_location_caching = is_use_location_caching
+        self.location_lookups = {}
+        if is_use_location_caching:
+            self.location_lookups = {l.text.lower(): l.location for l in LocationLookup.objects.select_related('location').all()}
 
     def get_location(self, location_text):
         location_text = location_text.lower()
@@ -152,7 +156,7 @@ class LocationParser:
         })
         raw_data = json.loads(resp.content)
         data = parse_location_resp(raw_data) or {}
-        location = save_raw_location(data, is_remote, raw_location_text=location_text, raw_data=raw_data)
+        location = save_raw_location(data, is_remote, raw_location_text=location_text, raw_data=raw_data, is_save_location_lookup=self.is_use_location_caching)
         self.location_lookups[location_text] = location
         return location
         

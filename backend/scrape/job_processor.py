@@ -46,13 +46,13 @@ class JobProcessor:
     IS_JOB_SCRAPED = False
     default_employment_type = 'Full Time'
     
-    def __init__(self, employer, ignore_fields=None):
+    def __init__(self, employer, ignore_fields=None, is_use_location_caching=True):
         self.employer = employer
         jobs = self.get_existing_jobs(employer)
         self.jobs_by_key = {j.get_key(): j for j in jobs}
         self.jobs_by_url = {j.application_url: j for j in jobs}
         self.found_jobs = set()
-        self.location_parser = LocationParser()
+        self.location_parser = LocationParser(is_use_location_caching=is_use_location_caching)
         self.job_departments = {j.name.lower(): j for j in JobDepartment.objects.all()}
         self.ignore_fields = ignore_fields or []  # Fields that should not be updated
     

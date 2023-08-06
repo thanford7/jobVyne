@@ -14,6 +14,7 @@ from jvapp.utils.oauth import OauthProviders
 from jvapp.slack.slack_blocks import Divider, InputCheckbox, InputEmail, InputNumber, InputOption, InputText, InputUrl, \
     Modal, \
     SectionText, Select, SelectEmployer, SelectEmployerJob, SelectMulti
+from jvapp.utils.response import ProcessTimer
 from scrape.job_processor import JobItem, UserCreatedJobProcessor
 
 
@@ -654,10 +655,15 @@ class JobModalViews(SlackMultiViewModal):
         if job_id:
             self.job = EmployerJob.objects.select_related('employer').get(id=job_id)
         else:
+            create_job_processor_timer = ProcessTimer('UserCreatedJobProcessor')
             job_processor = UserCreatedJobProcessor(
                 self.employer,
-                ignore_fields=['salary-currency', 'salary_floor', 'salary_ceiling', 'salary_interval']
+                ignore_fields=['salary-currency', 'salary_floor', 'salary_ceiling', 'salary_interval'],
+                is_use_location_caching=False
             )
+            create_job_processor_timer.log_time(is_warning=True)
+            
+            process_job_timer = ProcessTimer('Process job')
             job_item = JobItem(
                 job_title=self.metadata['job-title'],
                 application_url=self.metadata['job-application-url'],
@@ -666,19 +672,23 @@ class JobModalViews(SlackMultiViewModal):
             )
             self.job, is_new = job_processor.process_job(job_item, user=self.user)
             self.metadata['job_id'] = self.job.id
+            process_job_timer.log_time(is_warning=True)
             
-            send_django_email(
-                f'User {"created" if is_new else "updated"} job',
-                'emails/user_created_job_admin_notification.html',
-                to_email=[EMAIL_ADDRESS_SUPPORT],
-                django_context={
-                    'job': self.job,
-                    'user': self.user,
-                    'is_exclude_final_message': True
-                },
-                is_tracked=False,
-                is_include_jobvyne_subject=False
-            )
+            # TODO: Sending an email takes too long for Slack's 3 second response time. Make async
+            # process_email_timer = ProcessTimer('Send email')
+            # send_django_email(
+            #     f'User {"created" if is_new else "updated"} job',
+            #     'emails/user_created_job_admin_notification.html',
+            #     to_email=[EMAIL_ADDRESS_SUPPORT],
+            #     django_context={
+            #         'job': self.job,
+            #         'user': self.user,
+            #         'is_exclude_final_message': True
+            #     },
+            #     is_tracked=False,
+            #     is_include_jobvyne_subject=False
+            # )
+            # process_email_timer.log_time(is_warning=True)
         self.can_edit = self.job.jv_check_permission(PermissionTypes.EDIT.value, self.user)
     
     def update_job_salary(self):

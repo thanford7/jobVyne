@@ -709,6 +709,7 @@ class SlackOptionsInboundView(SlackExternalBaseView):
 class SlackWebhookInboundView(SlackExternalBaseView):
     
     def post(self, request):
+        start_time = timezone.now()
         button_data = None
         if self.data['type'] == 'view_submission':
             action_id = self.data['view']['callback_id']
@@ -802,6 +803,9 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                 self.slack_user_profile, JobVyneUser.USER_TYPE_INFLUENCER, self.slack_cfg
             )
             modal_views = JobModalViews(self.slack_user_profile, user, metadata, self.slack_cfg, action_id=action_id)
+            end_time = timezone.now()
+            total_slack_response_time = (end_time - start_time).total_seconds()
+            logger.warning(f'Slack response took {total_slack_response_time} seconds')
             return Response(status=status.HTTP_200_OK, data={
                 'response_action': 'update',
                 'view': modal_views.modal_view

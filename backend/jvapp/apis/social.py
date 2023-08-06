@@ -396,7 +396,9 @@ class SocialLinkJobsView(JobVyneAPIView):
                     'locations',
                     'locations__city',
                     'locations__state',
-                    'locations__country'
+                    'locations__country',
+                    'taxonomy',
+                    'taxonomy__taxonomy'
                 )
             logger.info('Fetching application requirements')
             application_requirements = EmployerJobApplicationRequirementView.get_application_requirements(
