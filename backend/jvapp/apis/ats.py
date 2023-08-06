@@ -29,6 +29,7 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none, get_unix_datetime
 from jvapp.utils.file import get_file_name, get_mime_from_file_path, get_safe_file_path
+from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from jvapp.utils.response import is_good_response
 from jvapp.utils.sanitize import sanitize_html
 
@@ -71,7 +72,7 @@ class JobData:
     employment_type: str = None
     salary_floor: float = None
     salary_ceiling: float = None
-    salary_currency_type: str = None
+    salary_currency: str = None
     salary_interval: str = None
     locations: list = None
 
@@ -204,7 +205,7 @@ class BaseAts:
                 current_job.employment_type = job_data.employment_type
                 current_job.salary_floor = job_data.salary_floor
                 current_job.salary_ceiling = job_data.salary_ceiling
-                current_job.salary_currency_id = job_data.salary_currency_type
+                current_job.salary_currency_id = job_data.salary_currency
                 jobs_list = update_jobs
                 if is_new:
                     # We can't bulk save new jobs because Django doesn't provide the PK after saving
@@ -346,21 +347,32 @@ class GreenhouseAts(BaseAts):
     def get_normalized_job_data(self, job):
         custom_fields = job['custom_fields']
         employment_type_key = self.ats_cfg.employment_type_field_key or 'employment_type'
+        raw_locations = [office['location']['name'] or office['name'] for office in job['offices']]
+        raw_locations = [l for l in raw_locations if l]
+        locations = [self.location_parser.get_location(l) for l in raw_locations]
+        
+        job_description = job.get('content', '')
         salary_range_key = self.ats_cfg.salary_range_field_key or 'salary_range'
-        salary_range = custom_fields.get(salary_range_key)
-        locations = [self.location_parser.get_location(office['location']['name']) for office in job['offices']]
+        salary_range = {}
+        if salary_range_data := custom_fields.get(salary_range_key):
+            salary_range = {
+                'salary_floor': salary_range_data.get('min_value'),
+                'salary_ceiling': salary_range_data.get('max_value'),
+                'salary_currency': salary_range_data.get('unit')
+            }
+        description_compensation_data = parse_compensation_text(job_description)
+        compensation_data = merge_compensation_data([description_compensation_data, salary_range])
+        
         data = JobData(
             ats_job_key=str(job['id']),
             job_title=job['name'],
-            job_description=job.get('content', ''),
+            job_description=job_description,
             open_date=self.parse_datetime_str(job['opened_at'], as_date=True),
             close_date=self.parse_datetime_str(job['closed_at'], as_date=True),
             department_name=job['departments'][0]['name'] if job['departments'] else None,
             employment_type=custom_fields.get(employment_type_key),
-            salary_floor=salary_range.get('min_value') if isinstance(salary_range, dict) else None,
-            salary_ceiling=salary_range.get('max_value') if isinstance(salary_range, dict) else None,
-            salary_currency_type=salary_range.get('unit') if isinstance(salary_range, dict) else None,
-            locations=[l for l in locations if l]
+            locations=[l for l in locations if l],
+            **compensation_data
         )
         return data
 
@@ -633,7 +645,7 @@ class LeverAts(BaseAts):
             employment_type=job['categories']['commitment'],
             salary_floor=job.get('salary_floor'),
             salary_ceiling=job.get('salary_ceiling'),
-            salary_currency_type=job.get('salary_currency'),
+            salary_currency=job.get('salary_currency'),
             salary_interval=job.get('salary_interval'),
             locations=[l for l in locations if l]
         )

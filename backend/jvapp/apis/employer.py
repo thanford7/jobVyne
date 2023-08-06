@@ -189,7 +189,11 @@ class EmployerAtsView(JobVyneAPIView):
         ats = EmployerAts.objects.get(id=ats_id)
         ats.jv_check_permission(PermissionTypes.DELETE.value, self.user)
         ats_api = get_ats_api(ats)
-        ats_api.delete_webhooks()
+        try:
+            ats_api.delete_webhooks()
+        except ConnectionError:
+            # The refresh token may have expired. Since we are deleting the configuration, this doesn't matter
+            pass
         ats.delete()
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully deleted ATS configuration'
