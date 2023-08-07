@@ -2,7 +2,7 @@ from enum import Enum, IntEnum
 
 from django.core.validators import FileExtensionValidator
 from django.db import models
-from django.db.models import UniqueConstraint
+from django.db.models import Q, UniqueConstraint
 
 from jvapp.models._customDjangoField import LowercaseCharField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
@@ -513,12 +513,24 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     def __str__(self):
         return f'{self.employer.employer_name if self.employer else "<General>"}-{self.name}'
     
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+        
+        if user.is_employer and user.is_employer_verified:
+            employer_filter = Q(employer_id=user.employer_id) | Q(employer_id__isnull=True)
+            return query.filter(employer_filter)
+        
+        return query.filter(Q(employer_id__isnull=True))
+        
+    
     def jv_check_can_update_permissions(self, user):
         if not self.jv_can_update_permissions(user):
             self._raise_permission_error(PermissionName.CHANGE_PERMISSIONS.value)
     
     def jv_can_update_permissions(self, user):
-        return user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value, user.employer_id)
+        return self.employer_id == user.employer_id and user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value, user.employer_id)
     
     def _jv_can_create(self, user):
         return (
@@ -535,9 +547,6 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
             return False
         
         return bool(self.employer_id) or user.is_admin
-    
-    def _jv_can_delete(self, user):
-        return self._jv_can_edit(user)
 
 
 class EmployerPermission(models.Model):

@@ -17,7 +17,7 @@ export const useEmployerStore = defineStore('employer', {
     employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
-    permissionGroups: [],
+    permissionGroups: {}, // employerId: [<group1>, ...]
     employersFromEmail: {} // email: {<employer>}
   }),
 
@@ -115,10 +115,14 @@ export const useEmployerStore = defineStore('employer', {
         this.employerSubscription[employerId] = resp.data
       }
     },
-    async setEmployerPermissions (isForceRefresh = false) {
-      if (!this.permissionGroups.length || isForceRefresh) {
-        const resp = await this.$api.get('employer/permission/')
-        this.permissionGroups = resp.data
+    async setEmployerPermissions (employerId, isForceRefresh = false) {
+      if (!this.permissionGroups[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('employer/permission/', {
+          params: {
+            employer_id: employerId
+          }
+        })
+        this.permissionGroups[employerId] = resp.data
       }
     },
     async setEmployerFiles (employerId, isForceRefresh = false) {
@@ -169,6 +173,9 @@ export const useEmployerStore = defineStore('employer', {
     },
     getEmployerBilling (employerId) {
       return this.employerBilling[employerId]
+    },
+    getEmployerPermissions (employerId) {
+      return this.permissionGroups[employerId]
     },
     getEmployerFiles (employerId, fileId = null) {
       const files = this.employerFiles[employerId]

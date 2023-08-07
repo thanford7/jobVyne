@@ -326,11 +326,6 @@ class EvertrueScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'evertrue'
 
 
-class LandingaiScraper(LeverScraper):
-    employer_name = 'LandingAI'
-    EMPLOYER_KEY = 'landing'
-
-
 class EcoreScraper(GreenhouseScraper):
     employer_name = 'e-core'
     EMPLOYER_KEY = 'ecore'
@@ -989,7 +984,7 @@ class OnetrustScraper(GreenhouseScraper):
 
 class TrueaccordScraper(LeverScraper):
     employer_name = 'TrueAccord'
-    EMPLOYER_KEY = 'trueaccord'
+    EMPLOYER_KEY = 'trueml'
 
 
 class ClarifaiScraper(GreenhouseApiScraper):

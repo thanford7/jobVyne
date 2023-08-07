@@ -7,7 +7,8 @@ from django.db.transaction import atomic
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_success_response
+from jvapp.apis._apiBase import ERROR_MESSAGES_KEY, JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response, \
+    get_success_response
 from jvapp.apis.ats import get_ats_api
 from jvapp.apis.employer import EmployerSubscriptionView, EmployerView
 from jvapp.apis.job_seeker import ApplicationView
@@ -293,22 +294,23 @@ class AdminUserView(JobVyneAPIView):
     def get(self, request):
         filters = json.loads(self.query_params['filters'])
         page_count = self.query_params['page_count']
+        employer_id = filters.get('employer_id')
+        if not self.user.is_admin:
+            if not employer_id:
+                return get_error_response('You must provide an employer ID')
+            if employer_id != self.user.employer_id:
+                return get_error_response('You do not have access to this employer')
+        
+        user_filter = Q()
+        if employer_id:
+            user_filter &= Q(employer_id=employer_id)
         users = UserView.get_user(
-            self.user, user_filter=Q(), is_check_permission=False,
+            self.user, user_filter=user_filter, is_check_permission=False, employer_id_permissions=employer_id
         ).order_by(
             f'{"-" if coerce_bool(self.query_params["is_descending"]) else ""}{self.query_params.get("sort_order", "id")}',
             'id'  # used to ensure deterministic results
         )
         
-        if employer_id := filters.get('employer_id'):
-            users = users.filter(employer_id=employer_id)
-        
-        if not self.user.is_admin:
-            if not employer_id:
-                return Response('You must provide an employer ID', status=status.HTTP_400_BAD_REQUEST)
-            if employer_id != self.user.employer_id:
-                return Response('You do not have access to this employer', status=status.HTTP_401_UNAUTHORIZED)
-       
         # This differs from the employer_id filter because this is used to narrow results for admins
         # The employer_id filter is used for employers that should only be able to view their respective employees
         if employer_ids := filters.get('employerIds'):

@@ -174,7 +174,7 @@ class PagePermissionsUtil {
           {
             icon: 'person_add',
             key: 'employer-referrals',
-            label: 'Employee Referrals',
+            label: 'Referral Requests',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
             isPermittedViewFn: (permissionGroups, permissions, orgTypeBit) => {
               return isUserEmployerFn(permissionGroups, permissions) && employerTypeUtil.isTypeEmployer(orgTypeBit)

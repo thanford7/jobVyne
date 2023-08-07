@@ -1132,11 +1132,11 @@ class EmployerAuthGroupView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
     IGNORED_AUTH_GROUPS = [
         JobVyneUser.USER_TYPE_ADMIN, JobVyneUser.USER_TYPE_CANDIDATE,
-        JobVyneUser.USER_TYPE_INFLUENCER  # TODO: Remove this one once influencer functionality is added
     ]
     
     def get(self, request):
-        auth_groups = self.get_auth_groups(employer_id=None if self.user.is_admin else self.user.employer_id)
+        employer_id = self.query_params['employer_id']
+        auth_groups = self.get_auth_groups(self.user, employer_id)
         all_permissions = EmployerPermission.objects.all()
         return Response(
             status=status.HTTP_200_OK,
@@ -1193,12 +1193,13 @@ class EmployerAuthGroupView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_auth_groups(auth_group_filter=None, employer_id=None):
-        auth_group_filter = auth_group_filter or Q()
-        if employer_id:
-            auth_group_filter &= (Q(employer_id=employer_id) | Q(employer_id__isnull=True))
-            auth_group_filter &= ~Q(user_type_bit__in=EmployerAuthGroupView.IGNORED_AUTH_GROUPS)
-        return EmployerAuthGroup.objects.prefetch_related('permissions').filter(auth_group_filter)
+    def get_auth_groups(user, employer_id):
+        auth_group_filter = (
+            Q(employer_id=employer_id) | Q(employer_id__isnull=True)
+            & ~Q(user_type_bit__in=EmployerAuthGroupView.IGNORED_AUTH_GROUPS)
+        )
+        auth_groups = EmployerAuthGroup.objects.prefetch_related('permissions').filter(auth_group_filter)
+        return EmployerAuthGroup.jv_filter_perm(user, auth_groups)
 
 
 class EmployerUserView(JobVyneAPIView):

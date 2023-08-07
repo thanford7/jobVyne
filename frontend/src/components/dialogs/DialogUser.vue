@@ -64,7 +64,6 @@ import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
-import { useEmployerStore } from 'stores/employer-store'
 import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
 import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
@@ -144,20 +143,12 @@ export default {
       this.$emit('ok')
     }
   },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    return employerStore.setEmployerPermissions()
-  },
   setup () {
     const authStore = useAuthStore()
     const { user } = storeToRefs(authStore)
-    return {
-      authStore,
-      employerStore: useEmployerStore(),
-      user
-    }
+    return { authStore, user }
   },
-  mounted () {
+  async mounted () {
     // Clear out the forms
     Object.assign(this.formDataSingle, FORM_DATE_SINGLE_TEMPLATE)
     Object.assign(this.formDataMulti, FORM_DATE_MULTI_TEMPLATE)

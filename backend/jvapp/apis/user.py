@@ -6,7 +6,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -21,7 +21,7 @@ from jvapp.models.content import SocialPost
 from jvapp.models.employer import Employer, EmployerJob
 from jvapp.models.social import SocialLink
 from jvapp.models.user import JobVyneUser, UserApplicationReview, UserEmployeeProfileQuestion, \
-    UserEmployeeProfileResponse, UserFile, \
+    UserEmployeeProfileResponse, UserEmployerPermissionGroup, UserFile, \
     UserSocialCredential, \
     UserUnknownEmployer
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
@@ -153,23 +153,30 @@ class UserView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_user(user, user_id=None, user_email=None, user_filter=None, is_check_permission=True):
+    def get_user(user, user_id=None, employer_id_permissions=None, user_email=None, user_filter=None, is_check_permission=True):
         if user_id:
             user_filter = Q(id=user_id)
         elif user_email:
             user_filter = Q(email=user_email) | Q(business_email=user_email)
+       
+        employer_permissions_filter = Q(employer_id=employer_id_permissions) if employer_id_permissions else Q()
+        employer_permissions = Prefetch(
+            'employer_permission_group',
+            queryset=UserEmployerPermissionGroup.objects.prefetch_related(
+                'employer',
+                'permission_group',
+                'permission_group__permissions'
+            ).filter(employer_permissions_filter)
+        )
         
         users = JobVyneUser.objects \
             .select_related('employer') \
             .prefetch_related(
                 'application_template',
-                'employer_permission_group',
-                'employer_permission_group__employer',
-                'employer_permission_group__permission_group',
-                'employer_permission_group__permission_group__permissions',
                 'profile_response',
                 'profile_response__question',
-                'social_credential'
+                'social_credential',
+                employer_permissions
             ) \
             .annotate(is_approval_required=Count(
                 'employer_permission_group',
