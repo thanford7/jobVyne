@@ -42,6 +42,7 @@ SLACK_BASE_URL = 'https://slack.com/api/'
 class SlackBasePoster:
     MAX_JOBS_DEFAULT = 10
     IS_PER_JOB_POST = False
+    POST_CHANNEL = None
     
     def __init__(
             self, slack_cfg, post_channel,
@@ -122,7 +123,7 @@ class SlackBasePoster:
     
     def _send_slack_post(self, message):
         return self.client.chat_postMessage(
-            channel=self.slack_cfg.jobs_post_channel,
+            channel=getattr(self.slack_cfg, self.POST_CHANNEL),
             blocks=json.dumps(message),
             unfurl_links=False
         )
@@ -208,9 +209,10 @@ class SlackBasePoster:
 
 
 class SlackJobPoster(SlackBasePoster):
+    POST_CHANNEL = 'jobs_post_channel'
     
     def has_error(self):
-        if not self.slack_cfg.jobs_post_channel:
+        if not getattr(self.slack_cfg, self.POST_CHANNEL):
             msg = 'No Slack channel set to post jobs to'
             logger.warning(msg)
             return msg
@@ -236,6 +238,7 @@ class SlackJobPoster(SlackBasePoster):
 
 
 class SlackUserGeneratedJobPoster(SlackBasePoster):
+    POST_CHANNEL = 'jobs_post_channel'
     
     def get_jobs_for_post(self, job, *args, **kwargs):
         try:
@@ -294,6 +297,14 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
 
 class SlackReferralPoster(SlackBasePoster):
     IS_PER_JOB_POST = True
+    POST_CHANNEL = 'referrals_post_channel'
+    
+    def has_error(self):
+        if not getattr(self.slack_cfg, self.POST_CHANNEL):
+            msg = 'No Slack channel set to post referrals to'
+            logger.warning(msg)
+            return msg
+        return False
     
     def build_message(self, job, **kwargs):
         blocks = [
@@ -309,9 +320,8 @@ class SlackReferralPoster(SlackBasePoster):
         
         job_link = SocialLink()
         job_link = SocialLinkView.create_or_update_link(job_link, {
-            'employer_id': self.slack_cfg.employer_id,
-            'job_ids': [job.id]
-        })
+            'employer_id': self.slack_cfg.employer_id
+        }, job_ids=[job.id])
         
         job_info = {
             'type': 'section',
@@ -731,9 +741,8 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             job_referral_link = SocialLink()
             job_referral_link = SocialLinkView.create_or_update_link(job_referral_link, {
                 'owner_id': user.id,
-                'employer_id': self.slack_cfg.employer_id,
-                'job_ids': [job.id]
-            })
+                'employer_id': self.slack_cfg.employer_id
+            }, job_ids=[job.id])
             
             resp = self.slack_client.views_open(
                 trigger_id=self.data['trigger_id'],

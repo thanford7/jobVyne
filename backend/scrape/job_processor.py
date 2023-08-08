@@ -91,7 +91,7 @@ class JobProcessor:
             job_item.locations = [job_item.locations]
         locations = list(set([
             self.location_parser.get_location(self.add_remote_to_location(loc, job_item.job_title))
-            for loc in set(job_item.locations)
+            for loc in set(job_item.locations) if loc
         ]))
         location_ids = [l.id for l in locations]
         location_ids.sort()

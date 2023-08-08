@@ -732,8 +732,8 @@ class BrightspotScraper(LeverScraper):
     EMPLOYER_KEY = 'brightspot'
 
 
-class MagicScraper(LeverScraper):
-    employer_name = 'Magic'
+class MagicAIScraper(LeverScraper):
+    employer_name = 'Magic AI'
     EMPLOYER_KEY = 'magic'
 
 

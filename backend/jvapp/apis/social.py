@@ -67,12 +67,10 @@ class SocialLinkView(JobVyneAPIView):
     
     def post(self, request):
         new_link = SocialLink()
-        job_subscriptions_ids = None
+        job_ids = None
         if job_id := self.data.get('job_id'):
-            from jvapp.apis.job_subscription import JobSubscriptionView
-            job_subscription = JobSubscriptionView.get_or_create_single_job_subscription(job_id)
-            job_subscriptions_ids = [job_subscription.id]
-        new_link = self.create_or_update_link(new_link, self.data, user=self.user, job_subscription_ids=job_subscriptions_ids)
+            job_ids = [job_id]
+        new_link = self.create_or_update_link(new_link, self.data, user=self.user, job_ids=job_ids)
         is_get_or_create = self.data.get('is_get_or_create')
         if is_get_or_create:
             data = {
@@ -173,11 +171,17 @@ class SocialLinkView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_or_update_link(link, data, user=None, job_subscription_ids=None):
+    def create_or_update_link(link, data, user=None, job_ids: list =None):
         cfg = {
             'is_default': AttributeCfg(is_ignore_excluded=True),
             'name': AttributeCfg(form_name='link_name', is_ignore_excluded=True)
         }
+        job_subscription_ids = []
+        if job_ids:
+            from jvapp.apis.job_subscription import JobSubscriptionView
+            for job_id in job_ids:
+                job_subscription = JobSubscriptionView.get_or_create_single_job_subscription(job_id)
+                job_subscription_ids.append(job_subscription.id)
         job_subscription_ids = tuple(sorted(job_subscription_ids or data.get('job_subscription_ids', [])))
         
         is_new = not link.created_dt

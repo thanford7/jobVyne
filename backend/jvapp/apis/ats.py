@@ -604,32 +604,36 @@ class LeverAts(BaseAts):
         
         # Delete requests don't return any content
         return response.json() if response.content else None
+    
+    def add_salary_data(self, job, salary_range):
+        min_salary, max_salary, interval = self.get_normalized_salary(salary_range)
+        job['salary_floor'] = min_salary
+        job['salary_ceiling'] = max_salary
+        job['salary_interval'] = interval
+        job['salary_currency'] = salary_range['currency']
 
     def get_jobs(self):
         jobs = self.get_paginated_data('postings', body_cfg={'state': 'published'})
         requisitions = self.get_requisitions()
-        if requisitions:
-            for job in jobs:
+        for job in jobs:
+            salary_range = job.get('salaryRange')
+            if salary_range:
+                self.add_salary_data(job, salary_range)
+                continue
+            elif requisitions:
                 requisition_codes = job['requisitionCodes']
-                salary_range = job.get('salaryRange')
-                if not any([requisition_codes, salary_range]):
+                if not requisition_codes:
                     continue
                 
-                # If no salary range is present on the job, fall back to requisition
+                requisition_code = requisition_codes[0]
+                requisition = requisitions.get(requisition_code)
+                if not requisition:
+                    continue
+                salary_range = requisition['compensationBand']
                 if not salary_range:
-                    requisition_code = requisition_codes[0]
-                    requisition = requisitions.get(requisition_code)
-                    if not requisition:
-                        continue
-                    salary_range = requisition['compensationBand']
-                    if not salary_range:
-                        continue
+                    continue
                 
-                min_salary, max_salary, interval = self.get_normalized_salary(salary_range)
-                job['salary_floor'] = min_salary
-                job['salary_ceiling'] = max_salary
-                job['salary_interval'] = interval
-                job['salary_currency'] = salary_range['currency']
+                self.add_salary_data(job, salary_range)
             
         return jobs
     
