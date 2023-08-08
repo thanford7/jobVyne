@@ -32,7 +32,7 @@ from jvapp.utils.file import get_file_name, get_mime_from_file_path, get_safe_fi
 from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from jvapp.utils.response import is_good_response
 from jvapp.utils.sanitize import sanitize_html
-
+from jvapp.utils.taxonomy import run_job_title_standardization
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ class BaseAts:
             for job in
             EmployerJob.objects
                 .prefetch_related('locations')
-                .filter(employer_id=self.ats_cfg.employer_id, close_date__isnull=True)
+                .filter(employer_id=self.ats_cfg.employer_id)
         }
     
     def get_job_departments(self):
@@ -253,6 +253,11 @@ class BaseAts:
         for job in close_jobs:
             job.close_date = now.date()
         EmployerJob.objects.bulk_update(close_jobs, ['close_date'])
+        
+        run_job_title_standardization(
+            job_filter=Q(employer_id=self.ats_cfg.employer_id) & Q(ats_job_key__isnull=False),
+            is_non_standardized_only=True
+        )
         
     def save_application_statuses(self, application_statuses):
         current_applications = self.get_current_applications()
@@ -858,7 +863,8 @@ class AtsBaseView(JobVyneAPIView):
             self.ats_cfg = EmployerAts.objects.select_related('employer').get(ats_filter)
         except EmployerAts.DoesNotExist:
             return get_error_response('An ATS connection does not exist')
-
+        
+        self.employer_id = self.ats_cfg.employer_id
         self.ats_api = get_ats_api(self.ats_cfg)
         
 

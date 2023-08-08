@@ -195,6 +195,10 @@ class EmployerAtsView(JobVyneAPIView):
             # The refresh token may have expired. Since we are deleting the configuration, this doesn't matter
             pass
         ats.delete()
+        ats_jobs = EmployerJob.objects.filter(employer_id=ats.employer_id, ats_job_key__isnull=False)
+        for job in ats_jobs:
+            job.close_date = timezone.now().date()
+        EmployerJob.objects.bulk_update(ats_jobs, ['close_date'])
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully deleted ATS configuration'
         })

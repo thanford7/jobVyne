@@ -450,7 +450,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                 if page_owner_user_id := self.query_params.get('connection_id'):
                     try:
                         page_owner_user = JobVyneUser.objects.select_related('profession').get(id=page_owner_user_id)
-                        job_departments.sort(key=lambda jd: jd == page_owner_user.profession.name, reverse=True)
+                        if page_owner_user.profession:
+                            job_departments.sort(key=lambda jd: jd == page_owner_user.profession.name, reverse=True)
                     except JobVyneUser.DoesNotExist:
                         pass
                 employer['job_departments'] = job_departments
