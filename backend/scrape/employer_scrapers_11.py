@@ -490,3 +490,8 @@ class SfoxScraper(GreenhouseApiScraper):
 class HivemqScraper(GreenhouseScraper):
     employer_name = 'HiveMQ'
     EMPLOYER_KEY = 'hivemq'
+
+
+class HometapScraper(LeverScraper):
+    employer_name = 'Hometap'
+    EMPLOYER_KEY = 'hometap'

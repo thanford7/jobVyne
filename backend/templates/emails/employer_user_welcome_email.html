@@ -37,11 +37,6 @@
             </li>
             {% if user.is_employee %}
                 <li>
-                    Complete the onboarding checklist on your
-                    <a href="{{ base_url }}/employee/dashboard/">JobVyne dashboard</a>
-                    JobVyne dashboard
-                </li>
-                <li>
                     Start sharing your unique referral link: {{ job_referral_url }}
                 </li>
             {% else %}
@@ -56,3 +51,6 @@
         </ul>
     </p>
 {% endblock body %}
+{% block final_message %}
+    If you have any questions or issues, please contact us at {{ support_email }}.
+{% endblock final_message %}

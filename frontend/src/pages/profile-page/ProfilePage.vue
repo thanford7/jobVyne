@@ -129,6 +129,9 @@
             <div class="col-12 col-md-6 q-pl-md-sm">
               <SelectUserType v-model="userData.user_type_bits" :is-multi="true"/>
             </div>
+            <div class="col-12 col-md-6 q-pr-md-sm">
+              <SelectJobProfession v-model="userData.profession_id" :is-multi="false" :is-required="true"/>
+            </div>
           </div>
         </q-tab-panel>
         <q-tab-panel name="connection">
@@ -331,6 +334,7 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmailInput from 'components/inputs/EmailInput.vue'
 import PasswordInput from 'components/inputs/PasswordInput.vue'
+import SelectJobProfession from 'components/inputs/SelectJobProfession.vue'
 import SelectOrDisplayProfilePic from 'components/inputs/SelectOrDisplayProfilePic.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
 import PageHeader from 'components/PageHeader.vue'
@@ -356,6 +360,7 @@ const userPermissionGroupColumns = [
 export default {
   name: 'ProfilePage',
   components: {
+    SelectJobProfession,
     SocialAccountsTable,
     SelectOrDisplayProfilePic,
     SelectUserType,

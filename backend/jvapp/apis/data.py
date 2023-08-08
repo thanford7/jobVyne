@@ -45,6 +45,8 @@ class BaseDataView(JobVyneAPIView):
     
     @staticmethod
     def get_link_data(social_link):
+        if not social_link:
+            return {}
         return {
             'link_id': social_link.id,
             'owner_id': social_link.owner_id,
@@ -173,7 +175,8 @@ class ApplicationsView(BaseDataView):
         )
     
     def serialize_application(self, application, is_employer):
-        is_owner = application.social_link.owner_id == self.user.id
+        referrer = application.social_link.owner if application.social_link else application.referrer_user
+        is_owner = referrer.id == self.user.id
         application_data = {
             'id': application.id,
             'job_title': application.employer_job.job_title,
@@ -197,7 +200,7 @@ class ApplicationsView(BaseDataView):
             }
         
         if is_employer:
-            if referrer := application.social_link.owner:
+            if referrer:
                 application_data['referrer'] = {
                     'first_name': referrer.first_name,
                     'last_name': referrer.last_name,
@@ -277,6 +280,8 @@ class ApplicationsView(BaseDataView):
             .select_related(
                 'platform',
                 'employer_job',
+                'referrer_user',
+                'referrer_employer',
                 'social_link',
                 'social_link__owner',
             ) \

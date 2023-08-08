@@ -2,10 +2,19 @@ import { USER_TYPES } from 'src/utils/user-types'
 
 const routes = [
   {
-    path: '/login',
+    path: '/',
     component: () => import('layouts/HeaderlessLayout.vue'),
     children: [
-      { path: '', name: 'login', meta: { isNoAuth: true }, component: () => import('pages/auth/LoginPage.vue') }
+      { path: 'login', name: 'login', meta: { isNoAuth: true }, component: () => import('pages/auth/LoginPage.vue') },
+      { path: '', name: 'home', meta: { isNoAuth: true }, component: () => import('pages/auth/LoginPage.vue') },
+      {
+        // This is a "fake" page. We need a route to catch the redirect after social authentication
+        // This route is redirected in router-guard.js
+        path: '/auth/:provider/callback',
+        name: 'auth-callback',
+        meta: { isNoAuth: true },
+        component: () => {}
+      }
     ]
   },
 
@@ -45,7 +54,6 @@ const routes = [
     path: '/',
     component: () => import('layouts/LandingLayout.vue'),
     children: [
-      { path: '', name: 'landing', meta: { isNoAuth: true }, component: () => import('pages/index-page/IndexPage.vue') },
       {
         path: 'terms-of-service',
         name: 'tos',
@@ -53,15 +61,7 @@ const routes = [
         component: () => import('pages/TermsOfServicePage.vue')
       },
       { path: 'privacy', name: 'privacy', meta: { isNoAuth: true }, component: () => import('pages/PrivacyPage.vue') },
-      { path: 'credits', name: 'credits', meta: { isNoAuth: true }, component: () => import('pages/CreditsPage.vue') },
-      {
-        // This is a "fake" page. We need a route to catch the redirect after social authentication
-        // This route is redirected in router-guard.js
-        path: '/auth/:provider/callback',
-        name: 'auth-callback',
-        meta: { isNoAuth: true },
-        component: () => {}
-      }
+      { path: 'credits', name: 'credits', meta: { isNoAuth: true }, component: () => import('pages/CreditsPage.vue') }
     ]
   },
 

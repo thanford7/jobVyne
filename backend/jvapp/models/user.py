@@ -65,11 +65,19 @@ class CustomUserManager(BaseUserManager):
         Create and save a User with the given email and password.
         """
         from jvapp.models.employer import Employer
-        from jvapp.apis.employer import EmployerSubscriptionView
+        from jvapp.apis.employer import EmployerSubscriptionView, EmployerFromDomainView
         
         if not email:
             raise ValueError(_('Email must be set'))
         email = self.normalize_email(email)
+        if not 'employer_id' in extra_fields:
+            try:
+                matched_employers = EmployerFromDomainView.get_employers_from_email(email)
+                if len(matched_employers) == 1:
+                    extra_fields['employer_id'] = matched_employers[0].id
+            except ValueError:
+                pass
+        
         extra_fields['user_type_bits'] = extra_fields.get('user_type_bits') or 0
         user = self.model(email=email, **extra_fields)
         if password:
@@ -154,6 +162,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     # Employee data
     is_profile_viewable = models.BooleanField(default=True)
     job_title = models.CharField(max_length=100, null=True, blank=True)
+    profession = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL)
     home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
     employment_start_date = models.DateField(null=True, blank=True)
 

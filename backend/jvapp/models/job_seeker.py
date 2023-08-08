@@ -132,7 +132,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     
     def get_recommend_applicant_label(self, val):
         return self.feedbackRecommendLabels.get(val, self.FEEDBACK_NO_RESPONSE_LABEL)
-
+    
 
 class JobApplicationTemplate(JobApplicationFields, JobVynePermissionsMixin):
     

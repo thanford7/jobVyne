@@ -113,7 +113,8 @@ class UserView(JobVyneAPIView):
             'employer_id': AttributeCfg(is_ignore_excluded=True),
             'is_profile_viewable': AttributeCfg(is_ignore_excluded=True),
             'job_title': AttributeCfg(is_ignore_excluded=True),
-            'employment_start_date': AttributeCfg(is_ignore_excluded=True)
+            'profession_id': AttributeCfg(is_ignore_excluded=True),
+            'employment_start_date': AttributeCfg(is_ignore_excluded=True),
         })
         
         if 'profile_picture_url' in self.data and not self.data['profile_picture_url']:
@@ -121,7 +122,7 @@ class UserView(JobVyneAPIView):
         
         if profile_picture := self.files.get('profile_picture'):
             user.profile_picture = profile_picture[0]
-        
+            
         if home_location_text := self.data.get('home_location_text'):
             location_parser = LocationParser()
             location = location_parser.get_location(home_location_text)
@@ -170,7 +171,7 @@ class UserView(JobVyneAPIView):
         )
         
         users = JobVyneUser.objects \
-            .select_related('employer') \
+            .select_related('employer', 'profession') \
             .prefetch_related(
                 'application_template',
                 'profile_response',

@@ -118,7 +118,7 @@
                         >
                           {{ employer.employer_name }}
                         </q-item>
-                        <template v-for="(jobsByTitle, jobDepartment) in employer.jobs">
+                        <template v-for="jobDepartment in employer.job_departments">
                           <q-item
                             v-if="$route.name !== 'profession'"
                             clickable
@@ -129,7 +129,7 @@
                             {{ jobDepartment }}
                           </q-item>
                           <q-item
-                            v-for="(jobs, jobTitle) in jobsByTitle"
+                            v-for="(jobs, jobTitle) in employer.jobs[jobDepartment]"
                             clickable
                             :style="(isSingleEmployer) ? 'padding-left: 30px' : 'padding-left: 45px'"
                             @click="scrollUtil.scrollTo(getElementTop(`job-${employer.employer_id}-${jobs[0].id}`))"
@@ -367,6 +367,7 @@ export default {
       this.isLoaded = false
       const params = {
         linkId: this.$route.params.filterId,
+        connectionId: this.$route.query.connect,
         employerKey: this.$route.params.employerKey,
         isEmployer: this.$route.name === 'company',
         professionKey: this.$route.params.professionKey,

@@ -103,10 +103,6 @@ class DataUtil {
     )
   }
 
-  getUrlWithoutQueryParams () {
-    return window.location.origin + window.location.pathname
-  }
-
   getQueryParams () {
     const searchParams = new URLSearchParams(window.location.search)
     const paramDict = {}
@@ -137,7 +133,17 @@ class DataUtil {
     if (!('URLSearchParams' in window)) {
       return
     }
-    const searchParams = (isExcludeExistingParams) ? new URLSearchParams() : new URLSearchParams(window.location.search)
+
+    let params = window.location.search
+    if (path) {
+      const pathParts = path.split('?')
+      if (pathParts.length > 1) {
+        path = pathParts[0]
+        params = `?${pathParts[1]}`
+      }
+    }
+
+    const searchParams = (isExcludeExistingParams) ? new URLSearchParams() : new URLSearchParams(params)
 
     this.getForceArray(deleteParams).forEach((paramKey) => searchParams.delete(paramKey))
     this.getForceArray(addParams).forEach(({ key, val }) => {

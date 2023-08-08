@@ -89,7 +89,7 @@ class SocialUtil {
 
   getSocialLinks (platforms, jobLink) {
     return platforms.reduce((socialLinks, platform) => {
-      const socialLink = this.getJobLinkUrl(jobLink, { platform: platform.name })
+      const socialLink = this.getJobLinkUrl(jobLink, platform.name)
       socialLinks.push(Object.assign(
         dataUtil.pick(platform, ['name', 'logo', 'is_displayed']),
         { socialLink }

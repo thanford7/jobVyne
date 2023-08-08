@@ -3,17 +3,16 @@
     ref="select"
     :loading="isLoading"
     :multiple="isMulti"
-    filled emit-value map-options use-chips use-input
+    :use-chips="isMulti"
+    filled emit-value map-options use-input
     :options="filteredJobProfessions"
     option-value="id"
     option-label="name"
-    :label="`Job title${(isMulti) ? 's' : ''}`"
+    :label="`${label}${(isMulti) ? 's' : ''}`"
     @filter="filterProfessions"
     input-debounce="0"
     lazy-rules
-    :rules="(isRequired) ? [
-      (val) => (val && val.length) || 'This field is required'
-    ] : null"
+    :rules="rules"
   >
   </q-select>
 </template>
@@ -29,6 +28,10 @@ export default {
     isRequired: {
       type: Boolean,
       default: false
+    },
+    label: {
+      type: String,
+      default: 'Job profession'
     }
   },
   data () {
@@ -39,6 +42,17 @@ export default {
     }
   },
   computed: {
+    rules () {
+      if (!this.isRequired) {
+        return null
+      }
+      if (this.isMulti) {
+        return [
+          (val) => Boolean(val && val.length) || 'This field is required'
+        ]
+      }
+      return [(val) => Boolean(val) || 'This field is required']
+    },
     filteredJobProfessions () {
       if (!this.filterTxt || !this.filterTxt.length) {
         return this.jobProfessions

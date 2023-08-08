@@ -18,6 +18,7 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    HometapScraper.employer_name: HometapScraper,
     CityblockHealthScraper.employer_name: CityblockHealthScraper,
     HeadspaceScraper.employer_name: HeadspaceScraper,
     PeppyScraper.employer_name: PeppyScraper,

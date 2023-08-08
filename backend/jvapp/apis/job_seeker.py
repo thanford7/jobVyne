@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response, \
     get_warning_response
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
@@ -220,7 +220,8 @@ class ApplicationView(JobVyneAPIView):
     
     def put(self, request, application_id):
         application = self.get_applications(self.user, application_id=application_id)
-        if self.user.id != application.social_link.owner_id:
+        referrer_id = application.social_link.owner_id if application.social_link else application.referrer_user_id
+        if self.user.id != referrer_id:
             return Response('You do not have permission to review this application', status=status.HTTP_401_UNAUTHORIZED)
         
         set_object_attributes(application, self.data, {
@@ -254,7 +255,7 @@ class ApplicationView(JobVyneAPIView):
         if application.ats_application_key and application.employer_job.ats_job_key:
             ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
             ats_api = get_ats_api(ats_cfg)
-            referrer = application.social_link.owner
+            referrer = application.social_link.owner if application.social_link else application.referrer_user
             referrer_note = f'''
                 {referrer.first_name} {referrer.last_name} ({referrer.email}) provided feedback on this candidate:
                 Do you know the applicant? {application.get_know_applicant_label()}

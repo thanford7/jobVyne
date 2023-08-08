@@ -5,6 +5,8 @@ from datetime import timedelta
 from django.contrib.gis.geoip2 import GeoIP2
 from django.db import DataError
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -33,6 +35,7 @@ def parse_ip_address(address):
 class PageTrackView(APIView):
     permission_classes = [AllowAny]
     
+    @method_decorator(csrf_exempt)
     def post(self, request):
         try:
             meta = request.META

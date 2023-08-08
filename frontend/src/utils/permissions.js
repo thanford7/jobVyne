@@ -102,15 +102,16 @@ class PagePermissionsUtil {
             label: 'Job Referrals',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
-          {
-            icon: 'web',
-            key: 'employee-profile-page',
-            label: 'Profile Settings',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedFn: (permissionGroups, permissions) => {
-              return permissions && permissions.includes(this.PERMISSION_NAMES.ADD_EMPLOYEE_CONTENT)
-            }
-          },
+          // Disabling for now - too much work for employees to fill in
+          // {
+          //   icon: 'web',
+          //   key: 'employee-profile-page',
+          //   label: 'Profile Settings',
+          //   emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+          //   isPermittedFn: (permissionGroups, permissions) => {
+          //     return permissions && permissions.includes(this.PERMISSION_NAMES.ADD_EMPLOYEE_CONTENT)
+          //   }
+          // },
           {
             icon: 'share',
             key: 'employee-social',

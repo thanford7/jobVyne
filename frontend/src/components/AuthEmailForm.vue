@@ -79,7 +79,7 @@ export default {
       }
       await this.$api.post('auth/login/', getAjaxFormData(userData))
       await this.authStore.setUser(true)
-      if (this.$route.name === 'login') {
+      if (['login', 'home'].includes(this.$route.name)) {
         await this.$router.push(
           this.redirectPageUrl || pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser)
         )

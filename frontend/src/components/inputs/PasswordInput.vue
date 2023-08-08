@@ -81,6 +81,10 @@ export default {
       type: Boolean,
       default: false
     },
+    isRequired: {
+      type: Boolean,
+      default: true
+    },
     customRules: [Array, null]
   },
   data () {
@@ -92,6 +96,9 @@ export default {
     rules () {
       if (this.customRules) {
         return this.customRules
+      }
+      if (!this.isRequired && !this.modelValue) {
+        return null
       }
       if (this.isValidate) {
         return [

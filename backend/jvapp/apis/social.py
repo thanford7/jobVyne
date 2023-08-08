@@ -16,6 +16,7 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
 from jvapp.apis.taxonomy import TaxonomyJobProfessionView
+from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, Taxonomy
 from jvapp.models.job_seeker import JobApplication
@@ -66,7 +67,12 @@ class SocialLinkView(JobVyneAPIView):
     
     def post(self, request):
         new_link = SocialLink()
-        new_link = self.create_or_update_link(new_link, self.data, self.user)
+        job_subscriptions_ids = None
+        if job_id := self.data.get('job_id'):
+            from jvapp.apis.job_subscription import JobSubscriptionView
+            job_subscription = JobSubscriptionView.get_or_create_single_job_subscription(job_id)
+            job_subscriptions_ids = [job_subscription.id]
+        new_link = self.create_or_update_link(new_link, self.data, user=self.user, job_subscription_ids=job_subscriptions_ids)
         is_get_or_create = self.data.get('is_get_or_create')
         if is_get_or_create:
             data = {
@@ -167,12 +173,12 @@ class SocialLinkView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_or_update_link(link, data, user=None):
+    def create_or_update_link(link, data, user=None, job_subscription_ids=None):
         cfg = {
             'is_default': AttributeCfg(is_ignore_excluded=True),
             'name': AttributeCfg(form_name='link_name', is_ignore_excluded=True)
         }
-        job_subscription_ids = tuple(sorted(data.get('job_subscription_ids', [])))
+        job_subscription_ids = tuple(sorted(job_subscription_ids or data.get('job_subscription_ids', [])))
         
         is_new = not link.created_dt
         
@@ -426,7 +432,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                         'employee_count_max': job.employer.size_max,
                         'year_founded': job.employer.year_founded,
                         'is_use_job_url': job.employer.is_use_job_url,
-                        'jobs': defaultdict(lambda: defaultdict(list))
+                        'jobs': defaultdict(lambda: defaultdict(list)),
+                        'job_departments': set()
                     }
                     jobs_by_employer[job.employer_id] = employer_jobs
                 
@@ -435,6 +442,18 @@ class SocialLinkJobsView(JobVyneAPIView):
                     job, consolidated_app_requirements_by_employer[job.employer_id]
                 )
                 employer_jobs['jobs'][job.job_department_standardized][job.job_title].append(serialized_job)
+                employer_jobs['job_departments'].add(job.job_department_standardized)
+            
+            for employer in jobs_by_employer.values():
+                job_departments = list(employer['job_departments'])
+                # Sort job departments in preference for the one the user belongs to. We want to show jobs from this department first
+                if page_owner_user_id := self.query_params.get('connection_id'):
+                    try:
+                        page_owner_user = JobVyneUser.objects.select_related('profession').get(id=page_owner_user_id)
+                        job_departments.sort(key=lambda jd: jd == page_owner_user.profession.name, reverse=True)
+                    except JobVyneUser.DoesNotExist:
+                        pass
+                employer['job_departments'] = job_departments
         
         jobs_by_employer = list(jobs_by_employer.values())
         

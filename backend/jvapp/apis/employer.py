@@ -1236,7 +1236,7 @@ class EmployerUserView(JobVyneAPIView):
         )
         user.user_type_bits = user_type_bits
         user.save()
-        referral_link = SocialLinkView.get_or_create_employee_referral_links([user], employer)
+        referral_link = SocialLinkView.get_or_create_employee_referral_links([user], employer)[0]
         
         uid = get_uid_from_user(user)
         token = generate_user_token(user, 'email')
@@ -1291,7 +1291,8 @@ class EmployerUserView(JobVyneAPIView):
                 set_object_attributes(user, self.data, {
                     'first_name': None,
                     'last_name': None,
-                    'employer_id': None
+                    'employer_id': None,
+                    'profession_id': None
                 })
                 user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
                 current_user_permissions = {
@@ -1329,7 +1330,7 @@ class EmployerUserView(JobVyneAPIView):
                         user_employer_permissions_to_delete_filters.append(
                             Q(user_id=user.id) & Q(permission_group_id=group_id))
             
-            JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name', 'employer_id'])
+            JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name', 'employer_id', 'profession_id'])
             if user_employer_permissions_to_delete_filters:
                 def reduceFilters(allFilters, filter):
                     allFilters |= filter
@@ -1570,10 +1571,19 @@ class EmployerFromDomainView(JobVyneAPIView):
     
     def get(self, request):
         if not (email := self.query_params.get('email')):
-            return Response('An email address is required', status=status.HTTP_400_BAD_REQUEST)
+            return get_error_response('An email address is required')
         
+        try:
+            employers = self.get_employers_from_email(email)
+        except ValueError:
+            return get_error_response(f'Could not parse email domain for {email}')
+        
+        return Response(status=status.HTTP_200_OK, data=employers)
+    
+    @staticmethod
+    def get_employers_from_email(email):
         if not (email_domain := get_domain_from_email(email)):
-            return Response(f'Could not parse email domain for {email}', status=status.HTTP_400_BAD_REQUEST)
+            raise ValueError()
         
         employers = [(e.email_domains, e) for e in Employer.objects.all()]
         matched_employers = []
@@ -1583,10 +1593,8 @@ class EmployerFromDomainView(JobVyneAPIView):
             if email_domain in domains:
                 matched_employers.append({'id': employer.id, 'name': employer.employer_name})
         
-        return Response(
-            status=status.HTTP_200_OK,
-            data=matched_employers
-        )
+        return matched_employers
+        
 
 
 class EmployerJobDepartmentView(JobVyneAPIView):

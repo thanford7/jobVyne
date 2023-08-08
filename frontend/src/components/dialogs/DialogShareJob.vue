@@ -188,7 +188,7 @@ export default {
     this.socialLink = await socialStore.getOrCreateSocialLink({
       owner_id: authStore.propUser.id,
       employer_id: this.job.employer_id,
-      job_ids: [this.job.id],
+      job_id: this.job.id,
       is_get_or_create: true
     })
     this.socialLinkUrl = socialUtil.getJobLinkUrl(this.socialLink, this.shareType)

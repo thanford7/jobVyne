@@ -39,7 +39,7 @@
             </div>
           </q-card-section>
           <div
-            v-for="(jobsByTitle, jobDepartment) in employer.jobs"
+            v-for="jobDepartment in employer.job_departments"
           >
             <div
               v-if="$route.name !== 'profession'"
@@ -51,7 +51,7 @@
             </div>
             <q-card-section class="q-pb-none">
               <div
-                v-for="(jobs, jobTitle) in jobsByTitle"
+                v-for="(jobs, jobTitle) in employer.jobs[jobDepartment]"
                 :id="`job-${employer.employer_id}-${jobs[0].id}`"
                 class="border-bottom-1-gray-100"
               >

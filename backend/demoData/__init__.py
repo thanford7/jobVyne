@@ -9,7 +9,7 @@ from faker import Faker
 from numpy.random import poisson
 
 from jvapp.apis.job_seeker import ApplicationView
-from jvapp.apis.social import SocialLinkJobsView
+from jvapp.apis.social import SocialLinkJobsView, SocialLinkView
 from jvapp.apis.tracking import set_user_agent_data
 from jvapp.models.employer import Employer, EmployerJob, EmployerReferralBonusRule, EmployerReferralBonusRuleModifier, \
     JobDepartment
@@ -35,7 +35,7 @@ def generate_user(employer, user_type_bits=JobVyneUser.USER_TYPE_EMPLOYEE, email
     return user
 
  
-def generate_employer(employer_name, email_domains='gmail.com', default_bonus_amount=1000, default_bonus_currency='USD'):
+def generate_employer(employer_name, email_domains='jobvyne.com', default_bonus_amount=1000, default_bonus_currency='USD'):
     try:
         employer = Employer(
             employer_name=employer_name,
@@ -116,22 +116,6 @@ def generate_employer_job(
     job.save()
     for location in locations:
         job.locations.add(location)
-
-
-def generate_social_link(owner, employer, departments=None, cities=None, states=None, countries=None):
-    link = SocialLink(
-        owner=owner,
-        employer=employer
-    )
-    link.save()
-    for department in departments or []:
-        link.departments.add(department)
-    for city in cities or []:
-        link.cities.add(city)
-    for state in states or []:
-        link.states.add(state)
-    for country in countries or []:
-        link.countries.add(country)
         
         
 def generate_employer_referral_bonus_rule(
@@ -298,22 +282,7 @@ def create_ancillary_data():
                     salary_floor=salary_floor, salary_ceiling=salary_ceiling
                 ))
         
-        platforms = list(SocialPlatform.objects.all())
-        for user in users:
-            for _ in range(randint(2, 5)):
-                include_department = randint(0, 1)
-                include_cities = randint(0, 1)
-                include_states = randint(0, 1)
-                include_country = randint(0, 1)
-                social_department = [choice(departments)] if include_department else None
-                social_cities = list({city for city in choices(cities)}) if include_cities else None
-                social_states = list({state for state in choices(states)}) if include_states else None
-                social_country = [choice(countries)] if include_country else None
-                generate_social_link(
-                    user, employer,
-                    departments=social_department, cities=social_cities,
-                    states=social_states, countries=social_country
-                )
+        SocialLinkView.get_or_create_employee_referral_links(users, employer)
         
         bonus_rules = []
         for idx, data in enumerate((
@@ -354,3 +323,7 @@ def create_recurring_data():
                 generate_page_view(social_link, platform)
             
     print('Data creation complete')
+    
+
+def delete_demo_employers():
+    Employer.objects.filter(employer_name__in=('Hospital IQ', 'Google', 'Vandelay Industries')).delete()

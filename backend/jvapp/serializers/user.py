@@ -78,12 +78,14 @@ def get_serialized_user_profile(user: JobVyneUser, is_get_profile=False):
         'first_name': user.first_name,
         'last_name': user.last_name,
         'job_title': user.job_title,
+        'profession_id': user.profession.id if user.profession else None,
+        'profession_name': user.profession.name if user.profession else None,
         'employment_start_date': user.employment_start_date,
         'home_location': get_serialized_location(user.home_location) if user.home_location else None,
         'is_profile_viewable': user.is_profile_viewable
     }
     
-    if is_get_profile or user.is_profile_viewable:
+    if (is_get_profile or user.is_profile_viewable) and user.employer:
         data['profile_responses'] = [
             {
                 'question_id': response.question_id,

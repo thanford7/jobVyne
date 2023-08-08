@@ -339,6 +339,9 @@ class AdminUserView(JobVyneAPIView):
         if has_employee_seat := filters.get('hasEmployeeSeat'):
             users = users.filter(has_employee_seat__in=has_employee_seat)
             
+        if profession_ids := filters.get('professionIds'):
+            users = users.filter(profession_id__in=profession_ids)
+            
         paged_users = Paginator(users, per_page=25)
         data = {
             'total_page_count': paged_users.num_pages,

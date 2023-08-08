@@ -123,8 +123,10 @@ class BaseAts:
         pass
     
     def get_referrer_name_from_application(self, application):
-        referrer = application.social_link.owner
-        return f'{referrer.first_name} {referrer.last_name}'
+        referrer = application.social_link.owner if application.social_link else application.referrer_user
+        if referrer:
+            return f'{referrer.first_name} {referrer.last_name}'
+        return None
     
     def get_job_title_from_application(self, application):
         return application.employer_job.job_title
@@ -133,9 +135,11 @@ class BaseAts:
         return get_base64_encoded(application.resume.open('rb').read(), as_string=as_string) if application.resume else None
     
     def get_referral_note(self, application):
-        return f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
-        for the {self.get_job_title_from_application(application)} position
-        '''
+        if referral_name := self.get_referrer_name_from_application(application):
+            return f'''Candidate was referred by {referral_name}
+            for the {self.get_job_title_from_application(application)} position
+            '''
+        return None
     
     def get_ats_user_id(self):
         return None
@@ -442,7 +446,8 @@ class GreenhouseAts(BaseAts):
             ats_application_key = str(candidate_data['application_ids'][0])
             
         # Add a note to the candidate so we know who referred them
-        self.add_application_note(self.get_referral_note(application), candidate_key=ats_candidate_key)
+        if referral_note := self.get_referral_note(application):
+            self.add_application_note(referral_note, candidate_key=ats_candidate_key)
             
         return ats_candidate_key, ats_application_key
     
