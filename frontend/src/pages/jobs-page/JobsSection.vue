@@ -23,6 +23,7 @@
                       :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
                       debounce="500"
                       @keyup.enter="loadJobs()"
+                      @blur="loadJobs()"
                     >
                       <template v-slot:append>
                         <q-icon name="search"/>
@@ -344,7 +345,7 @@ export default {
         return filterParams
       }, [])
       const fullPath = dataUtil.getUrlWithParams({
-        addParams, deleteParams: Object.keys(jobFiltersTemplate)
+        addParams, deleteParams: [...Object.keys(jobFiltersTemplate), 'location_text']
       })
       this.$router.push(fullPath)
     },

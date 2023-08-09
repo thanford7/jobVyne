@@ -1,4 +1,3 @@
-
 class MathUtil {
   getPercentage (numerator, denominator, { round = 2, asDecimal = false } = {}) {
     let val = numerator / denominator

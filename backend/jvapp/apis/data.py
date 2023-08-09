@@ -381,7 +381,7 @@ class AdminDataProcessedJobsView(JobVyneAPIView):
         job_filter = Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date())
         open_jobs = EmployerJob.objects.filter(job_filter)
         jobs_with_processed_description = open_jobs.filter(qualifications__isnull=False).count()
-        jobs_with_profession = open_jobs.filter(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION).distinct().count()
+        jobs_with_profession = open_jobs.filter(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION).count()
         employers = Employer.objects.filter(organization_type=Employer.ORG_TYPE_EMPLOYER)
         employers_with_description = employers.filter(description__isnull=False).count()
         
