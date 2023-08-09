@@ -28,15 +28,15 @@ class TaxonomyJobProfessionView(JobVyneAPIView):
         
     def post(self, request):
         try:
-            Taxonomy.objects.get(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name=self.data['name'])
+            Taxonomy.objects.get(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name=self.data['name'])
             return get_warning_response('Taxonomy already exists')
         except Taxonomy.DoesNotExist:
-            Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name=self.data['name']).save()
+            Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name=self.data['name']).save()
             return get_success_response('Taxonomy created')
         
     @staticmethod
     def get_job_title_taxonomy(tax_id=None, tax_key=None):
-        tax_filter = Q(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
+        tax_filter = Q(tax_type=Taxonomy.TAX_TYPE_PROFESSION)
         if tax_id:
             tax_filter &= Q(id=tax_id)
         elif tax_key:

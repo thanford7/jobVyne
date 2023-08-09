@@ -413,8 +413,301 @@ class EasypostScraper(LeverScraper):
 class MeatiFoodsScraper(GreenhouseScraper):
     employer_name = 'Meati Foods'
     EMPLOYER_KEY = 'meatifoods'
-    
-    
+
+
 class MomentusTechnologiesScraper(SmartRecruitersScraper):
     employer_name = 'Momentus Technologies'
     EMPLOYER_KEY = 'MomentusTechnologies'
+
+
+class CarbonHealthScraper(LeverScraper):
+    employer_name = 'Carbon Health'
+    EMPLOYER_KEY = 'carbonhealth'
+
+
+class RiseUpScraper(SmartRecruitersScraper):
+    employer_name = 'Rise Up'
+    EMPLOYER_KEY = 'RiseUp'
+
+
+class SondermindScraper(GreenhouseScraper):
+    employer_name = 'SonderMind'
+    EMPLOYER_KEY = 'sondermind'
+
+
+class ConvelioScraper(LeverScraper):
+    employer_name = 'Convelio'
+    EMPLOYER_KEY = 'convelio'
+
+
+class CanaryTechnologiesScraper(LeverScraper):
+    employer_name = 'Canary Technologies'
+    EMPLOYER_KEY = 'canarytechnologies'
+
+
+class SaltboxScraper(GreenhouseScraper):
+    employer_name = 'Saltbox'
+    EMPLOYER_KEY = 'saltbox'
+
+
+class DreamGamesScraper(LeverScraper):
+    employer_name = 'Dream Games'
+    EMPLOYER_KEY = 'dreamgames'
+
+
+class OrcaBioScraper(LeverScraper):
+    employer_name = 'Orca Bio'
+    EMPLOYER_KEY = 'orcabiosystems'
+
+
+class MindmazeScraper(SmartRecruitersScraper):
+    employer_name = 'MindMaze'
+    EMPLOYER_KEY = 'MindMaze'
+
+
+class WishScraper(SmartRecruitersScraper):
+    employer_name = 'Wish'
+    EMPLOYER_KEY = 'Wish'
+
+
+class NfiniteScraper(GreenhouseScraper):
+    employer_name = 'nfinite'
+    EMPLOYER_KEY = 'nfinite'
+
+
+class SynthegoScraper(LeverScraper):
+    employer_name = 'Synthego'
+    EMPLOYER_KEY = 'synthego'
+
+
+class AtlanScraper(LeverScraper):
+    employer_name = 'Atlan'
+    EMPLOYER_KEY = 'atlan'
+
+
+class GearsetScraper(LeverScraper):
+    employer_name = 'Gearset'
+    EMPLOYER_KEY = 'gearset'
+
+
+class NotableScraper(AshbyHQScraper):
+    employer_name = 'Notable'
+    EMPLOYER_KEY = 'notable'
+
+
+class NourishIngredientsScraper(GreenhouseScraper):
+    employer_name = 'Nourish Ingredients'
+    EMPLOYER_KEY = 'nourishingredients'
+
+
+class AltamlScraper(LeverScraper):
+    employer_name = 'AltaML'
+    EMPLOYER_KEY = 'altaml'
+
+
+class MakersFundScraper(GreenhouseScraper):
+    employer_name = 'Makers Fund'
+    EMPLOYER_KEY = 'makersfund'
+
+
+class InsightsoftwareScraper(SmartRecruitersScraper):
+    employer_name = 'insightsoftware'
+    EMPLOYER_KEY = 'Insightsoftware'
+
+
+class RefyneScraper(SmartRecruitersScraper):
+    employer_name = 'Refyne'
+    EMPLOYER_KEY = 'Refyne'
+
+
+class FirstRoundScraper(LeverScraper):
+    employer_name = 'First Round'
+    EMPLOYER_KEY = 'firstround'
+
+
+class TripleliftScraper(GreenhouseApiScraper):
+    employer_name = 'TripleLift'
+    EMPLOYER_KEY = 'triplelift'
+
+
+class VroomScraper(WorkdayScraper):
+    employer_name = 'Vroom'
+    start_url = 'https://vroom.wd5.myworkdayjobs.com/en-US/vroom/'
+    has_job_departments = False
+
+
+class ArcticWolfScraper(WorkdayScraper):
+    employer_name = 'Arctic Wolf'
+    start_url = 'https://arcticwolf.wd1.myworkdayjobs.com/External/'
+    has_job_departments = False
+
+
+class GetaroundScraper(LeverScraper):
+    employer_name = 'Getaround'
+    EMPLOYER_KEY = 'getaround'
+
+
+class MantraHealthScraper(GreenhouseScraper):
+    employer_name = 'Mantra Health'
+    EMPLOYER_KEY = 'mantrahealth'
+
+
+class TheRoundsScraper(LeverScraper):
+    employer_name = 'The Rounds'
+    EMPLOYER_KEY = 'therounds'
+
+
+class LittleOtterScraper(LeverScraper):
+    employer_name = 'Little Otter'
+    EMPLOYER_KEY = 'littleotter'
+
+
+class BrightlineScraper(AshbyHQScraper):
+    employer_name = 'Brightline'
+    EMPLOYER_KEY = 'hellobrightline'
+
+
+class MonumentScraper(LeverScraper):
+    employer_name = 'Monument'
+    EMPLOYER_KEY = 'joinmonument-2'
+
+
+class TalkspaceScraper(GreenhouseApiScraper):
+    employer_name = 'Talkspace'
+    EMPLOYER_KEY = 'talkspace'
+
+
+class Science37Scraper(GreenhouseScraper):
+    employer_name = 'Science 37'
+    EMPLOYER_KEY = 'science37'
+
+
+class IntelycareScraper(LeverScraper):
+    employer_name = 'IntelyCare'
+    EMPLOYER_KEY = 'intelycare'
+
+
+class BicycleHealthScraper(GreenhouseApiScraper):
+    employer_name = 'Bicycle Health'
+    EMPLOYER_KEY = 'bicyclehealth'
+
+
+class NeurobladeScraper(GreenhouseScraper):
+    employer_name = 'NeuroBlade'
+    EMPLOYER_KEY = 'neuroblade'
+
+
+class AltoPharmacyScraper(GreenhouseApiScraper):
+    employer_name = 'Alto Pharmacy'
+    EMPLOYER_KEY = 'alto'
+
+
+class BraveHealthScraper(GreenhouseScraper):
+    employer_name = 'Brave Health'
+    EMPLOYER_KEY = 'bravehealth'
+
+
+class JourneyClinicalScraper(LeverScraper):
+    employer_name = 'Journey Clinical'
+    EMPLOYER_KEY = 'JourneyClinical'
+
+
+class PrenuvoScraper(GreenhouseApiScraper):
+    employer_name = 'Prenuvo'
+    EMPLOYER_KEY = 'prenuvo'
+
+
+class TwentyThreeAndmeScraper(GreenhouseApiScraper):
+    employer_name = '23andMe'
+    EMPLOYER_KEY = '23andme'
+
+
+class EdenHealthScraper(LeverScraper):
+    employer_name = 'Eden Health'
+    EMPLOYER_KEY = 'edenhealth'
+
+
+class SonatusScraper(LeverScraper):
+    employer_name = 'Sonatus'
+    EMPLOYER_KEY = 'sonatus'
+
+
+class TusimpleScraper(GreenhouseScraper):
+    employer_name = 'TuSimple'
+    EMPLOYER_KEY = 'tusimple'
+
+
+class BoweryScraper(LeverScraper):
+    employer_name = 'Bowery'
+    EMPLOYER_KEY = 'boweryfarming'
+
+
+class CommonScraper(GreenhouseScraper):
+    employer_name = 'Common'
+    EMPLOYER_KEY = 'common'
+
+
+class JamaSoftwareScraper(GreenhouseApiScraper):
+    employer_name = 'Jama Software'
+    EMPLOYER_KEY = 'jamasoftware'
+
+
+class AntoraEnergyScraper(GreenhouseScraper):
+    employer_name = 'Antora Energy'
+    EMPLOYER_KEY = 'antora'
+
+
+class EffyScraper(SmartRecruitersScraper):
+    employer_name = 'Effy'
+    EMPLOYER_KEY = 'Effy'
+
+
+class SpotonScraper(GreenhouseScraper):
+    employer_name = 'SpotOn'
+    EMPLOYER_KEY = 'spotonproduct'
+
+
+class TeamsharesScraper(LeverScraper):
+    employer_name = 'Teamshares'
+    EMPLOYER_KEY = 'teamshares'
+
+
+class RedfinScraper(WorkdayScraper):
+    employer_name = 'Redfin'
+    start_url = 'https://redfin.wd1.myworkdayjobs.com/en-US/redfin_careers/'
+    has_job_departments = False
+
+
+class TomoScraper(GreenhouseScraper):
+    employer_name = 'Tomo'
+    EMPLOYER_KEY = 'tomonetworks'
+
+
+class FlockHomesScraper(GreenhouseScraper):
+    employer_name = 'Flock Homes'
+    EMPLOYER_KEY = 'flockhomes'
+
+
+class OrchardScraper(GreenhouseScraper):
+    employer_name = 'Orchard'
+    EMPLOYER_KEY = 'orchard'
+
+
+class FlyhomesScraper(GreenhouseScraper):
+    employer_name = 'Flyhomes'
+    EMPLOYER_KEY = 'flyhomes'
+
+
+class ValonScraper(GreenhouseScraper):
+    employer_name = 'Valon'
+    EMPLOYER_KEY = 'valon'
+
+
+class IndustriousScraper(GreenhouseScraper):
+    employer_name = 'Industrious'
+    EMPLOYER_KEY = 'industrious'
+
+
+class HomewardScraper(GreenhouseScraper):
+    employer_name = 'Homeward'
+    EMPLOYER_KEY = 'homeward'

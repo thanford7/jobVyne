@@ -1,17 +1,19 @@
 import json
 from collections import defaultdict
-from datetime import timezone
 
 from django.core.paginator import Paginator
 from django.db.models import Count, F, Prefetch, Q, Sum, Value
 from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek, TruncYear
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.models.employer import Employer, EmployerJob, Taxonomy
 from jvapp.models.job_seeker import JobApplication
 from jvapp.models.tracking import MessageThreadContext, PageView
 from jvapp.models.user import JobVyneUser, UserApplicationReview
+from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.tracking import get_serialized_message
 from jvapp.utils.data import coerce_bool, coerce_int
@@ -370,3 +372,23 @@ class PageViewsView(BaseDataView):
         ) \
             .filter(view_filter)
         return PageView.jv_filter_perm(user, views)
+    
+    
+class AdminDataProcessedJobsView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def get(self, request):
+        job_filter = Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date())
+        open_jobs = EmployerJob.objects.filter(job_filter)
+        jobs_with_processed_description = open_jobs.filter(qualifications__isnull=False).count()
+        jobs_with_profession = open_jobs.filter(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION).distinct().count()
+        employers = Employer.objects.filter(organization_type=Employer.ORG_TYPE_EMPLOYER)
+        employers_with_description = employers.filter(description__isnull=False).count()
+        
+        return Response(status=status.HTTP_200_OK, data={
+            'open_jobs_count': open_jobs.count(),
+            'jobs_with_description_count': jobs_with_processed_description,
+            'jobs_with_profession_count': jobs_with_profession,
+            'employers_count': employers.count(),
+            'employers_with_description_count': employers_with_description
+        })

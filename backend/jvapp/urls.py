@@ -89,6 +89,7 @@ urlpatterns = [
     # Chart Data
     path('data/applications/', data.ApplicationsView.as_view()),
     path('data/page-views/', data.PageViewsView.as_view()),
+    path('data/admin/processed-jobs/', data.AdminDataProcessedJobsView.as_view()),
     
     # ATS operations
     path('ats/custom-fields/', ats.AtsCustomFieldsView.as_view()),

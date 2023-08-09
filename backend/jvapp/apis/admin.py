@@ -135,7 +135,14 @@ class AdminEmployerView(JobVyneAPIView):
         if employer_id:
             employer = EmployerView.get_employers(employer_id=employer_id)
             return Response(status=status.HTTP_200_OK, data=self.get_serialized_employer(employer))
-        employers = EmployerView.get_employers(employer_filter=Q())
+        
+        employer_filter = Q()
+        if filters := self.query_params.get('filter_by'):
+            filters = json.loads(filters)
+            if employer_name_text := filters.get('employer_name_text'):
+                employer_filter &= Q(employer_name__iregex=f'^.*{employer_name_text}.*$')
+        
+        employers = EmployerView.get_employers(employer_filter=employer_filter)
         paged_employers = Paginator(employers, per_page=20)
         page_count = self.query_params.get('page_count', 1)
         return Response(status=status.HTTP_200_OK, data={

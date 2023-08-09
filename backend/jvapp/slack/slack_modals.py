@@ -202,7 +202,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
             ]
         profession_options = [
             InputOption(tax.name, tax.id).get_slack_object() for tax in
-            Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE).order_by('name')
+            Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_PROFESSION).order_by('name')
         ]
         
         preference_blocks = [

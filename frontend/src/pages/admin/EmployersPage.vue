@@ -10,11 +10,20 @@
             :columns="employerColumns"
             row-key="id"
             v-model:pagination="pagination"
+            :filter="employerFilter"
             @request="updatePagination"
             :rows-per-page-options="[20]"
           >
             <template v-slot:top>
-              <q-btn ripple color="primary" label="Create new employer" @click="openDialogAdminEmployer()"/>
+              <q-btn
+                ripple color="primary" label="Create new employer"
+                class="q-mr-sm" debounce="800"
+                @click="openDialogAdminEmployer()"
+              />
+              <q-input
+                v-model="employerFilter.employer_name_text"
+                filled label="Employer search"
+              />
             </template>
             <template v-slot:header="props">
               <q-tr :props="props">
@@ -121,6 +130,10 @@ const employerColumns = [
   }
 ]
 
+const employerFilterTemplate = {
+  employer_name_text: null
+}
+
 export default {
   name: 'EmployersPage',
   components: { PageHeader },
@@ -136,30 +149,48 @@ export default {
         rowsNumber: null,
         totalPageCount: 1
       },
+      employerFilter: { ...employerFilterTemplate },
       employerColumns,
       dataUtil,
-      SUBSCRIPTION_STATUS
+      SUBSCRIPTION_STATUS,
+      adminStore: useAdminStore(),
+      q: useQuasar()
     }
   },
   watch: {
+    employerFilter: {
+      handler () {
+        // This will cause a refresh since we are watching the pagination object
+        this.pagination.page = 1
+      },
+      deep: true
+    },
     pagination: {
       async handler () {
         await this.updateEmployerData(false)
-      }
+      },
+      deep: true
     }
   },
   methods: {
+    clearEmployerFilter () {
+      this.employerFilter = { ...employerFilterTemplate }
+    },
     updatePagination (props) {
       this.pagination = props.pagination
     },
     async updateEmployerData (isForce) {
       this.isLoading = true
-      await this.adminStore.setPaginatedEmployers({ pageCount: this.pagination.page, isForce })
+      const requestCfg = {
+        pageCount: this.pagination.page,
+        filterBy: JSON.stringify(this.employerFilter)
+      }
+      await this.adminStore.setPaginatedEmployers({ ...requestCfg, isForce })
       const {
         total_page_count: totalPageCount,
         total_employer_count: totalEmployerCount,
         employers
-      } = this.adminStore.getPaginatedEmployers({ pageCount: this.pagination.page })
+      } = this.adminStore.getPaginatedEmployers(requestCfg)
       this.pagination.totalPageCount = totalPageCount
       this.pagination.rowsNumber = totalEmployerCount
       this.employers = employers
@@ -196,7 +227,6 @@ export default {
   },
   setup () {
     const globalStore = useGlobalStore()
-    const adminStore = useAdminStore()
 
     const pageTitle = 'Admin Employer Page'
     const metaData = {
@@ -204,11 +234,6 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-
-    return {
-      adminStore,
-      q: useQuasar()
-    }
   }
 }
 </script>

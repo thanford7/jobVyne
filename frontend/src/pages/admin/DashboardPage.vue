@@ -3,6 +3,37 @@
     <div class="q-ml-sm">
       <PageHeader title="Admin Dashboard"/>
       <div class="row q-mt-md q-gutter-y-md">
+        <div class="col-12">
+          <div class="row">
+            <div class="col-12 col-md-4 q-px-sm">
+              <div class="text-bold">Jobs With Description</div>
+              <div>
+                {{ processedJobsData.jobs_with_description_count }} / {{ processedJobsData.open_jobs_count }}
+                ({{
+                  mathUtil.getPercentage(processedJobsData.jobs_with_description_count, processedJobsData.open_jobs_count)
+                }})
+              </div>
+            </div>
+            <div class="col-12 col-md-4 q-px-sm">
+              <div class="text-bold">Jobs With Profession</div>
+              <div>
+                {{ processedJobsData.jobs_with_profession_count }} / {{ processedJobsData.open_jobs_count }}
+                ({{
+                  mathUtil.getPercentage(processedJobsData.jobs_with_profession_count, processedJobsData.open_jobs_count)
+                }})
+              </div>
+            </div>
+            <div class="col-12 col-md-4 q-px-sm">
+              <div class="text-bold">Employers With Description</div>
+              <div>
+                {{ processedJobsData.employers_with_description_count }} / {{ processedJobsData.employers_count }}
+                ({{
+                  mathUtil.getPercentage(processedJobsData.employers_with_description_count, processedJobsData.employers_count)
+                }})
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="col-12 q-gutter-sm">
           <div class="text-h6">Support</div>
           <q-btn label="Product announcement email" color="primary" @click="openAnnouncementEmailDialog"/>
@@ -29,8 +60,8 @@
 import DialogAnnouncementEmail from 'components/dialogs/DialogAnnouncementEmail.vue'
 import DialogShowDataTable from 'components/dialogs/DialogShowDataTable.vue'
 import PageHeader from 'components/PageHeader.vue'
-import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta, useQuasar } from 'quasar'
+import mathUtil from 'src/utils/math.js'
 import { useAdminStore } from 'stores/admin-store.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
@@ -38,6 +69,15 @@ import { useGlobalStore } from 'stores/global-store.js'
 export default {
   name: 'DashboardPage',
   components: { PageHeader },
+  data () {
+    return {
+      failedAtsApplications: [],
+      processedJobsData: {},
+      adminStore: useAdminStore(),
+      q: useQuasar(),
+      mathUtil
+    }
+  },
   methods: {
     getTestMsg () {
       this.$api.get('test/error-msg/')
@@ -67,33 +107,30 @@ export default {
       this.$api.post('admin/ats-jobs/')
     }
   },
-  preFetch () {
-    const authStore = useAuthStore()
-    const adminStore = useAdminStore()
+  async mounted () {
     Loading.show()
+    const authStore = useAuthStore()
 
-    return authStore.setUser().then(() => {
-      return adminStore.setFailedAtsApplications()
+    await authStore.setUser().then(() => {
+      return Promise.all([
+        this.adminStore.setFailedAtsApplications(),
+        this.adminStore.setProcessedJobsData()
+      ])
     }).finally(() => {
       Loading.hide()
     })
+
+    this.failedAtsApplications = this.adminStore.failedAtsApplications
+    this.processedJobsData = this.adminStore.processedJobsData
   },
   setup () {
     const globalStore = useGlobalStore()
-    const adminStore = useAdminStore()
-    const { failedAtsApplications } = storeToRefs(adminStore)
-
     const pageTitle = 'Admin Dashboard'
     const metaData = {
       title: pageTitle,
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-
-    return {
-      failedAtsApplications,
-      q: useQuasar()
-    }
   }
 }
 </script>

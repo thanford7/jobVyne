@@ -11,49 +11,49 @@ from jvapp.models.employer import EmployerJob, JobTaxonomy, Taxonomy
 logger = logging.getLogger(__name__)
 
 JOB_PROFESSIONS = [
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Executive Assistant', key='ea'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Chief of Staff', key='cos'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Law', key='law'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Government & Regulation', key='gov'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Product Management', key='product-management'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Product Marketing', key='product-marketing'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Customer Success', key='customer-success'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Account Management', key='account-management'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Client Solutions', key='client-solutions'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Customer Support', key='customer-support'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Human Resources', key='hr'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Talent Acquisition', key='ta'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Hardware Engineering', key='eng-hardware'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Software Engineering', key='eng-software'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Front-End Development', key='eng-frontend'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Back-End Development', key='eng-backend'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Mobile Development', key='eng-mobile'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Devops Engineering', key='devops'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='QA Engineering', key='qa'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='IT (Non-Engineering)', key='it'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Data Analysis', key='data-analysis'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Data Science', key='data-science'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Machine Learning / AI Engineering', key='ml'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Data Engineering', key='eng-data'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Database Administration', key='dba'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='SDR / BDR', key='sdr'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Sales Executive', key='sales'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Business/Corporate Development', key='bus-dev'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Marketing', key='marketing'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Growth Marketing', key='marketing-growth'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Digital Marketing', key='marketing-digital'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='SEO', key='marketing-seo'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Event Marketing', key='marketing-events'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Public Relations', key='pr'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Market Research', key='marketing-research'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='UI/UX', key='ui'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Product Design', key='product-design'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Project Management', key='project-management'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Business Analysis', key='business-analysis'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Strategy & Operations', key='strategy-ops'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Growth', key='growth'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Finance', key='finance'),
-    Taxonomy(tax_type=Taxonomy.TAX_TYPE_JOB_TITLE, name='Accounting', key='accounting')
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Executive Assistant', key='ea'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Chief of Staff', key='cos'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Law', key='law'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Government & Regulation', key='gov'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Product Management', key='product-management'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Product Marketing', key='product-marketing'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Customer Success', key='customer-success'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Account Management', key='account-management'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Client Solutions', key='client-solutions'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Customer Support', key='customer-support'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Human Resources', key='hr'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Talent Acquisition', key='ta'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Hardware Engineering', key='eng-hardware'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Software Engineering', key='eng-software'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Front-End Development', key='eng-frontend'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Back-End Development', key='eng-backend'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Mobile Development', key='eng-mobile'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Devops Engineering', key='devops'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='QA Engineering', key='qa'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='IT (Non-Engineering)', key='it'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Data Analysis', key='data-analysis'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Data Science', key='data-science'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Machine Learning / AI Engineering', key='ml'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Data Engineering', key='eng-data'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Database Administration', key='dba'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='SDR / BDR', key='sdr'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Sales Executive', key='sales'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Business/Corporate Development', key='bus-dev'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Marketing', key='marketing'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Growth Marketing', key='marketing-growth'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Digital Marketing', key='marketing-digital'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='SEO', key='marketing-seo'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Event Marketing', key='marketing-events'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Public Relations', key='pr'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Market Research', key='marketing-research'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='UI/UX', key='ui'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Product Design', key='product-design'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Project Management', key='project-management'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Business Analysis', key='business-analysis'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Strategy & Operations', key='strategy-ops'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Growth', key='growth'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Finance', key='finance'),
+    Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Accounting', key='accounting')
 ]
 
 INDUSTRIES = [
@@ -137,13 +137,13 @@ def get_or_create_taxonomy(tax_name, tax_type):
     
 
 def get_or_create_job_title_tax(job_title_standardized):
-    return get_or_create_taxonomy(job_title_standardized, Taxonomy.TAX_TYPE_JOB_TITLE)
+    return get_or_create_taxonomy(job_title_standardized, Taxonomy.TAX_TYPE_PROFESSION)
 
 
 def run_job_title_standardization(job_filter=None, is_non_standardized_only=True):
     job_filter = job_filter or Q()
     if is_non_standardized_only:
-        job_filter &= ~Q(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE)
+        job_filter &= ~Q(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION)
         jobs = EmployerJob.objects\
             .filter(job_filter)\
             .distinct().values('id', 'job_title')
@@ -166,13 +166,13 @@ def run_job_title_standardization(job_filter=None, is_non_standardized_only=True
         if idx and (idx % 5000 == 0):
             logger.info(f'Total jobs ({idx + 1}). Removing existing taxonomies and saving new ones.')
             with atomic():
-                JobTaxonomy.objects.filter(job_id__in=[jt.job_id for jt in job_taxes_to_save], taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE).delete()
+                JobTaxonomy.objects.filter(job_id__in=[jt.job_id for jt in job_taxes_to_save], taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION).delete()
                 JobTaxonomy.objects.bulk_create(job_taxes_to_save, ignore_conflicts=True)
             job_taxes_to_save = []
     if job_taxes_to_save:
         with atomic():
             JobTaxonomy.objects.filter(job_id__in=[jt.job_id for jt in job_taxes_to_save],
-                                       taxonomy__tax_type=Taxonomy.TAX_TYPE_JOB_TITLE).delete()
+                                       taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION).delete()
             JobTaxonomy.objects.bulk_create(job_taxes_to_save, ignore_conflicts=True)
 
     

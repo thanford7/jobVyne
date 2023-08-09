@@ -309,7 +309,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     @property
     def job_department_standardized(self):
         for tax in self.taxonomy.all():
-            if tax.taxonomy.tax_type == Taxonomy.TAX_TYPE_JOB_TITLE:
+            if tax.taxonomy.tax_type == Taxonomy.TAX_TYPE_PROFESSION:
                 return tax.taxonomy.name
         return 'Unknown'
     
@@ -344,11 +344,11 @@ class EmployerJobConnection(AuditFields):
 
 
 class Taxonomy(models.Model):
-    TAX_TYPE_JOB_TITLE = 'JOB_TITLE'
+    TAX_TYPE_PROFESSION = 'JOB_TITLE'
     TAX_TYPE_INDUSTRY = 'INDUSTRY'
     TAX_TYPE_JOB_LEVEL = 'JOB_LEVEL'
     ALL_TAX_TYPES = [
-        TAX_TYPE_JOB_TITLE,
+        TAX_TYPE_PROFESSION,
         TAX_TYPE_INDUSTRY,
         TAX_TYPE_JOB_LEVEL
     ]

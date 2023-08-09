@@ -155,7 +155,7 @@ class JobProcessor:
         if not (job_department := self.job_departments.get(job_item.job_department.lower())):
             # We still might miss an existing job department if another employer job processor has recently saved it
             try:
-                job_department = JobDepartment(name=job_item.job_department)
+                job_department = JobDepartment(name=job_item.job_department[:100])
                 job_department.save()
             except IntegrityError:
                 job_department = JobDepartment.objects.get(name=job_item.job_department)

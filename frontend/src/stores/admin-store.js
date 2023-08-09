@@ -1,21 +1,23 @@
 import { defineStore } from 'pinia'
+import { makeApiRequestKey } from 'src/utils/requests.js'
 
 export const useAdminStore = defineStore('admin', {
   state: () => ({
     employers: {},
     jobScrapers: [],
     paginatedUsers: {}, // {total_page_count: <int>, total_user_count: <int>, users: [<user1>, ...]}
-    failedAtsApplications: []
+    failedAtsApplications: [],
+    processedJobsData: {}
   }),
 
   actions: {
-    async setPaginatedEmployers ({ pageCount = 1, isForce = false }) {
-      const key = pageCount
+    async setPaginatedEmployers ({ pageCount = 1, filterBy = null, isForce = false }) {
+      const key = makeApiRequestKey(pageCount, filterBy)
       if (!isForce && this.employers[key]) {
         return
       }
       const resp = await this.$api.get('admin/employer/', {
-        params: { page_count: pageCount }
+        params: { page_count: pageCount, filter_by: filterBy }
       })
       this.employers[key] = resp.data
     },
@@ -37,8 +39,12 @@ export const useAdminStore = defineStore('admin', {
         this.failedAtsApplications = resp.data
       }
     },
-    getPaginatedEmployers ({ pageCount = 1 }) {
-      const key = pageCount
+    async setProcessedJobsData () {
+      const resp = await this.$api.get('data/admin/processed-jobs/')
+      this.processedJobsData = resp.data
+    },
+    getPaginatedEmployers ({ pageCount = 1, filterBy = null }) {
+      const key = makeApiRequestKey(pageCount, filterBy)
       return this.employers[key] || {}
     }
   }
