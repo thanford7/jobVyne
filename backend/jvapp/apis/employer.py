@@ -32,6 +32,7 @@ from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobConnec
     EmployerFileTag
 from jvapp.models.external import ExternalCompanyData
 from jvapp.models.job_seeker import JobApplication
+from jvapp.models.location import Location
 from jvapp.models.social import SocialLink
 from jvapp.models.tracking import MessageThread, MessageThreadContext
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
@@ -685,6 +686,11 @@ class EmployerJobView(JobVyneAPIView):
                 employer_job_filter &= Q(open_date__lte=timezone.now().date())
         
         if is_include_fetch:
+            
+            locations_prefetch = Prefetch(
+                'locations', queryset=Location.objects.select_related('city', 'state', 'country')
+            )
+            
             jobs = EmployerJob.objects \
                 .select_related(
                     'job_department',
@@ -693,10 +699,7 @@ class EmployerJobView(JobVyneAPIView):
                     'salary_currency'
                 ) \
                 .prefetch_related(
-                    'locations',
-                    'locations__city',
-                    'locations__state',
-                    'locations__country',
+                    locations_prefetch,
                     'taxonomy',
                     'taxonomy__taxonomy',
                     'job_connection',
@@ -705,7 +708,8 @@ class EmployerJobView(JobVyneAPIView):
                 .filter(employer_job_filter)
         else:
             jobs = EmployerJob.objects.filter(employer_job_filter)
-        jobs = jobs.distinct().order_by(order_by, 'id')
+            
+        jobs = jobs.order_by(order_by, 'id').distinct()
         
         if employer_job_id:
             if not jobs:

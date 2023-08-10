@@ -235,7 +235,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     ats_job_key = models.CharField(max_length=50, null=True, blank=True)
 
     # For user entered jobs, we want to review and approve before displaying on the website
-    is_job_approved = models.BooleanField(default=True)
+    is_job_approved = models.BooleanField(default=True, db_index=True)
     
     def __str__(self):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
