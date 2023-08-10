@@ -689,7 +689,7 @@ class JobModalViews(SlackMultiViewModal):
             #     is_include_jobvyne_subject=False
             # )
             # process_email_timer.log_time(is_warning=True)
-        self.can_edit = self.job.jv_check_permission(PermissionTypes.EDIT.value, self.user)
+        self.can_edit = self.job.jv_check_permission(PermissionTypes.EDIT.value, self.user, is_raise_error=False)
     
     def update_job_salary(self):
         if not self.can_edit:

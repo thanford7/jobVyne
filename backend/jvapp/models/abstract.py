@@ -69,7 +69,7 @@ class JobVynePermissionsMixin:
         """
         return query
     
-    def jv_check_permission(self, permission_type: PermissionTypes, user):
+    def jv_check_permission(self, permission_type: PermissionTypes, user, is_raise_error=True):
         """Check whether the user has permission to operate on an object
         Don't override this method.
         """
@@ -83,7 +83,9 @@ class JobVynePermissionsMixin:
             raise ValueError('Unknown permission type')
         
         if not has_permission:
-            self._raise_permission_error(permission_type)
+            if is_raise_error:
+                self._raise_permission_error(permission_type)
+            return False
         
         return True
     
