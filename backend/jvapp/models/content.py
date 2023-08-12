@@ -6,7 +6,9 @@ from django.db.models import Q, UniqueConstraint
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO, AuditFields, JobVynePermissionsMixin
 
-__all__ = ('ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
+__all__ = ('Article', 'ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
+
+from jvapp.models.employer import Taxonomy
 
 from jvapp.models.user import PermissionName
 
@@ -158,3 +160,10 @@ class JobPost(AuditFields):
                 name='unique_recipient_job_channel'
             ),
         ]
+
+class Article(AuditFields):
+    source = models.CharField(max_length=40)
+    url = models.URLField()
+    title = models.CharField(max_length=100)
+    summary = models.CharField(max_length=1000)
+    professions = models.ManyToManyField(Taxonomy)
