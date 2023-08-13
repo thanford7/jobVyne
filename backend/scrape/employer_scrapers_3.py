@@ -651,11 +651,6 @@ class ElevateK12Scraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'elevatek12'
 
 
-class HumuScraper(GreenhouseScraper):
-    employer_name = 'Humu'
-    EMPLOYER_KEY = 'humu'
-
-
 class PleoScraper(GreenhouseScraper):
     employer_name = 'Pleo'
     EMPLOYER_KEY = 'pleo'
