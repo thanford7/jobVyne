@@ -68,6 +68,13 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
         DECLINED = 'declined'
         ARCHIVED = 'archived'
     
+    # For applications to an employer managed by JobVyne, there are only a few statuses that
+    # the candidate should be able to move themselves to
+    USER_EDITABLE_APPLICATION_STATUSES = [
+        ApplicationStatus.INTERESTED.value, ApplicationStatus.APPLIED.value,
+        ApplicationStatus.DECLINED.value, ApplicationStatus.ARCHIVED.value
+    ]
+    
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link = models.ForeignKey(
         'SocialLink', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'

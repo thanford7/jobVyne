@@ -7,7 +7,7 @@
         :options="memberOptions"
       />
     </div>
-    <div class="col-12 q-pt-lg q-px-md-md">
+    <div class="col-12 q-pt-lg q-px-md-md q-py-sm">
       <div class="row">
         <template v-if="isLoading">
           <div v-for="n in 3" class="col-12 col-md-4 col-lg-3 q-px-md-md" :data-times="n">

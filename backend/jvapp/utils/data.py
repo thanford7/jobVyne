@@ -116,3 +116,25 @@ def get_website_domain_from_url(url):
     if len(url_groups) >= 2:
         return '.'.join(url_groups[-2:])
     return None
+
+
+def truncate_text(text, max_length, truncation_text='...', is_whole_words=True):
+    if not text:
+        return None
+    words = text.split(' ')
+    char_count = len(truncation_text)
+    word_idx = 0
+    for word in words:
+        char_count += len(word)
+        if char_count >= max_length:
+            break
+        word_idx += 1
+        char_count += 1 # Account for the space we will add between words
+    
+    truncated_text = ' '.join(words[:word_idx + 1])
+    if len(truncated_text) > max_length:
+        if is_whole_words:
+            truncated_text = ' '.join(words[:word_idx])
+        else:
+            truncated_text = truncated_text[:max_length]
+    return truncated_text

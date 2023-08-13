@@ -223,16 +223,18 @@ class JobSubscriptionView(JobVyneAPIView):
         return job_filter
     
     @staticmethod
-    def get_or_create_employer_subscription(employer_id):
+    def get_or_create_employer_own_subscription(employer_id):
         """ Each employer has a unique job subscription that filters for all jobs
         connected to that employer
         """
         try:
             return JobSubscription.objects.get(employer_id=employer_id, is_single_employer=True)
         except JobSubscription.DoesNotExist:
+            employer = Employer.objects.get(id=employer_id)
             employer_subscription = JobSubscription(
                 employer_id=employer_id,
-                is_single_employer=True
+                is_single_employer=True,
+                title=employer.employer_name
             )
             employer_subscription.save()
             employer_subscription.filter_employer.add(employer_id)
@@ -258,15 +260,3 @@ class JobSubscriptionView(JobVyneAPIView):
             job_subscription = JobSubscription(employer_id=employer_id, is_user_entered=True)
             job_subscription.save()
             return job_subscription
-    
-    @staticmethod
-    def create_employer_subscription(employer_id):
-        employer = Employer.objects.get(id=employer_id)
-        employer_subscription = JobSubscription(
-            employer_id=employer_id,
-            is_single_employer=True,
-            title=employer.employer_name
-        )
-        employer_subscription.save()
-        employer_subscription.filter_employer.add(employer_id)
-        return employer_subscription

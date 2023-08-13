@@ -21,7 +21,7 @@ def create_default_job_board(apps, schema_editor):
         link.save()
         # If this is an employer then, they should only be subscribed to their jobs
         if employer.organization_type & Employer.ORG_TYPE_EMPLOYER:
-            employer_subscription = JobSubscriptionView.get_or_create_employer_subscription(employer.id)
+            employer_subscription = JobSubscriptionView.get_or_create_employer_own_subscription(employer.id)
             link.job_subscriptions.add(employer_subscription.id)
 
 

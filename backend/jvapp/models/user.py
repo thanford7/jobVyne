@@ -18,6 +18,7 @@ from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
 from jvapp.models.location import REMOTE_TYPES
+from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.email import get_domain_from_email
 from jvapp.utils.file import get_user_upload_location
 
@@ -122,6 +123,8 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     JOB_SEARCH_TYPE_ACTIVE = 0x1
     JOB_SEARCH_TYPE_PASSIVE = 0x2
     
+    DEFAUL_JOB_SEARCH_RANGE_MILES = 50
+    
     # Keep in sync with community.js member types
     MEMBER_TYPE_JOB_SEEKER = 0x1
     MEMBER_TYPE_HIRING_MGR = 0x2
@@ -163,10 +166,9 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     is_profile_viewable = models.BooleanField(default=True)
     job_title = models.CharField(max_length=100, null=True, blank=True)
     profession = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL)
-    home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
     employment_start_date = models.DateField(null=True, blank=True)
 
-    home_post_code = models.CharField(max_length=10, null=True, blank=True)
+    home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
     work_remote_type_bit = models.SmallIntegerField(default=REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value)
     job_search_type_bit = models.SmallIntegerField(default=0)
     is_job_search_visible = models.BooleanField(default=False)
@@ -320,6 +322,25 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
             return False
     
         return self.business_email and get_domain_from_email(self.business_email) in self.employer.email_domains
+    
+    @property
+    def preferred_jobs_filter(self):
+        from jvapp.apis.social import SocialLinkJobsView
+        preferred_employers = Q(employer__in=self.membership_employers.all())
+        preferred_professions = Q(taxonomy__taxonomy__in=self.job_search_professions)
+        jobs_filter = preferred_employers & preferred_professions
+        if self.home_location_id:
+            location_dict = get_serialized_location(self.home_location)
+            location_filter = SocialLinkJobsView.get_location_filter(
+                location_dict, self.work_remote_type_bit, self.DEFAUL_JOB_SEARCH_RANGE_MILES
+            )
+            jobs_filter &= location_filter
+        # Consider adding job search level and job search industries
+        return jobs_filter
+    
+    @property
+    def contact_email(self):
+        return self.business_email or self.email
 
 
 class UserFile(models.Model, JobVynePermissionsMixin):
@@ -441,7 +462,7 @@ class UserSocialSubscription(AuditFields):
     """Push content to user's social feed
     """
     class SubscriptionType(Enum):
-        jobs = 'JOBS'
+        jobs = 'JOBS'  # Receive updates on any jobs
         events = 'EVENTS'
         news = 'NEWS'
         

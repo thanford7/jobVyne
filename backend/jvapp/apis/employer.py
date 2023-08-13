@@ -329,7 +329,7 @@ class EmployerBillingView(JobVyneAPIView):
         
         # Street address isn't important to normalize. We are just using the address to determine taxes
         location_text = f'{self.data["city"]}, {self.data["state"]}, {self.data["country"]} {self.data.get("postal_code")}'
-        raw_location = get_raw_location(location_text)
+        raw_location, _ = get_raw_location(location_text)
         if not raw_location:
             raise ValueError(f'Could not locate address for {location_text}')
         employer.street_address = self.data.get('street_address')

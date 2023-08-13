@@ -555,3 +555,6 @@ class ShareSocialPostView(JobVyneAPIView):
             return JobPost.PostChannel.LINKEDIN_JOB.value
         # Note: Will add more as we build more integrations
         return None
+    
+    
+

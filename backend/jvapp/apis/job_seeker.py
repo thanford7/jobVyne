@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response, \
-    get_warning_response
+    get_success_response, get_warning_response
 from jvapp.apis.ats import AtsError, get_ats_api
 from jvapp.apis.employer import EmployerBonusRuleView, EmployerJobView
 from jvapp.apis.notification import MessageGroupView, NotificationPreferenceKey, UserNotificationPreferenceView
@@ -98,11 +98,13 @@ class ApplicationView(JobVyneAPIView):
             application_filter=Q(email=email, employer_job_id=job_id),
             is_ignore_permissions=True
         )
-        if len(applications):
+        if len([a for a in applications if not a.is_external_application]):
             return get_warning_response(f'You have already applied to this job using the email {email}')
         
-        # Save application to Django model
-        application = JobApplication()
+        # A user may have viewed/applied for a position prior to the company having a relationship with JobVyne
+        # We check for external applications so we don't duplicate application records
+        application = next((a for a in applications if a.is_external_application), None) or JobApplication()
+        application.is_external_application = False
         application_template = ApplicationTemplateView.get_application_template(user.id) if user else None
         if resume := self.files.get('resume'):
             resume = resume[0]
@@ -113,7 +115,8 @@ class ApplicationView(JobVyneAPIView):
             academic_transcript = academic_transcript[0]
         elif application_template:
             academic_transcript = application_template.academic_transcript
-
+        
+        # Save application to Django model
         self.create_application(user, application, self.data, resume=resume, academic_transcript=academic_transcript)
         
         ## Send notification emails
@@ -272,7 +275,7 @@ class ApplicationView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_application(user, application, data, resume=None, academic_transcript=None):
+    def create_application(user, application, data, resume=None, academic_transcript=None, is_external=False):
         application.user = user
         platform = None
         if platform_name := data.get('platform_name'):
@@ -297,6 +300,9 @@ class ApplicationView(JobVyneAPIView):
         application.referrer_employer = employer
         application.resume = resume
         application.academic_transcript = academic_transcript
+        
+        if is_external:
+            application.application_status = JobApplication.ApplicationStatus.INTERESTED.value
         
         ApplicationView.add_application_referral_bonus(application)
         application.save()
@@ -429,14 +435,19 @@ class ApplicationExternalView(JobVyneAPIView):
     def post(self, request):
         if not (job_id := self.data.get('job_id')):
             return get_error_response('A job ID is required')
-        application = self.get_existing_application(self.user, job_id) or JobApplication(is_external_application=True)
-        if self.user:
-            self.data['email'] = self.user.email
-            self.data['first_name'] = self.user.first_name
-            self.data['last_name'] = self.user.last_name
-        ApplicationView.create_application(self.user, application, self.data)
+        self.update_or_create_application(self.user, job_id, self.data)
         
         return Response(status=status.HTTP_200_OK)
+    
+    @staticmethod
+    def update_or_create_application(user, job_id, data):
+        application = ApplicationExternalView.get_existing_application(user, job_id) or JobApplication(is_external_application=True)
+        if user and application.is_external_application:
+            data['email'] = user.email
+            data['first_name'] = user.first_name
+            data['last_name'] = user.last_name
+        data['job_id'] = job_id
+        return ApplicationView.create_application(user, application, data, is_external=True)
     
     @staticmethod
     def get_existing_application(user, job_id):
@@ -446,4 +457,26 @@ class ApplicationExternalView(JobVyneAPIView):
         # Check if this person has already applied
         applications = JobApplication.objects.filter(user=user, employer_job_id=job_id)
         return applications[0] if applications else None
+    
+    
+class ApplicationStatusView(JobVyneAPIView):
+    
+    def post(self, request):
+        application_id = self.data['application_id']
+        application_status = self.data['application_status']
+        application = JobApplication.objects.get(id=application_id)
+        if not any((
+            application.user_id == self.user.id,
+            application.email == self.user.email and self.user.is_email_verified
+        )):
+            return get_error_response('You do not have permission to edit this application')
+        if (
+            (not application.is_external_application)
+            and application_status not in JobApplication.USER_EDITABLE_APPLICATION_STATUSES
+        ):
+            return get_error_response('You cannot change the application to this status')
+        
+        application.application_status = application_status
+        application.save()
+        return get_success_response('Application status was updated')
         

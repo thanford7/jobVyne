@@ -45,6 +45,7 @@ urlpatterns = [
     path('feedback/', user.FeedbackView.as_view()),
     re_path('^job-application/(?P<application_id>[0-9]+)?/?$', job_seeker.ApplicationView.as_view()),
     path('job-application/external/', job_seeker.ApplicationExternalView.as_view()),
+    path('job-application/status/', job_seeker.ApplicationStatusView.as_view()),
     path('job/department/', job.JobDepartmentView.as_view()),
     path('job/location/', job.LocationView.as_view()),
     path('jobs/', jobs.JobsView.as_view()),
@@ -63,6 +64,7 @@ urlpatterns = [
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
     path('user/created-jobs/', user.UserCreatedJobView.as_view()),
     re_path('^user/employee-checklist/(?P<user_id>[0-9]+)?/?$', user.UserEmployeeChecklistView.as_view()),
+    path('user/favorite/', user.UserFavoriteView.as_view()),
     path('user/profile/', user.UserProfileView.as_view()),
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/job-application-review/', user.UserJobApplicationReviewView.as_view()),
@@ -138,7 +140,6 @@ urlpatterns = [
     
     # Slack
     path('slack/channel/', slack.SlackChannelView.as_view()),
-    path('slack/command/suggest/', slack.SlackCommandSuggestView.as_view()),
     path('slack/command/job/', slack.SlackCommandJobView.as_view()),
     path('slack/command/job-seeker/', slack.SlackCommandJobSeekerView.as_view()),
     path('slack/message/job/', slack.SlackJobsMessageView.as_view()),

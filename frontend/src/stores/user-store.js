@@ -5,7 +5,8 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     userProfile: {}, // key: {profile}
     userEmployeeChecklist: {},
-    userCreatedJobs: {} // key: pagedUserData
+    userCreatedJobs: {}, // key: pagedUserData
+    userFavorites: {} // key: {favorites}
   }),
 
   actions: {
@@ -43,12 +44,24 @@ export const useUserStore = defineStore('user', {
       })
       this.userCreatedJobs[key] = resp.data
     },
+    async setUserFavorites (userId, { isForceRefresh = false } = {}) {
+      if (this.userFavorites[userId] && !isForceRefresh) {
+        return
+      }
+      const resp = await this.$api.get('user/favorite/', {
+        params: { user_id: userId }
+      })
+      this.userFavorites[userId] = resp.data
+    },
     getUserProfile ({ userId = null, socialLinkId = null }) {
       return this.userProfile[userId || socialLinkId]
     },
     getPaginatedUserCreatedJobs ({ pageCount = 1, userId = null, isApproved = null, isClosed = false }) {
       const key = makeApiRequestKey(pageCount, userId, isApproved, isClosed)
       return this.userCreatedJobs[key] || []
+    },
+    getUserFavorites (userId) {
+      return this.userFavorites[userId]
     }
   }
 })

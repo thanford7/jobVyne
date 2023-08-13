@@ -227,4 +227,6 @@ company_whitelist = {
     'Codi': None,
     'Alice&Bob': None,
     'Leena AI': None,
+    'Screencastify': None,
+    'Wowza Media Systems': None,
 }

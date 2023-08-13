@@ -371,13 +371,38 @@ class UserCreatedJobView(JobVyneAPIView):
             user_job['created_by_email'] = job.created_user.email
         
         return user_job
+    
+    
+class UserFavoriteView(JobVyneAPIView):
+    
+    def get(self, request):
+        user_id = coerce_int(self.query_params['user_id'])
+        if user_id != self.user.id:
+            return get_error_response('You do not have permission to view this user')
+        return Response(status=status.HTTP_200_OK, data={
+            'employers': [{
+                'employer_id': employer.id,
+                'employer_key': employer.employer_key,
+                'employer_name': employer.employer_name,
+                'open_job_count': employer.open_jobs.count()
+            } for employer in self.user.membership_employers.all()]
+        })
+    
+    def delete(self, request):
+        user_id = coerce_int(self.data['user_id'])
+        employer_id = coerce_int(self.data['employer_id'])
+        if user_id != self.user.id:
+            return get_error_response('You do not have permission to view this user')
+        employer = Employer.objects.get(id=employer_id)
+        
+        self.user.membership_employers.remove(employer)
+        return get_success_response(f'Removed {employer.employer_name} from favorites')
 
 
 class UserFileView(JobVyneAPIView):
     
     def get(self, request):
-        if not (user_id := self.query_params.get('user_id')):
-            return Response('A user ID is required', status=status.HTTP_400_BAD_REQUEST)
+        user_id = self.query_params['user_id']
         files = self.get_user_files(user_id)
         return Response(
             status=status.HTTP_200_OK,

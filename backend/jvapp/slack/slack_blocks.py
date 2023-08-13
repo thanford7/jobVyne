@@ -1,12 +1,6 @@
 import json
-import re
-
-from django.db.models import Q
-from django.utils import timezone
 
 from jvapp.models import JobVyneUser
-from jvapp.models.employer import EmployerJob
-from jvapp.utils.data import coerce_int
 
 
 class SlackBlock:
@@ -100,17 +94,64 @@ class Modal(SlackBlock):
 
 
 class SectionText(SlackBlock):
-    def __init__(self, text):
+    def __init__(self, text, accessory=None):
         self.text = text
+        self.accessory = accessory
     
     def get_slack_object(self):
-        return {
+        slack_object = {
             'type': 'section',
             'text': {
                 'type': 'mrkdwn',
                 'text': self.text
             }
         }
+        if self.accessory:
+            slack_object['accessory'] = self.accessory.get_slack_object()
+            
+        return slack_object
+    
+    
+class SectionActions(SlackBlock):
+    def __int__(self, elements):
+        # Up to 25 allowed
+        # Elements can be buttons, select menus, overflow menus, or date pickers
+        self.elements = elements
+        
+    def get_slack_object(self):
+        return {
+            'type': 'actions',
+            'elements': [el.get_slack_object() for el in self.elements]
+        }
+
+
+class Button(SlackBlock):
+    
+    def __init__(self, action_id, label, value, url=None, color=None):
+        self.action_id = action_id
+        self.label = label
+        self.value = value
+        self.url = url
+        self.color = None
+        if color == 'green':
+            self.color = 'primary'
+        if color == 'red':
+            self.color = 'danger'
+    
+    def get_slack_object(self):
+        slack_block = {
+            'type': 'button',
+            'text': {
+                'type': 'plain_text',
+                'text': self.label
+            },
+            'value': str(self.value),
+            'action_id': self.action_id
+        }
+        if self.color:
+            slack_block['style'] = self.color
+            
+        return slack_block
 
 
 class InputText(SlackBlock):
@@ -285,7 +326,7 @@ class Select(SlackBlock):
     
     def __init__(
             self, action_id, label, placeholder, options,
-            focus_on_load=False, initial_option=None, is_optional=False, **kwargs
+            focus_on_load=False, initial_option=None, is_optional=False, is_element_only=False, **kwargs
     ):
         self.action_id = action_id
         self.label = label
@@ -294,8 +335,23 @@ class Select(SlackBlock):
         self.focus_on_load = focus_on_load
         self.initial_option = initial_option
         self.is_optional = is_optional
+        self.is_element_only = is_element_only
     
     def get_slack_object(self):
+        element = {
+            'type': self.TYPE,
+            'action_id': self.action_id,
+            'placeholder': {
+                'type': 'plain_text',
+                'text': self.placeholder
+            },
+            'options': self.options,
+            'focus_on_load': self.focus_on_load
+        }
+        self.add_initial_option(element)
+        if self.is_element_only:
+            return element
+        
         slack_object = {
             'type': 'input',
             'label': {
@@ -303,25 +359,16 @@ class Select(SlackBlock):
                 'text': self.label,
                 'emoji': True
             },
-            'element': {
-                'type': self.TYPE,
-                'action_id': self.action_id,
-                'placeholder': {
-                    'type': 'plain_text',
-                    'text': self.placeholder
-                },
-                'options': self.options,
-                'focus_on_load': self.focus_on_load
-            }
+            'element': element
         }
-        self.add_initial_option(slack_object)
+        
         if self.is_optional:
             slack_object['optional'] = self.is_optional
         return slack_object
     
-    def add_initial_option(self, slack_object):
+    def add_initial_option(self, element):
         if self.initial_option:
-            slack_object['element']['initial_option'] = self.initial_option
+            element['initial_option'] = self.initial_option
     
     @staticmethod
     def get_value(input_dict):
@@ -348,9 +395,9 @@ class SelectMulti(Select):
         
         return slack_object
     
-    def add_initial_option(self, slack_object):
+    def add_initial_option(self, element):
         if self.initial_option:
-            slack_object['element']['initial_options'] = self.initial_option
+            element['initial_options'] = self.initial_option
     
     @staticmethod
     def get_value(input_dict):
@@ -428,71 +475,3 @@ class SelectMultiExternal(SelectExternal):
         for val in values:
             val['text'] = InputOption.parse_value_text(val['text'])
         return values
-
-
-class SelectEmployer(SelectExternal):
-    OPTIONS_LOAD_KEY = 'options-employer'
-    
-    def __init__(self, *args, focus_on_load=False, **kwargs):
-        super().__init__(self.OPTIONS_LOAD_KEY, 'Select employer', 'Select employer', focus_on_load=focus_on_load)
-        
-    def get_form_value(self, form_data):
-        val = form_data.get(self.OPTIONS_LOAD_KEY)
-        return val['value'] if val else None
-    
-    def get_form_text(self, form_data):
-        val = form_data.get(self.OPTIONS_LOAD_KEY)
-        return val['text'] if val else None
-    
-
-class SelectEmployerJob(SelectExternal):
-    OPTIONS_LOAD_KEY_PREPEND = 'options-employer-job'
-    EMPLOYER_ID_SPLIT = '--'
-    
-    def __init__(self, *args, employer_id=None, focus_on_load=False, **kwargs):
-        assert employer_id
-        self.employer_id = employer_id
-        super().__init__(
-            self.get_options_load_key(), 'Select job', 'Select job',
-            focus_on_load=focus_on_load, min_query_length=0
-        )
-        
-    def get_form_value(self, form_data):
-        val = form_data.get(self.get_options_load_key())
-        return val['value'] if val else None
-    
-    def set_form_value(self, form_data, job_id):
-        val = form_data.get(self.get_options_load_key())
-        val['value'] = job_id
-    
-    def get_options_load_key(self):
-        return f'{self.OPTIONS_LOAD_KEY_PREPEND}{self.EMPLOYER_ID_SPLIT}{self.employer_id}'
-    
-    @classmethod
-    def get_employer_id(cls, options_load_key):
-        return coerce_int(options_load_key.split(cls.EMPLOYER_ID_SPLIT)[-1])
-    
-    @classmethod
-    def get_employer_jobs(cls, employer_id=None, options_load_key=None, regex_pattern=None):
-        assert employer_id or options_load_key
-        employer_id = employer_id or SelectEmployerJob.get_employer_id(options_load_key)
-        employer_job_filter = (
-                Q(employer_id=employer_id)
-                & (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
-        )
-        if regex_pattern:
-            employer_job_filter &= Q(job_title__iregex=regex_pattern)
-        employer_jobs = (
-            EmployerJob.objects
-            .prefetch_related('locations')
-            .filter(employer_job_filter)
-        )
-        
-        # If we are loading jobs for the first time, we present the most recent because that
-        # is likely what the user is looking for
-        if not options_load_key:
-            employer_jobs.order_by('-open_date')
-        else:
-            employer_jobs.order_by('job_title', 'id')
-        
-        return employer_jobs[:SelectExternal.OPTIONS_LIMIT]

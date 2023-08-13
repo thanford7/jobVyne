@@ -73,9 +73,14 @@ class PagePermissionsUtil {
         namespace: 'candidate',
         menuItems: [
           {
-            icon: 'home',
+            icon: 'contact_page',
             key: 'candidate-dashboard',
-            label: 'Dashboard'
+            label: 'Job Applications'
+          },
+          {
+            icon: 'star',
+            key: 'candidate-favorites',
+            label: 'Favorites'
           }
         ]
       },

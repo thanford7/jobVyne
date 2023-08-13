@@ -129,6 +129,10 @@ class JobClassificationView(JobVyneAPIView):
         while True:
             job = await queue.get()
             logger.info(f'Running job classification for job ID = {job.id}')
+            if not job.job_description:
+                logger.info(f'No job description for job ID = {job.id}. Skipping.')
+                queue.task_done()
+                continue
             trunc_job_description = job.job_description[:JobClassificationView.DESCRIPTION_CHAR_LIMIT]
             try:
                 if is_test:

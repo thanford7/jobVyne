@@ -107,10 +107,16 @@ const routes = [
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
       {
-        path: 'dashboard',
+        path: 'job-applications',
         name: 'candidate-dashboard',
         meta: { userTypeBits: USER_TYPES.Candidate },
         component: () => import('pages/candidate/DashboardPage.vue')
+      },
+      {
+        path: 'favorites',
+        name: 'candidate-favorites',
+        meta: { userTypeBits: USER_TYPES.Candidate },
+        component: () => import('pages/candidate/FavoritesPage.vue')
       }
     ]
   },
