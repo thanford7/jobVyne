@@ -102,7 +102,9 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
     state_name = location_dict.get('state')
     country_name = location_dict.get('country')
     latitude = location_dict.get('latitude')
+    latitude_text = str(latitude)[:15] if latitude else None
     longitude = location_dict.get('longitude')
+    longitude_text = str(longitude)[:15] if longitude else None
     raw_location_text = raw_location_text or location_dict['text']
     if not any([city_name, state_name, country_name]):
         try:
@@ -116,7 +118,7 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
     else:
         location_filter = (
                 Q(is_remote=is_remote, text__iexact=raw_location_text) |
-                Q(latitude=latitude, longitude=longitude)
+                Q(is_remote=is_remote, latitude=latitude_text, longitude=longitude_text)
         )
         locations = Location.objects.filter(location_filter)
         if locations:
@@ -129,8 +131,8 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
                 state=get_or_create_state(location_dict.get('state')),
                 country=get_or_create_country(location_dict.get('country')),
                 postal_code=location_dict.get('postal_code'),
-                latitude=str(latitude)[:15] if latitude else None,
-                longitude=str(longitude)[:15] if longitude else None,
+                latitude=latitude_text,
+                longitude=longitude_text,
                 geometry=Location.get_geometry_point(latitude, longitude)
             )
             location.save()
