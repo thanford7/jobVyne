@@ -105,7 +105,6 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
     latitude_text = str(latitude)[:15] if latitude else None
     longitude = location_dict.get('longitude')
     longitude_text = str(longitude)[:15] if longitude else None
-    raw_location_text = raw_location_text or location_dict['text']
     if not any([city_name, state_name, country_name]):
         try:
             location = Location.objects.get(text__iexact='Unknown')
@@ -117,7 +116,7 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
             location.save()
     else:
         location_filter = (
-                Q(is_remote=is_remote, text__iexact=raw_location_text) |
+                Q(is_remote=is_remote, text__iexact=location_dict['text']) |
                 Q(is_remote=is_remote, latitude=latitude_text, longitude=longitude_text)
         )
         locations = Location.objects.filter(location_filter)
@@ -125,7 +124,7 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
             location = locations[0]
         else:
             location = Location(
-                text=location_dict.get('text'),
+                text=location_dict['text'],
                 is_remote=is_remote,
                 city=get_or_create_city(location_dict.get('city')),
                 state=get_or_create_state(location_dict.get('state')),
@@ -135,9 +134,12 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
                 longitude=longitude_text,
                 geometry=Location.get_geometry_point(latitude, longitude)
             )
-            location.save()
+            try:
+                location.save()
+            except IntegrityError as e:
+                raise e
     
-    if is_save_location_lookup:
+    if is_save_location_lookup and raw_location_text:
         try:
             LocationLookup(
                 text=raw_location_text[:200],
@@ -163,8 +165,8 @@ class LocationParser:
         is_remote = bool(re.match('^.*?(remote|anywhere|virtual).*?$', location_text, re.IGNORECASE))
         if location := self.location_lookups.get(location_text):
             return location
-
-        address = location_text.replace('remote', '').replace('anywhere', '').replace('virtual', '').replace(':', '').strip()
+        
+        address = re.sub('remote|anywhere|virtual|:', '', location_text, flags=re.IGNORECASE).strip()
         zip_code = None
         if is_zip_code:
             zip_code = address

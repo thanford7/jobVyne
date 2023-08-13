@@ -301,8 +301,9 @@ class ApplicationView(JobVyneAPIView):
         application.resume = resume
         application.academic_transcript = academic_transcript
         
-        if is_external:
+        if is_external and not application.id:
             application.application_status = JobApplication.ApplicationStatus.INTERESTED.value
+            application.application_status_dt = timezone.now()
         
         ApplicationView.add_application_referral_bonus(application)
         application.save()

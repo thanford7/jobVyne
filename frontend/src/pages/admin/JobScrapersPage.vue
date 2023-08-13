@@ -13,15 +13,11 @@
             :rows-per-page-options="[15, 25, 50]"
           >
             <template v-slot:top>
-              <q-btn ripple color="primary" label="Run all" @click="runJobScrapers({ isAll: true })" class="q-mr-sm"/>
               <q-btn
                 v-if="selectedScrapers.length"
                 class="q-mr-sm"
                 ripple color="primary" :label="`Run selected (${selectedScrapers.length})`" @click="runJobScrapers({ isAll: false })"
               />
-              <q-btn ripple color="primary" label="Run Workable" @click="runJobScrapers({ isWorkable: true })" class="q-mr-sm"/>
-              <q-btn ripple color="primary" label="Update all job taxonomies" class="q-mr-sm" @click="runJobTaxonomy(true)"/>
-              <q-btn ripple color="primary" label="Update new job taxonomies" @click="runJobTaxonomy(false)"/>
             </template>
           </q-table>
         </div>
@@ -73,11 +69,6 @@ export default {
       }))
       await this.adminStore.setJobScrapers(true)
       this.selectedScrapers = []
-    },
-    async runJobTaxonomy (isAll) {
-      await this.$api.post('admin/taxonomy-update/', getAjaxFormData({
-        is_run_all: isAll
-      }))
     }
   },
   preFetch () {

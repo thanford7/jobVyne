@@ -833,9 +833,9 @@ class PatternScraper(WorkdayScraper):
 class HeartFlowScraper(GreenhouseScraper):
     employer_name = 'Heartflow, Inc.'
     EMPLOYER_KEY = 'heartflowinc'
-
-
-class AdHocScraper(GreenhouseScraper):
-    employer_name = 'Ad Hoc'
-    EMPLOYER_KEY = 'adhocexternal'
+    
+    
+class CloudOpsScraper(GreenhouseIframeScraper):
+    employer_name = 'CloudOps'
+    EMPLOYER_KEY = 'cloudops'
     

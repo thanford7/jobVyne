@@ -536,7 +536,6 @@ class SocialLinkJobsView(JobVyneAPIView):
 class SocialLinkPostJobsView(JobVyneAPIView):
     JOB_LOOKBACK_DAYS = 60
     MAX_JOBS = 10
-    MAX_PREFERRED_JOBS = 20
     
     def get(self, request):
         max_jobs = self.query_params.get('max_job_count') or self.MAX_JOBS
@@ -632,10 +631,10 @@ class SocialLinkPostJobsView(JobVyneAPIView):
             preferred_jobs_filter &= ~job_post_filter
             preferred_jobs = SocialLinkPostJobsView.get_unique_jobs(
                 EmployerJobView.get_employer_jobs(employer_job_filter=preferred_jobs_filter)
-            )[:SocialLinkPostJobsView.MAX_PREFERRED_JOBS]
+            )[:max_job_count]
             
             # If we already have the max number of jobs we stop here
-            if len(preferred_jobs) >= max_job_count:
+            if len(preferred_jobs) == max_job_count:
                 return preferred_jobs
         
         # Add in other (less relevant) jobs

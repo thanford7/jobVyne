@@ -69,6 +69,7 @@
                   :job-application="jobApplication"
                   :employer="employer"
                   @openApplication="$emit('openApplication', $event)"
+                  @updateApplications="$emit('updateApplications')"
                 />
                 <div v-if="jobs.length > sameJobLimit" class="q-py-md">
                   <a

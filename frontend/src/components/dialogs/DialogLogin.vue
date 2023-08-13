@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    base-title-text="Login"
+    :base-title-text="(isCreate) ? 'Create account' : 'Login'"
     :is-include-buttons="false"
   >
     <AuthAll
