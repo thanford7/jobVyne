@@ -16,9 +16,16 @@ from scrape.custom_scraper.packsize import PacksizeScraper
 # TODO: Build PhenomPeople ATS scraper - https://careers.adobe.com/us/en/c/
 
 test_scrapers = {
+    AdHocScraper.employer_name: AdHocScraper,
 }
 
 all_scrapers = {
+    OstroScraper.employer_name: OstroScraper,
+    WalkerEdisonScraper.employer_name: WalkerEdisonScraper,
+    NuSkinScraper.employer_name: NuSkinScraper,
+    CustomerIoScraper.employer_name: CustomerIoScraper,
+    PatternScraper.employer_name: PatternScraper,
+    HeartFlowScraper.employer_name: HeartFlowScraper,
     MindfulCareScraper.employer_name: MindfulCareScraper,
     RecodeTherapeuticsScraper.employer_name: RecodeTherapeuticsScraper,
     ConvivaScraper.employer_name: ConvivaScraper,
@@ -28,7 +35,6 @@ all_scrapers = {
     ScaledAgileScraper.employer_name: ScaledAgileScraper,
     FylloScraper.employer_name: FylloScraper,
     ExtraHopScraper.employer_name: ExtraHopScraper,
-    BabylistScraper.employer_name: BabylistScraper,
     BeyondLimitsScraper.employer_name: BeyondLimitsScraper,
     AbInBevScraper.employer_name: AbInBevScraper,
     ThousandEyesScraper.employer_name: ThousandEyesScraper,

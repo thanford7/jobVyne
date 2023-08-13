@@ -1,6 +1,6 @@
 from scrape.base_scrapers import AshbyHQScraper, BreezyScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
     GreenhouseScraper, LeverScraper, \
-    SmartRecruitersScraper, WorkdayScraper
+    SmartRecruitersScraper, UltiProScraper, WorkdayScraper
 
 
 class DaveScraper(LeverScraper):
@@ -793,11 +793,6 @@ class ExtraHopScraper(GreenhouseIframeScraper):
     EMPLOYER_KEY = 'extrahopnetworks'
     
     
-class BabylistScraper(GreenhouseScraper):
-    employer_name = 'Babylist'
-    EMPLOYER_KEY = 'babylist'
-    
-    
 class BeyondLimitsScraper(GreenhouseApiScraper):
     employer_name = 'Beyond Limits'
     EMPLOYER_KEY = 'beyondlimits'
@@ -806,3 +801,41 @@ class BeyondLimitsScraper(GreenhouseApiScraper):
 class KenshoScraper(LeverScraper):
     employer_name = 'Kensho'
     EMPLOYER_KEY = 'kensho'
+    
+    
+class OstroScraper(GreenhouseScraper):
+    employer_name = 'Ostro'
+    EMPLOYER_KEY = 'ostrohealth'
+    
+    
+class WalkerEdisonScraper(GreenhouseIframeScraper):
+    employer_name = 'Walker Edison'
+    EMPLOYER_KEY = 'walkeredison'
+    
+    
+class NuSkinScraper(WorkdayScraper):
+    employer_name = 'Nu Skin'
+    start_url = 'https://nuskin.wd5.myworkdayjobs.com/en-US/nuskin/'
+    has_job_departments = False
+    
+    
+class CustomerIoScraper(GreenhouseScraper):
+    employer_name = 'Customer.io'
+    EMPLOYER_KEY = 'customerio'
+    
+    
+class PatternScraper(WorkdayScraper):
+    employer_name = 'Pattern'
+    start_url = 'https://pattern.wd1.myworkdayjobs.com/en-US/Pattern_Careers/'
+    has_job_departments = False
+    
+    
+class HeartFlowScraper(GreenhouseScraper):
+    employer_name = 'Heartflow, Inc.'
+    EMPLOYER_KEY = 'heartflowinc'
+
+
+class AdHocScraper(GreenhouseScraper):
+    employer_name = 'Ad Hoc'
+    EMPLOYER_KEY = 'adhocexternal'
+    
