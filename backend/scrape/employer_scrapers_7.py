@@ -110,11 +110,6 @@ class OnepasswordScraper(LeverScraper):
     EMPLOYER_KEY = '1password'
 
 
-class MKopaScraper(LeverScraper):
-    employer_name = 'M-KOPA'
-    EMPLOYER_KEY = 'm-kopa'
-
-
 class TomorrowHealthScraper(GreenhouseScraper):
     employer_name = 'Tomorrow Health'
     EMPLOYER_KEY = 'tomorrowhealth'
@@ -171,6 +166,7 @@ class AnyscaleScraper(LeverScraper):
     EMPLOYER_KEY = 'anyscale'
 
 
+# TODO: Switched to Rippling - https://ats.rippling.com/hearth-careers/jobs/1ecef5cb-507d-4823-8dc9-dfd703f4da1d
 class HearthScraper(GreenhouseApiScraper):
     employer_name = 'Hearth'
     EMPLOYER_KEY = 'hearth'

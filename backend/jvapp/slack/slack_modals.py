@@ -260,7 +260,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
             InputOption(
                 'Receive daily job recommendations',
                 UserSocialSubscription.SubscriptionType.jobs.value,
-                description='Up to 10 new job recommendations per day will be sent via direct Slack message'
+                description='Up to 6 new job recommendations per day will be sent via direct Slack message'
             ),
             InputOption(
                 'Connect with hiring managers',
