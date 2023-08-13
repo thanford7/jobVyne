@@ -1,12 +1,15 @@
 import abc
+import logging
 from collections import deque
 
 from bs4 import Comment
 from django.core.management import BaseCommand
 
 from jvapp.models.content import Article
+from jvapp.utils import ai
 from scrape.reader import WebReader, DocCache
 
+logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = 'Pull articles from aggregation websites'
@@ -45,22 +48,29 @@ class ArticleSource(abc.ABC):
         self.web_reader = web_reader
         self.articles = articles
 
-    def get_article(self, url, title, bs):
-        def tag_visible(element):
+    async def get_article(self, url, title, bs):
+        SUMMARIZE_PROMPT = 'You are summarizing an article in 3-5 sentences.'
+        def el_is_visible(element):
             if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
                 return False
             if isinstance(element, Comment):
                 return False
             return True
 
-        texts = bs.findAll(text=True)
-        visible_texts = filter(tag_visible, texts)
-        text = u" ".join(t.strip() for t in visible_texts)
+        text_els = bs.findAll(text=True)
+        visible_texts = [el.text for el in text_els if el_is_visible(el)]
+        text = " ".join(t.strip() for t in visible_texts if len(t) > 50)
+
+        logger.info(f'Calling AI for summary of {url}')
+        summary = await ai.ask([
+            {'role': 'system', 'content': SUMMARIZE_PROMPT},
+            {'role': 'user', 'content': text[:1000]}
+        ], is_test=False)
 
         self.articles.append(Article(
             url=url,
             title=title,
-            summary=text[:100],  # TODO: Summarize
+            summary=summary,
         ))
 
     @abc.abstractmethod
@@ -79,8 +89,8 @@ class ListArticleSource(ArticleSource):
 
     def get_next(self):
         url, title = self.queue.popleft()
-        def cb(article_bs):
-            self.get_article(url, title, article_bs)
+        async def cb(article_bs):
+            await self.get_article(url, title, article_bs)
         return self.web_reader.read_async(url, cb)
 
     def has_more(self):

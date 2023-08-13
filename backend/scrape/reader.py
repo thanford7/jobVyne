@@ -48,7 +48,7 @@ class WebReader:
 
     async def _read_async(self, url, cb):
         if html := self.cache.get(url):
-            cb(BeautifulSoup(html, 'html.parser'))
+            await cb(BeautifulSoup(html, 'html.parser'))
         else:
             async with self.conn_sem:
                 async with self.session.get(url) as resp:
@@ -57,7 +57,7 @@ class WebReader:
                     except Exception as ex:
                         html = 'UNPARSEABLE'
                     self.cache.put(url, html)
-                    cb(BeautifulSoup(html, 'html.parser'))
+                    await cb(BeautifulSoup(html, 'html.parser'))
 
     def read_async(self, url, cb):
         """Read a URL and call cb when the data returns"""
