@@ -114,15 +114,18 @@ export default {
     }
   },
   methods: {
+    getEditParams () {
+      return (this.isEmployer) ? { employerId: this.user.employer_id } : { userId: this.user.id }
+    },
     async updateJobSubscriptions (isForceRefresh) {
-      const params = (this.isEmployer) ? { employerId: this.user.employer_id } : { userId: this.user.id }
+      const params = this.getEditParams()
       await this.jobSubscriptionStore.setJobSubscription({ ...params, isForceRefresh })
       this.jobSubscriptions = this.jobSubscriptionStore.getJobSubscription(params)
     },
     openEditJobSubscription (jobSubscription) {
       return this.q.dialog({
         component: DialogJobSubscription,
-        componentProps: { jobSubscription }
+        componentProps: { ...this.getEditParams(), jobSubscription }
       }).onOk(async () => {
         await this.updateJobSubscriptions(true)
       })

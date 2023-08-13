@@ -134,7 +134,7 @@ export default {
         professionKey: this.$route.params.professionKey,
         platform_name: this.$route?.query?.platform
       }))
-      this.$emit('updateJobs', this.pageNumber)
+      this.$emit('updateApplications')
     },
     getJobApplication (jobId) {
       if (!this.applications) {

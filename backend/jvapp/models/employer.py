@@ -1,3 +1,4 @@
+import re
 from enum import Enum, IntEnum
 
 from django.core.validators import FileExtensionValidator
@@ -272,13 +273,16 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     def locations_text(self):
         job_locations_text = ''
         for idx, job_location in enumerate(self.locations.all()):
+            job_location_text = job_location.text
+            if job_location.is_remote and (not re.search('remote|anywhere|virtual', job_location_text, flags=re.IGNORECASE)):
+                job_location_text = f'(Remote) {job_location_text}'
             if idx == 0:
-                job_locations_text = job_location.text
+                job_locations_text = job_location_text
             elif idx == 3:
                 job_locations_text += ', and more'
                 break
             else:
-                job_locations_text += f', {job_location.text}'
+                job_locations_text += f', {job_location_text}'
         if not job_locations_text:
             job_locations_text = 'Unknown'
         

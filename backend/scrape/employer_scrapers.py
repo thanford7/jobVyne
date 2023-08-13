@@ -16,10 +16,10 @@ from scrape.custom_scraper.packsize import PacksizeScraper
 # TODO: Build PhenomPeople ATS scraper - https://careers.adobe.com/us/en/c/
 
 test_scrapers = {
-    AdHocScraper.employer_name: AdHocScraper,
 }
 
 all_scrapers = {
+    CloudOpsScraper.employer_name: CloudOpsScraper,
     OstroScraper.employer_name: OstroScraper,
     WalkerEdisonScraper.employer_name: WalkerEdisonScraper,
     NuSkinScraper.employer_name: NuSkinScraper,

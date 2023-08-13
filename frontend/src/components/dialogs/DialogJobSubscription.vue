@@ -59,7 +59,9 @@ export default {
     SelectRemote
   },
   props: {
-    jobSubscription: [Object, null]
+    jobSubscription: [Object, null],
+    employerId: [Number, null],
+    userId: [Number, null]
   },
   data () {
     return {
@@ -71,7 +73,11 @@ export default {
       if (this.jobSubscription) {
         await this.$api.put(`job-subscription/${this.jobSubscription.id}`, getAjaxFormData(this.formData))
       } else {
-        await this.$api.post('job-subscription/', getAjaxFormData(this.formData))
+        await this.$api.post('job-subscription/', getAjaxFormData({
+          employer_id: this.employerId,
+          user_id: this.userId,
+          ...this.formData
+        }))
       }
       this.$emit('ok')
     }

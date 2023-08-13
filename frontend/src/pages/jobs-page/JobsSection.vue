@@ -98,6 +98,7 @@
                 :job-pages-count="jobPagesCount"
                 :scroll-stick-start-px="headerHeight"
                 @openApplication="openApplication($event)"
+                @updateApplications="loadApplications()"
               />
               <div
                 v-if="!utilStore.isUnderBreakPoint('md') && !hasNoJobs"
@@ -168,7 +169,6 @@ import MoneyInput from 'components/inputs/MoneyInput.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 import JobCards from 'pages/jobs-page/JobCards.vue'
-import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
@@ -364,7 +364,7 @@ export default {
         }
       })
     },
-    async loadJobs () {
+    async loadJobs (isForceRefresh = false) {
       this.isLoaded = false
       const params = {
         linkId: this.$route.params.filterId,
@@ -374,7 +374,8 @@ export default {
         professionKey: this.$route.params.professionKey,
         jobSubscriptionIds: dataUtil.getQueryParams().sub,
         pageNumber: this.pageNumber,
-        jobFilters: this.jobFilters
+        jobFilters: this.jobFilters,
+        isForceRefresh
       }
 
       await this.socialStore.setSocialLinkJobs(params)
@@ -393,16 +394,18 @@ export default {
       this.updateJobFilterQueryParams()
       this.isLoaded = true
       scrollUtil.scrollTo(0)
+    },
+    async loadApplications (isForceRefresh = true) {
+      await this.authStore.setApplications(this.user, isForceRefresh)
+      this.applications = this.authStore.applications
     }
   },
   async mounted () {
     await this.updateJobFilterFromQueryParams()
     await Promise.all([
       this.loadJobs(),
-      this.authStore.setApplications(this.user)
+      this.loadApplications(false)
     ])
-    const { applications } = storeToRefs(this.authStore)
-    this.applications = applications
 
     const { jobId } = dataUtil.getQueryParams()
     if (jobId) {

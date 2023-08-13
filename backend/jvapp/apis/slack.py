@@ -43,7 +43,7 @@ SLACK_BASE_URL = 'https://slack.com/api/'
 
 
 class SlackBasePoster:
-    MAX_JOBS_DEFAULT = 10
+    MAX_JOBS_DEFAULT = 6  # Slack limits the number of blocks per post to 50. 6 jobs is the limit since each job has ~7 blocks each
     IS_PER_JOB_POST = False
     POST_CHANNEL = None
     
@@ -371,6 +371,8 @@ class SlackReferralPoster(SlackBasePoster):
 class SlackJobRecipientPoster(SlackBasePoster):
     
     def build_message(self, jobs, user=None, **kwargs):
+        # Note: Slack allows up to 50 items in a post - max jobs = 6
+        # Intro = 1, Final link = 1, Each job = 7
         blocks = [
             {
                 'type': 'section',
