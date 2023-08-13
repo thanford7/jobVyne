@@ -106,6 +106,6 @@ class CommunityMemberView(JobVyneAPIView):
             member_data['job_search_qualifications'] = user.job_search_qualifications
             
         if user.is_can_contact:
-            member_data['email'] = user.email
+            member_data['email'] = user.contact_email
             
         return member_data

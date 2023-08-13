@@ -3,6 +3,7 @@ from enum import Enum, IntEnum
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q, UniqueConstraint
+from django.utils import timezone
 
 from jvapp.models._customDjangoField import LowercaseCharField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
@@ -94,6 +95,15 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_delete(self, user):
         return user.is_admin
+    
+    @property
+    def open_jobs(self):
+        open_filter = (
+            Q(open_date__lte=timezone.now().date())
+            & (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+            & Q(is_job_approved=True)
+        )
+        return self.employer_job.filter(open_filter)
     
     
 class EmployerSubscription(models.Model, JobVynePermissionsMixin):
@@ -373,7 +383,6 @@ class Taxonomy(models.Model):
 class JobTaxonomy(AuditFields):
     job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='taxonomy')
     taxonomy = models.ForeignKey(Taxonomy, on_delete=models.CASCADE)
-    # aiPrompt = models.ForeignKey
 
     class Meta:
         constraints = [

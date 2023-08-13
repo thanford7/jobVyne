@@ -1,11 +1,11 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader title="Candidate Dashboard"/>
+      <PageHeader title="Job Applications"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12">
           <q-table
-            title="Job applications"
+            :loading="isLoading"
             :rows="applications"
             :columns="applicationColumns"
             :rows-per-page-options="[25,50,100]"
@@ -18,30 +18,50 @@
                 </CustomTooltip>
               </q-th>
             </template>
-            <template v-slot:body-cell-locations="props">
-              <q-td key="locations" :props="props">
-                <q-chip
-                  v-for="loc in props.row.employer_job.locations"
-                  dense color="grey-7" text-color="white" size="13px"
+            <template v-slot:body="props">
+              <q-tr :props="props">
+                <q-td
+                  v-for="col in props.cols"
+                  :key="col.name"
+                  :props="props"
                 >
-                  {{ locationUtil.getFullLocation(loc) }}
-                </q-chip>
-                <span v-if="!props.row.employer_job.locations.length">
-                  {{ globalStore.nullValueStr }}
-                </span>
-              </q-td>
-            </template>
-            <template v-slot:body-cell-jobStatus="props">
-              <q-td key="jobStatus" :props="props">
-                <q-chip
-                  dense
-                  :color="(props.row.employer_job.is_open) ? 'positive' : 'negative'"
-                  :text-color="(props.row.employer_job.is_open) ? 'black' : 'white'"
-                  size="13px"
-                >
-                  {{ (props.row.employer_job.is_open) ? 'Open' : 'Closed' }}
-                </q-chip>
-              </q-td>
+                  <template v-if="col.name === 'employerName'">
+                    <a :href="`/co/${props.row.employer_job.employer_key}`" target="_blank" :title="col.value">
+                      {{ dataUtil.truncateText(col.value, 20, { isWholeWord: false }) }}
+                    </a>
+                  </template>
+                  <template v-else-if="col.name === 'jobTitle'">
+                    <a :href="`${props.row.employer_job.url}`" target="_blank" :title="col.value">
+                      {{ dataUtil.truncateText(col.value, 30, { isWholeWord: false }) }}
+                    </a>
+                  </template>
+                  <template v-else-if="col.name === 'applicationStatus'">
+                    <DropdownApplicationStatus
+                      :model-value="col.value"
+                      @update:model-value="updateApplicationStatus(props.row.id, $event)"
+                      :is-editable="props.row.is_external_application"
+                      :is-employer="false"
+                      style="width: 280px;"
+                    />
+                  </template>
+                  <template v-else-if="col.name === 'locations'">
+                    <LocationChip :locations="props.row.employer_job.locations"/>
+                  </template>
+                  <template v-else-if="col.name === 'jobStatus'">
+                    <q-chip
+                      dense
+                      :color="(props.row.employer_job.is_open) ? 'positive' : 'negative'"
+                      :text-color="(props.row.employer_job.is_open) ? 'black' : 'white'"
+                      size="13px"
+                    >
+                      {{ (props.row.employer_job.is_open) ? 'Open' : 'Closed' }}
+                    </q-chip>
+                  </template>
+                  <template v-else>
+                    <span>{{ col.value }}</span>
+                  </template>
+                </q-td>
+              </q-tr>
             </template>
           </q-table>
         </div>
@@ -52,11 +72,14 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import DropdownApplicationStatus from 'components/inputs/DropdownApplicationStatus.vue'
+import LocationChip from 'components/LocationChip.vue'
 import PageHeader from 'components/PageHeader.vue'
-import { storeToRefs } from 'pinia/dist/pinia'
-import { Loading, useMeta } from 'quasar'
+import { useMeta } from 'quasar'
+import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import locationUtil from 'src/utils/location.js'
+import { getAjaxFormData } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
 
@@ -69,8 +92,14 @@ const applicationColumns = [
     sortable: true
   },
   { name: 'jobTitle', field: (app) => app.employer_job.title, align: 'left', label: 'Job title', sortable: true },
+  {
+    name: 'applicationStatus',
+    field: (app) => app.application_status,
+    align: 'left',
+    label: 'Application status',
+    sortable: true
+  },
   { name: 'locations', field: (app) => app.employer_job.locations, align: 'left', label: 'Locations' },
-  { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
   {
     name: 'applicationDate',
     field: 'created_dt',
@@ -84,34 +113,45 @@ const applicationColumns = [
 
 export default {
   name: 'DashboardPage',
-  components: { CustomTooltip, PageHeader },
+  components: { DropdownApplicationStatus, LocationChip, CustomTooltip, PageHeader },
   data () {
     return {
+      isLoading: false,
+      applications: [],
       applicationColumns,
-      locationUtil
+      dataUtil,
+      locationUtil,
+      authStore: useAuthStore(),
+      user: null
     }
   },
-  computed: {
-    applications () {
-      return this.authStore.applications
+  methods: {
+    async updateData (isForceRefresh = true) {
+      this.isLoading = true
+      await this.authStore.setApplications(this.user, isForceRefresh)
+      this.applications = this.authStore.applications
+      this.isLoading = false
+    },
+    async updateApplicationStatus (applicationId, applicationStatus) {
+      await this.$api.post('job-application/status/', getAjaxFormData({
+        application_id: applicationId,
+        application_status: applicationStatus
+      }))
+      await this.updateData()
     }
   },
-  preFetch () {
-    const authStore = useAuthStore()
-    Loading.show()
-
-    return authStore.setUser().then(() => {
+  async mounted () {
+    await this.authStore.setUser().then(() => {
+      this.user = this.authStore.propUser
       return Promise.all([
-        authStore.setApplications(authStore.propUser)
+        this.updateData(false)
       ])
-    }).finally(() => Loading.hide())
+    })
   },
   setup () {
-    const authStore = useAuthStore()
     const globalStore = useGlobalStore()
-    const { user } = storeToRefs(authStore)
 
-    const pageTitle = 'Candidate Dashboard'
+    const pageTitle = 'Job Applications'
     const metaData = {
       title: pageTitle,
       titleTemplate: globalStore.getPageTitle
@@ -119,9 +159,7 @@ export default {
     useMeta(metaData)
 
     return {
-      authStore,
-      globalStore,
-      user
+      globalStore
     }
   }
 }

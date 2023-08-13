@@ -192,7 +192,7 @@ def create_employer_job_board(sender, instance, created, *args, **kwargs):
         link.save()
         # If this is an employer then, they should only be subscribed to their jobs
         if instance.organization_type & Employer.ORG_TYPE_EMPLOYER:
-            employer_subscription = JobSubscriptionView.get_or_create_employer_subscription(instance.id)
+            employer_subscription = JobSubscriptionView.get_or_create_employer_own_subscription(instance.id)
             link.job_subscriptions.add(employer_subscription.id)
 
 

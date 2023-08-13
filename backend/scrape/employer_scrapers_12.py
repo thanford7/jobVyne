@@ -1,4 +1,5 @@
-from scrape.base_scrapers import AshbyHQScraper, GreenhouseApiScraper, GreenhouseScraper, LeverScraper, \
+from scrape.base_scrapers import AshbyHQScraper, BreezyScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
+    GreenhouseScraper, LeverScraper, \
     SmartRecruitersScraper, WorkdayScraper
 
 
@@ -711,3 +712,97 @@ class IndustriousScraper(GreenhouseScraper):
 class HomewardScraper(GreenhouseScraper):
     employer_name = 'Homeward'
     EMPLOYER_KEY = 'homeward'
+
+
+class CalendlyScraper(GreenhouseApiScraper):
+    employer_name = 'Calendly'
+    EMPLOYER_KEY = 'calendly'
+    
+    
+class AyaHealthcareScraper(GreenhouseApiScraper):
+    employer_name = 'Aya Healthcare'
+    EMPLOYER_KEY = 'ayahealthcare'
+    
+
+class AbInBevScraper(GreenhouseScraper):
+    employer_name = 'AB InBev'
+    EMPLOYER_KEY = 'abinbev'
+
+
+class ThousandEyesScraper(GreenhouseScraper):
+    employer_name = 'ThousandEyes'
+    EMPLOYER_KEY = 'thousandeyes'
+
+class ArgoGroupScraper(GreenhouseScraper):
+    employer_name = 'Argo Group'
+    EMPLOYER_KEY = 'argo83'
+
+
+class MindfulCareScraper(GreenhouseApiScraper):
+    employer_name = 'Mindful Care'
+    EMPLOYER_KEY = 'mindfulcare'
+    
+    
+class RecodeTherapeuticsScraper(GreenhouseApiScraper):
+    employer_name = 'ReCode Therapeutics'
+    EMPLOYER_KEY = 'recodetherapeutics'
+    
+    
+class ConvivaScraper(GreenhouseApiScraper):
+    employer_name = 'Conviva'
+    EMPLOYER_KEY = 'conviva'
+    
+    
+class PantheonScraper(GreenhouseApiScraper):
+    employer_name = 'Pantheon'
+    EMPLOYER_KEY = 'pantheon'
+    
+    
+class GrahamCapitalScraper(GreenhouseApiScraper):
+    employer_name = 'Graham Capital Management'
+    EMPLOYER_KEY = 'grahamcapitalmanagement'
+    
+    
+class FinancialTimesScraper(GreenhouseApiScraper):
+    employer_name = 'Financial Times'
+    EMPLOYER_KEY = 'financialtimes33'
+    
+    
+class CenterScraper(LeverScraper):
+    employer_name = 'Center'
+    EMPLOYER_KEY = 'getcenter'
+    
+    
+class ScaledAgileScraper(SmartRecruitersScraper):
+    employer_name = 'Scaled Agile, Inc.'
+    EMPLOYER_KEY = 'ScaledAgileInc'
+    
+    
+class FylloScraper(GreenhouseScraper):
+    employer_name = 'Fyllo'
+    EMPLOYER_KEY = 'fyllo'
+    
+    
+class OptoInvestmentsScraper(GreenhouseApiScraper):
+    employer_name = 'Opto Investments'
+    EMPLOYER_KEY = 'optoinvest'
+    
+    
+class ExtraHopScraper(GreenhouseIframeScraper):
+    employer_name = 'ExtraHop'
+    EMPLOYER_KEY = 'extrahopnetworks'
+    
+    
+class BabylistScraper(GreenhouseScraper):
+    employer_name = 'Babylist'
+    EMPLOYER_KEY = 'babylist'
+    
+    
+class BeyondLimitsScraper(GreenhouseApiScraper):
+    employer_name = 'Beyond Limits'
+    EMPLOYER_KEY = 'beyondlimits'
+    
+    
+class KenshoScraper(LeverScraper):
+    employer_name = 'Kensho'
+    EMPLOYER_KEY = 'kensho'

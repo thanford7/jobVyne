@@ -21,6 +21,7 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
     if is_include_employer_info:
         data['email'] = user.email
         data['business_email'] = user.business_email
+        data['contact_email'] = user.contact_email
         data['user_type_bits'] = user.user_type_bits
         data['employer_id'] = user.employer_id
         data['employer_name'] = user.employer.employer_name if user.employer else None

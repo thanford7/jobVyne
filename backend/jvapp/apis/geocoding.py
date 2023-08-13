@@ -4,6 +4,7 @@ import re
 import requests
 from django.conf import settings
 from django.db import IntegrityError
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -38,10 +39,20 @@ def get_or_create_country(country_name):
 BASE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
 
 
-def get_raw_location(location_text, is_best_result=True):
-    resp = requests.get(BASE_URL, params={'address': location_text, 'key': settings.GOOGLE_MAPS_KEY})
+def get_raw_location(location_text, is_best_result=True, zip_code=None):
+    params = {'address': location_text, 'key': settings.GOOGLE_MAPS_KEY}
+    if zip_code:
+        params['components'] = f'postal_code:{zip_code}'
+    resp = requests.get(BASE_URL, params=params)
     raw_data = json.loads(resp.content)
-    return parse_location_resp(raw_data, is_best_result=is_best_result)
+    return parse_location_resp(raw_data, is_best_result=is_best_result), raw_data
+
+
+def get_raw_location_from_latlong(latitude, longitude, is_best_result=True):
+    params = {'latlong': f'{latitude},{longitude}', 'key': settings.GOOGLE_MAPS_KEY}
+    resp = requests.get(BASE_URL, params=params)
+    raw_data = json.loads(resp.content)
+    return parse_location_resp(raw_data, is_best_result=is_best_result), raw_data
 
 
 def parse_location_resp(raw_data, is_best_result=True):
@@ -90,6 +101,8 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
     city_name = location_dict.get('city')
     state_name = location_dict.get('state')
     country_name = location_dict.get('country')
+    latitude = location_dict.get('latitude')
+    longitude = location_dict.get('longitude')
     raw_location_text = raw_location_text or location_dict['text']
     if not any([city_name, state_name, country_name]):
         try:
@@ -101,22 +114,21 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
             )
             location.save()
     else:
-        try:
-            location = Location.objects.get(
-                is_remote=is_remote,
-                city__name=city_name,
-                state__name=state_name,
-                country__name=country_name
-            )
-        except Location.DoesNotExist:
-            latitude = location_dict.get('latitude')
-            longitude = location_dict.get('longitude')
+        location_filter = (
+                Q(is_remote=is_remote, text__iexact=raw_location_text) |
+                Q(latitude=latitude, longitude=longitude)
+        )
+        locations = Location.objects.filter(location_filter)
+        if locations:
+            location = locations[0]
+        else:
             location = Location(
                 text=location_dict.get('text'),
                 is_remote=is_remote,
                 city=get_or_create_city(location_dict.get('city')),
                 state=get_or_create_state(location_dict.get('state')),
                 country=get_or_create_country(location_dict.get('country')),
+                postal_code=location_dict.get('postal_code'),
                 latitude=str(latitude)[:15] if latitude else None,
                 longitude=str(longitude)[:15] if longitude else None,
                 geometry=Location.get_geometry_point(latitude, longitude)
@@ -144,19 +156,19 @@ class LocationParser:
         if is_use_location_caching:
             self.location_lookups = {l.text.lower(): l.location for l in LocationLookup.objects.select_related('location').all()}
 
-    def get_location(self, location_text):
+    def get_location(self, location_text, is_zip_code=False):
         location_text = location_text.lower()
+        is_remote = bool(re.match('^.*?(remote|anywhere|virtual).*?$', location_text, re.IGNORECASE))
         if location := self.location_lookups.get(location_text):
             return location
 
-        is_remote = bool(re.match('^.*?(remote|anywhere).*?$', location_text, re.IGNORECASE))
-        resp = requests.get(BASE_URL, params={
-            'address': location_text.replace('remote', '').replace('anywhere', '').replace(':', '').strip(),
-            'key': settings.GOOGLE_MAPS_KEY
-        })
-        raw_data = json.loads(resp.content)
-        data = parse_location_resp(raw_data) or {}
-        location = save_raw_location(data, is_remote, raw_location_text=location_text, raw_data=raw_data, is_save_location_lookup=self.is_use_location_caching)
+        address = location_text.replace('remote', '').replace('anywhere', '').replace('virtual', '').replace(':', '').strip()
+        zip_code = None
+        if is_zip_code:
+            zip_code = address
+        location, raw_data = get_raw_location(address, zip_code=zip_code)
+        location = location or {}
+        location = save_raw_location(location, is_remote, raw_location_text=location_text, raw_data=raw_data, is_save_location_lookup=self.is_use_location_caching)
         self.location_lookups[location_text] = location
         return location
         
@@ -168,6 +180,6 @@ class LocationSearchView(JobVyneAPIView):
         if not (search_text := self.query_params.get('search_text')):
             return Response(status=status.HTTP_200_OK, data=[])
         
-        locations = get_raw_location(search_text, is_best_result=False) or []
+        locations, _ = get_raw_location(search_text, is_best_result=False) or []
         return Response(status=status.HTTP_200_OK, data=locations)
     

@@ -19,6 +19,22 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    MindfulCareScraper.employer_name: MindfulCareScraper,
+    RecodeTherapeuticsScraper.employer_name: RecodeTherapeuticsScraper,
+    ConvivaScraper.employer_name: ConvivaScraper,
+    PantheonScraper.employer_name: PantheonScraper,
+    GrahamCapitalScraper.employer_name: GrahamCapitalScraper,
+    CenterScraper.employer_name: CenterScraper,
+    ScaledAgileScraper.employer_name: ScaledAgileScraper,
+    FylloScraper.employer_name: FylloScraper,
+    ExtraHopScraper.employer_name: ExtraHopScraper,
+    BabylistScraper.employer_name: BabylistScraper,
+    BeyondLimitsScraper.employer_name: BeyondLimitsScraper,
+    AbInBevScraper.employer_name: AbInBevScraper,
+    ThousandEyesScraper.employer_name: ThousandEyesScraper,
+    ArgoGroupScraper.employer_name: ArgoGroupScraper,
+    AyaHealthcareScraper.employer_name: AyaHealthcareScraper,
+    CalendlyScraper.employer_name: CalendlyScraper,
     TalkspaceScraper.employer_name: TalkspaceScraper,
     ArcticWolfScraper.employer_name: ArcticWolfScraper,
     AltoPharmacyScraper.employer_name: AltoPharmacyScraper,

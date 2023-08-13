@@ -115,7 +115,7 @@ class SocialLinkView(JobVyneAPIView):
     @staticmethod
     def get_or_create_employee_referral_links(employees, employer):
         from jvapp.apis.job_subscription import JobSubscriptionView
-        employer_job_subscription = JobSubscriptionView.get_or_create_employer_subscription(employer.id)
+        employer_job_subscription = JobSubscriptionView.get_or_create_employer_own_subscription(employer.id)
         current_employee_links = {
             (sl.employer_id, sl.owner_id): sl for sl in
             SocialLink.objects.prefetch_related(
@@ -536,6 +536,7 @@ class SocialLinkJobsView(JobVyneAPIView):
 class SocialLinkPostJobsView(JobVyneAPIView):
     JOB_LOOKBACK_DAYS = 60
     MAX_JOBS = 10
+    MAX_PREFERRED_JOBS = 20
     
     def get(self, request):
         max_jobs = self.query_params.get('max_job_count') or self.MAX_JOBS
@@ -597,7 +598,7 @@ class SocialLinkPostJobsView(JobVyneAPIView):
             jobs_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
         
         # Only post recent jobs
-        jobs_filter &= Q(
+        recent_jobs_filter = Q(
             open_date__gte=timezone.now().date() - timedelta(days=SocialLinkPostJobsView.JOB_LOOKBACK_DAYS))
         
         # Don't post jobs that have already been posted
@@ -608,15 +609,52 @@ class SocialLinkPostJobsView(JobVyneAPIView):
             job_post_filter &= Q(job_post__owner_id=owner_id)
         else:
             job_post_filter &= Q(job_post__employer_id=employer_id)
+        
+        # Recipients may have their own preferred jobs which will be different than an
+        # employer or owner's subscriptions. We prioritize these jobs first
+        preferred_jobs = []
+        if recipient_id:
+            home_location_prefetch = Prefetch(
+                'home_location',
+                queryset=Location.objects.select_related('city', 'state', 'country')
+            )
+            owner = (
+                JobVyneUser.objects
+                .prefetch_related(
+                    'membership_employers',
+                    'job_search_professions',
+                    home_location_prefetch
+                )
+                .get(id=recipient_id)
+            )
+            preferred_jobs_filter = owner.preferred_jobs_filter
+            preferred_jobs_filter &= recent_jobs_filter
+            preferred_jobs_filter &= ~job_post_filter
+            preferred_jobs = SocialLinkPostJobsView.get_unique_jobs(
+                EmployerJobView.get_employer_jobs(employer_job_filter=preferred_jobs_filter)
+            )[:SocialLinkPostJobsView.MAX_PREFERRED_JOBS]
+            
+            # If we already have the max number of jobs we stop here
+            if len(preferred_jobs) >= max_job_count:
+                return preferred_jobs
+        
+        # Add in other (less relevant) jobs
+        jobs_filter &= recent_jobs_filter
         jobs_filter &= ~job_post_filter
         
+        jobs = SocialLinkPostJobsView.get_unique_jobs(
+            EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
+        )
+        max_non_preferred_jobs = max_job_count - len(preferred_jobs)
+        
+        return preferred_jobs + jobs[:max_non_preferred_jobs]
+    
+    @staticmethod
+    def get_unique_jobs(jobs):
         # Make sure we only use one post for a given job title
         # Some employers create a separate post for each location for a specific job
-        jobs = {(job.employer_id, job.job_title): job for job in
-                EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)}
-        jobs = list(jobs.values())
-        
-        return jobs[:max_job_count]
+        jobs = {(job.employer_id, job.job_title): job for job in jobs}
+        return list(jobs.values())
 
 
 class ShareSocialLinkView(JobVyneAPIView):

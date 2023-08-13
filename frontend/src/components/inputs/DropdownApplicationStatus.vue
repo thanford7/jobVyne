@@ -30,7 +30,11 @@ export default {
   name: 'DropdownApplicationStatus',
   props: {
     modelValue: String,
-    isEmployer: Boolean
+    isEmployer: Boolean,
+    isEditable: {
+      type: Boolean,
+      default: false
+    }
   },
   data () {
     return {
@@ -42,6 +46,9 @@ export default {
       return applicationUtil.APPLICATION_STATUSES[this.modelValue]?.label || dataUtil.capitalize(this.modelValue)
     },
     statusOptions () {
+      if (this.isEditable) {
+        return Object.values(applicationUtil.APPLICATION_STATUSES)
+      }
       if (this.isEmployer) {
         return Object.values(applicationUtil.APPLICATION_STATUSES).filter((val) => val.isEmployerValue)
       }

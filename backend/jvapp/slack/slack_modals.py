@@ -1,26 +1,56 @@
 from django.conf import settings
 
 from jvapp.apis.employer import EmployerJobConnectionView
+from jvapp.apis.geocoding import LocationParser
 from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import JobPost
 from jvapp.models.currency import Currency
-from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, Taxonomy, ConnectionTypeBit
-from jvapp.models.location import REMOTE_TYPES
+from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, ConnectionTypeBit
 from jvapp.models.user import JobVyneUser, UserSocialSubscription
+from jvapp.slack.slack_blocks_specific import ACTION_KEY_JOB_CONNECTION, SelectEmployer, \
+    SelectEmployerJob, get_home_zip_code_input, get_industry_selections, get_job_connection_select, \
+    get_job_level_selection, \
+    get_profession_selections, get_remote_work_selection
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.oauth import OauthProviders
-from jvapp.slack.slack_blocks import Divider, InputCheckbox, InputEmail, InputNumber, InputOption, InputText, InputUrl, \
+from jvapp.slack.slack_blocks import Button, Divider, InputCheckbox, InputEmail, InputNumber, InputOption, InputText, \
     Modal, \
-    SectionText, Select, SelectEmployer, SelectEmployerJob, SelectMulti
+    SectionText, Select
 from jvapp.utils.response import ProcessTimer
 from scrape.job_processor import JobItem, UserCreatedJobProcessor
+
+
+def add_user_home_location(user, post_code):
+    if not post_code:
+        user.home_location = None
+    else:
+        location_parser = LocationParser(is_use_location_caching=False)
+        home_location = location_parser.get_location(post_code, is_zip_code=True)
+        user.home_location_id = home_location.id if home_location else None
+        
+        
+def add_user_job_preferences(user, data):
+    if 'job_search_type_bit' in data:
+        user.job_search_type_bit = coerce_int(data['job_search_type_bit']['value'])
+    user.work_remote_type_bit = coerce_int(data['work_remote_type_bit']['value'])
+    user.job_search_level_id = coerce_int(data['job_search_level']['value'])
+    
+    job_search_professions = data['job_search_professions'] or []
+    user.job_search_professions.set([coerce_int(p['value']) for p in job_search_professions])
+    
+    job_search_industries = data['job_search_industries'] or []
+    user.job_search_industries.set([coerce_int(i['value']) for i in job_search_industries])
+    
+    if 'job_search_qualifications' in data:
+        user.job_search_qualifications = data['job_search_qualifications']
 
 
 class SlackMultiViewModal:
     MODAL_IDX_SEPARATOR = '--'
     FINAL_KEY = 'final'
+    START_KEY = 'start'  # Some modals are triggered from a button so we need to know that the first modal is at index 0
     BASE_CALLBACK_ID = None  # Subclass
     DEFAULT_BLOCK_TITLE = None  # Subclass
     
@@ -29,12 +59,25 @@ class SlackMultiViewModal:
         self.user = user
         self.metadata = metadata or {}
         self.slack_cfg = slack_cfg
-        self.current_modal_idx = coerce_int(action_id.split(self.MODAL_IDX_SEPARATOR)[-1]) + 1 if action_id else 0
+        
+        if action_id:
+            idx_key = action_id.split(self.MODAL_IDX_SEPARATOR)[-1]
+            if idx_key == self.START_KEY:
+                self.current_modal_idx = 0
+            else:
+                self.current_modal_idx = coerce_int(idx_key) + 1
+        else:
+            self.current_modal_idx = 0
+        
         self.header_blocks = []
         self.modal_views = []
         self.set_modal_views()
     
     def set_modal_views(self) -> list:
+        raise NotImplementedError()
+    
+    def get_trigger_button(self, data):
+        # Get the slack button that kicks off the modal view
         raise NotImplementedError()
     
     def add_modal(
@@ -58,12 +101,22 @@ class SlackMultiViewModal:
         is_final = is_final or (modal_idx == self.current_modal_idx)
         return is_final
     
-    def get_modal_action_id(self, idx, is_final=False):
-        return f'{self.BASE_CALLBACK_ID}{self.MODAL_IDX_SEPARATOR}{self.FINAL_KEY if is_final else idx}'
+    @classmethod
+    def get_modal_action_id(cls, idx, is_final=False, is_start=False):
+        idx_key = idx
+        if is_final:
+            idx_key = cls.FINAL_KEY
+        elif is_start:
+            idx_key = cls.START_KEY
+        return f'{cls.BASE_CALLBACK_ID}{cls.MODAL_IDX_SEPARATOR}{idx_key}'
     
     @property
     def modal_view(self):
-        return self.modal_views[-1].get_slack_object()
+        return self.modal_views[-1]
+    
+    @property
+    def modal_view_slack_object(self):
+        return self.modal_view.get_slack_object()
     
     @classmethod
     def is_modal_view(cls, callback_id):
@@ -107,6 +160,10 @@ class JobSeekerModalViews(SlackMultiViewModal):
         self.modal_finalize()
     
     def modal_set_user_info(self):
+        home_postal_code = self.user.home_location.postal_code if (self.user and self.user.home_location) else None
+        contact_email = self.slack_user_profile['email']
+        if self.user:
+            contact_email = self.user.business_email or self.user.email
         profile_blocks = [
             {
                 'type': 'section',
@@ -143,66 +200,34 @@ class JobSeekerModalViews(SlackMultiViewModal):
                 is_optional=True
             ).get_slack_object(),
             InputEmail(
-                'email',
+                'contact_email',
                 'Email',
                 'Email',
-                initial_value=self.slack_user_profile['email'],
+                initial_value=contact_email,
             ).get_slack_object(),
-            InputText(
-                'home_post_code',
-                'Home Postal Code',
-                'Postal Code',
-                initial_value=self.user.home_post_code if self.user else None,
-                help_text='This is used to find jobs and events close to your location'
-            ).get_slack_object(),
+            get_home_zip_code_input(current_postal_code=home_postal_code).get_slack_object(),
         ]
-        return self.add_modal(profile_blocks, submit_text='Continue to preferences')
+        return self.add_modal(
+            profile_blocks, submit_text='Continue to preferences',
+            process_data_once_fn=self.save_user_data
+        )
+    
+    def save_user_data(self):
+        add_user_home_location(self.user, self.metadata['home_post_code'])
+        
+        self.user.professional_site_url = self.metadata['professional_site_url']
+        self.user.linkedin_url = self.metadata['linkedin_url']
+        if self.metadata['contact_email'] != self.user.email:
+            self.user.business_email = self.metadata['contact_email']
+        
+        self.user.save()
     
     def modal_set_job_search_preferences(self):
-        default_remote_work_option = InputOption('Any',
-                                                 REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value).get_slack_object()
-        remote_work_options = [
-            default_remote_work_option,
-            InputOption('On-site Only', REMOTE_TYPES.NO.value).get_slack_object(),
-            InputOption('Remote Only', REMOTE_TYPES.YES.value).get_slack_object()
-        ]
-        
         default_job_search_status = InputOption('Active', JobVyneUser.JOB_SEARCH_TYPE_ACTIVE).get_slack_object()
         job_search_status_options = [
             default_job_search_status,
             InputOption('Passive', JobVyneUser.JOB_SEARCH_TYPE_PASSIVE).get_slack_object(),
             InputOption('Not Looking', 0).get_slack_object(),
-        ]
-        
-        user_job_level_selection = None
-        if self.user.job_search_level:
-            user_job_level_selection = InputOption(self.user.job_search_level.name,
-                                                   self.user.job_search_level.id).get_slack_object()
-        job_level_options = [
-            InputOption(tax.name, tax.id).get_slack_object() for tax in
-            Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL).order_by('sort_order')
-        ]
-        
-        user_industry_selections = None
-        if selected_industries := self.user.job_search_industries.all():
-            user_industry_selections = [
-                InputOption(industry.name, industry.id).get_slack_object() for industry in
-                selected_industries
-            ]
-        industry_options = [
-            InputOption(tax.name, tax.id).get_slack_object() for tax in
-            Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_INDUSTRY).order_by('name')
-        ]
-        
-        user_profession_selections = None
-        if selected_professions := self.user.job_search_professions.all():
-            user_profession_selections = [
-                InputOption(profession.name, profession.id).get_slack_object() for profession in
-                selected_professions
-            ]
-        profession_options = [
-            InputOption(tax.name, tax.id).get_slack_object() for tax in
-            Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_PROFESSION).order_by('name')
         ]
         
         preference_blocks = [
@@ -215,24 +240,10 @@ class JobSeekerModalViews(SlackMultiViewModal):
                 job_search_status_options,
                 initial_option=default_job_search_status
             ).get_slack_object(),
-            Select(
-                'work_remote_type_bit', 'Remote Work Preference', 'Preference',
-                remote_work_options,
-                initial_option=default_remote_work_option
-            ).get_slack_object(),
-            Select(
-                'job_search_level', 'Job Level', 'Level',
-                options=job_level_options, initial_option=user_job_level_selection
-            ).get_slack_object(),
-            SelectMulti(
-                'job_search_professions', 'Professions', 'Professions',
-                options=profession_options, max_selected_items=3, initial_option=user_profession_selections
-            ).get_slack_object(),
-            SelectMulti(
-                'job_search_industries', 'Industries', 'Any Industry',
-                options=industry_options, max_selected_items=5, initial_option=user_industry_selections,
-                is_optional=True
-            ).get_slack_object(),
+            get_remote_work_selection(remote_selection=self.user.work_remote_type_bit).get_slack_object(),
+            get_job_level_selection(job_level_selection=self.user.job_search_level).get_slack_object(),
+            get_profession_selections(set_professions=self.user.job_search_professions.all()).get_slack_object(),
+            get_industry_selections(set_industries=self.user.job_search_industries.all()).get_slack_object(),
             InputText(
                 'job_search_qualifications', 'Qualifications',
                 'Write a few sentences about your job qualifications',
@@ -328,7 +339,6 @@ class JobSeekerModalViews(SlackMultiViewModal):
 class JobModalViews(SlackMultiViewModal):
     BASE_CALLBACK_ID = 'job-post'
     SUBSCRIPTION_OPTIONS_KEY = 'job-influencer-subscription'
-    CONNECTION_OPTIONS_KEY = 'job-connection'
     CONTACT_OPTIONS_KEY = 'can-contact'
     DEFAULT_BLOCK_TITLE = 'JobVyne Jobs'
     
@@ -499,29 +509,6 @@ class JobModalViews(SlackMultiViewModal):
         return self.add_modal(job_detail_blocks, 'Continue to preferences', process_data_once_fn=self.update_job_salary)
     
     def modal_update_subscriptions(self):
-        connection_options = [
-            InputOption(
-                'I am hiring for this job',
-                ConnectionTypeBit.HIRING_MEMBER.value,
-            ).get_slack_object(),
-            InputOption(
-                'I work at this company',
-                ConnectionTypeBit.CURRENT_EMPLOYEE.value,
-            ).get_slack_object(),
-            InputOption(
-                'I previously worked at this company',
-                ConnectionTypeBit.FORMER_EMPLOYEE.value,
-            ).get_slack_object(),
-            InputOption(
-                'I know someone at this company',
-                ConnectionTypeBit.KNOW_EMPLOYEE.value,
-            ).get_slack_object(),
-            InputOption(
-                'I have no connection to this company',
-                ConnectionTypeBit.NO_CONNECTION.value,
-            ).get_slack_object(),
-        ]
-        
         subscription_options = [
             InputOption(
                 'Job seekers can contact me about this job',
@@ -538,12 +525,7 @@ class JobModalViews(SlackMultiViewModal):
         )
         subscription_blocks = [
             *self.header_blocks,
-            Select(
-                self.CONNECTION_OPTIONS_KEY,
-                'Job Connection',
-                'Select Connection',
-                options=connection_options
-            ).get_slack_object(),
+            get_job_connection_select(False, is_include_no_connection=True).get_slack_object(),
             subscription_checkboxes.get_slack_object()
         ]
         return self.add_modal(subscription_blocks, 'Post job')
@@ -552,7 +534,7 @@ class JobModalViews(SlackMultiViewModal):
         from jvapp.apis.slack import SlackUserGeneratedJobPoster  # Avoid circular import
         
         # Add job connection
-        connection_type = coerce_int(self.metadata[self.CONNECTION_OPTIONS_KEY]['value'])
+        connection_type = coerce_int(self.metadata[ACTION_KEY_JOB_CONNECTION]['value'])
         is_employer_update = False
         if connection_type in (
                 ConnectionTypeBit.HIRING_MEMBER.value,
@@ -700,3 +682,87 @@ class JobModalViews(SlackMultiViewModal):
         self.job.salary_ceiling = coerce_float(self.metadata['salary-max'])
         self.job.salary_interval = self.metadata['salary-interval']['value']
         self.job.save()
+        
+        
+class FollowEmployerModalViews(SlackMultiViewModal):
+    BASE_CALLBACK_ID = 'jv-follow-employer'
+    DEFAULT_BLOCK_TITLE = 'Follow employer'
+    
+    def __init__(self, slack_user_profile, user, metadata, slack_cfg, action_id=None):
+        self.job = None
+        super().__init__(slack_user_profile, user, metadata, slack_cfg, action_id=action_id)
+        
+    @classmethod
+    def get_trigger_button(cls, data):
+        job = data['job']
+        return SectionText(
+            f'*👀 Follow {job.employer.employer_name}*\nGet notified when this employer posts new, relevant jobs',
+            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Follow', job.id)
+        )
+    
+    def set_modal_views(self):
+        is_final = self.job_preferences_modal()
+        if is_final:
+            return
+        self.modal_finalize()
+        
+    def job_preferences_modal(self):
+        home_post_code = self.user.home_location.postal_code if (self.user and self.user.home_location) else None
+        preference_blocks = [
+            SectionText(
+                'Update or confirm your job search preferences so we only send you relevant jobs'
+            ).get_slack_object(),
+            Divider().get_slack_object(),
+            get_home_zip_code_input(current_postal_code=home_post_code).get_slack_object(),
+            get_remote_work_selection(remote_selection=self.user.work_remote_type_bit).get_slack_object(),
+            get_job_level_selection(job_level_selection=self.user.job_search_level).get_slack_object(),
+            get_profession_selections(set_professions=self.user.job_search_professions.all()).get_slack_object(),
+            get_industry_selections(set_industries=self.user.job_search_industries.all()).get_slack_object()
+        ]
+        
+        return self.add_modal(preference_blocks, submit_text='Save preferences',
+                              process_data_once_fn=self.add_subscription)
+        
+    def add_subscription(self):
+        job = EmployerJob.objects.select_related('employer').get(id=self.metadata['job_id'])
+        
+        # Add employer to memberships
+        self.user.membership_employers.add(job.employer)
+        
+        # Update user preferences
+        add_user_home_location(self.user, self.metadata['home_post_code'])
+        add_user_job_preferences(self.user, self.metadata)
+        
+        # Add subscription
+        subscription_data = {
+            'slack_cfg_id': self.slack_cfg.id,
+            'slack_user_id': self.metadata['slack_user_id'],
+            'user_id': self.user.id
+        }
+        
+        unique_subscription_fields = {
+            'user': self.user,
+            'provider': OauthProviders.slack.value,
+            'subscription_type': UserSocialSubscription.SubscriptionType.jobs.value
+        }
+        
+        try:
+            user_subscription = UserSocialSubscription.objects.get(**unique_subscription_fields)
+        except UserSocialSubscription.DoesNotExist:
+            user_subscription = UserSocialSubscription(
+                subscription_data=subscription_data, **unique_subscription_fields
+            )
+            user_subscription.save()
+        self.metadata['employer_name'] = job.employer.employer_name
+        
+    def modal_finalize(self):
+        final_text = (
+            f'➕ Added {self.metadata["employer_name"]} to your list of followed companies.\n\n'
+            f'ℹ You will receive a Slack notification at most once per day if {self.metadata["employer_name"]} posts a new job that matches your preferences.\n\n'
+            f'You can update which companies you follow on your <{settings.BASE_URL}/candidate/favorites/|JobVyne profile>.'
+        )
+        self.add_modal(
+            [SectionText(final_text).get_slack_object()],
+            title_text='Job saved',
+            is_final=True
+        )

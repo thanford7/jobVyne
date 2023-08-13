@@ -971,9 +971,20 @@ class AliceAndBobScraper(WorkableScraper):
 class LeenaAiScraper(WorkableScraper):
     employer_name = 'Leena AI'
     EMPLOYER_KEY = 'leenaai'
+    
+    
+class ScreencastifyScraper(WorkableScraper):
+    employer_name = 'Screencastify'
+    EMPLOYER_KEY = 'screencastify'
+    
+    
+class WowzaScraper(WorkableScraper):
+    employer_name = 'Wowza Media Systems'
+    EMPLOYER_KEY = 'wowza-media-systems'
 
 
 workable_scrapers = {
+    ScreencastifyScraper.employer_name: ScreencastifyScraper,
     AliceAndBobScraper.employer_name: AliceAndBobScraper,
     CodiScraper.employer_name: CodiScraper,
     MarleySpoonScraper.employer_name: MarleySpoonScraper,
