@@ -11,56 +11,15 @@
             </q-card-section>
           </q-card>
         </div>
-        <div v-if="homeLink" class="col-12 q-mb-md">
-          <q-btn label="Show all jobs" color="primary" @click="goHome()"/>
-        </div>
-        <div v-if="!isSingleJob" class="col-12 q-mt-md">
-          <CollapsableCard title="Job filters" :is-dense="true">
-            <template v-slot:body>
-              <div class="col-12 q-pa-sm">
-                <q-form class="row q-gutter-y-sm">
-                  <div class="col-12 col-md-4 q-pr-md-sm">
-                    <q-input
-                      v-model="jobFilters.search_regex"
-                      filled
-                      :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
-                      debounce="500"
-                      @keyup.enter="loadJobs()"
-                      @blur="loadJobs()"
-                    >
-                      <template v-slot:append>
-                        <q-icon name="search"/>
-                      </template>
-                    </q-input>
-                  </div>
-                  <div class="col-12 col-md-8 q-pl-md-sm">
-                    <InputLocation
-                      v-model:location="jobFilters.location"
-                      v-model:range_miles="jobFilters.range_miles"
-                      :is-include-range="true"
-                      @update:location="loadJobs()"
-                      @update:range_miles="loadJobs()"
-                    />
-                  </div>
-                  <div class="col-12 col-md-4 q-pr-md-sm">
-                    <SelectRemote v-model="jobFilters.remote_type_bit" @update:model-value="loadJobs()"/>
-                  </div>
-                  <div class="col-12 col-md-4 q-pl-md-sm">
-                    <MoneyInput
-                      v-model:money-value.number="jobFilters.minimum_salary"
-                      v-model:currency-name="jobFilters.currency"
-                      :is-include-currency-selection="false"
-                      label="Minimum salary"
-                      @submit="loadJobs()"
-                    />
-                  </div>
-                  <div class="col-12">
-                    <q-btn ref="filterSubmit" color="primary" label="Search" @click="loadJobs()"/>
-                  </div>
-                </q-form>
-              </div>
-            </template>
-          </CollapsableCard>
+        <div class="col-12 q-mb-md">
+          <q-btn
+            v-if="!isSingleJob"
+            label="Filter jobs" color="primary" icon="filter_alt" class="q-mr-sm"
+            @click="openJobFilter()"
+          >
+            <q-badge color="info" floating>{{ filterCount }}</q-badge>
+          </q-btn>
+          <q-btn v-if="homeLink || filterCount" label="Show all jobs" color="grey-8" @click="goHome()"/>
         </div>
         <div v-if="jobFilters?.job_ids?.length && totalEmployerJobCount > jobFilters.job_ids.length"
              class="col-12 q-mt-md">
@@ -166,10 +125,8 @@
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
+import DialogJobFilter from 'components/dialogs/DialogJobFilter.vue'
 import DialogLogin from 'components/dialogs/DialogLogin.vue'
-import InputLocation from 'components/inputs/InputLocation.vue'
-import MoneyInput from 'components/inputs/MoneyInput.vue'
-import SelectRemote from 'components/inputs/SelectRemote.vue'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 import JobCards from 'pages/jobs-page/JobCards.vue'
 import { useQuasar } from 'quasar'
@@ -198,7 +155,7 @@ export default {
     headerHeight: Number
   },
   components: {
-    ResponsiveWidth, CollapsableCard, InputLocation, SelectRemote, MoneyInput, JobCards
+    ResponsiveWidth, CollapsableCard, JobCards
   },
   data () {
     return {
@@ -233,6 +190,16 @@ export default {
         return
       }
       return dataUtil.getUrlWithParams({ deleteParams: ['sub'] })
+    },
+    filterCount () {
+      return Object.entries(this.jobFilters).reduce((filterCount, [filterKey, val]) => {
+        if (['job_ids', 'search_regex'].includes(filterKey) && val?.length) {
+          filterCount++
+        } else if (!['range_miles', 'location_text'].includes(filterKey) && !dataUtil.isNil(val)) {
+          filterCount++
+        }
+        return filterCount
+      }, 0)
     }
   },
   watch: {
@@ -240,27 +207,13 @@ export default {
       async handler () {
         await this.loadJobs()
       }
-    },
-    jobFilters: {
-      handler () {
-        // Reset page number if filters have changed
-        this.pageNumber = 1
-      },
-      deep: true
-    },
-    $route: {
-      async handler () {
-        await this.updateJobFilterFromQueryParams()
-        await this.loadJobs()
-      },
-      deep: true
     }
   },
   methods: {
     goHome () {
-      if (this.homeLink) {
-        window.location = this.homeLink
-      }
+      this.jobFilters = {}
+      this.updateJobFilterQueryParams(this.homeLink || (window.location.pathname + window.location.search))
+      this.loadJobs()
     },
     getElementTop (elId) {
       const el = document.getElementById(elId)
@@ -279,6 +232,22 @@ export default {
         stickHeight += stick.offsetHeight
       })
       return el.getBoundingClientRect().top + window.scrollY - this.headerHeight - stickHeight
+    },
+    openJobFilter () {
+      return this.q.dialog({
+        component: DialogJobFilter,
+        componentProps: { jobFilters: this.jobFilters, isSingleEmployer: this.isSingleEmployer }
+      }).onOk((newFilters) => {
+        if (dataUtil.isDeepEqual(newFilters, this.jobFilters)) {
+          return
+        }
+        this.jobFilters = newFilters
+        if (this.pageNumber === 1) {
+          this.loadJobs()
+        } else {
+          this.pageNumber = 1 // Changing the page number will load new jobs
+        }
+      })
     },
     openJobAppModal (jobApplication) {
       return this.q.dialog({
@@ -341,7 +310,7 @@ export default {
         this.jobFilters.location = (resp.data?.length) ? resp.data[0] : null
       }
     },
-    updateJobFilterQueryParams () {
+    updateJobFilterQueryParams (startPath = null) {
       const addParams = Object.entries(this.jobFilters).reduce((filterParams, [jobFilterKey, jobFilter]) => {
         if (!jobFilter) {
           return filterParams
@@ -360,7 +329,7 @@ export default {
         return filterParams
       }, [])
       const fullPath = dataUtil.getUrlWithParams({
-        addParams, deleteParams: [...Object.keys(jobFiltersTemplate), 'location_text']
+        addParams, deleteParams: [...Object.keys(jobFiltersTemplate), 'location_text'], path: startPath
       })
       this.$router.push(fullPath)
     },

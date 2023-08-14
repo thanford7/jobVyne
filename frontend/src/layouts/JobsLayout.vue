@@ -13,13 +13,13 @@
         </q-toolbar>
         <template v-if="isEmployerPage">
           <div
-            class="col-12 col-md-11 col-lg-8 q-px-none flex justify-center text-h6"
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-md-sm flex justify-center text-h6 text-center"
           >
             {{ employer.name }}
           </div>
           <div
             v-if="employer.description"
-            class="col-12 col-md-11 col-lg-8 q-px-none flex justify-center"
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center text-center"
           >
             {{ employer.description }}
           </div>

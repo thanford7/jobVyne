@@ -141,7 +141,8 @@ export default {
   methods: {
     async onOkClick () {
       if (this.okFn) {
-        await this.okFn().finally(() => this.onDialogOK())
+        const okData = await this.okFn()
+        this.onDialogOK(okData || {})
       } else {
         if (this.isValidFormFn) {
           const isValidForm = await this.isValidFormFn()
@@ -149,7 +150,7 @@ export default {
             return
           }
         }
-        this.onDialogOK()
+        this.onDialogOK(this.okData)
       }
     }
   },
