@@ -337,8 +337,9 @@ class SocialLinkJobsView(JobVyneAPIView):
             # Make sure subscription IDs are valid
             # TODO: Return a warning message if a subscription ID isn't valid
             job_subscription_ids = [jid for jid in [coerce_int(jid) for jid in job_subscription_ids] if jid]
-            
+        
         is_jobs_closed = False
+        is_single_job = False
         if job_subscription_ids:
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
@@ -347,7 +348,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             # User entered jobs may be posted to social channels like Slack with a link
             # They might not yet be approved, but we still want users to have access to the job
             # As long as this is a direct link to the job, we will display it
-            is_allow_unapproved = len(job_subscriptions) == 1 and job_subscriptions[0].is_single_job_subscription
+            is_single_job = len(job_subscriptions) == 1 and job_subscriptions[0].is_single_job_subscription
+            is_allow_unapproved = is_single_job
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter,
                 is_include_fetch=False,
@@ -466,7 +468,8 @@ class SocialLinkJobsView(JobVyneAPIView):
             'total_page_count': total_page_count,
             'total_employer_job_count': total_jobs,
             'jobs_by_employer': jobs_by_employer,
-            'is_jobs_closed': is_jobs_closed
+            'is_jobs_closed': is_jobs_closed,
+            'is_single_job': is_single_job
         }
         if warning_message:
             data[WARNING_MESSAGES_KEY] = [warning_message]
