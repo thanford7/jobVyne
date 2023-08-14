@@ -11,7 +11,10 @@
             </q-card-section>
           </q-card>
         </div>
-        <div class="col-12 q-mt-md">
+        <div v-if="homeLink" class="col-12 q-mb-md">
+          <q-btn label="Show all jobs" color="primary" @click="goHome()"/>
+        </div>
+        <div v-if="!isSingleJob" class="col-12 q-mt-md">
           <CollapsableCard title="Job filters" :is-dense="true">
             <template v-slot:body>
               <div class="col-12 q-pa-sm">
@@ -205,6 +208,7 @@ export default {
       jobsByEmployer: [],
       totalEmployerJobCount: null,
       isJobsClosed: false,
+      isSingleJob: false,
       jobPagesCount: null,
       applications: null,
       jobApplication: null,
@@ -223,6 +227,12 @@ export default {
     },
     isSingleEmployer () {
       return this.$route.name === 'company'
+    },
+    homeLink () {
+      if (!('sub' in dataUtil.getQueryParams()) || !['company', 'group', 'profession'].includes(this.$route.name)) {
+        return
+      }
+      return dataUtil.getUrlWithParams({ deleteParams: ['sub'] })
     }
   },
   watch: {
@@ -247,6 +257,11 @@ export default {
     }
   },
   methods: {
+    goHome () {
+      if (this.homeLink) {
+        window.location = this.homeLink
+      }
+    },
     getElementTop (elId) {
       const el = document.getElementById(elId)
 
@@ -383,13 +398,15 @@ export default {
         jobs_by_employer: jobsByEmployer,
         total_page_count: totalPageCount,
         total_employer_job_count: totalEmployerJobCount,
-        is_jobs_closed: isJobsClosed
+        is_jobs_closed: isJobsClosed,
+        is_single_job: isSingleJob
       } = this.socialStore.getSocialLinkJobs(params)
 
       this.totalEmployerJobCount = totalEmployerJobCount
       this.jobsByEmployer = jobsByEmployer || []
       this.jobPagesCount = totalPageCount
       this.isJobsClosed = isJobsClosed
+      this.isSingleJob = isSingleJob
 
       this.updateJobFilterQueryParams()
       this.isLoaded = true
