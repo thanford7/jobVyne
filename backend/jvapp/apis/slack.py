@@ -457,10 +457,10 @@ class SlackBaseView(JobVyneAPIView):
             user = (
                 JobVyneUser.objects
                 .prefetch_related(
+                    'job_search_levels',
                     'job_search_industries',
                     'job_search_professions'
                 )
-                .select_related('job_search_level')
                 .get(user_filter)
             )
             is_updated = False

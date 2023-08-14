@@ -10,7 +10,7 @@ from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, 
 from jvapp.models.user import JobVyneUser, UserSocialSubscription
 from jvapp.slack.slack_blocks_specific import ACTION_KEY_JOB_CONNECTION, SelectEmployer, \
     SelectEmployerJob, get_home_zip_code_input, get_industry_selections, get_job_connection_select, \
-    get_job_level_selection, \
+    get_job_level_selections, \
     get_profession_selections, get_remote_work_selection
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
@@ -35,7 +35,9 @@ def add_user_job_preferences(user, data):
     if 'job_search_type_bit' in data:
         user.job_search_type_bit = coerce_int(data['job_search_type_bit']['value'])
     user.work_remote_type_bit = coerce_int(data['work_remote_type_bit']['value'])
-    user.job_search_level_id = coerce_int(data['job_search_level']['value'])
+    
+    job_search_levels = data['job_search_levels'] or []
+    user.job_search_levels.set([coerce_int(l['value']) for l in job_search_levels])
     
     job_search_professions = data['job_search_professions'] or []
     user.job_search_professions.set([coerce_int(p['value']) for p in job_search_professions])
@@ -130,17 +132,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
     DEFAULT_BLOCK_TITLE = 'JobVyne for Job Seekers'
     
     def save_job_seeker_preferences(self):
-        self.user.job_search_type_bit = coerce_int(self.metadata['job_search_type_bit']['value'])
-        self.user.work_remote_type_bit = coerce_int(self.metadata['work_remote_type_bit']['value'])
-        self.user.job_search_level_id = coerce_int(self.metadata['job_search_level']['value'])
-        
-        job_search_professions = self.metadata['job_search_professions'] or []
-        self.user.job_search_professions.set([coerce_int(p['value']) for p in job_search_professions])
-        
-        job_search_industries = self.metadata['job_search_industries'] or []
-        self.user.job_search_industries.set([coerce_int(i['value']) for i in job_search_industries])
-        
-        self.user.job_search_qualifications = self.metadata['job_search_qualifications']
+        add_user_job_preferences(self.user, self.metadata)
         self.user.save()
     
     def set_modal_views(self):
@@ -241,7 +233,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
                 initial_option=default_job_search_status
             ).get_slack_object(),
             get_remote_work_selection(remote_selection=self.user.work_remote_type_bit).get_slack_object(),
-            get_job_level_selection(job_level_selection=self.user.job_search_level).get_slack_object(),
+            get_job_level_selections(set_job_levels=self.user.job_search_levels.all()).get_slack_object(),
             get_profession_selections(set_professions=self.user.job_search_professions.all()).get_slack_object(),
             get_industry_selections(set_industries=self.user.job_search_industries.all()).get_slack_object(),
             InputText(
@@ -715,7 +707,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
             Divider().get_slack_object(),
             get_home_zip_code_input(current_postal_code=home_post_code).get_slack_object(),
             get_remote_work_selection(remote_selection=self.user.work_remote_type_bit).get_slack_object(),
-            get_job_level_selection(job_level_selection=self.user.job_search_level).get_slack_object(),
+            get_job_level_selections(set_job_levels=self.user.job_search_levels.all()).get_slack_object(),
             get_profession_selections(set_professions=self.user.job_search_professions.all()).get_slack_object(),
             get_industry_selections(set_industries=self.user.job_search_industries.all()).get_slack_object()
         ]

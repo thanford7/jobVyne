@@ -187,18 +187,21 @@ def get_industry_selections(set_industries=None, max_selected_items=5):
     )
 
 
-def get_job_level_selection(job_level_selection=None):
-    job_level_selection_option = None
-    if job_level_selection:
-        job_level_selection_option = InputOption(job_level_selection.name, job_level_selection.id).get_slack_object()
+def get_job_level_selections(set_job_levels=None):
+    job_level_selections = None
+    if set_job_levels:
+        job_level_selections = [
+            InputOption(job_level.name, job_level.id).get_slack_object() for job_level in
+            set_job_levels
+        ]
     job_level_options = [
         InputOption(tax.name, tax.id).get_slack_object() for tax in
         Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL).order_by('sort_order')
     ]
     
-    return Select(
-        'job_search_level', 'Job Level', 'Level',
-        options=job_level_options, initial_option=job_level_selection_option
+    return SelectMulti(
+        'job_search_levels', 'Job Levels', 'Any Level',
+        options=job_level_options, initial_option=job_level_selections
     )
 
 
