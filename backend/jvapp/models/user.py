@@ -172,7 +172,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     work_remote_type_bit = models.SmallIntegerField(default=REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value)
     job_search_type_bit = models.SmallIntegerField(default=0)
     is_job_search_visible = models.BooleanField(default=False)
-    job_search_level = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL, related_name='level_job_seeker')
+    job_search_levels = models.ManyToManyField('Taxonomy', related_name='level_job_seeker')
     job_search_industries = models.ManyToManyField('Taxonomy', related_name='industry_job_seeker')
     job_search_professions = models.ManyToManyField('Taxonomy', related_name='profession_job_seeker')
     job_search_qualifications = models.CharField(max_length=1000, null=True, blank=True)

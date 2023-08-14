@@ -52,19 +52,27 @@
               <q-card-section>
                 <template v-if="communityUtil.isJobSeeker(member.member_type_bits)">
                   <div class="text-bold q-mb-sm">Looking for jobs in:</div>
-                  <q-chip v-if="member.job_search_level" icon="trending_up" color="orange-2" title="Job Level" dense>
-                    {{ member.job_search_level.level }}
-                  </q-chip>
+                  <template v-if="member.job_search_levels">
+                    <q-chip
+                      v-for="job_level in member.job_search_levels"
+                      icon="trending_up" color="orange-2" title="Job Level" dense
+                    >
+                      {{ job_level.name }}
+                    </q-chip>
+                  </template>
                   <template v-if="member.job_search_industries">
-                    <q-chip v-for="industry in member.job_search_industries" icon="business" color="teal-2"
-                            title="Industry"
-                            dense>
+                    <q-chip
+                      v-for="industry in member.job_search_industries"
+                      icon="business" color="teal-2" title="Industry" dense
+                    >
                       {{ industry.name }}
                     </q-chip>
                   </template>
                   <template v-if="member.job_search_professions">
-                    <q-chip v-for="profession in member.job_search_professions" icon="work" color="light-blue-2"
-                            title="Profession" dense>
+                    <q-chip
+                      v-for="profession in member.job_search_professions"
+                      icon="work" color="light-blue-2" title="Profession" dense
+                    >
                       {{ profession.name }}
                     </q-chip>
                   </template>

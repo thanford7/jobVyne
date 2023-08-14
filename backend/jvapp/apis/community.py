@@ -31,10 +31,10 @@ class CommunityMemberView(JobVyneAPIView):
         members = (
             JobVyneUser.objects
             .select_related(
-                'employer',
-                'job_search_level'
+                'employer'
             )
             .prefetch_related(
+                'job_search_levels',
                 'job_search_industries',
                 'job_search_professions',
                 'job_connection',
@@ -93,10 +93,9 @@ class CommunityMemberView(JobVyneAPIView):
         )):
             member_data['member_type_bits'] |= JobVyneUser.MEMBER_TYPE_JOB_SEEKER
             member_data['search_type'] = user.job_search_type_bit
-            member_data['job_search_level'] = {
-                'id': user.job_search_level.id,
-                'level': user.job_search_level.name
-            } if user.job_search_level else None
+            member_data['job_search_levels'] = sorted([
+                {'id': l.id, 'name': l.name, 'order': l.sort_order} for l in user.job_search_levels.all()
+            ], key=lambda x: x['order']) if user.job_search_levels.all() else None
             member_data['job_search_industries'] = [
                 {'id': i.id, 'name': i.name} for i in user.job_search_industries.all()
             ] if user.job_search_industries.all() else None
