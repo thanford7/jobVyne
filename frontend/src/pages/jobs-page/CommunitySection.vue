@@ -17,10 +17,10 @@
         <template v-else>
           <div
             v-for="member in members"
-            class="col-12 col-md-4 col-lg-3 q-px-md-md"
+            class="col-12 col-md-4 col-lg-3 q-px-md-md q-py-md"
           >
             <q-card>
-              <div class="bg-grey-3 q-px-md q-py-xs">
+              <div class="bg-grey-3 q-px-md">
                 {{ communityUtil.get_member_type_label(member.member_type_bits) }}
               </div>
               <q-item class="border-bottom-1-gray-300">
