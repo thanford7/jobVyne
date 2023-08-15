@@ -19,6 +19,18 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    MediabrandsScraper.employer_name: MediabrandsScraper,
+    OldMissionScraper.employer_name: OldMissionScraper,
+    InCompassHealthScraper.employer_name: InCompassHealthScraper,
+    VevoScraper.employer_name: VevoScraper,
+    SightlineMediaGroupScraper.employer_name: SightlineMediaGroupScraper,
+    IonGroupScraper.employer_name: IonGroupScraper,
+    FlynnCompaniesScraper.employer_name: FlynnCompaniesScraper,
+    BondVetScraper.employer_name: BondVetScraper,
+    SearchForCommonGroundScraper.employer_name: SearchForCommonGroundScraper,
+    CapitalOneScraper.employer_name: CapitalOneScraper,
+    RecogniScraper.employer_name: RecogniScraper,
+    BeneschScraper.employer_name: BeneschScraper,
     CloudOpsScraper.employer_name: CloudOpsScraper,
     OstroScraper.employer_name: OstroScraper,
     WalkerEdisonScraper.employer_name: WalkerEdisonScraper,
