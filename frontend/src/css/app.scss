@@ -14,7 +14,7 @@
 
 /* Scrollbar */
 body {
-  scrollbar-width: 10px; /*thin;*/
+  scrollbar-width: thin; /*thin;*/
   scrollbar-color: $primary $white;
   scrollbar-gutter: stable;
   //-webkit-user-select: none;

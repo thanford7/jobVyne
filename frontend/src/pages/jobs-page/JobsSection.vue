@@ -10,7 +10,7 @@
           >
             <q-badge color="info" floating>{{ filterCount }}</q-badge>
           </q-btn>
-          <q-btn v-if="homeLink || filterCount" label="Show all jobs" color="grey-8" @click="goHome()"/>
+          <q-btn v-if="hasBaseJobsPage() || filterCount" label="Show all jobs" color="grey-8" @click="goHome()"/>
         </div>
         <div v-if="jobFilters?.job_ids?.length && totalEmployerJobCount > jobFilters.job_ids.length"
              class="col-12 q-mt-md">
@@ -180,12 +180,6 @@ export default {
     isSingleEmployer () {
       return this.$route.name === 'company'
     },
-    homeLink () {
-      if (!('sub' in dataUtil.getQueryParams()) || !['company', 'group', 'profession'].includes(this.$route.name)) {
-        return
-      }
-      return dataUtil.getUrlWithParams({ deleteParams: ['sub'] })
-    },
     filterCount () {
       return Object.entries(this.jobFilters).reduce((filterCount, [filterKey, val]) => {
         if (['job_ids', 'search_regex'].includes(filterKey) && val?.length) {
@@ -205,10 +199,19 @@ export default {
     }
   },
   methods: {
-    goHome () {
+    hasBaseJobsPage () {
+      return ('sub' in dataUtil.getQueryParams()) && ['company', 'group', 'profession'].includes(this.$route.name)
+    },
+    async goHome () {
       this.jobFilters = {}
-      this.updateJobFilterQueryParams(this.homeLink || (window.location.pathname + window.location.search))
-      this.loadJobs()
+      let deleteParams = null
+      if (this.hasBaseJobsPage()) {
+        deleteParams = ['sub']
+      }
+      const url = dataUtil.getUrlWithParams({ deleteParams })
+      this.updateJobFilterQueryParams(url)
+      await this.updateJobFilterFromQueryParams()
+      await this.loadJobs()
     },
     getElementTop (elId) {
       const el = document.getElementById(elId)
@@ -326,7 +329,7 @@ export default {
       const fullPath = dataUtil.getUrlWithParams({
         addParams, deleteParams: [...Object.keys(jobFiltersTemplate), 'location_text'], path: startPath
       })
-      this.$router.push(fullPath)
+      window.history.pushState({ path: fullPath }, '', fullPath)
     },
     resetJobFilters () {
       this.jobFilters = Object.assign({}, jobFiltersTemplate)

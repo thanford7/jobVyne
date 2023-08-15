@@ -121,6 +121,30 @@ class DataUtil {
     return paramDict
   }
 
+  getParamsFromUrl (url, asString = true) {
+    const pathParts = url.split('?')
+    let paramString = ''
+    if (pathParts.length > 1) {
+      paramString = pathParts[1]
+    }
+    if (asString) {
+      return `?${paramString}`
+    }
+    const params = {}
+    paramString.split('&').forEach((param) => {
+      const [paramKey, paramValue] = param.split('=')
+      if (!paramKey?.length) {
+        return
+      }
+      if (paramKey in params) {
+        params[paramKey].push(paramValue)
+      } else {
+        params[paramKey] = [paramValue]
+      }
+    })
+    return params
+  }
+
   /**
    * Get a modified URL string
    * @param isExcludeExistingParams {Boolean}: If true, remove all existing params

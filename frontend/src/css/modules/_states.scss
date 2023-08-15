@@ -1,19 +1,21 @@
 @use '../quasar.variables' as *;
 
 @each $name, $color in $gray-color-map {
-  .bg-hover-#{$name}:hover {
-    background-color: $color;
-  }
+    .bg-hover-#{$name}:hover {
+        background-color: $color;
+    }
 }
 
 .bg-hover:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
-.hover-display-parent:hover .hover-display {
-    visibility: visible;
-}
+@media (min-width: $breakpoint-sm) {
+    .hover-display-parent:hover .hover-display {
+        visibility: visible;
+    }
 
-.hover-display-parent .hover-display {
-    visibility: hidden;
+    .hover-display-parent .hover-display {
+        visibility: hidden;
+    }
 }
