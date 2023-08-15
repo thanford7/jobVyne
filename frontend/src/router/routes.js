@@ -295,7 +295,7 @@ const routes = [
     component: () => import('layouts/BodyLeftDrawerFooterLayout.vue'),
     children: [
       {
-        path: 'home/',
+        path: '',
         name: 'karma-home',
         meta: {},
         component: () => import('pages/karma/home-page/HomePage.vue')

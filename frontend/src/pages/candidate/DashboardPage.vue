@@ -128,7 +128,7 @@ export default {
   methods: {
     async updateData (isForceRefresh = true) {
       this.isLoading = true
-      await this.authStore.setApplications(this.user, isForceRefresh)
+      await this.authStore.setUserApplications(this.user, isForceRefresh)
       this.applications = this.authStore.applications
       this.isLoading = false
     },

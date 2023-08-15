@@ -50,9 +50,9 @@
         narrow-indicator
       >
         <q-tab name="general" label="General"/>
-        <q-tab name="connection" label="Connections"/>
+        <q-tab v-if="isSocialSharer" name="connection" label="Connections"/>
         <q-tab name="security" label="Security"/>
-        <q-tab name="notify" label="Notifications"/>
+        <q-tab v-if="isSocialSharer" name="notify" label="Notifications"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated :keep-alive="true">
         <q-tab-panel name="general">
@@ -344,7 +344,7 @@ import { Loading, useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import { getAjaxFormData } from 'src/utils/requests.js'
-import { COMPANY_USER_TYPE_BITS } from 'src/utils/user-types.js'
+import userTypeUtil from 'src/utils/user-types.js'
 import SeparatorWithText from 'components/SeparatorWithText.vue'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store.js'
@@ -456,7 +456,10 @@ export default {
       return rows
     },
     isCompanyUser () {
-      return this.user.user_type_bits & COMPANY_USER_TYPE_BITS
+      return userTypeUtil.isCompanyUser(this.user.user_type_bits)
+    },
+    isSocialSharer () {
+      return userTypeUtil.isSocialSharer(this.user.user_type_bits)
     }
   },
   watch: {

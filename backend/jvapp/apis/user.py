@@ -388,6 +388,12 @@ class UserFavoriteView(JobVyneAPIView):
             } for employer in self.user.membership_employers.all()]
         })
     
+    def post(self, request):
+        employer_id = self.data['employer_id']
+        employer = Employer.objects.get(id=employer_id)
+        self.user.membership_employers.add(employer)
+        return get_success_response(f'Added {employer.employer_name} to your favorites')
+    
     def delete(self, request):
         user_id = coerce_int(self.data['user_id'])
         employer_id = coerce_int(self.data['employer_id'])

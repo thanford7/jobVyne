@@ -13,19 +13,24 @@
       </q-card>
     </div>
     <div class="row q-gutter-y-lg">
-      <div v-for="employer in jobsByEmployer" class="col-12">
-        <q-card :id="`employer-${employer.employer_id}`">
+      <div v-for="employer in jobsByEmployer" class="col-12 hover-display-parent">
+        <q-card :id="`employer-${employer.employer_id}`" style="position: relative">
           <q-card-section
             v-if="!isSingleEmployer"
             class="border-bottom-1-gray-300 custom-sticky custom-sticky-1 bg-white"
           >
+            <q-icon
+              v-if="isUserFavoriteEmployer(employer)"
+              name="star" color="orange" title="Favorite" size="24px"
+              style="position: absolute; top: 0; left: 0;"
+            />
             <div class="row justify-center">
               <div v-if="employer.employer_logo" class="col-2">
                 <div class="h-100 flex items-start align-center q-my-sm q-mr-md">
                   <q-img :src="employer.employer_logo" fit="contain" style="height: 80px;"/>
                 </div>
               </div>
-              <div class="q-pl-lg" :class="(employer.employer_logo) ? 'col-10' : 'col-12'">
+              <div class="q-pl-lg" :class="(employer.employer_logo) ? 'col-9' : 'col-11'">
                 <div class="h-100 flex items-center">
                   <h5 class="w-100 q-mb-none">{{ employer.employer_name }}</h5>
                   <div class="w-100">
@@ -36,11 +41,25 @@
                   </div>
                 </div>
               </div>
+              <div v-if="user" class="col-1">
+                <div class="flex items-center justify-center hover-display">
+                  <CustomTooltip v-if="!isUserFavoriteEmployer(employer)" :is_include_icon="false">
+                    <template v-slot:content>
+                      <q-btn icon="star" round outline dense size="12px" color="orange" @click="addFavoriteEmployer(employer.employer_id)"/>
+                    </template>
+                    Favorite {{ employer.employer_name }} to easily access it from your favorites menu
+                  </CustomTooltip>
+                  <CustomTooltip v-else :is_include_icon="false">
+                    <template v-slot:content>
+                      <q-btn icon="fas fa-store-slash" round outline dense size="12px" color="negative" @click="removeFavoriteEmployer(employer.employer_id)"/>
+                    </template>
+                    Remove {{ employer.employer_name }} from your favorites
+                  </CustomTooltip>
+                </div>
+              </div>
             </div>
           </q-card-section>
-          <div
-            v-for="jobDepartment in employer.job_departments"
-          >
+          <div v-for="jobDepartment in employer.job_departments">
             <div
               v-if="$route.name !== 'profession'"
               :id="`department-${employer.employer_id}-${dataUtil.removeStringSpecialChars(jobDepartment)}`"
@@ -96,15 +115,19 @@
 </template>
 
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import JobCardInfo from 'pages/jobs-page/JobCardInfo.vue'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
 import formUtil from 'src/utils/form.js'
+import { getAjaxFormData } from 'src/utils/requests.js'
 
 export default {
   name: 'JobCards',
   props: {
+    user: [Object, null],
+    userFavorites: Object,
     jobsByEmployer: Object,
     isSingleEmployer: Boolean,
     isJobsClosed: Boolean,
@@ -114,6 +137,7 @@ export default {
     scrollStickStartPx: Number
   },
   components: {
+    CustomTooltip,
     JobCardInfo
   },
   data () {
@@ -128,6 +152,23 @@ export default {
     }
   },
   methods: {
+    isUserFavoriteEmployer (employer) {
+      return Boolean(
+        this.userFavorites?.employers.find((favoriteEmployer) => favoriteEmployer.employer_id === employer.employer_id)
+      )
+    },
+    async addFavoriteEmployer (employerId) {
+      await this.$api.post('user/favorite/', getAjaxFormData({
+        employer_id: employerId
+      }))
+      this.$emit('updateUserFavorites')
+    },
+    async removeFavoriteEmployer (employerId) {
+      await this.$api.delete('user/favorite/', {
+        data: getAjaxFormData({ employer_id: employerId, user_id: this.user.id })
+      })
+      this.$emit('updateUserFavorites')
+    },
     getLimitedJobs (employer, jobs, jobTitle) {
       if (this.showAllJobs.includes(this.getShowMoreJobsKey(employer, jobTitle))) {
         return jobs

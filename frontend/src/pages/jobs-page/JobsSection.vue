@@ -2,15 +2,6 @@
   <div class="row justify-center">
     <ResponsiveWidth>
       <div class="row">
-        <div v-if="!user || dataUtil.isEmpty(user)" class="col-12 q-mb-md">
-          <q-card flat class="border-4-info">
-            <q-card-section class="text-center text-bold">
-              Want to track all your job applications?
-              <a href="#" @click.prevent="openLoginModal(false)">Login</a>
-              or <a href="#" @click.prevent="openLoginModal(true)">create an account</a>
-            </q-card-section>
-          </q-card>
-        </div>
         <div class="col-12 q-mb-md">
           <q-btn
             v-if="!isSingleJob"
@@ -52,6 +43,8 @@
             <template v-else>
               <JobCards
                 class="col-12 col-md-9 q-mt-md"
+                :user="user"
+                :user-favorites="userFavorites"
                 :jobs-by-employer="jobsByEmployer"
                 :is-single-employer="isSingleEmployer"
                 :is-jobs-closed="isJobsClosed"
@@ -61,6 +54,7 @@
                 :scroll-stick-start-px="headerHeight"
                 @openApplication="openApplication($event)"
                 @updateApplications="loadApplications()"
+                @updateUserFavorites="$emit('updateUserFavorites')"
               />
               <div
                 v-if="!utilStore.isUnderBreakPoint('md') && !hasNoJobs"
@@ -152,6 +146,7 @@ export default {
   props: {
     user: [Object, null],
     employer: [Object, null],
+    userFavorites: Object,
     headerHeight: Number
   },
   components: {
@@ -382,7 +377,7 @@ export default {
       scrollUtil.scrollTo(0)
     },
     async loadApplications (isForceRefresh = true) {
-      await this.authStore.setApplications(this.user, isForceRefresh)
+      await this.authStore.setUserApplications(this.user, isForceRefresh)
       this.applications = this.authStore.applications
     }
   },

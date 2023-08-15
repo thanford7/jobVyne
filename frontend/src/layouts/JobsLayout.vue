@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="hHr lpR fFf">
+  <q-layout view="lHr LpR fFf">
 
     <q-header v-if="isLoaded" ref="header" elevated class="bg-white text-primary">
       <div class="justify-center row" style="position: relative">
@@ -25,25 +25,11 @@
           </div>
         </template>
         <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
-          <div class="q-mr-md clickable" :style="employerStyleUtil.getTabStyle(employer)" @click="openFeedbackModal()">
-            <div class="flex flex-center">
-              <q-icon name="feedback" size="24px"/>
-            </div>
-            <div>Get help</div>
-          </div>
-          <div v-if="user && !dataUtil.isEmpty(user)">
-            <div class="row flex-center">
-              <q-avatar v-if="user.profile_picture_url" size="24px">
-                <img :src="user.profile_picture_url">
-              </q-avatar>
-              <q-avatar v-else color="primary" text-color="white" size="24px">
-                {{ userUtil.getUserInitials(user) }}
-              </q-avatar>
-            </div>
-            <div>
-              <a href="#" @click.prevent="logoutUser()" id="jv-logout" style="color: gray">Logout</a>
-            </div>
-          </div>
+          <q-btn
+            unelevated round dense color="grey-8"
+            :icon="(isLeftDrawerOpen) ? 'close' : 'menu'"
+            @click="isLeftDrawerOpen = !isLeftDrawerOpen"
+          />
         </div>
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
@@ -59,6 +45,23 @@
       </div>
     </q-header>
 
+    <BaseSidebar
+      v-model="isLeftDrawerOpen" side="left"
+      @login="loadApplications()"
+      @logout="loadApplications()"
+    >
+      <template v-slot:menuItems>
+        <SidebarMenuItem
+          menu-label="Job Applications" icon-name="contact_page"
+          @click="openNewCandidatePage('candidate-dashboard')"
+        />
+        <SidebarMenuItem
+          menu-label="Favorites" icon-name="star"
+          @click="openNewCandidatePage('candidate-favorites')"
+        />
+      </template>
+    </BaseSidebar>
+
     <q-drawer
       v-if="jobApplication"
       v-model="isRightDrawerOpen"
@@ -71,7 +74,7 @@
         ref="jobApplicationForm"
         :job-application="jobApplication"
         :employer="employer"
-        @login="this.authStore.setApplications(this.authStore.propUser)"
+        @login="loadApplications()"
         @closeApplication="closeJobApplication()"
       />
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
@@ -92,9 +95,11 @@
               ref="jobs"
               :user="user"
               :employer="employer"
+              :user-favorites="userFavorites"
               :headerHeight="headerHeight"
               @openAppSideBar="openJobApplication"
               @closeAppSideBar="isRightDrawerOpen = false"
+              @updateUserFavorites="loadUserFavorites(true)"
             />
           </q-tab-panel>
           <q-tab-panel name="community">
@@ -144,19 +149,21 @@
 </template>
 
 <script>
-import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
+import BaseSidebar from 'components/sidebar/BaseSidebar.vue'
+import SidebarMenuItem from 'components/sidebar/SidebarMenuItem.vue'
 import CommunitySection from 'pages/jobs-page/CommunitySection.vue'
 import JobsSection from 'pages/jobs-page/JobsSection.vue'
 import employerStyleUtil from 'src/utils/employer-styles.js'
 import employerTypeUtil from 'src/utils/employer-types.js'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import scrollUtil from 'src/utils/scroll.js'
+import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useSocialStore } from 'stores/social-store.js'
 import { useUserStore } from 'stores/user-store.js'
 import { useUtilStore } from 'stores/utility-store.js'
-import { ref } from 'vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import locationUtil from 'src/utils/location'
 import dataUtil from 'src/utils/data'
@@ -172,6 +179,10 @@ export default {
     return {
       tab: this.$route?.params?.tab || 'jobs',
       pageNumber: 1,
+      isRightDrawerOpen: false,
+      isLeftDrawerOpen: true,
+      user: null,
+      userFavorites: {},
       employer: null,
       profile: null,
       isLoaded: false,
@@ -183,11 +194,22 @@ export default {
       employerStyleUtil,
       employerTypeUtil,
       locationUtil,
+      pagePermissionsUtil,
       scrollUtil,
-      userUtil
+      userUtil,
+      authStore: useAuthStore(),
+      employerStore: useEmployerStore(),
+      socialStore: useSocialStore(),
+      userStore: useUserStore(),
+      utilStore: useUtilStore(),
+      q: useQuasar(),
+      USER_TYPES,
+      USER_TYPE_CANDIDATE
     }
   },
   components: {
+    SidebarMenuItem,
+    BaseSidebar,
     CommunitySection,
     JobsSection,
     ResponsiveWidth,
@@ -214,13 +236,16 @@ export default {
     }
   },
   methods: {
-    log (val) {
-      console.log(val)
-    },
     getFullLocation: locationUtil.getFullLocation,
-    async logoutUser () {
-      await this.authStore.logout(false)
-      await this.authStore.setApplications()
+    async loadApplications () {
+      await this.$refs.jobs.loadApplications(true)
+    },
+    async loadUserFavorites (isForceRefresh = true) {
+      if (!this.user) {
+        return
+      }
+      await this.userStore.setUserFavorites(this.user.id, { isForceRefresh })
+      this.userFavorites = this.userStore.getUserFavorites(this.user.id)
     },
     async setLinkOwnerProfile () {
       const params = { socialLinkId: this.$route.params.filterId }
@@ -245,6 +270,12 @@ export default {
       this.isLoaded = true
       Loading.hide()
     },
+    openNewCandidatePage (pageKey) {
+      const newPage = this.$router.resolve(
+        this.pagePermissionsUtil.getRouterPageCfg(pageKey, USER_TYPES[USER_TYPE_CANDIDATE])
+      )
+      window.open(newPage.href, '_blank')
+    },
     openJobApplication (jobApplication) {
       this.jobApplication = jobApplication
       this.isRightDrawerOpen = true
@@ -252,15 +283,18 @@ export default {
     async closeJobApplication () {
       this.jobApplication = null
       await this.$refs.jobs.closeApplication()
-    },
-    openFeedbackModal () {
-      return this.q.dialog({
-        component: DialogFeedback
-      })
     }
   },
   async mounted () {
-    await this.loadData()
+    Loading.show()
+    await this.authStore.setUser()
+    const { user } = storeToRefs(this.authStore)
+    this.user = user
+    Loading.hide()
+    await Promise.all([
+      this.loadData(),
+      this.loadUserFavorites(false)
+    ])
     this.headerHeight = this.$refs.header.$el.clientHeight
     const { tab } = this.$route.query
     if (tab) {
@@ -268,36 +302,13 @@ export default {
     }
     this.isLoaded = true
   },
-  preFetch () {
-    const authStore = useAuthStore()
-    Loading.show()
-
-    return authStore.setUser().finally(() => {
-      Loading.hide()
-    })
-  },
   setup () {
-    const isRightDrawerOpen = ref(false)
     const globalStore = useGlobalStore()
-    const authStore = useAuthStore()
-    const { user, applications } = storeToRefs(authStore)
 
     useMeta(globalStore.getMetaCfg({
       pageTitle: 'Jobs',
       description: 'Apply to jobs on JobVyne'
     }))
-
-    return {
-      user,
-      applications,
-      isRightDrawerOpen,
-      authStore,
-      employerStore: useEmployerStore(),
-      socialStore: useSocialStore(),
-      userStore: useUserStore(),
-      utilStore: useUtilStore(),
-      q: useQuasar()
-    }
   }
 }
 </script>

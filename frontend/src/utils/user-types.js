@@ -28,7 +28,10 @@ class UserTypeUtil {
     }
   }
 
-  getUserTypeList (userTypeBits, isInBits, { excludeBits = USER_TYPES.Admin | USER_TYPES.Candidate, includeBits } = {}) {
+  getUserTypeList (userTypeBits, isInBits, {
+    excludeBits = USER_TYPES.Admin | USER_TYPES.Candidate,
+    includeBits
+  } = {}) {
     return Object.entries(USER_TYPES).reduce((typeList, [userTypeName, userTypeBit]) => {
       const isExcluded = (userTypeBit & excludeBits) || (includeBits && !(userTypeBit & includeBits))
       if (!isExcluded && (userTypeBits & userTypeBit)) {
@@ -36,6 +39,34 @@ class UserTypeUtil {
       }
       return typeList
     }, [])
+  }
+
+  isAdmin (userTypeBits) {
+    return Boolean(userTypeBits & USER_TYPES[USER_TYPE_ADMIN])
+  }
+
+  isCandidate (userTypeBits) {
+    return Boolean(userTypeBits & USER_TYPES[USER_TYPE_CANDIDATE])
+  }
+
+  isEmployee (userTypeBits) {
+    return Boolean(userTypeBits & USER_TYPES[USER_TYPE_EMPLOYEE])
+  }
+
+  isInfluencer (userTypeBits) {
+    return Boolean(userTypeBits & USER_TYPES[USER_TYPE_INFLUENCER])
+  }
+
+  isEmployer (userTypeBits) {
+    return Boolean(userTypeBits & USER_TYPES[USER_TYPE_EMPLOYER])
+  }
+
+  isCompanyUser (userTypeBits) {
+    return Boolean(userTypeBits & COMPANY_USER_TYPE_BITS)
+  }
+
+  isSocialSharer (userTypeBits) {
+    return this.isCompanyUser(userTypeBits) || Boolean(this.isInfluencer(userTypeBits))
   }
 }
 

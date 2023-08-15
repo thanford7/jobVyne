@@ -1,6 +1,7 @@
 <template>
   <div>
-    <div v-if="getJobApplication(job.id)" class="application-date q-pa-sm border-top-rounded" :style="getHeaderStyle()">
+    <div v-if="getJobApplication(job.id)" class="application-date q-pa-sm border-top-rounded bg-blue-1 text-grey-8">
+      <q-icon name="info" color="grey-7" size="20px"/>
       <span v-if="getJobApplication(job.id).is_external_application">
         You viewed this job on
       </span>
