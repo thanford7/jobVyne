@@ -7,9 +7,13 @@ from jvapp.models import JobVyneUser
 
 def migrate_search_levels(apps, schema_editor):
     user_model = apps.get_model('jvapp', 'JobVyneUser')
-    users = user_model.objects.select_related('job_search_level').filter(job_search_level__isnull=False)
+    user_job_level_map = {
+        user.id: user.job_search_level.id for user in
+        user_model.objects.select_related('job_search_level').filter(job_search_level__isnull=False)
+    }
+    users = JobVyneUser.objects.filter(id__in=list(user_job_level_map.keys()))
     for user in users:
-        user.job_search_levels.add(user.job_search_level)
+        user.job_search_levels.add(user_job_level_map[user.id])
 
 
 class Migration(migrations.Migration):
@@ -19,10 +23,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # migrations.AddField(
-        #     model_name='jobvyneuser',
-        #     name='job_search_levels',
-        #     field=models.ManyToManyField(related_name='levels_job_seeker', to='jvapp.taxonomy'),
-        # ),
+        migrations.AddField(
+            model_name='jobvyneuser',
+            name='job_search_levels',
+            field=models.ManyToManyField(related_name='levels_job_seeker', to='jvapp.taxonomy'),
+        ),
         migrations.RunPython(migrate_search_levels, atomic=True),
     ]
