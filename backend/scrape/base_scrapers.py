@@ -1122,10 +1122,10 @@ class AshbyHQScraper(Scraper):
         
         # Make sure page data has loaded
         try:
-            await self.wait_for_el(page, '[class*="_filters"]')
+            await self.wait_for_el(page, '[class*="_titles"]')
         except PlaywrightTimeoutError:
             page = await self.get_starting_page()
-            await self.wait_for_el(page, '[class*="_filters"]')
+            await self.wait_for_el(page, '[class*="_titles"]')
         
         html_dom = await self.get_page_html(page)
         
