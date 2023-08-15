@@ -635,6 +635,7 @@ class SocialLinkPostJobsView(JobVyneAPIView):
             preferred_jobs = SocialLinkPostJobsView.get_unique_jobs(
                 EmployerJobView.get_employer_jobs(employer_job_filter=preferred_jobs_filter)
             )[:max_job_count]
+            preferred_jobs = SocialLinkPostJobsView.get_even_employer_distribution_jobs(preferred_jobs, max_job_count)
             
             # If we already have the max number of jobs we stop here
             if len(preferred_jobs) == max_job_count:
@@ -648,6 +649,7 @@ class SocialLinkPostJobsView(JobVyneAPIView):
             EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter)
         )
         max_non_preferred_jobs = max_job_count - len(preferred_jobs)
+        jobs = SocialLinkPostJobsView.get_even_employer_distribution_jobs(jobs, max_non_preferred_jobs)
         
         return preferred_jobs + jobs[:max_non_preferred_jobs]
     
@@ -657,6 +659,29 @@ class SocialLinkPostJobsView(JobVyneAPIView):
         # Some employers create a separate post for each location for a specific job
         jobs = {(job.employer_id, job.job_title): job for job in jobs}
         return list(jobs.values())
+    
+    @staticmethod
+    def get_even_employer_distribution_jobs(jobs, job_limit):
+        # Some employers post a bunch of jobs at the same time
+        # We want to make sure we don't post jobs just for one employer
+        employer_jobs = defaultdict(list)
+        for job in jobs:
+            employer_jobs[job.employer_id].append(job)
+        
+        distributed_jobs = []
+        remove_employer_ids = []
+        employer_ids = set(employer_jobs.keys())
+        while len(distributed_jobs) < job_limit and employer_ids:
+            for employer_id in employer_ids:
+                distributed_jobs.append(employer_jobs[employer_id].pop())
+                if not len(employer_jobs[employer_id]):
+                    remove_employer_ids.append(employer_id)
+            for employer_id in remove_employer_ids:
+                employer_ids.remove(employer_id)
+                remove_employer_ids = []
+        
+        return distributed_jobs
+        
 
 
 class ShareSocialLinkView(JobVyneAPIView):
