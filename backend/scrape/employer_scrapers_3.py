@@ -951,7 +951,7 @@ class LyraHealthScraper(LeverScraper):
     EMPLOYER_KEY = 'lyrahealth'
 
 
-class ImmersiveLabsScraper(GreenhouseApiScraper):
+class ImmersiveLabsScraper(AshbyHQScraper):
     employer_name = 'Immersive Labs'
     EMPLOYER_KEY = 'immersivelabs'
 

@@ -2106,7 +2106,6 @@ all_scrapers = {
     NextInsuranceScraper.employer_name: NextInsuranceScraper,
     ModulrScraper.employer_name: ModulrScraper,
     HudsonRiverTradingScraper.employer_name: HudsonRiverTradingScraper,
-    KavakScraper.employer_name: KavakScraper,
     HeadwayScraper.employer_name: HeadwayScraper,
     WilsonSonsiniScraper.employer_name: WilsonSonsiniScraper,
     StripeScraper.employer_name: StripeScraper,

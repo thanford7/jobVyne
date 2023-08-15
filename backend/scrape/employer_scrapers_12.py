@@ -889,7 +889,7 @@ class NvidiaScraper(WorkdayScraper):
 
 class DatabricksScraper(GreenhouseScraper):
     employer_name = 'Databricks'
-    EMPLOYER_KEY = 'None'
+    EMPLOYER_KEY = 'databricks'
 
 
 class IxlLearningScraper(GreenhouseApiScraper):
