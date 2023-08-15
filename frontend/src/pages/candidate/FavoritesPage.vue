@@ -26,7 +26,7 @@
               <q-tr :props="props">
                 <q-td auto-width>
                   <q-btn
-                    outline round dense icon="delete" color="negative" class="q-mr-xs"
+                    outline round dense icon="fas fa-store-slash" color="negative" class="q-mr-xs" size="12px"
                     title="Remove favorite"
                     @click="deleteEmployerFavorite(props.row)"
                   />

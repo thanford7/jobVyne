@@ -51,7 +51,7 @@ export const useAuthStore = defineStore('auth', {
         this.user = resp?.data?.user || {}
       }
     },
-    async setApplications (user, isForce = false) {
+    async setUserApplications (user, isForce = false) {
       if (!user || dataUtil.isEmpty(user)) {
         this.applications = []
         return
@@ -78,6 +78,9 @@ export const useAuthStore = defineStore('auth', {
     },
     getUserEmployeeQuestions (employerId) {
       return this.employeeQuestions[employerId]
+    },
+    getUserApplications () {
+      return this.applications
     },
     executeIfCaptchaValid (action, successFn, failureFn, alwaysFn = null) {
       // eslint-disable-next-line no-undef

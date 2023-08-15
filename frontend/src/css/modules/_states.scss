@@ -9,3 +9,11 @@
 .bg-hover:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
+
+.hover-display-parent:hover .hover-display {
+    visibility: visible;
+}
+
+.hover-display-parent .hover-display {
+    visibility: hidden;
+}
