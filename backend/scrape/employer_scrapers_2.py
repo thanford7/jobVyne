@@ -552,11 +552,6 @@ class HudsonRiverTradingScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'wehrtyou'
 
 
-class KavakScraper(GreenhouseScraper):
-    employer_name = 'Kavak'
-    EMPLOYER_KEY = 'kavakcareers'
-
-
 class HeadwayScraper(GreenhouseScraper):
     employer_name = 'Headway'
     EMPLOYER_KEY = 'headway'
