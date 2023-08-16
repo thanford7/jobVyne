@@ -1,5 +1,6 @@
 <template>
   <DialogBase
+    ref="baseDialog"
     base-title-text="Job Filter"
     width="700px"
     primary-button-text="Filter jobs"
@@ -12,6 +13,7 @@
           filled
           :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
           debounce="500"
+          @keyup.enter.prevent="$refs.baseDialog.onOkClick"
         >
           <template v-slot:append>
             <q-icon name="search"/>

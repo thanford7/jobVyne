@@ -196,6 +196,18 @@ export default {
       async handler () {
         await this.loadJobs()
       }
+    },
+    $route: {
+      async handler () {
+        this.isLoaded = false
+        const previousSub = dataUtil.getQueryParams().sub
+        const hasFiltersChanged = await this.updateJobFilterFromQueryParams()
+        const hasSubChanged = dataUtil.isDeepEqual(previousSub, dataUtil.getQueryParams().sub)
+        if (hasFiltersChanged || hasSubChanged) {
+          await this.loadJobs()
+        }
+        this.isLoaded = true
+      }
     }
   },
   methods: {
@@ -287,6 +299,7 @@ export default {
       }
     },
     async updateJobFilterFromQueryParams () {
+      const previousParams = dataUtil.deepCopy(this.jobFilters)
       const params = dataUtil.getQueryParams()
       const intKeys = ['remote_type_bit', 'range_miles']
       const floatKeys = ['minimum_salary']
@@ -307,6 +320,7 @@ export default {
         })
         this.jobFilters.location = (resp.data?.length) ? resp.data[0] : null
       }
+      return dataUtil.isDeepEqual(previousParams, this.jobFilters)
     },
     updateJobFilterQueryParams (startPath = null) {
       const addParams = Object.entries(this.jobFilters).reduce((filterParams, [jobFilterKey, jobFilter]) => {
