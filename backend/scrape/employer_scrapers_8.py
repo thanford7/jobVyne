@@ -1110,7 +1110,7 @@ class OpenseaScraper(LeverScraper):
     EMPLOYER_KEY = 'OpenSea'
 
 
-class VantaScraper(GreenhouseApiScraper):
+class VantaScraper(AshbyHQScraper):
     employer_name = 'Vanta'
     EMPLOYER_KEY = 'vanta'
 

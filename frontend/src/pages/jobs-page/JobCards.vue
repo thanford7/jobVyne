@@ -41,7 +41,7 @@
                   </div>
                 </div>
               </div>
-              <div v-if="user" class="col-1">
+              <div v-if="user?.id" class="col-1">
                 <div class="flex items-center justify-center hover-display">
                   <CustomTooltip v-if="!isUserFavoriteEmployer(employer)" :is_include_icon="false">
                     <template v-slot:content>
@@ -153,6 +153,9 @@ export default {
   },
   methods: {
     isUserFavoriteEmployer (employer) {
+      if (!this.userFavorites?.employers) {
+        return false
+      }
       return Boolean(
         this.userFavorites?.employers.find((favoriteEmployer) => favoriteEmployer.employer_id === employer.employer_id)
       )
