@@ -241,7 +241,7 @@ export default {
       await this.$refs.jobs.loadApplications(true)
     },
     async loadUserFavorites (isForceRefresh = true) {
-      if (!this.user) {
+      if (!this.user?.id) {
         return
       }
       await this.userStore.setUserFavorites(this.user.id, { isForceRefresh })
