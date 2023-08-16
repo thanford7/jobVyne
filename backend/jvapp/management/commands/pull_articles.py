@@ -7,7 +7,7 @@ from django.core.management import BaseCommand
 
 from jvapp.models.content import Article
 from jvapp.utils import ai
-from scrape.reader import WebReader, DocCache
+from scrape.reader import WebReader
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         limit = options['limit']
         num_articles_pulled = 0
-        DocCache('web_reader_cache').clear()
 
         web_reader = WebReader()
         articles = []
