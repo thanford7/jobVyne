@@ -43,6 +43,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
 
     # Company data
     description = models.TextField(null=True, blank=True)
+    description_long = models.TextField(null=True, blank=True)
     website = models.URLField(null=True, blank=True)
     industry = models.CharField(max_length=100, null=True, blank=True)
     size_min = models.IntegerField(null=True, blank=True)
@@ -225,6 +226,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='employer_job')
     job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True, blank=True)
+    job_description_summary = models.TextField(null=True, blank=True)
     responsibilities = models.JSONField(null=True, blank=True)
     qualifications = models.JSONField(null=True, blank=True)
     technical_qualifications = models.JSONField(null=True, blank=True)

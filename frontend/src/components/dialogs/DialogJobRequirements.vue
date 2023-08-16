@@ -8,11 +8,14 @@
       v-if="jobSections?.length > 1"
       v-model="showSection"
       toggle-color="grey-7"
-      class="q-mb-md"
+      class="q-mb-md border-1-gray-300"
       :options="jobSections"
-      spread
+      spread size="md" ripple
     />
     <div v-if="isHtml" v-html="sectionValue"/>
+    <div v-else-if="isText">
+      {{ sectionValue }}
+    </div>
     <div v-else>
       <ul>
         <li v-for="val in sectionValue">
@@ -29,12 +32,14 @@ import dataUtil from 'src/utils/data.js'
 const JOB_SECTION_REQUIREMENTS = 'responsibilities'
 const JOB_SECTION_QUALIFICATIONS = 'qualifications'
 const JOB_SECTION_TECH_QUALIFICATIONS = 'technical_qualifications'
+const JOB_DESCRIPTION_SUMMARY = 'job_description_summary'
 const JOB_DESCRIPTION = 'job_description'
 
 const JOB_SECTIONS = [
   { value: JOB_SECTION_REQUIREMENTS, label: 'Requirements' },
   { value: JOB_SECTION_QUALIFICATIONS, label: 'Qualifications' },
   { value: JOB_SECTION_TECH_QUALIFICATIONS, label: 'Technical qualifications' },
+  { value: JOB_DESCRIPTION_SUMMARY, label: 'Short job description' },
   { value: JOB_DESCRIPTION, label: 'Full job description' }
 ]
 
@@ -58,6 +63,9 @@ export default {
     },
     isHtml () {
       return this.showSection === JOB_DESCRIPTION
+    },
+    isText () {
+      return this.showSection === JOB_DESCRIPTION_SUMMARY
     }
   }
 }

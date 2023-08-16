@@ -167,6 +167,7 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
         'application_url': employer_job.application_url,
         'job_title': employer_job.job_title,
         'job_description': employer_job.job_description,
+        'job_description_summary': employer_job.job_description_summary,
         'responsibilities': employer_job.responsibilities,
         'qualifications': employer_job.qualifications,
         'technical_qualifications': employer_job.technical_qualifications,

@@ -10,13 +10,15 @@ import openai
 import logging
 
 from asgiref.sync import sync_to_async
+from openai import InvalidRequestError
 
 from jvapp.models.tracking import AIRequest
 
 logger = logging.getLogger(__name__)
 openai.api_key = os.getenv('OPEN_AI_API_KEY')
 
-DEFAULT_MODEL = 'gpt-3.5-turbo'
+DEFAULT_MODEL = 'gpt-3.5-turbo'  # 4k token limit
+LARGE_TEXT_MODEL = 'gpt-3.5-turbo-16k'  # 16k token limit
 
 
 class PromptError(Exception):
@@ -103,7 +105,12 @@ async def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     
     start_time = datetime.datetime.now()
     logger.info(f'Sending request to {model} model')
-    resp = await send_request(model, prompt)
+    try:
+        resp = await send_request(model, prompt)
+    except InvalidRequestError as e:
+        if model == LARGE_TEXT_MODEL:
+            raise e
+        resp = await send_request(LARGE_TEXT_MODEL, prompt)
     end_time = datetime.datetime.now()
     model_request_duration = math.ceil((end_time - start_time).total_seconds())
     if is_test:
