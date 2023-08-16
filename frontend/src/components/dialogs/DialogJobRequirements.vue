@@ -5,6 +5,7 @@
     width="700px"
   >
     <q-btn-toggle
+      v-if="jobSections?.length > 1"
       v-model="showSection"
       toggle-color="grey-7"
       class="q-mb-md"

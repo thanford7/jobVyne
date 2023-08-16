@@ -5,6 +5,7 @@
     transition-show="slide-up"
     transition-hide="slide-down"
     @hide="onDialogHide"
+    @keyup.enter.prevent="onOkClick"
   >
     <q-card class="q-dialog-plugin" :style="cardStyle">
       <q-bar v-if="isFullScreen">
