@@ -51,14 +51,16 @@
       @logout="loadUserData()"
     >
       <template v-slot:menuItems>
-        <SidebarMenuItem
-          menu-label="Job Applications" icon-name="contact_page"
-          @click="openNewCandidatePage('candidate-dashboard')"
-        />
-        <SidebarMenuItem
-          menu-label="Favorites" icon-name="star"
-          @click="openNewCandidatePage('candidate-favorites')"
-        />
+        <template v-if="user?.id">
+          <SidebarMenuItem
+            menu-label="Job Applications" icon-name="contact_page"
+            @click="openNewCandidatePage('candidate-dashboard')"
+          />
+          <SidebarMenuItem
+            menu-label="Favorites" icon-name="star"
+            @click="openNewCandidatePage('candidate-favorites')"
+          />
+        </template>
       </template>
     </BaseSidebar>
 
@@ -232,7 +234,11 @@ export default {
   },
   watch: {
     tab () {
-      this.$router.replace({ name: this.$route.name, params: this.$route.params, query: { ...this.$route.query, tab: this.tab } })
+      this.$router.replace({
+        name: this.$route.name,
+        params: this.$route.params,
+        query: { ...this.$route.query, tab: this.tab }
+      })
     }
   },
   methods: {
