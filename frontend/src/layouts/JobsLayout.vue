@@ -47,8 +47,8 @@
 
     <BaseSidebar
       v-model="isLeftDrawerOpen" side="left"
-      @login="loadApplications()"
-      @logout="loadApplications()"
+      @login="loadUserData()"
+      @logout="loadUserData()"
     >
       <template v-slot:menuItems>
         <SidebarMenuItem
@@ -74,7 +74,7 @@
         ref="jobApplicationForm"
         :job-application="jobApplication"
         :employer="employer"
-        @login="loadApplications()"
+        @login="loadUserData()"
         @closeApplication="closeJobApplication()"
       />
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
@@ -237,11 +237,18 @@ export default {
   },
   methods: {
     getFullLocation: locationUtil.getFullLocation,
+    async loadUserData () {
+      await Promise.all([
+        this.loadApplications(),
+        this.loadUserFavorites()
+      ])
+    },
     async loadApplications () {
       await this.$refs.jobs.loadApplications(true)
     },
     async loadUserFavorites (isForceRefresh = true) {
       if (!this.user?.id) {
+        this.userFavorites = {}
         return
       }
       await this.userStore.setUserFavorites(this.user.id, { isForceRefresh })
