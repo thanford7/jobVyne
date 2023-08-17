@@ -526,7 +526,7 @@ class JobModalViews(SlackMultiViewModal):
         from jvapp.apis.slack import SlackUserGeneratedJobPoster  # Avoid circular import
         
         # Add job connection
-        connection_type = coerce_int(self.metadata[ACTION_KEY_JOB_CONNECTION]['value'])
+        connection_type = coerce_int(self.metadata[ACTION_KEY_JOB_CONNECTION]['value']['connection_bit'])
         is_employer_update = False
         if connection_type in (
                 ConnectionTypeBit.HIRING_MEMBER.value,

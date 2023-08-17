@@ -94,8 +94,9 @@ class Modal(SlackBlock):
 
 
 class SectionText(SlackBlock):
-    def __init__(self, text, accessory=None):
+    def __init__(self, text, block_id=None, accessory=None):
         self.text = text
+        self.block_id = block_id
         self.accessory = accessory
     
     def get_slack_object(self):
@@ -106,6 +107,8 @@ class SectionText(SlackBlock):
                 'text': self.text
             }
         }
+        if self.block_id:
+            slack_object['block_id'] = self.block_id
         if self.accessory:
             slack_object['accessory'] = self.accessory.get_slack_object()
             
