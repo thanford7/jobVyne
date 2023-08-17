@@ -250,6 +250,11 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     # For user entered jobs, we want to review and approve before displaying on the website
     is_job_approved = models.BooleanField(default=True, db_index=True)
     
+    class Meta:
+        indexes = [
+            models.Index('open_date', 'id', name='open_date_id_idx')
+        ]
+    
     def __str__(self):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
     

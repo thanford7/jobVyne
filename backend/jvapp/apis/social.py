@@ -20,6 +20,7 @@ from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, Taxonomy
 from jvapp.models.job_seeker import JobApplication
+from jvapp.models.job_subscription import JobSubscription
 from jvapp.models.location import Location, REMOTE_TYPES
 from jvapp.models.social import *
 from jvapp.models.tracking import Message, PageView
@@ -54,13 +55,18 @@ class SocialLinkView(JobVyneAPIView):
                 raise ValueError('You must provide an ID, owner ID, or employer ID')
             
             data = []
-            for social_link in self.get_link(self.user, social_link_filter=q_filter):
+            logger.info('Fetching social links')
+            social_links = self.get_link(self.user, social_link_filter=q_filter)
+            logger.info(f'Serializing social links ({len(social_links)})')
+            for social_link in social_links:
+                logger.info('Serializing link')
                 serialized_link = get_serialized_social_link(social_link)
                 # Only fetch job count for specific user because a database call
                 # is required per social_link and is not performant
+                logger.info('Getting job count')
                 if owner_id:
                     serialized_link['jobs_count'] = len(
-                        SocialLinkJobsView.get_jobs_from_social_link(social_link))
+                        SocialLinkJobsView.get_jobs_from_social_link(social_link, is_include_fetch=False))
                 data.append(serialized_link)
         
         return Response(status=status.HTTP_200_OK, data=data)
@@ -252,19 +258,25 @@ class SocialLinkView(JobVyneAPIView):
             queryset=PageView.objects.filter(view_filter)
         )
         
+        subscriptions_prefetch = Prefetch(
+            'job_subscriptions',
+            queryset=JobSubscription.objects.prefetch_related(
+                'filter_location',
+                'filter_location__city',
+                'filter_location__state',
+                'filter_location__country',
+                'filter_job',
+                'filter_employer'
+            )
+        )
+        
         links = SocialLink.objects \
             .select_related('employer', 'owner') \
             .prefetch_related(
-            'job_subscriptions',
-            'job_subscriptions__filter_location',
-            'job_subscriptions__filter_location__city',
-            'job_subscriptions__filter_location__state',
-            'job_subscriptions__filter_location__country',
-            'job_subscriptions__filter_job',
-            'job_subscriptions__filter_employer',
-            app_prefetch,
-            page_view_prefetch
-        ) \
+                subscriptions_prefetch,
+                app_prefetch,
+                page_view_prefetch
+            ) \
             .filter(social_link_filter)
         
         if is_use_permissions:
