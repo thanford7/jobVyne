@@ -5,7 +5,11 @@
     transition-show="slide-up"
     transition-hide="slide-down"
     @hide="onDialogHide"
-    @keyup.enter.prevent="onOkClick"
+    @keyup.enter.prevent="() => {
+      if (isSubmitOnEnter) {
+        onOkClick()
+      }
+    }"
   >
     <q-card class="q-dialog-plugin" :style="cardStyle">
       <q-bar v-if="isFullScreen">
@@ -120,6 +124,10 @@ export default {
     },
     isValidFormFn: {
       type: [Function, null]
+    },
+    isSubmitOnEnter: {
+      type: Boolean,
+      default: false
     },
     width: {
       type: String,

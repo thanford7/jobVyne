@@ -178,7 +178,7 @@ class ApplicationsView(BaseDataView):
     
     def serialize_application(self, application, is_employer):
         referrer = application.social_link.owner if application.social_link else application.referrer_user
-        is_owner = referrer.id == self.user.id
+        is_owner = referrer and (referrer.id == self.user.id)
         application_data = {
             'id': application.id,
             'job_title': application.employer_job.job_title,

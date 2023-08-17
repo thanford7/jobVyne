@@ -412,18 +412,6 @@ class SocialLinkJobsView(JobVyneAPIView):
                     'taxonomy',
                     'taxonomy__taxonomy'
                 )
-            logger.info('Fetching application requirements')
-            application_requirements = EmployerJobApplicationRequirementView.get_application_requirements(
-                employer_ids=employer_ids)
-            application_requirements_by_employer = defaultdict(list)
-            for requirement in application_requirements:
-                application_requirements_by_employer[requirement.employer_id].append(requirement)
-            
-            consolidated_app_requirements_by_employer = {}
-            for employer_id, employer_requirements in application_requirements_by_employer.items():
-                consolidated_app_requirements_by_employer[
-                    employer_id] = EmployerJobApplicationRequirementView.get_consolidated_application_requirements(
-                    employer_requirements)
             
             for job in jobs:
                 if not (employer_jobs := jobs_by_employer.get(job.employer_id)):
@@ -444,9 +432,6 @@ class SocialLinkJobsView(JobVyneAPIView):
                     jobs_by_employer[job.employer_id] = employer_jobs
                 
                 serialized_job = get_serialized_employer_job(job)
-                serialized_job['application_fields'] = EmployerJobApplicationRequirementView.get_job_application_fields(
-                    job, consolidated_app_requirements_by_employer[job.employer_id]
-                )
                 employer_jobs['jobs'][job.job_department_standardized][job.job_title].append(serialized_job)
                 employer_jobs['job_departments'].add(job.job_department_standardized)
             

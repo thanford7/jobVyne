@@ -1,5 +1,6 @@
 <template>
   <q-drawer
+    :model-value="modelValue"
     :side="side" bordered persistent
     :width="300"
     :breakpoint="500"
@@ -62,7 +63,8 @@ export default {
     isRedirectOnLogout: {
       type: Boolean,
       default: true
-    }
+    },
+    modelValue: Boolean
   },
   data () {
     return {
@@ -72,6 +74,13 @@ export default {
       authStore: useAuthStore(),
       utilStore: useUtilStore(),
       q: useQuasar()
+    }
+  },
+  watch: {
+    modelValue () {
+      if (this.modelValue) {
+        this.isDrawerMini = false
+      }
     }
   },
   methods: {
