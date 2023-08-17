@@ -1,7 +1,9 @@
+import json
+
 from django.db.models import Q
 from django.utils import timezone
 
-from jvapp.models.employer import ConnectionTypeBit, EmployerJob, Taxonomy
+from jvapp.models.employer import ConnectionTypeBit, EmployerJob, EmployerJobConnection, Taxonomy
 from jvapp.models.location import REMOTE_TYPES
 from jvapp.slack.slack_blocks import Button, InputOption, InputText, Modal, SectionText, Select, SelectExternal, \
     SelectMulti
@@ -79,23 +81,30 @@ class SelectEmployerJob(SelectExternal):
 ACTION_KEY_JOB_CONNECTION = 'job-connection'
 
 
-def get_job_connection_select(is_element_only, is_include_no_connection=False):
+def get_job_connection_value(connection_bit, job_id):
+    return json.dumps({
+        'connection_bit': connection_bit,
+        'job_id': job_id
+    })
+
+
+def get_job_connection_select(is_element_only, job_id=None, is_include_no_connection=False):
     connection_options = [
         InputOption(
             'I am hiring for this job',
-            ConnectionTypeBit.HIRING_MEMBER.value,
+            get_job_connection_value(ConnectionTypeBit.HIRING_MEMBER.value, job_id),
         ).get_slack_object(),
         InputOption(
             'I work at this company',
-            ConnectionTypeBit.CURRENT_EMPLOYEE.value,
+            get_job_connection_value(ConnectionTypeBit.CURRENT_EMPLOYEE.value, job_id),
         ).get_slack_object(),
         InputOption(
             'I previously worked at this company',
-            ConnectionTypeBit.FORMER_EMPLOYEE.value,
+            get_job_connection_value(ConnectionTypeBit.FORMER_EMPLOYEE.value, job_id),
         ).get_slack_object(),
         InputOption(
             'I know someone at this company',
-            ConnectionTypeBit.KNOW_EMPLOYEE.value,
+            get_job_connection_value(ConnectionTypeBit.KNOW_EMPLOYEE.value, job_id),
         ).get_slack_object()
     ]
     
@@ -103,7 +112,7 @@ def get_job_connection_select(is_element_only, is_include_no_connection=False):
         connection_options.append(
             InputOption(
                 'I have no connection to this company',
-                ConnectionTypeBit.NO_CONNECTION.value,
+                get_job_connection_value(ConnectionTypeBit.NO_CONNECTION.value, job_id),
             ).get_slack_object()
         )
     
@@ -129,7 +138,7 @@ def get_save_job_section(job):
 def get_job_connection_section(job, group_name):
     return SectionText(
         f'*🔗 Job connection*\nHelp others in {group_name} get hired by connecting them to employees at {job.employer.employer_name}',
-        accessory=get_job_connection_select(True)
+        accessory=get_job_connection_select(True, job_id=job.id)
     )
 
 
@@ -230,3 +239,32 @@ def get_home_zip_code_input(current_postal_code=None):
         initial_value=current_postal_code,
         help_text='This is used to find jobs and events close to your location'
     )
+
+
+def get_job_connections_section_id(job_id):
+    return f'job_connections_{job_id}'
+
+
+job_connection_config = {
+    ConnectionTypeBit.HIRING_MEMBER.value: {'text': 'Hiring team', 'star_count': 4},
+    ConnectionTypeBit.CURRENT_EMPLOYEE.value: {'text': 'Employee', 'star_count': 3},
+    ConnectionTypeBit.FORMER_EMPLOYEE.value: {'text': 'Past employee', 'star_count': 2},
+    ConnectionTypeBit.KNOW_EMPLOYEE.value: {'text': 'Knows employee at company', 'star_count': 1}
+}
+
+
+def get_job_connections_section(job_id):
+    job_connections = EmployerJobConnection.objects.select_related('user').filter(job_id=job_id).order_by(
+        'connection_type')
+    if not job_connections:
+        return None
+    section_text = (
+        ':grapes: *JOB CONNECTIONS* :grapes: \n'
+        '💡 You are 700% more likely to be hired from a referral! Connect with the people below:\n'
+    )
+    job_connection_texts = []
+    for job_connection in job_connections:
+        cfg = job_connection_config[job_connection.connection_type]
+        job_connection_texts.append(f'({cfg["text"]}) {job_connection.user.full_name}')
+    section_text += '\n'.join(job_connection_texts) + '\n\n'
+    return SectionText(section_text, get_job_connections_section_id(job_id)).get_slack_object()
