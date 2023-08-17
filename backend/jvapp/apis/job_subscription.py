@@ -173,7 +173,7 @@ class JobSubscriptionView(JobVyneAPIView):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         job_filters = [JobSubscriptionView.get_job_filter(js) for js in job_subscriptions]
         return [
-            EmployerJobView.get_employer_jobs(employer_job_filter=jf)
+            EmployerJobView.get_employer_jobs(employer_job_filter=jf, is_include_fetch=False)
             for jf in job_filters
         ]
     
