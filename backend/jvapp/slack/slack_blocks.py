@@ -414,7 +414,7 @@ class SelectMulti(Select):
 
 class SelectExternal(SlackBlock):
     TYPE = 'external_select'
-    OPTIONS_LIMIT = 100
+    OPTIONS_LIMIT = 25  # Technically the limit is 100, but that's just too many options!
     
     def __init__(self, action_id, label, placeholder, min_query_length=3, focus_on_load=False, **kwargs):
         self.action_id = action_id

@@ -32,7 +32,7 @@ class SelectEmployerJob(SelectExternal):
         self.employer_id = employer_id
         super().__init__(
             self.get_options_load_key(), 'Select job', 'Select job',
-            focus_on_load=focus_on_load, min_query_length=0
+            focus_on_load=focus_on_load, min_query_length=3
         )
     
     def get_form_value(self, form_data):

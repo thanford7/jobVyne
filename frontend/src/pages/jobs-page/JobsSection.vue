@@ -329,7 +329,8 @@ export default {
       })
       this.jobFilters = dataUtil.pick(params, Object.keys(jobFiltersTemplate))
       // Use the browser's country as an initial filter if a location is not already populated
-      if (isInit) {
+      // Don't apply to groups since they have presumably already selected the appropriate geographies
+      if (isInit && this.$route.name !== 'group') {
         params.location_text = params.location_text || this.$route.meta?.browserLocation?.country_name
       }
       if (params.location_text) {
