@@ -1,6 +1,6 @@
 from scrape.base_scrapers import AshbyHQScraper, BreezyScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
     GreenhouseScraper, LeverScraper, \
-    SmartRecruitersScraper, UltiProScraper, WorkdayScraper
+    RecruiteeScraper, SmartRecruitersScraper, UltiProScraper, WorkdayScraper
 
 
 class DaveScraper(LeverScraper):
@@ -977,3 +977,98 @@ class InCompassHealthScraper(LeverScraper):
 class OldMissionScraper(GreenhouseApiScraper):
     employer_name = 'Old Mission'
     EMPLOYER_KEY = 'oldmissioncapital'
+    
+    
+class BurrowScraper(RecruiteeScraper):
+    employer_name = 'Burrow'
+    EMPLOYER_KEY = 'burrow'
+    
+    
+class CausaLensScraper(RecruiteeScraper):
+    employer_name = 'causaLens'
+    EMPLOYER_KEY = 'causalens'
+
+
+class OneXScraper(RecruiteeScraper):
+    employer_name = '1X'
+    EMPLOYER_KEY = '1x'
+    
+    
+class AtheniumScraper(RecruiteeScraper):
+    employer_name = 'Atheneum'
+    EMPLOYER_KEY = 'atheneum'
+    
+    
+class CIQScraper(RecruiteeScraper):
+    employer_name = 'CIQ'
+    EMPLOYER_KEY = 'ciq'
+    
+    
+class ClimeworksScraper(RecruiteeScraper):
+    employer_name = 'Climeworks'
+    EMPLOYER_KEY = 'climeworks'
+    
+    
+class DuckDuckGoScraper(RecruiteeScraper):
+    employer_name = 'DuckDuckGo'
+    EMPLOYER_KEY = 'duckduckgo'
+    
+    
+class EyenukScraper(RecruiteeScraper):
+    employer_name = 'Eyenuk'
+    EMPLOYER_KEY = 'eyenukinc'
+    
+    
+class FRISSScraper(RecruiteeScraper):
+    employer_name = 'FRISS'
+    EMPLOYER_KEY = 'friss'
+    
+    
+class HuuugeScraper(RecruiteeScraper):
+    employer_name = 'Huuuge'
+    EMPLOYER_KEY = 'huuuge'
+    
+    
+class IsovalentScraper(RecruiteeScraper):
+    employer_name = 'Isovalent'
+    EMPLOYER_KEY = 'isovalent'
+    
+    
+class MakerDaoScraper(RecruiteeScraper):
+    employer_name = 'Maker DAO'
+    EMPLOYER_KEY = 'makerdao'
+    
+    
+class OvivaScraper(RecruiteeScraper):
+    employer_name = 'Oviva'
+    EMPLOYER_KEY = 'oviva'
+    
+    
+class RadixScraper(RecruiteeScraper):
+    employer_name = 'Radix'
+    EMPLOYER_KEY = 'radix'
+    
+    
+class RarifyLabsScraper(RecruiteeScraper):
+    employer_name = 'Rarify Labs'
+    EMPLOYER_KEY = 'rarifylabs'
+    
+    
+class RechargeComScraper(RecruiteeScraper):
+    employer_name = 'Recharge.com'
+    EMPLOYER_KEY = 'recharge'
+    
+    
+class SelinaFinanceScraper(RecruiteeScraper):
+    employer_name = 'Selina Finance'
+    EMPLOYER_KEY = 'selinafinance'
+    
+    
+class StudentFinanceScraper(RecruiteeScraper):
+    employer_name = 'StudentFinance'
+    EMPLOYER_KEY = 'studentfinance'
+    
+    
+class TetherScraper(RecruiteeScraper):
+    employer_name = 'Tether'
+    EMPLOYER_KEY = 'tether'

@@ -589,7 +589,7 @@ class JobModalViews(SlackMultiViewModal):
         final_notes = [
             f'ℹ️ To view an active list of job seekers, visit <{settings.BASE_URL}/group/{self.slack_cfg.employer.employer_key}/?tab=community|JobVyne for {self.slack_cfg.employer.employer_name}>'
         ]
-        if self.job.jv_check_permission(PermissionTypes.EDIT.value, self.user):
+        if self.job.jv_check_permission(PermissionTypes.EDIT.value, self.user, is_raise_error=False):
             # TODO: Update JobVyne URL to the user's page where they can edit jobs
             final_notes.append(f'ℹ️ You can edit this job at any time by using the `/jv-job` command')
             final_notes.append('ℹ️ This job will remain open for the next 30 days')
