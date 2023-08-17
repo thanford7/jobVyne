@@ -16,9 +16,28 @@ from scrape.custom_scraper.packsize import PacksizeScraper
 # TODO: Build PhenomPeople ATS scraper - https://careers.adobe.com/us/en/c/
 
 test_scrapers = {
+    # CIQScraper.employer_name: CIQScraper,
+    # HuuugeScraper.employer_name: HuuugeScraper,
+    # MakerDaoScraper.employer_name: MakerDaoScraper,
 }
 
 all_scrapers = {
+    StudentFinanceScraper.employer_name: StudentFinanceScraper,
+    RechargeComScraper.employer_name: RechargeComScraper,
+    RadixScraper.employer_name: RadixScraper,
+    DuckDuckGoScraper.employer_name: DuckDuckGoScraper,
+    EyenukScraper.employer_name: EyenukScraper,
+    FRISSScraper.employer_name: FRISSScraper,
+    AtheniumScraper.employer_name: AtheniumScraper,
+    CausaLensScraper.employer_name: CausaLensScraper,
+    BurrowScraper.employer_name: BurrowScraper,
+    OvivaScraper.employer_name: OvivaScraper,
+    RarifyLabsScraper.employer_name: RarifyLabsScraper,
+    SelinaFinanceScraper.employer_name: SelinaFinanceScraper,
+    TetherScraper.employer_name: TetherScraper,
+    IsovalentScraper.employer_name: IsovalentScraper,
+    ClimeworksScraper.employer_name: ClimeworksScraper,
+    OneXScraper.employer_name: OneXScraper,
     MediabrandsScraper.employer_name: MediabrandsScraper,
     OldMissionScraper.employer_name: OldMissionScraper,
     InCompassHealthScraper.employer_name: InCompassHealthScraper,

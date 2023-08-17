@@ -397,6 +397,8 @@ class Scraper:
                 if company_data and isinstance(company_data, dict):
                     job_item.logo_url = company_data.get('logo')
                     if website_url := company_data.get('sameAs'):
+                        if isinstance(website_url, list):
+                            website_url = website_url[0]
                         website_domain = get_website_domain_from_url(website_url)
                         job_item.website_domain = website_domain
                     
@@ -1616,6 +1618,46 @@ class RipplingAtsScraper(Scraper):
             job_department=standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
             job_description=job_description or standard_job_item.job_description,
             employment_type=standard_job_item.employment_type,
+            first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
+            **compensation_data
+        )
+
+
+class RecruiteeScraper(Scraper):
+    TEST_REDIRECT = False
+    IS_REMOVE_QUERY_PARAMS = False
+    job_item_page_wait_sel = '#header'
+    
+    async def scrape_jobs(self):
+        html_dom = await self.get_html_from_url(self.get_start_url())
+        job_links = list(set(html_dom.xpath('//a/@href').getall()))
+        await self.add_job_links_to_queue([l for l in job_links if re.match('^.*?/o/.+?$', l)])
+        await self.close()
+    
+    def get_start_url(self):
+        return f'https://{self.EMPLOYER_KEY}.recruitee.com/'
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, api_data=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        if not standard_job_item:
+            logger.info('Unable to parse JobItem from document. No standard job data (ld+json).')
+            return None
+        description_compensation_data = parse_compensation_text(standard_job_item.job_description)
+        
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=standard_job_item.job_title,
+            locations=standard_job_item.locations,
+            job_department=standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=standard_job_item.job_description,
+            employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=standard_job_item.first_posted_date,
             logo_url=standard_job_item.logo_url,
             website_domain=standard_job_item.website_domain,
