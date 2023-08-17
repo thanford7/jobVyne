@@ -129,6 +129,7 @@ import employerStyleUtil from 'src/utils/employer-styles.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store.js'
+import { useEmployerStore } from 'stores/employer-store.js'
 import { useSocialStore } from 'stores/social-store.js'
 import { useUtilStore } from 'stores/utility-store.js'
 
@@ -164,10 +165,12 @@ export default {
       jobPagesCount: null,
       applications: null,
       jobApplication: null,
+      jobApplicationRequirements: null,
       dataUtil,
       employerStyleUtil,
       scrollUtil,
       authStore: useAuthStore(),
+      employerStore: useEmployerStore(),
       socialStore: useSocialStore(),
       utilStore: useUtilStore(),
       q: useQuasar()
@@ -199,14 +202,13 @@ export default {
     },
     $route: {
       async handler () {
-        this.isLoaded = false
         const previousSub = dataUtil.getQueryParams().sub
         const hasFiltersChanged = await this.updateJobFilterFromQueryParams()
         const hasSubChanged = dataUtil.isDeepEqual(previousSub, dataUtil.getQueryParams().sub)
         if (hasFiltersChanged || hasSubChanged) {
           await this.loadJobs()
         }
-        this.isLoaded = true
+        await this.openApplication()
       }
     }
   },
@@ -266,24 +268,36 @@ export default {
         noRouteDismiss: true
       })
     },
-    async openApplication (jobId) {
+    async openApplication (jobId = null) {
+      jobId = jobId || dataUtil.getQueryParams().jobId
+      if (!jobId) {
+        return
+      }
+      jobId = parseInt(jobId)
+
+      await this.employerStore.setEmployerJobApplicationRequirements({ jobId })
       this.jobApplication = this.getJobApplicationById(jobId)
-      await this.$router.replace({ name: this.$route.name, query: Object.assign({}, this.$route.query, { jobId }) })
+      this.jobApplication.application_fields = this.employerStore.getEmployerJobApplicationRequirements({ jobId })
+      const fullPath = dataUtil.getUrlWithParams({
+        addParams: [{ key: 'jobId', val: jobId }]
+      })
+      window.history.pushState({ path: fullPath }, '', fullPath)
       if (window.innerWidth < 600) {
         this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
       } else {
         this.$emit('openAppSideBar', this.jobApplication)
       }
-      const jobElId = `job-${this.jobApplication.employer_id}-${jobId}`
-      scrollUtil.scrollToElement(document.getElementById(jobElId))
+      const jobElId = `job-${jobId}`
+      scrollUtil.scrollTo(this.getElementTop(jobElId))
     },
     async closeApplication () {
       this.$emit('closeAppSideBar')
       this.jobApplication = null
-      await this.$router.replace({
-        name: this.$route.name,
-        query: dataUtil.omit(this.$route.query || {}, ['jobId'])
+      this.jobApplicationRequirements = null
+      const fullPath = dataUtil.getUrlWithParams({
+        deleteParams: ['jobId']
       })
+      window.history.pushState({ path: fullPath }, '', fullPath)
     },
     getJobApplicationById (jobId) {
       for (const employer of this.jobsByEmployer) {
@@ -298,7 +312,7 @@ export default {
         }
       }
     },
-    async updateJobFilterFromQueryParams () {
+    async updateJobFilterFromQueryParams (isInit = false) {
       const previousParams = dataUtil.deepCopy(this.jobFilters)
       const params = dataUtil.getQueryParams()
       const intKeys = ['remote_type_bit', 'range_miles']
@@ -314,6 +328,10 @@ export default {
         }
       })
       this.jobFilters = dataUtil.pick(params, Object.keys(jobFiltersTemplate))
+      // Use the browser's country as an initial filter if a location is not already populated
+      if (isInit) {
+        params.location_text = params.location_text || this.$route.meta?.browserLocation?.country_name
+      }
       if (params.location_text) {
         const resp = await this.$api.get('search/location/', {
           params: { search_text: params.location_text }
@@ -399,16 +417,13 @@ export default {
     }
   },
   async mounted () {
-    await this.updateJobFilterFromQueryParams()
+    await this.updateJobFilterFromQueryParams(true)
     await Promise.all([
       this.loadJobs(),
       this.loadApplications(false)
     ])
 
-    const { jobId } = dataUtil.getQueryParams()
-    if (jobId) {
-      await this.openApplication(parseInt(jobId))
-    }
+    await this.openApplication()
   }
 }
 </script>

@@ -799,14 +799,26 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request):
-        if not (employer_id := self.query_params.get('employer_id')):
-            return get_error_response('An employer ID is required')
-        
-        application_requirements = self.get_application_requirements(employer_ids=[employer_id])
-        return Response(
-            status=status.HTTP_200_OK,
-            data=self.get_consolidated_application_requirements(application_requirements)
-        )
+        employer_id = coerce_int(self.query_params.get('employer_id'))
+        job_id = coerce_int(self.query_params.get('job_id'))
+        assert employer_id or job_id
+        if employer_id:
+            application_requirements = self.get_application_requirements(employer_ids=[employer_id])
+            return Response(
+                status=status.HTTP_200_OK,
+                data=self.get_consolidated_application_requirements(application_requirements)
+            )
+        else:
+            job = EmployerJob.objects.get(id=job_id)
+            application_requirements = self.get_application_requirements(job=job)
+            consolidated_requirements = self.get_consolidated_application_requirements(application_requirements)
+            application_requirements = self.get_job_application_fields(
+                job, consolidated_requirements
+            )
+            return Response(
+                status=status.HTTP_200_OK,
+                data=application_requirements
+            )
     
     @atomic
     def put(self, request):
@@ -906,7 +918,7 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
         return consolidated_requirements
     
     @staticmethod
-    def get_job_application_fields(job: EmployerJob, consolidated_requirements: dict):
+    def get_job_application_fields(job: EmployerJob, consolidated_requirements: list):
         application_fields = {}
         for requirement in consolidated_requirements:
             field_key = requirement['application_field']

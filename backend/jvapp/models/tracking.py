@@ -15,9 +15,10 @@ class PageView(models.Model, JobVynePermissionsMixin):
     social_link = models.ForeignKey(
         'SocialLink', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view'
     )
+    viewer = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view')
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
-    page_owner = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view')
-    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view')
+    page_owner = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='owner_page_view')
+    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, blank=True, related_name='employer_page_view')
     
     # Unique characteristics
     ip_address = models.CharField(max_length=40, null=True, blank=True)

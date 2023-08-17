@@ -44,7 +44,7 @@
             class="jv-apply-btn"
             label="Apply"
             :style="employerStyleUtil.getButtonStyle(employer)"
-            @click.prevent="$emit('openApplication', job.id)"
+            @click.prevent.stop="$emit('openApplication', job.id)"
           />
           <template v-else>
             <q-btn

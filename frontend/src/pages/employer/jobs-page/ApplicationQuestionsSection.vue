@@ -123,9 +123,13 @@ export default {
         await this.loadApplicationRequirements(true)
       })
     },
-    async loadApplicationRequirements (isForce) {
-      await this.employerStore.setEmployerJobApplicationRequirements(this.user.employer_id, isForce)
-      this.jobApplicationRequirements = this.employerStore.getEmployerJobApplicationRequirements(this.user.employer_id)
+    async loadApplicationRequirements (isForceRefresh) {
+      await this.employerStore.setEmployerJobApplicationRequirements(
+        { employerId: this.user.employer_id, isForceRefresh }
+      )
+      this.jobApplicationRequirements = this.employerStore.getEmployerJobApplicationRequirements({
+        employerId: this.user.employer_id
+      })
     }
   },
   async mounted () {

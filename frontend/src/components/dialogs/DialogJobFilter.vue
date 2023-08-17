@@ -5,6 +5,7 @@
     width="700px"
     primary-button-text="Filter jobs"
     :ok-fn="setEmitData"
+    :is-submit-on-enter="true"
   >
     <q-form ref="form" class="row q-gutter-y-sm">
       <div class="col-12 col-md-4 q-pr-md-sm">

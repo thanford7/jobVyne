@@ -182,7 +182,7 @@ export default {
       tab: this.$route?.params?.tab || 'jobs',
       pageNumber: 1,
       isRightDrawerOpen: false,
-      isLeftDrawerOpen: true,
+      isLeftDrawerOpen: false,
       user: null,
       userFavorites: {},
       employer: null,

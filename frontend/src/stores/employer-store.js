@@ -71,16 +71,21 @@ export const useEmployerStore = defineStore('employer', {
         this.employerJobLocations[employerId] = locResp.data
       }
     },
-    async setEmployerJobApplicationRequirements (employerId, isForceRefresh = false) {
-      if (!this.employerJobApplicationRequirements[employerId] || isForceRefresh) {
-        const resp = await this.$api.get(
-          'employer/job-application-requirement/',
-          {
-            params: { employer_id: employerId }
-          }
-        )
-        this.employerJobApplicationRequirements[employerId] = resp.data
+    async setEmployerJobApplicationRequirements ({ employerId = null, jobId = null, isForceRefresh = false }) {
+      if (!(employerId || jobId)) {
+        return
       }
+      const apiRequestKey = makeApiRequestKey(employerId, jobId)
+      if (this.employerJobApplicationRequirements[apiRequestKey] && !isForceRefresh) {
+        return
+      }
+      const resp = await this.$api.get(
+        'employer/job-application-requirement/',
+        {
+          params: { employer_id: employerId, job_id: jobId }
+        }
+      )
+      this.employerJobApplicationRequirements[apiRequestKey] = resp.data
     },
     async setEmployerJobDepartments (employerId, isForceRefresh = false) {
       if (!this.employerJobDepartments[employerId] || isForceRefresh) {
@@ -194,8 +199,9 @@ export const useEmployerStore = defineStore('employer', {
       const apiRequestKey = makeApiRequestKey(employerId, isOnlyClosed, isIncludeClosed)
       return dataUtil.sortBy(this.employerJobs[apiRequestKey] || [], 'job_title')
     },
-    getEmployerJobApplicationRequirements (employerId) {
-      return this.employerJobApplicationRequirements[employerId] || []
+    getEmployerJobApplicationRequirements ({ employerId = null, jobId = null }) {
+      const apiRequestKey = makeApiRequestKey(employerId, jobId)
+      return this.employerJobApplicationRequirements[apiRequestKey]
     },
     getEmployerReferralRequests (employerId) {
       return dataUtil.sortBy(this.employerReferralRequests[employerId] || [], { key: 'modified_dt', direction: -1 })

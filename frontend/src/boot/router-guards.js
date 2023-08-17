@@ -37,12 +37,13 @@ export default boot(({ app, router }) => {
 
     // Capture page view
     if (to.meta.trackRoute) {
-      $api.post('/page-view/', getAjaxFormData({
+      const resp = await $api.post('/page-view/', getAjaxFormData({
         relative_url: to.path,
         filter_id: to.params.filterId,
         employer_key: to.params.employerKey,
         query: to.query
       }))
+      to.meta.browserLocation = resp.data?.location
     }
 
     // Redirect if user doesn't have access to a specific page
