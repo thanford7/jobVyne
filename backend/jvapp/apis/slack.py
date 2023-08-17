@@ -723,11 +723,12 @@ class SlackOptionsInboundView(SlackExternalBaseView):
             options = SlackOptionsInboundView.add_new_option(options, search_text)
             return options
         elif SelectEmployerJob.OPTIONS_LOAD_KEY_PREPEND in action_id:
-            employer_jobs = SelectEmployerJob.get_employer_jobs(options_load_key=action_id)
-            return [
+            employer_jobs = SelectEmployerJob.get_employer_jobs(options_load_key=action_id, regex_pattern=regex_pattern)
+            options = [
                 InputOption(job.job_title, job.id, description=job.locations_text).get_slack_object() for job in
                 employer_jobs
             ]
+            return options
         
         raise ValueError(f'Unknown option request for action ID = {action_id}')
     
