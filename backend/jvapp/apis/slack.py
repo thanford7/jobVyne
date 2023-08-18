@@ -28,8 +28,7 @@ from jvapp.models.user import JobVyneUser, PermissionName, UserSocialSubscriptio
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.slack.slack_blocks_specific import ACTION_KEY_JOB_CONNECTION, ACTION_KEY_SAVE_JOB, SelectEmployer, \
     SelectEmployerJob, get_final_confirmation_modal, get_job_connection_section, get_job_connections_section, \
-    get_job_connections_section_id, get_save_job_section, \
-    get_share_job_section
+    get_job_connections_section_id, get_save_job_section
 from jvapp.utils.data import coerce_int, truncate_text
 from jvapp.utils.datetime import WEEKDAY_BITS, get_datetime_format_or_none, get_datetime_minutes, get_dow_bit, \
     get_unix_datetime
@@ -38,7 +37,7 @@ from jvapp.utils.image import convert_url_to_image
 from jvapp.utils.oauth import OauthProviders
 from jvapp.utils.slack import raise_slack_exception_if_error
 from jvapp.slack.slack_blocks import InputOption, Modal, Select, SelectExternal
-from jvapp.slack.slack_modals import FollowEmployerModalViews, JobModalViews, JobSeekerModalViews
+from jvapp.slack.slack_modals import FollowEmployerModalViews, JobModalViews, JobSeekerModalViews, ShareJobModalViews
 
 logger = logging.getLogger(__name__)
 SLACK_BASE_URL = 'https://slack.com/api/'
@@ -203,7 +202,11 @@ class SlackBasePoster:
             blocks.append(get_job_connection_section(job, self.slack_cfg.employer.employer_name).get_slack_object())
             
             # Share with someone
-            # blocks.append(get_share_job_section(job, self.slack_cfg.employer.employer_name).get_slack_object())
+            blocks.append(
+                ShareJobModalViews.get_trigger_button(
+                    {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
+                ).get_slack_object()
+            )
             
             blocks.append({'type': 'divider'})
         
@@ -956,6 +959,36 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                 metadata = {**metadata, **Modal.get_modal_values(self.data)}
                 
             modal_views = FollowEmployerModalViews(
+                self.slack_user_profile, user, metadata, self.slack_cfg, action_id=action_id
+            )
+            
+            if not is_modal_open:
+                self.slack_client.views_open(
+                    view=modal_views.modal_view_slack_object,
+                    trigger_id=self.data['trigger_id']
+                )
+            else:
+                return Response(status=status.HTTP_200_OK, data={
+                    'response_action': 'update',
+                    'view': modal_views.modal_view_slack_object
+                })
+        elif ShareJobModalViews.is_modal_view(action_id):
+            # TODO: Consolidate this logic with the modal view above and any others that are triggered from a button
+            user = SlackBaseView.get_or_create_jobvyne_user(
+                self.slack_user_profile, JobVyneUser.USER_TYPE_CANDIDATE, self.slack_cfg
+            )
+            is_modal_open = bool(self.data.get('view'))
+            
+            if not is_modal_open:
+                metadata = {
+                    'job_id': coerce_int(button_data),
+                    'slack_user_id': self.slack_user_id,
+                }
+            else:
+                metadata = json.loads(self.data['view']['private_metadata'])
+                metadata = {**metadata, **Modal.get_modal_values(self.data)}
+            
+            modal_views = ShareJobModalViews(
                 self.slack_user_profile, user, metadata, self.slack_cfg, action_id=action_id
             )
             
