@@ -142,16 +142,6 @@ def get_job_connection_section(job, group_name):
     )
 
 
-ACTION_KEY_SHARE_JOB = 'jv-share-job'
-
-
-def get_share_job_section(job, group_name):
-    return SectionText(
-        f'*✉️ Share {job.job_title} job*\nShare this job with someone outside of {group_name}. The email will come from JobVyne and you will be CCed.',
-        accessory=Button(ACTION_KEY_SHARE_JOB, 'Share', job.id)
-    )
-
-
 def get_final_confirmation_modal(title, confirmation_text):
     return Modal(
         title, 'final', None,

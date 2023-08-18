@@ -37,10 +37,13 @@ dow_bit_map = {
 }
 
 
-def get_datetime_format_or_none(val):
+def get_datetime_format_or_none(val, format_str: str = None):
     """Serialize a date or datetime value if it exists, otherwise return None"""
     if val:
-        return val.isoformat()
+        if not format_str:
+            return val.isoformat()
+        else:
+            return val.strftime(format_str)
     return None
 
 

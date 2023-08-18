@@ -1,8 +1,11 @@
+import json
+
 from django.conf import settings
 
 from jvapp.apis.employer import EmployerJobConnectionView
 from jvapp.apis.geocoding import LocationParser
 from jvapp.apis.job_subscription import JobSubscriptionView
+from jvapp.apis.social import SocialLinkView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import JobPost
 from jvapp.models.currency import Currency
@@ -13,6 +16,7 @@ from jvapp.slack.slack_blocks_specific import ACTION_KEY_JOB_CONNECTION, SelectE
     get_job_level_selections, \
     get_profession_selections, get_remote_work_selection
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
+from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.oauth import OauthProviders
 from jvapp.slack.slack_blocks import Button, Divider, InputCheckbox, InputEmail, InputNumber, InputOption, InputText, \
@@ -29,8 +33,8 @@ def add_user_home_location(user, post_code):
         location_parser = LocationParser(is_use_location_caching=False)
         home_location = location_parser.get_location(post_code, is_zip_code=True)
         user.home_location_id = home_location.id if home_location else None
-        
-        
+
+
 def add_user_job_preferences(user, data):
     if 'job_search_type_bit' in data:
         user.job_search_type_bit = coerce_int(data['job_search_type_bit']['value'])
@@ -526,7 +530,7 @@ class JobModalViews(SlackMultiViewModal):
         from jvapp.apis.slack import SlackUserGeneratedJobPoster  # Avoid circular import
         
         # Add job connection
-        connection_type = coerce_int(self.metadata[ACTION_KEY_JOB_CONNECTION]['value']['connection_bit'])
+        connection_type = coerce_int(json.loads(self.metadata[ACTION_KEY_JOB_CONNECTION]['value'])['connection_bit'])
         is_employer_update = False
         if connection_type in (
                 ConnectionTypeBit.HIRING_MEMBER.value,
@@ -625,7 +629,8 @@ class JobModalViews(SlackMultiViewModal):
             self.employer = employer
     
     def get_or_create_job(self):
-        job_id = self.metadata.get('job_id') or SelectEmployerJob(employer_id=self.employer.id).get_form_value(self.metadata)
+        job_id = self.metadata.get('job_id') or SelectEmployerJob(employer_id=self.employer.id).get_form_value(
+            self.metadata)
         if job_id:
             self.job = EmployerJob.objects.select_related('employer').get(id=job_id)
         else:
@@ -674,8 +679,8 @@ class JobModalViews(SlackMultiViewModal):
         self.job.salary_ceiling = coerce_float(self.metadata['salary-max'])
         self.job.salary_interval = self.metadata['salary-interval']['value']
         self.job.save()
-        
-        
+
+
 class FollowEmployerModalViews(SlackMultiViewModal):
     BASE_CALLBACK_ID = 'jv-follow-employer'
     DEFAULT_BLOCK_TITLE = 'Follow employer'
@@ -683,7 +688,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
     def __init__(self, slack_user_profile, user, metadata, slack_cfg, action_id=None):
         self.job = None
         super().__init__(slack_user_profile, user, metadata, slack_cfg, action_id=action_id)
-        
+    
     @classmethod
     def get_trigger_button(cls, data):
         job = data['job']
@@ -697,7 +702,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
         if is_final:
             return
         self.modal_finalize()
-        
+    
     def job_preferences_modal(self):
         home_post_code = self.user.home_location.postal_code if (self.user and self.user.home_location) else None
         preference_blocks = [
@@ -714,7 +719,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
         
         return self.add_modal(preference_blocks, submit_text='Save preferences',
                               process_data_once_fn=self.add_subscription)
-        
+    
     def add_subscription(self):
         job = EmployerJob.objects.select_related('employer').get(id=self.metadata['job_id'])
         
@@ -746,7 +751,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
             )
             user_subscription.save()
         self.metadata['employer_name'] = job.employer.employer_name
-        
+    
     def modal_finalize(self):
         final_text = (
             f'➕ Added {self.metadata["employer_name"]} to your list of followed companies.\n\n'
@@ -756,5 +761,107 @@ class FollowEmployerModalViews(SlackMultiViewModal):
         self.add_modal(
             [SectionText(final_text).get_slack_object()],
             title_text='Job saved',
+            is_final=True
+        )
+
+
+class ShareJobModalViews(SlackMultiViewModal):
+    BASE_CALLBACK_ID = 'jv-share-job'
+    DEFAULT_BLOCK_TITLE = 'Share job'
+    
+    def __init__(self, slack_user_profile, user, metadata, slack_cfg, action_id=None):
+        self.job = None
+        super().__init__(slack_user_profile, user, metadata, slack_cfg, action_id=action_id)
+    
+    @classmethod
+    def get_trigger_button(cls, data):
+        job = data['job']
+        return SectionText(
+            f'*✉️ Share {job.job_title} job*\nShare this job with someone outside of {data["group_name"]}. The email will come from JobVyne and you will be CCed.',
+            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Share', job.id)
+        )
+    
+    def set_modal_views(self):
+        is_final = self.send_job_email_modal()
+        if is_final:
+            return
+        self.modal_finalize()
+    
+    def send_job_email_modal(self):
+        job = EmployerJob.objects.select_related('employer').get(id=self.metadata['job_id'])
+        job_link = SocialLinkView.get_or_create_single_job_link(job, owner_id=self.user.id)
+        job_link_url = job_link.get_link_url()
+        job_post_date = get_datetime_format_or_none(job.open_date, format_str='%x')
+        email_text = (
+            'Hi {to_first_name},\n'
+            'I saw this job on JobVyne and thought you would be a good fit:\n\n'
+            f'*Job*: <{job_link_url}|{job.job_title}>\n'
+            f'*Employer*: {job.employer.employer_name}\n'
+            f'*Employer description*: {job.employer.description if job.employer.description else ""}'
+            f'*Location:* {job.locations_text}\n'
+            f'*Salary:* {job.salary_text}\n'
+            f'*Post date:* {job_post_date}\n\n'
+            'I sent this email using JobVyne, but I am CCed if you have any questions.\n\n'
+            f'- {self.user.full_name}'
+        )
+        
+        # Add data to Slack's metadata so we don't have to refetch in subsequent modals
+        self.metadata['job_title'] = job.job_title
+        self.metadata['job_link_url'] = job_link_url
+        self.metadata['job_locations_text'] = job.locations_text
+        self.metadata['job_salary_text'] = job.salary_text
+        self.metadata['job_post_date'] = job_post_date
+        self.metadata['job_employer_name'] = job.employer.employer_name
+        self.metadata['job_employer_description'] = job.employer.description
+        
+        job_email_blocks = [
+            InputText(
+                'to_first_name', 'To first name', 'Name',
+                help_text='The first name of the person you want to send the job to',
+                is_focused=True
+            ).get_slack_object(),
+            InputEmail(
+                'to_email', 'To email', 'Email',
+                help_text='This is the email of the person you want to send the job to'
+            ).get_slack_object(),
+            # TODO: Lock the CC email down to user verified emails
+            InputEmail(
+                'cc_email', 'CC email', 'Email',
+                initial_value=self.user.email
+            ).get_slack_object(),
+            SectionText((
+                'This is the email that will be sent (but with better formatting). '
+                'The first name of the recipient will be filled in automatically.'
+            )).get_slack_object(),
+            Divider().get_slack_object(),
+            SectionText(email_text).get_slack_object()
+        ]
+        
+        return self.add_modal(job_email_blocks, submit_text='Send email',
+                              process_data_once_fn=self.send_job_email)
+    
+    def send_job_email(self):
+        process_email_timer = ProcessTimer('Send email')
+        send_django_email(
+            f'{self.user.full_name} thinks you would be great for the {self.metadata["job_title"]} position at {self.metadata["job_employer_name"]}',
+            'emails/share_job_email.html',
+            to_email=[self.metadata['to_email']],
+            cc_email=self.metadata['cc_email'],
+            django_context={
+                **self.metadata,
+                'recipient_first_name': self.metadata['to_first_name'],
+                'from_user': self.user
+            },
+        )
+        process_email_timer.log_time(is_warning=True)
+    
+    def modal_finalize(self):
+        final_text = (
+            f'Sent email to {self.metadata["to_first_name"]} at {self.metadata["to_email"]}.\n'
+            f'Good on you for helping someone else in their job search! :grapes:'
+        )
+        self.add_modal(
+            [SectionText(final_text).get_slack_object()],
+            title_text='Email sent',
             is_final=True
         )

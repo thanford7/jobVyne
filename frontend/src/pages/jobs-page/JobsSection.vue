@@ -10,7 +10,7 @@
           >
             <q-badge color="info" floating>{{ filterCount }}</q-badge>
           </q-btn>
-          <q-btn v-if="hasBaseJobsPage() || filterCount" label="Show all jobs" color="grey-8" @click="goHome()"/>
+          <q-btn v-if="hasBaseJobsPage() || (filterCount && !isSingleJob)" label="Show all jobs" color="grey-8" @click="goHome()"/>
         </div>
         <div v-if="jobFilters?.job_ids?.length && totalEmployerJobCount > jobFilters.job_ids.length"
              class="col-12 q-mt-md">
