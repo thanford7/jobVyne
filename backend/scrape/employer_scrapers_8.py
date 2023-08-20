@@ -469,11 +469,6 @@ class AidashScraper(LeverScraper):
     EMPLOYER_KEY = 'aidash'
 
 
-class ScalapayScraper(LeverScraper):
-    employer_name = 'Scalapay'
-    EMPLOYER_KEY = 'Scalapay'
-
-
 class TypeformScraper(GreenhouseScraper):
     employer_name = 'Typeform'
     EMPLOYER_KEY = 'typeform'

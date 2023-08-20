@@ -523,11 +523,6 @@ class TokuScraper(LeverScraper):
     EMPLOYER_KEY = 'toku'
 
 
-class BuzzfeedScraper(GreenhouseApiScraper):
-    employer_name = 'Buzzfeed'
-    EMPLOYER_KEY = 'buzzfeed'
-
-
 class OysterScraper(GreenhouseApiScraper):
     employer_name = 'Oyster'
     EMPLOYER_KEY = 'oyster'

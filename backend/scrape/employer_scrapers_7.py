@@ -1,6 +1,6 @@
 from scrape.base_scrapers import AshbyHQScraper, \
     GreenhouseApiScraper, \
-    GreenhouseScraper, LeverScraper, SmartRecruitersScraper, \
+    GreenhouseScraper, LeverScraper, RipplingScraper, SmartRecruitersScraper, \
     WorkdayScraper
 
 
@@ -166,10 +166,9 @@ class AnyscaleScraper(LeverScraper):
     EMPLOYER_KEY = 'anyscale'
 
 
-# TODO: Switched to Rippling - https://ats.rippling.com/hearth-careers/jobs/1ecef5cb-507d-4823-8dc9-dfd703f4da1d
-class HearthScraper(GreenhouseApiScraper):
+class HearthScraper(RipplingScraper):
     employer_name = 'Hearth'
-    EMPLOYER_KEY = 'hearth'
+    EMPLOYER_KEY = 'hearth-careers'
 
 
 class FlatironSchoolScraper(GreenhouseScraper):
@@ -328,11 +327,6 @@ class IndexVenturesScraper(LeverScraper):
 class TheProductionBoardScraper(GreenhouseScraper):
     employer_name = 'The Production Board'
     EMPLOYER_KEY = 'tpb'
-
-
-class DunzoScraper(GreenhouseApiScraper):
-    employer_name = 'Dunzo'
-    EMPLOYER_KEY = 'dunzo13'
 
 
 class TechstarsScraper(GreenhouseScraper):
