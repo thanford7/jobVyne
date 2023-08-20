@@ -166,4 +166,6 @@ class Article(AuditFields):
     url = models.URLField()
     title = models.CharField(max_length=100)
     summary = models.CharField(max_length=1000)
-    professions = models.ManyToManyField(Taxonomy)
+    professions = models.ManyToManyField(Taxonomy, related_name='profession_articles')
+    industries = models.ManyToManyField(Taxonomy, related_name='industry_articles')
+    companies = models.JSONField()
