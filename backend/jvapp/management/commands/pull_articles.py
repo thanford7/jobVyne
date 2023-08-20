@@ -2,7 +2,7 @@ import abc
 import logging
 from collections import deque
 
-from bs4 import Comment
+import trafilatura
 from django.core.management import BaseCommand
 
 from jvapp.models.content import Article
@@ -48,28 +48,23 @@ class ArticleSource(abc.ABC):
         self.articles = articles
 
     async def get_article(self, url, title, bs):
-        SUMMARIZE_PROMPT = 'You are summarizing an article in 3-5 sentences.'
-        def el_is_visible(element):
-            if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
-                return False
-            if isinstance(element, Comment):
-                return False
-            return True
-
-        text_els = bs.findAll(text=True)
-        visible_texts = [el.text for el in text_els if el_is_visible(el)]
-        text = " ".join(t.strip() for t in visible_texts if len(t) > 50)
+        SUMMARIZE_PROMPT = (
+            'You are summarizing an article in 3-5 sentences. Your response should be RFC8259 compliant JSON in the format: '
+            '{"summary": "(summary of article)"}'
+        )
+        text = trafilatura.extract(str(bs))
 
         logger.info(f'Calling AI for summary of {url}')
-        summary = await ai.ask([
+        resp, _ = await ai.ask([
             {'role': 'system', 'content': SUMMARIZE_PROMPT},
-            {'role': 'user', 'content': text[:1000]}
+            {'role': 'user', 'content': text[:1000]}  # TODO: Can we chunk article text into multiple requests?
         ], is_test=False)
 
         self.articles.append(Article(
             url=url,
             title=title,
-            summary=summary,
+            summary=resp.get('summary'),
+            companies=[],
         ))
 
     @abc.abstractmethod
