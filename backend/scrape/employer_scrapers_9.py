@@ -842,11 +842,6 @@ class CatalantScraper(LeverScraper):
     EMPLOYER_KEY = 'gocatalant'
 
 
-class ElementlScraper(GreenhouseScraper):
-    employer_name = 'Elementl'
-    EMPLOYER_KEY = 'elementl'
-
-
 class InvocaScraper(GreenhouseApiScraper):
     employer_name = 'Invoca'
     EMPLOYER_KEY = 'invoca'

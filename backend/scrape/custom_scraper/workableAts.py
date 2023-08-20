@@ -1,3 +1,4 @@
+import csv
 import datetime
 import logging
 import os
@@ -34,104 +35,143 @@ key_map = {
 }
 
 
-def _get_current_workable_file_name():
+def _get_current_workable_file_name(file_extension):
     current_date = datetime.datetime.now().date()
-    return f'workable_{current_date}.xml'
+    return f'workable_{current_date}.{file_extension}'
 
 
 # Only write the file once per day
 # Workable limits the number of requests to this endpoint
 def _write_workable_xml():
-    current_file_name = _get_current_workable_file_name()
+    # Remove old files
+    current_file_name = _get_current_workable_file_name('xml')
     current_workable_files = [f for f in listdir(os.getcwd()) if
                               isfile(join(os.getcwd(), f)) and re.match('^workable_.+?\.xml', f)]
     if current_file_name in current_workable_files:
-        logger.info(f'Current workable file <{current_file_name}> already exists')
+        logger.info(f'Current workable XML file <{current_file_name}> already exists')
         return
     
     for f in current_workable_files:
-        logger.info(f'Removing Workable file - {f}')
+        logger.info(f'Removing Workable XML file - {f}')
         os.remove(f)
-    logger.info('Starting Workable request')
+        
+    # Write new file
+    logger.info('Starting Workable XML request')
     workable_data = requests.get('https://www.workable.com/boards/workable.xml')
     logger.info('Response received from Workable')
     with open(current_file_name, 'w') as f:
-        logger.info('Writing Workable file')
+        logger.info('Writing Workable XML file')
         f.write(workable_data.content.decode('utf-8'))
-
+        
+        
+def _write_workable_csv():
+    # Remove old files
+    current_file_name = _get_current_workable_file_name('csv')
+    current_workable_files = [f for f in listdir(os.getcwd()) if
+                              isfile(join(os.getcwd(), f)) and re.match('^workable_.+?\.csv', f)]
+    if current_file_name in current_workable_files:
+        logger.info(f'Current workable CSV file <{current_file_name}> already exists')
+        return
+    
+    for f in current_workable_files:
+        logger.info(f'Removing Workable CSV file - {f}')
+        os.remove(f)
+    
+    # Write new file
+    tree = ET.parse(_get_current_workable_file_name('xml'))
+    root = tree.getroot()
+    with open(current_file_name, 'w') as f:
+        csv_writer = csv.DictWriter(f, fieldnames=[*list(key_map.values()), 'location'])
+        csv_writer.writeheader()
+        saved_jobs = 0
+        for idx, job in enumerate(root):
+            logger.info(f'Processing job IDX {idx}')
+            if job.tag != 'job':
+                continue
+            job_data = {}
+            for job_attr in job:
+                if norm_key := key_map.get(job_attr.tag):
+                    job_data[norm_key] = job_attr.text.strip() if job_attr.text else None
+            
+            if job_data['employer_name'] not in company_whitelist:
+                continue
+            
+            job_data['employer_name'] = company_whitelist[job_data['employer_name']] or job_data['employer_name']
+            
+            job_data['city'] = [c.strip() for c in job_data['city'].split(',')][0]
+            
+            location = ', '.join(
+                [x for x in [job_data['city'], job_data['state'], job_data['country'], job_data['postal_code']] if x])
+            if job_data.get('remote'):
+                location = f'Remote: {location}'
+            job_data['location'] = location
+            saved_jobs += 1
+            csv_writer.writerow(job_data)
+        logger.info(f'Saved {saved_jobs} jobs')
+        
 
 def parse_workable_xml_jobs():
     _write_workable_xml()
-    tree = ET.parse(_get_current_workable_file_name())
-    root = tree.getroot()
-    employer_map = {e.employer_name: e for e in Employer.objects.all()}
-    employer_parsers = {}
-    employer_recent_scraped_urls = {}
-    for idx, job in enumerate(root):
-        # Memory size issues occur due to the large file size
-        # Periodically dump data to keep memory within limits
-        # if len(employer_parsers) == 20:
-        #     employer_parsers = {}
-        # if len(employer_recent_scraped_urls) == 20:
-        #     employer_recent_scraped_urls = {}
-        if job.tag != 'job':
-            continue
-        job_data = {}
-        for job_attr in job:
-            if norm_key := key_map.get(job_attr.tag):
-                job_data[norm_key] = job_attr.text.strip() if job_attr.text else None
+    _write_workable_csv()
+    current_file_name = _get_current_workable_file_name('csv')
+    with open(current_file_name, 'r') as job_file:
+        csv_reader = csv.DictReader(job_file)
+        sorted_employer_jobs = sorted(csv_reader, key=lambda job_row: job_row['employer_name'])
         
-        if job_data['employer_name'] not in company_whitelist:
-            continue
-        
-        job_data['employer_name'] = company_whitelist[job_data['employer_name']] or job_data['employer_name']
-        
-        job_data['city'] = [c.strip() for c in job_data['city'].split(',')][0]
-        
-        location = ', '.join(
-            [x for x in [job_data['city'], job_data['state'], job_data['country'], job_data['postal_code']] if x])
-        if job_data.get('remote'):
-            location = f'Remote: {location}'
-        description_compensation_data = parse_compensation_text(job_data['job_description'])
-        
-        if not (employer := employer_map.get(job_data['employer_name'])):
-            employer = Employer(
-                employer_name=job_data['employer_name'],
-                is_use_job_url=True
-            )
-            employer.save()
-            employer_map[employer.employer_name] = employer
-        
-        if not (recent_scraped_urls := employer_recent_scraped_urls.get(employer.employer_name)):
-            recent_scraped_urls = get_recent_scraped_job_urls(employer.employer_name)
-            employer_recent_scraped_urls[employer.employer_name] = recent_scraped_urls
-        
-        if job_data['application_url'] in recent_scraped_urls:
-            logger.info(f'Skipping {job_data["employer_name"]} - {job_data["job_title"]}. Recently processed')
-            continue
-        
-        job_item = JobItem(
-            employer_name=job_data['employer_name'],
-            application_url=job_data['application_url'],
-            job_title=job_data['job_title'],
-            locations=[location],
-            job_department=job_data['job_department'],
-            job_description=job_data['job_description'],
-            employment_type=job_data['employment_type'],
-            first_posted_date=get_datetime_format_or_none(
-                get_datetime_or_none(job_data['first_posted_date'], as_date=True)),
-            website_domain=re.sub('https?://(www)?', '', job_data['website']) if job_data['website'] else None,
-            **description_compensation_data
-        )
-        if not (employer_parser := employer_parsers.get(job_item.employer_name)):
-            employer_parser = ScrapedJobProcessor(employer)
-            employer_parsers[job_item.employer_name] = employer_parser
-        logger.info(f'Processing {job_data["employer_name"]} - {job_data["job_title"]}.')
-        employer_parser.process_job(job_item)
+    if not sorted_employer_jobs:
+        logger.error('Error occurred processing Workable jobs data. No records were returned')
     
-    for employer_name, employer_parser in employer_parsers.items():
-        employer_parser.finalize_data(employer_recent_scraped_urls[employer_name])
-
+    current_employer_name = None
+    employer_jobs = []
+    skip_urls = []
+    job_processor = None
+    for idx, job_row in enumerate(sorted_employer_jobs):
+        if job_row['employer_name'] != current_employer_name:
+            logger.info(f'Starting job processing for {job_row["employer_name"]}')
+            employer_jobs = []
+            try:
+                employer = Employer.objects.get(employer_name=job_row['employer_name'])
+            except Employer.DoesNotExist:
+                logger.info(f'Creating new employer: {job_row["employer_name"]}')
+                employer = Employer(
+                    employer_name=job_row['employer_name'],
+                    is_use_job_url=True
+                )
+                employer.save()
+            skip_urls = get_recent_scraped_job_urls(employer.employer_name)
+            job_processor = ScrapedJobProcessor(employer)
+        
+        current_employer_name = job_row['employer_name']
+        
+        if job_row['application_url'] in skip_urls:
+            logger.info(f'Skipping {job_row["employer_name"]} - {job_row["job_title"]}. Recently processed')
+        else:
+            description_compensation_data = parse_compensation_text(job_row['job_description'])
+            job_item = JobItem(
+                employer_name=job_row['employer_name'],
+                application_url=job_row['application_url'],
+                job_title=job_row['job_title'],
+                locations=[job_row['location']],
+                job_department=job_row['job_department'],
+                job_description=job_row['job_description'],
+                employment_type=job_row['employment_type'],
+                first_posted_date=get_datetime_format_or_none(
+                    get_datetime_or_none(job_row['first_posted_date'], as_date=True)),
+                website_domain=re.sub('https?://(www)?', '', job_row['website']) if job_row['website'] else None,
+                **description_compensation_data
+            )
+            employer_jobs.append(job_item)
+        
+        if (
+            (idx + 1 == len(sorted_employer_jobs))
+            or sorted_employer_jobs[idx + 1]['employer_name'] != current_employer_name
+        ):
+            logger.info(f'Saving jobs for {job_row["employer_name"]}')
+            job_processor.process_jobs(employer_jobs)
+            job_processor.finalize_data(skip_urls)
+        
+    logger.info('Finished processing Workable employer jobs')
+    
 
 class VasionScraper(WorkableScraper):
     employer_name = 'Vasion'

@@ -18,6 +18,10 @@
                 ripple color="primary" label="Run all" @click="runJobScrapers({ isAll: true })"
               />
               <q-btn
+                class="q-mr-sm"
+                ripple color="primary" label="Run Workable" @click="runJobScrapers({ isWorkable: true })"
+              />
+              <q-btn
                 v-if="selectedScrapers.length"
                 class="q-mr-sm"
                 ripple color="primary" :label="`Run selected (${selectedScrapers.length})`" @click="runJobScrapers({ isAll: false })"

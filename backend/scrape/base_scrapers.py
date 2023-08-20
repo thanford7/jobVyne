@@ -1554,16 +1554,13 @@ class RipplingScraper(Scraper):
     def get_jobs(self):
         jobs_resp = requests.get(
             f'https://app.rippling.com/api/ats2_provisioning/api/v1/board/{self.EMPLOYER_KEY}/jobs',
+            headers={'User-Agent': get_random_user_agent()},
         )
-        return json.loads(jobs_resp.content)
+        return json.loads(jobs_resp.content.decode('utf-8'))
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None, job_title=None, location=None):
-        description = html.xpath('//div[@class="ATS_htmlPreview"]')
+        description = html.xpath('//div[@class="ATS_htmlPreview"]').get()
         description_compensation_data = parse_compensation_text(description)
-        standard_job_item = self.get_google_standard_job_item(html)
-        compensation_data = merge_compensation_data(
-            [description_compensation_data, standard_job_item.get_compensation_dict()]
-        )
         
         return JobItem(
             employer_name=self.employer_name,
@@ -1572,9 +1569,9 @@ class RipplingScraper(Scraper):
             locations=[location],
             job_department=job_department,
             job_description=description,
-            employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
-            first_posted_date=standard_job_item.first_posted_date,
-            **compensation_data
+            employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=timezone.now().date(),
+            **description_compensation_data
         )
 
 

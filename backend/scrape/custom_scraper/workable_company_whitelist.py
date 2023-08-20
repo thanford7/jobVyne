@@ -8,7 +8,6 @@ company_whitelist = {
     'Crowd Favorite': None,
     'Circuitronix': None,
     'Happy.Rentals': None,
-    'MassMutual Carolinas': None,
     'Movinmotion': None,
     'Tiger Analytics': None,
     'Ryanair': None,

@@ -7,3 +7,4 @@ Dockerfile*
 e2e_db.sql
 **/media
 workable_*.xml
+workable_*.csv
