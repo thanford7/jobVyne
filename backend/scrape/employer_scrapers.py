@@ -1,3 +1,4 @@
+from scrape.custom_scraper.amazon import AmazonScraper
 from scrape.employer_scrapers_1 import *
 from scrape.employer_scrapers_2 import *
 from scrape.employer_scrapers_3 import *
@@ -10,6 +11,7 @@ from scrape.employer_scrapers_9 import *
 from scrape.employer_scrapers_10 import *
 from scrape.employer_scrapers_11 import *
 from scrape.employer_scrapers_12 import *
+from scrape.employer_scrapers_13 import *
 from scrape.custom_scraper.ancestry import AncestryScraper
 from scrape.custom_scraper.packsize import PacksizeScraper
 
@@ -22,6 +24,11 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    AmazonScraper.employer_name: AmazonScraper,
+    MapleScraper.employer_name: MapleScraper,
+    FiCollarScraper.employer_name: FiCollarScraper,
+    CovariantScraper.employer_name: CovariantScraper,
+    CorestreamScraper.employer_name: CorestreamScraper,
     StudentFinanceScraper.employer_name: StudentFinanceScraper,
     RechargeComScraper.employer_name: RechargeComScraper,
     RadixScraper.employer_name: RadixScraper,

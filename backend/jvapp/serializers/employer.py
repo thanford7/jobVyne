@@ -160,9 +160,6 @@ def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=Fals
     data = {
         'id': employer_job.id,
         'ats_job_key': employer_job.ats_job_key,
-        'employer_id': employer_job.employer_id,
-        'employer_name': employer_job.employer.employer_name,
-        'employer_logo': employer_job.employer.logo.url if employer_job.employer.logo else None,
         'is_use_job_url': employer_job.employer.is_use_job_url,
         'application_url': employer_job.application_url,
         'job_title': employer_job.job_title,

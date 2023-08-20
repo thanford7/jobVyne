@@ -668,7 +668,7 @@ class EmployerJobView(JobVyneAPIView):
     
     @staticmethod
     def get_employer_jobs(
-            employer_job_id=None, employer_job_filter=None, order_by='-open_date',
+            employer_job_id=None, employer_job_filter=None, order_by=('-open_date', 'id'),
             is_only_closed=False, is_include_closed=False, is_include_future=False,
             is_include_fetch=True, is_allow_unapproved=False
     ):
@@ -685,31 +685,30 @@ class EmployerJobView(JobVyneAPIView):
             if not is_include_future:
                 employer_job_filter &= Q(open_date__lte=timezone.now().date())
         
+        jobs = EmployerJob.objects.filter(employer_job_filter)
+        
         if is_include_fetch:
-            
             locations_prefetch = Prefetch(
                 'locations', queryset=Location.objects.select_related('city', 'state', 'country')
             )
             
-            jobs = EmployerJob.objects \
-                .select_related(
+            jobs = (
+                jobs.select_related(
                     'job_department',
                     'employer',
                     'referral_bonus_currency',
                     'salary_currency'
-                ) \
+                )
                 .prefetch_related(
                     locations_prefetch,
                     'taxonomy',
                     'taxonomy__taxonomy',
                     'job_connection',
                     'job_connection__user'
-                ) \
-                .filter(employer_job_filter)
-        else:
-            jobs = EmployerJob.objects.filter(employer_job_filter)
+                )
+            )
             
-        jobs = jobs.order_by(order_by, 'id').distinct()
+        jobs = jobs.order_by(*order_by).distinct()
         
         if employer_job_id:
             if not jobs:

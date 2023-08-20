@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="!jobsByEmployer.length" class="q-mb-md">
+    <div v-if="!jobs.length" class="q-mb-md">
       <q-card class="q-pa-lg">
         <div class="text-h6 text-center">
           <span v-if="isJobsClosed">
@@ -13,100 +13,125 @@
       </q-card>
     </div>
     <div class="row q-gutter-y-lg">
-      <div v-for="employer in jobsByEmployer" class="col-12 hover-display-parent">
-        <q-card :id="`employer-${employer.employer_id}`" style="position: relative">
-          <q-card-section
-            v-if="!isSingleEmployer"
-            class="border-bottom-1-gray-300 custom-sticky custom-sticky-1 bg-white"
-          >
-            <q-icon
-              v-if="isUserFavoriteEmployer(employer)"
-              name="star" color="orange" title="Favorite" size="24px"
-              style="position: absolute; top: 0; left: 0;"
-            />
-            <div class="row justify-center">
-              <div v-if="employer.employer_logo" class="col-2">
-                <div class="h-100 flex items-start align-center q-my-sm q-mr-md">
-                  <q-img :src="employer.employer_logo" fit="contain" style="height: 80px;"/>
-                </div>
-              </div>
-              <div class="q-pl-lg" :class="(employer.employer_logo) ? 'col-9' : 'col-11'">
-                <div class="h-100 flex items-center">
-                  <h5 class="w-100 q-mb-none">{{ employer.employer_name }}</h5>
-                  <div class="w-100">
-                    {{ employer.employer_description }}
-                  </div>
-                  <div>
-                    <a :href="`/co/${employer.employer_key}`" target="_blank">View all jobs</a>
-                  </div>
-                </div>
-              </div>
-              <div v-if="user?.id" class="col-1">
+      <div v-for="job in jobs" class="col-12 col-sm-6 q-px-sm">
+        <q-card
+          class="hover-display-parent border-hover-info h-100"
+          :style="getSelectedCardStyle(job)" bordered
+        >
+          <div v-if="job.application"
+               class="application-date q-pa-sm border-top-rounded bg-blue-1 text-grey-8 text-small">
+            <q-icon name="info" color="grey-7" size="16px"/>
+            <span v-if="job.application.is_external">
+              You viewed this job on
+            </span>
+            <span v-else>
+              Applied on
+            </span>
+            {{ dateTimeUtil.getShortDate(job.application.created_dt) }}
+          </div>
+          <template v-if="!isSingleEmployer">
+            <q-item>
+              <q-icon
+                v-if="isUserFavoriteEmployer(job.employer)"
+                name="star" color="orange" title="Favorite" size="24px"
+                style="position: absolute; top: 0; left: 0;"
+              />
+              <q-item-section avatar>
+                <q-avatar>
+                  <q-img :src="job.employer.logo" fit="contain"/>
+                </q-avatar>
+              </q-item-section>
+
+              <q-item-section>
+                <q-item-label lines="1" :title="job.job_title">
+                  <span class="text-bold">{{ job.job_title }}</span>
+                </q-item-label>
+                <q-item-label caption>
+                  <span class="text-bold">{{ job.employer.name }}</span>
+                  &nbsp;<a :href="`/co/${job.employer.key}`" target="_blank">View all jobs</a>
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <div class="text-small q-py-sm q-mx-lg">
+              {{ job.employer.description }}
+            </div>
+          </template>
+          <q-item v-else>
+            <q-item-section>
+              <q-item-label lines="1" :title="job.job_title">
+                <span class="text-bold">{{ job.job_title }}</span>
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-separator/>
+          <div class="row">
+            <div :class="(user?.id) ? 'col-10' : 'col-12'" class="q-pa-sm">
+              <q-chip :color="getPostedTimeColor(job)" size="md" icon="today">
+                Posted {{ dateTimeUtil.getSmartDateDifference(dateTimeUtil.now(), job.open_date) }}
+              </q-chip>
+              <q-chip v-if="job.close_date" color="warning" size="md" icon="today">
+                Closes on: {{ dateTimeUtil.getShortDate(job.close_date) }}
+              </q-chip>
+              <LocationChip :locations="job.locations" icon="place" style="max-width: 95%"/>
+              <q-chip v-if="job.is_remote" color="grey-7" text-color="white" size="md" icon="laptop">
+                Remote
+              </q-chip>
+              <q-chip color="grey-7" text-color="white" size="md" icon="schedule">
+                {{ job.employment_type }}
+              </q-chip>
+              <q-chip v-if="dataUtil.getSalaryRange(job.salary_floor, job.salary_ceiling)" color="grey-7"
+                      text-color="white" size="md" icon="attach_money">
+                {{ dataUtil.getSalaryRange(job.salary_floor, job.salary_ceiling, job.salary_interval) }}
+              </q-chip>
+            </div>
+
+            <template v-if="user?.id">
+              <div class="col-2 border-left-1-gray-100 q-pa-sm">
                 <div class="flex items-center justify-center hover-display">
-                  <CustomTooltip v-if="!isUserFavoriteEmployer(employer)" :is_include_icon="false">
+                  <CustomTooltip v-if="!isUserFavoriteEmployer(job.employer)" :is_include_icon="false">
                     <template v-slot:content>
-                      <q-btn icon="star" round outline dense size="12px" color="orange" @click="addFavoriteEmployer(employer.employer_id)"/>
+                      <q-btn icon="star" round outline dense size="12px" color="orange"
+                             @click="addFavoriteEmployer(job.employer.id)"/>
                     </template>
-                    Favorite {{ employer.employer_name }} to easily access it from your favorites menu
+                    Favorite {{ job.employer.name }} to easily access it from your favorites menu
                   </CustomTooltip>
                   <CustomTooltip v-else :is_include_icon="false">
                     <template v-slot:content>
-                      <q-btn icon="fas fa-store-slash" round outline dense size="12px" color="negative" @click="removeFavoriteEmployer(employer.employer_id)"/>
+                      <q-btn icon="fas fa-store-slash" round outline dense size="12px" color="negative"
+                             @click="removeFavoriteEmployer(job.employer.id)"/>
                     </template>
-                    Remove {{ employer.employer_name }} from your favorites
+                    Remove {{ job.employer.name }} from your favorites
                   </CustomTooltip>
                 </div>
               </div>
-            </div>
-          </q-card-section>
-          <div v-for="jobDepartment in employer.job_departments">
-            <div
-              v-if="$route.name !== 'profession'"
-              :id="`department-${employer.employer_id}-${dataUtil.removeStringSpecialChars(jobDepartment)}`"
-              class="text-bold bg-grey-7 text-white q-px-sm q-py-xs custom-sticky"
-              :class="`custom-sticky-${(isSingleEmployer) ? '1' : '2'}`"
-            >
-              Department: {{ jobDepartment }}
-            </div>
-            <q-card-section class="q-pb-none">
-              <div
-                v-for="(jobs, jobTitle) in employer.jobs[jobDepartment]"
-                :id="`job-${employer.employer_id}-${jobs[0].id}`"
-                class="border-bottom-1-gray-100"
-              >
-                <h6
-                  class="bg-white custom-sticky"
-                  :class="`custom-sticky-${(isSingleEmployer || $route.name === 'profession') ? '2' : '3'}`"
-                >
-                  {{ jobTitle }}
-                </h6>
-                <JobCardInfo
-                  v-for="job in getLimitedJobs(employer, jobs, jobTitle)"
-                  :id="`job-${job.id}`"
-                  :job="job"
-                  :applications="applications"
-                  :job-application="jobApplication"
-                  :employer="employer"
-                  @openApplication="$emit('openApplication', $event)"
-                  @updateApplications="$emit('updateApplications')"
+            </template>
+            <div class="col-12 border-top-1-gray-100 q-pt-sm q-px-sm">
+              <q-btn
+                ripple
+                label="Show job details"
+                color="grey-5" text-color="black" size="md"
+                @click.prevent="openJobDetailsDialog(job)" class="q-mr-sm q-mb-sm"
+              />
+              <template v-if="!job.application || job.application.is_external">
+                <q-btn
+                  v-if="!job.is_use_job_url"
+                  ripple
+                  class="jv-apply-btn q-mb-sm" label="Apply" size="md"
+                  :style="employerStyleUtil.getButtonStyle(job.employer)"
+                  @click.prevent.stop="$emit('openApplication', job.id)"
                 />
-                <div v-if="jobs.length > sameJobLimit" class="q-py-md">
-                  <a
-                    v-if="!showAllJobs.includes(getShowMoreJobsKey(employer, jobTitle))"
-                    href="#" @click.prevent="showAllJobs.push(getShowMoreJobsKey(employer, jobTitle))"
-                  >
-                    Show more job locations
-                  </a>
-                  <a
-                    v-else
-                    href="#"
-                    @click.prevent="showAllJobs = showAllJobs.filter((key) => key !== getShowMoreJobsKey(employer, jobTitle))"
-                  >
-                    Show fewer job locations
-                  </a>
-                </div>
-              </div>
-            </q-card-section>
+                <template v-else>
+                  <q-btn
+                    label="Apply on employer site"
+                    ripple
+                    class="jv-apply-btn q-mb-sm" icon="launch" size="md"
+                    :style="employerStyleUtil.getButtonStyle(job.employer)"
+                    @click.prevent="saveExternalApplication(job)"
+                  />
+                </template>
+              </template>
+            </div>
           </div>
         </q-card>
       </div>
@@ -116,7 +141,10 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
-import JobCardInfo from 'pages/jobs-page/JobCardInfo.vue'
+import DialogJobRequirements from 'components/dialogs/DialogJobRequirements.vue'
+import LocationChip from 'components/LocationChip.vue'
+import { useQuasar } from 'quasar'
+import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
@@ -128,27 +156,24 @@ export default {
   props: {
     user: [Object, null],
     userFavorites: Object,
-    jobsByEmployer: Object,
+    jobs: Object,
     isSingleEmployer: Boolean,
     isJobsClosed: Boolean,
-    applications: Array,
     jobApplication: [Object, null],
-    jobPagesCount: Number,
-    scrollStickStartPx: Number
+    jobPagesCount: Number
   },
   components: {
-    CustomTooltip,
-    JobCardInfo
+    LocationChip,
+    CustomTooltip
   },
   data () {
     return {
-      showAllJobs: [], // Track which jobs have been expanded
-      sameJobLimit: 2,
       pageNumber: 1,
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
-      formUtil
+      formUtil,
+      q: useQuasar()
     }
   },
   methods: {
@@ -157,7 +182,7 @@ export default {
         return false
       }
       return Boolean(
-        this.userFavorites?.employers.find((favoriteEmployer) => favoriteEmployer.employer_id === employer.employer_id)
+        this.userFavorites?.employers.find((favoriteEmployer) => favoriteEmployer.employer_id === employer.id)
       )
     },
     async addFavoriteEmployer (employerId) {
@@ -172,44 +197,55 @@ export default {
       })
       this.$emit('updateUserFavorites')
     },
-    getLimitedJobs (employer, jobs, jobTitle) {
-      if (this.showAllJobs.includes(this.getShowMoreJobsKey(employer, jobTitle))) {
-        return jobs
+    async saveExternalApplication (job) {
+      const jobUrl = dataUtil.getUrlWithParams({
+        isExcludeExistingParams: false,
+        addParams: [{ key: 'utm_source', val: 'jobvyne' }, { key: 'ref', val: 'jobvyne' }],
+        path: job.application_url
+      })
+      window.open(jobUrl, '_blank')
+      await this.$api.post('job-application/external/', getAjaxFormData({
+        job_id: job.id,
+        filter_id: this.$route.params.filterId,
+        referrer_user_id: this.$route?.query?.connect,
+        referrer_employer_key: this.$route?.params?.employerKey,
+        professionKey: this.$route.params.professionKey,
+        platform_name: this.$route?.query?.platform
+      }))
+      this.$emit('updateApplications')
+    },
+    openJobDetailsDialog (job) {
+      this.q.dialog({
+        component: DialogJobRequirements,
+        componentProps: { job }
+      })
+    },
+    getHeaderStyle () {
+      const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
+      return {
+        backgroundColor: primaryColor,
+        color: colorUtil.getInvertedColor(primaryColor)
       }
-      return jobs.slice(0, this.sameJobLimit)
     },
-    getShowMoreJobsKey (employer, jobTitle) {
-      return `${employer.employer_id}-${jobTitle}`
+    getSelectedCardStyle (job) {
+      if (!this.jobApplication || this.jobApplication.id !== job.id) {
+        return {}
+      }
+      const primaryColor = colorUtil.getEmployerPrimaryColor(this.employer)
+      return {
+        boxShadow: `0 0 5px 2px ${primaryColor}`
+      }
     },
-    updateStickyOffsets () {
-      const stickyElements = document.querySelectorAll('.custom-sticky')
-      let stickyOffsetPx
-      let lastSticky1HeightPx
-      let lastSticky2HeightPx
-      for (const stickyEl of stickyElements) {
-        if (stickyEl.classList.contains('custom-sticky-1')) {
-          stickyOffsetPx = this.scrollStickStartPx
-          lastSticky1HeightPx = stickyEl.offsetHeight
-          stickyEl.style['z-index'] = 903
-        } else if (stickyEl.classList.contains('custom-sticky-2')) {
-          stickyOffsetPx = this.scrollStickStartPx + lastSticky1HeightPx
-          lastSticky2HeightPx = stickyEl.offsetHeight
-          stickyEl.style['z-index'] = 902
-        } else if (stickyEl.classList.contains('custom-sticky-3')) {
-          stickyOffsetPx = this.scrollStickStartPx + lastSticky1HeightPx + lastSticky2HeightPx
-          stickyEl.style['z-index'] = 901
-        } else {
-          stickyOffsetPx = this.scrollStickStartPx
-        }
-        stickyEl.style.top = `${stickyOffsetPx}px`
+    getPostedTimeColor (job) {
+      const daysDiff = dateTimeUtil.getDateDifference(job.open_date, dateTimeUtil.now())
+      if (daysDiff > 60) {
+        return 'negative'
+      } else if (daysDiff > 30) {
+        return 'warning'
+      } else {
+        return 'positive'
       }
     }
-  },
-  mounted () {
-    this.updateStickyOffsets()
-  },
-  updated () {
-    this.updateStickyOffsets()
   }
 }
 </script>

@@ -20,9 +20,6 @@ def base_application_serializer(app: JobApplication or JobApplicationTemplate):
 
 
 def get_serialized_job_application(job_application: JobApplication):
-    from jvapp.apis.social import SocialLinkView
-    # TODO: Not performant
-    job_link = SocialLinkView.get_or_create_single_job_link(job_application.employer_job)
     data = {
         **base_application_serializer(job_application),
         'social_link_id': job_application.social_link_id,
@@ -32,7 +29,7 @@ def get_serialized_job_application(job_application: JobApplication):
         'application_status': job_application.application_status,
         'employer_job': {
             'id': job_application.employer_job_id,
-            'url': job_link.get_link_url(),
+            'url': job_application.employer_job.job_url,
             'employer_name': job_application.employer_job.employer.employer_name,
             'employer_id': job_application.employer_job.employer_id,
             'employer_key': job_application.employer_job.employer.employer_key,

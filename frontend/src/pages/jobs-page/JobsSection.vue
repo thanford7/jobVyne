@@ -21,10 +21,10 @@
           />
         </div>
         <q-pagination
-          v-if="jobPagesCount > 1"
+          v-if="totalPageCount > 1"
           v-model="pageNumber"
           :max-pages="5"
-          :max="jobPagesCount"
+          :max="totalPageCount"
           input
           class="q-mt-md"
         />
@@ -45,57 +45,28 @@
                 class="col-12 col-md-9 q-mt-md"
                 :user="user"
                 :user-favorites="userFavorites"
-                :jobs-by-employer="jobsByEmployer"
+                :jobs="jobs"
                 :is-single-employer="isSingleEmployer"
                 :is-jobs-closed="isJobsClosed"
-                :applications="applications"
-                :job-application="jobApplication"
-                :job-pages-count="jobPagesCount"
-                :scroll-stick-start-px="headerHeight"
+                :job-application="job"
+                :job-pages-count="totalPageCount"
                 @openApplication="openApplication($event)"
-                @updateApplications="loadApplications()"
+                @updateApplications="loadJobs(true)"
                 @updateUserFavorites="$emit('updateUserFavorites')"
               />
+              <!--                TODO: Add recommendations button for mobile view-->
               <div
-                v-if="!utilStore.isUnderBreakPoint('md') && !hasNoJobs"
+                v-if="false && !utilStore.isUnderBreakPoint('md')"
                 class="col-3 q-py-md q-px-sm custom-sticky"
                 style="align-self: start;"
               >
                 <CollapsableCard
-                  title="Job quick links"
+                  title="Recommendations"
                   :is-dense="true"
                 >
                   <template v-slot:body>
                     <q-list class="w-100" dense style="max-height: 70vh; overflow-x: hidden; overflow-y: scroll">
-                      <template v-for="employer in jobsByEmployer">
-                        <q-item
-                          v-if="!isSingleEmployer"
-                          clickable
-                          class="text-bold"
-                          @click="scrollUtil.scrollTo(getElementTop(`employer-${employer.employer_id}`))"
-                        >
-                          {{ employer.employer_name }}
-                        </q-item>
-                        <template v-for="jobDepartment in employer.job_departments">
-                          <q-item
-                            v-if="$route.name !== 'profession'"
-                            clickable
-                            class="text-italic"
-                            :style="(isSingleEmployer) ? '' : 'padding-left: 30px'"
-                            @click="scrollUtil.scrollTo(getElementTop(`department-${employer.employer_id}-${dataUtil.removeStringSpecialChars(jobDepartment)}`))"
-                          >
-                            {{ jobDepartment }}
-                          </q-item>
-                          <q-item
-                            v-for="(jobs, jobTitle) in employer.jobs[jobDepartment]"
-                            clickable
-                            :style="(isSingleEmployer) ? 'padding-left: 30px' : 'padding-left: 45px'"
-                            @click="scrollUtil.scrollTo(getElementTop(`job-${employer.employer_id}-${jobs[0].id}`))"
-                          >
-                            {{ jobTitle }}
-                          </q-item>
-                        </template>
-                      </template>
+<!--                      TODO: Add recommendations here - jobs, employers, professions -->
                     </q-list>
                   </template>
                 </CollapsableCard>
@@ -104,10 +75,10 @@
           </div>
         </div>
         <q-pagination
-          v-if="jobPagesCount > 1"
+          v-if="totalPageCount > 1"
           v-model="pageNumber"
           :max-pages="5"
-          :max="jobPagesCount"
+          :max="totalPageCount"
           input
           class="q-mt-md"
         />
@@ -142,13 +113,14 @@ const jobFiltersTemplate = {
   minimum_salary: null
 }
 
+const JOBS_PAGES = ['jobs-link', 'job', 'jobs', 'group', 'company', 'profession']
+
 export default {
   name: 'JobsSection',
   props: {
     user: [Object, null],
     employer: [Object, null],
-    userFavorites: Object,
-    headerHeight: Number
+    userFavorites: Object
   },
   components: {
     ResponsiveWidth, CollapsableCard, JobCards
@@ -158,14 +130,12 @@ export default {
       isLoaded: false,
       pageNumber: 1,
       jobFilters: {},
-      jobsByEmployer: [],
+      jobs: [],
       totalEmployerJobCount: null,
       isJobsClosed: false,
       isSingleJob: false,
-      jobPagesCount: null,
-      applications: null,
-      jobApplication: null,
-      jobApplicationRequirements: null,
+      totalPageCount: null,
+      job: null,
       dataUtil,
       employerStyleUtil,
       scrollUtil,
@@ -177,9 +147,6 @@ export default {
     }
   },
   computed: {
-    hasNoJobs () {
-      return dataUtil.isEmpty(this.jobsByEmployer)
-    },
     isSingleEmployer () {
       return this.$route.name === 'company'
     },
@@ -205,7 +172,7 @@ export default {
         const previousSub = dataUtil.getQueryParams().sub
         const hasFiltersChanged = await this.updateJobFilterFromQueryParams()
         const hasSubChanged = dataUtil.isDeepEqual(previousSub, dataUtil.getQueryParams().sub)
-        if (hasFiltersChanged || hasSubChanged) {
+        if (JOBS_PAGES.includes(this.$route.name) && (hasFiltersChanged || hasSubChanged)) {
           await this.loadJobs()
         }
         await this.openApplication()
@@ -229,21 +196,7 @@ export default {
     },
     getElementTop (elId) {
       const el = document.getElementById(elId)
-
-      // Sticky elements are outside of DOM flow and will cover up the top of the screen
-      const scrollSticks = [
-        document.querySelector('.custom-sticky-1'),
-        document.querySelector('.custom-sticky-2'),
-        document.querySelector('.custom-sticky-3')
-      ].filter((s) => s)
-      let stickHeight = 0
-      scrollSticks.forEach((stick, idx) => {
-        if (idx === scrollSticks.length - 1) {
-          return
-        }
-        stickHeight += stick.offsetHeight
-      })
-      return el.getBoundingClientRect().top + window.scrollY - this.headerHeight - stickHeight
+      return el.getBoundingClientRect().top
     },
     openJobFilter () {
       return this.q.dialog({
@@ -276,41 +229,27 @@ export default {
       jobId = parseInt(jobId)
 
       await this.employerStore.setEmployerJobApplicationRequirements({ jobId })
-      this.jobApplication = this.getJobApplicationById(jobId)
-      this.jobApplication.application_fields = this.employerStore.getEmployerJobApplicationRequirements({ jobId })
+      this.job = this.jobs.find((job) => job.id === jobId)
+      this.job.application_fields = this.employerStore.getEmployerJobApplicationRequirements({ jobId })
       const fullPath = dataUtil.getUrlWithParams({
         addParams: [{ key: 'jobId', val: jobId }]
       })
       window.history.pushState({ path: fullPath }, '', fullPath)
       if (window.innerWidth < 600) {
-        this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
+        this.openJobAppModal(this.job).onDismiss(() => this.closeApplication())
       } else {
-        this.$emit('openAppSideBar', this.jobApplication)
+        this.$emit('openAppSideBar', this.job)
       }
       const jobElId = `job-${jobId}`
       scrollUtil.scrollTo(this.getElementTop(jobElId))
     },
     async closeApplication () {
       this.$emit('closeAppSideBar')
-      this.jobApplication = null
-      this.jobApplicationRequirements = null
+      this.job = null
       const fullPath = dataUtil.getUrlWithParams({
         deleteParams: ['jobId']
       })
       window.history.pushState({ path: fullPath }, '', fullPath)
-    },
-    getJobApplicationById (jobId) {
-      for (const employer of this.jobsByEmployer) {
-        for (const jobPositions of Object.values(employer.jobs)) {
-          for (const jobs of Object.values(jobPositions)) {
-            for (const job of jobs) {
-              if (job.id === jobId) {
-                return job
-              }
-            }
-          }
-        }
-      }
     },
     async updateJobFilterFromQueryParams (isInit = false) {
       const previousParams = dataUtil.deepCopy(this.jobFilters)
@@ -387,6 +326,7 @@ export default {
         employerKey: this.$route.params.employerKey,
         isEmployer: this.$route.name === 'company',
         professionKey: this.$route.params.professionKey,
+        jobKey: this.$route.params.jobKey,
         jobSubscriptionIds: dataUtil.getQueryParams().sub,
         pageNumber: this.pageNumber,
         jobFilters: this.jobFilters,
@@ -395,33 +335,28 @@ export default {
 
       await this.socialStore.setSocialLinkJobs(params)
       const {
-        jobs_by_employer: jobsByEmployer,
+        jobs,
         total_page_count: totalPageCount,
-        total_employer_job_count: totalEmployerJobCount,
+        total_job_count: totalEmployerJobCount,
         is_jobs_closed: isJobsClosed,
         is_single_job: isSingleJob
       } = this.socialStore.getSocialLinkJobs(params)
 
       this.totalEmployerJobCount = totalEmployerJobCount
-      this.jobsByEmployer = jobsByEmployer || []
-      this.jobPagesCount = totalPageCount
+      this.jobs = jobs || []
+      this.totalPageCount = totalPageCount
       this.isJobsClosed = isJobsClosed
       this.isSingleJob = isSingleJob
 
       this.updateJobFilterQueryParams()
       this.isLoaded = true
       scrollUtil.scrollTo(0)
-    },
-    async loadApplications (isForceRefresh = true) {
-      await this.authStore.setUserApplications(this.user, isForceRefresh)
-      this.applications = this.authStore.applications
     }
   },
   async mounted () {
     await this.updateJobFilterFromQueryParams(true)
     await Promise.all([
-      this.loadJobs(),
-      this.loadApplications(false)
+      this.loadJobs()
     ])
 
     await this.openApplication()

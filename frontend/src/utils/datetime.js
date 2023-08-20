@@ -120,6 +120,21 @@ class DateTimeUtil {
     }
   }
 
+  getSmartDateDifference (firstDate, secondDate) {
+    const daysDiff = this.getDateDifference(firstDate, secondDate, 'days')
+    const absDaysDiff = Math.abs(daysDiff)
+    const relative = (daysDiff < 0) ? 'ago' : 'from now'
+    if (absDaysDiff >= 365) {
+      return `${(absDaysDiff / 365).toFixed(1)} years ${relative}`
+    } else if (absDaysDiff >= 30) {
+      return `${(absDaysDiff / 30).toFixed(1)} months ${relative}`
+    } else if (daysDiff === 0) {
+      return 'Today'
+    } else {
+      return `${absDaysDiff} days ${relative}`
+    }
+  }
+
   /**
    * @returns {string}: The region of the offset - e.g. America/Denver
    */

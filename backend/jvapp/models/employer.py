@@ -1,4 +1,5 @@
 import re
+import uuid
 from enum import Enum, IntEnum
 
 from django.core.validators import FileExtensionValidator
@@ -223,6 +224,7 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         CONTRACT = 'Contract'
         INTERNSHIP = 'Internship'
     
+    job_key = models.UUIDField(unique=True, default=uuid.uuid4, db_index=True)
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='employer_job')
     job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True, blank=True)
@@ -337,6 +339,10 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     @property
     def is_user_created(self):
         return bool(self.created_user_id)
+    
+    @property
+    def job_url(self):
+        return f'/job/{self.job_key}/'
     
     
 # Keep in sync with community.js

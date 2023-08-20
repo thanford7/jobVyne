@@ -263,6 +263,13 @@ const routes = [
   },
 
   {
+    path: '/job/:jobKey',
+    name: 'job',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
     path: '/jobs',
     name: 'jobs',
     meta: { isNoAuth: true, trackRoute: true },
