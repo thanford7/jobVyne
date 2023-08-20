@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import timedelta
 from typing import Union
 
+from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
 from django.utils import timezone
@@ -24,9 +25,11 @@ from jvapp.models.job_subscription import JobSubscription
 from jvapp.models.location import Location, REMOTE_TYPES
 from jvapp.models.social import *
 from jvapp.models.tracking import Message, PageView
-from jvapp.serializers.employer import get_serialized_employer_job
+from jvapp.serializers.employer import get_serialized_currency, get_serialized_employer_job
+from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.social import *
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, set_object_attributes
+from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import send_django_email
 from jvapp.utils.message import send_sms_message
 from jvapp.utils.sanitize import sanitize_html
@@ -293,16 +296,27 @@ class SocialLinkView(JobVyneAPIView):
 class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
-    EMPLOYERS_PER_PAGE = 20
-    
     def get(self, request):
         from jvapp.apis.job_subscription import JobSubscriptionView
-        from jvapp.apis.employer import EmployerJobApplicationRequirementView, EmployerJobView  # Avoid circular import
+        from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         page_count = coerce_int(self.query_params.get('page_count', 1))
         link_id = self.query_params.get('link_id')
         profession_key = self.query_params.get('profession_key')
         employer_key = self.query_params.get('employer_key')
+        job_key = self.query_params.get('job_key')
         job_subscription_ids = self.query_params.getlist('job_subscription_ids[]') or self.query_params.get('job_subscription_ids')
+        assert any((link_id, profession_key, employer_key, job_key, job_subscription_ids))
+        
+        sort_order = ('-open_date', 'job_department_id', 'id')
+        # Sort job departments in preference for the one the user belongs to
+        # We want to show jobs from this department first
+        if page_owner_user_id := self.query_params.get('connection_id'):
+            try:
+                page_owner_user = JobVyneUser.objects.select_related('profession').get(id=page_owner_user_id)
+                if page_owner_user.profession:
+                    sort_order = ('job_department_id', '-open_date', 'id')
+            except JobVyneUser.DoesNotExist:
+                pass
         
         logger.info('Fetching social link')
         link = None
@@ -341,7 +355,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         no_results_data = {
             'total_page_count': 0,
             'total_employer_job_count': 0,
-            'jobs_by_employer': {},
+            'jobs': [],
         }
         if job_subscription_ids:
             if not isinstance(job_subscription_ids, list):
@@ -352,6 +366,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         
         is_jobs_closed = False
         is_single_job = False
+        jobs = []
         if job_subscription_ids:
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
@@ -364,8 +379,9 @@ class SocialLinkJobsView(JobVyneAPIView):
             is_allow_unapproved = is_single_job
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter,
-                is_include_fetch=False,
-                is_allow_unapproved=is_allow_unapproved
+                is_include_fetch=True,
+                is_allow_unapproved=is_allow_unapproved,
+                order_by=sort_order
             )
             if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
                 is_jobs_closed = True
@@ -375,7 +391,9 @@ class SocialLinkJobsView(JobVyneAPIView):
             except Taxonomy.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy=taxonomy)
-            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter, is_include_fetch=False)
+            jobs = EmployerJobView.get_employer_jobs(
+                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order
+            )
         elif employer_key:
             try:
                 employer = Employer.objects.get(employer_key=employer_key)
@@ -387,84 +405,25 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_subscriptions = JobSubscriptionView.get_job_subscriptions(employer_id=employer.id)
                 job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 jobs_filter &= job_subscription_filter
-            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jobs_filter, is_include_fetch=False)
+            jobs = EmployerJobView.get_employer_jobs(
+                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order
+            )
         elif link:
-            jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=False)
-        else:
-            jobs = EmployerJobView.get_employer_jobs(employer_job_filter=Q(), is_include_fetch=False)
-
-        total_jobs = len(jobs)
-        total_page_count = 0
-        jobs_by_employer = {}
-        if jobs:
-            latest_employer_job = {}
-            for job in jobs:
-                latest_date = latest_employer_job.get(job.employer_id) or job.open_date
-                latest_employer_job[job.employer_id] = max(latest_date, job.open_date)
-            latest_employer_job = sorted([(employer_id, latest_date) for employer_id, latest_date in latest_employer_job.items()], key=lambda x: (x[1], x[0]), reverse=True)
-            employer_count = len(latest_employer_job)
+            jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=True)
+        elif job_key:
+            jobs = EmployerJobView.get_employer_jobs(
+                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, order_by=sort_order
+            )
             
-            total_page_count = math.ceil(employer_count / self.EMPLOYERS_PER_PAGE)
-            # Avoid a situation where a user has entered a page number that is beyond the total range
-            page_count = min(page_count, total_page_count)
-            start_employer_job_idx = (page_count - 1) * self.EMPLOYERS_PER_PAGE
-            employer_ids = [l[0] for l in latest_employer_job[start_employer_job_idx:start_employer_job_idx + self.EMPLOYERS_PER_PAGE]]
-            jobs = jobs.filter(employer_id__in=employer_ids)\
-                .select_related(
-                    'job_department',
-                    'employer',
-                    'referral_bonus_currency',
-                    'salary_currency'
-                ) \
-                .prefetch_related(
-                    'locations',
-                    'locations__city',
-                    'locations__state',
-                    'locations__country',
-                    'taxonomy',
-                    'taxonomy__taxonomy'
-                )
-            
-            for job in jobs:
-                if not (employer_jobs := jobs_by_employer.get(job.employer_id)):
-                    employer_jobs = {
-                        'employer_id': job.employer_id,
-                        'employer_name': job.employer.employer_name,
-                        'employer_key': job.employer.employer_key,
-                        'employer_logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
-                        'employer_description': job.employer.description,
-                        'industry': job.employer.industry,
-                        'employee_count_min': job.employer.size_min,
-                        'employee_count_max': job.employer.size_max,
-                        'year_founded': job.employer.year_founded,
-                        'is_use_job_url': job.employer.is_use_job_url,
-                        'jobs': defaultdict(lambda: defaultdict(list)),
-                        'job_departments': set()
-                    }
-                    jobs_by_employer[job.employer_id] = employer_jobs
-                
-                serialized_job = get_serialized_employer_job(job)
-                employer_jobs['jobs'][job.job_department_standardized][job.job_title].append(serialized_job)
-                employer_jobs['job_departments'].add(job.job_department_standardized)
-            
-            for employer in jobs_by_employer.values():
-                job_departments = list(employer['job_departments'])
-                # Sort job departments in preference for the one the user belongs to. We want to show jobs from this department first
-                if page_owner_user_id := self.query_params.get('connection_id'):
-                    try:
-                        page_owner_user = JobVyneUser.objects.select_related('profession').get(id=page_owner_user_id)
-                        if page_owner_user.profession:
-                            job_departments.sort(key=lambda jd: jd == page_owner_user.profession.name, reverse=True)
-                    except JobVyneUser.DoesNotExist:
-                        pass
-                employer['job_departments'] = job_departments
+        jobs.prefetch_related('job_application')
         
-        jobs_by_employer = list(jobs_by_employer.values())
+        paginated_jobs = Paginator(jobs, per_page=36)
+        page_count = min(page_count, paginated_jobs.num_pages)
         
         data = {
-            'total_page_count': total_page_count,
-            'total_employer_job_count': total_jobs,
-            'jobs_by_employer': jobs_by_employer,
+            'total_page_count': paginated_jobs.num_pages,
+            'total_job_count': paginated_jobs.count,
+            'jobs': [self.get_serialized_job(job) for job in paginated_jobs.get_page(page_count)],
             'is_jobs_closed': is_jobs_closed,
             'is_single_job': is_single_job
         }
@@ -472,6 +431,52 @@ class SocialLinkJobsView(JobVyneAPIView):
             data[WARNING_MESSAGES_KEY] = [warning_message]
         
         return Response(status=status.HTTP_200_OK, data=data)
+
+    @staticmethod
+    def get_serialized_job(job):
+        job_data = {
+            'employer': {
+                'id': job.employer_id,
+                'name': job.employer.employer_name,
+                'key': job.employer.employer_key,
+                'logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
+                'description': job.employer.description,
+                'industry': job.employer.industry,
+                'employee_count_min': job.employer.size_min,
+                'employee_count_max': job.employer.size_max,
+                'year_founded': job.employer.year_founded,
+            },
+            'id': job.id,
+            'ats_job_key': job.ats_job_key,
+            'is_use_job_url': job.employer.is_use_job_url,
+            'application_url': job.application_url,
+            'job_title': job.job_title,
+            'job_description': job.job_description,
+            'job_description_summary': job.job_description_summary,
+            'responsibilities': job.responsibilities,
+            'qualifications': job.qualifications,
+            'technical_qualifications': job.technical_qualifications,
+            'is_remote': job.is_remote,
+            'open_date': get_datetime_format_or_none(job.open_date),
+            'salary_currency': get_serialized_currency(job.salary_currency),
+            'salary_floor': job.salary_floor,
+            'salary_ceiling': job.salary_ceiling,
+            'salary_interval': job.salary_interval,
+            'salary_text': job.salary_text,
+            'employment_type': job.employment_type,
+            'locations': [get_serialized_location(l) for l in job.locations.all()],
+            'locations_text': job.locations_text,
+            'job_department_standardized': job.job_department_standardized,
+        }
+        
+        if job_application := next((app for app in job.job_application.all()), None):
+            job_data['application'] = {
+                'id': job_application.id,
+                'created_dt': job_application.created_dt,
+                'is_external': job_application.is_external_application
+            }
+            
+        return job_data
     
     @staticmethod
     def get_jobs_from_social_link(link, extra_filter=None, is_include_fetch=True):

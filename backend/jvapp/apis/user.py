@@ -154,7 +154,11 @@ class UserView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_user(user, user_id=None, employer_id_permissions=None, user_email=None, user_filter=None, is_check_permission=True):
+    def get_user(
+            user, user_id=None, employer_id_permissions=None,
+            user_email=None, user_filter=None, is_check_permission=True,
+            is_include_fetch=True
+    ):
         if user_id:
             user_filter = Q(id=user_id)
         elif user_email:
@@ -170,25 +174,28 @@ class UserView(JobVyneAPIView):
             ).filter(employer_permissions_filter)
         )
         
-        users = JobVyneUser.objects \
-            .select_related('employer', 'profession') \
-            .prefetch_related(
-                'application_template',
-                'profile_response',
-                'profile_response__question',
-                'social_credential',
-                employer_permissions
-            ) \
-            .annotate(is_approval_required=Count(
-                'employer_permission_group',
-                # Note this does not differentiate between different employers
-                # It's possible that a user needs permission from one employer, but not another
-                filter=Q(employer_permission_group__is_employer_approved=False)
-            )) \
-            .filter(user_filter)
+        users = JobVyneUser.objects.filter(user_filter)
         
         if is_check_permission:
             JobVyneUser.jv_filter_perm(user, users)
+            
+        if is_include_fetch:
+            users = (
+                users.select_related('employer', 'profession')
+                .prefetch_related(
+                    'application_template',
+                    'profile_response',
+                    'profile_response__question',
+                    'social_credential',
+                    employer_permissions
+                )
+                .annotate(is_approval_required=Count(
+                    'employer_permission_group',
+                    # Note this does not differentiate between different employers
+                    # It's possible that a user needs permission from one employer, but not another
+                    filter=Q(employer_permission_group__is_employer_approved=False)
+                ))
+            )
         
         if user_id or user_email:
             if not users:

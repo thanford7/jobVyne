@@ -77,6 +77,7 @@
         :job-application="jobApplication"
         :employer="employer"
         @login="loadUserData()"
+        @updateApplications="$refs.jobs.loadApplications()"
         @closeApplication="closeJobApplication()"
       />
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">

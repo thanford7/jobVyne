@@ -1,14 +1,21 @@
+@use '../abstracts/functions' as *;
 @use '../quasar.variables' as *;
 
-@each $name, $color in $gray-color-map {
+$colors-map: get-combined-maps($gray-color-map, $brand-color-map);
+
+@each $name, $color in $colors-map {
     .bg-hover-#{$name}:hover {
         background-color: $color;
+    }
+    .border-hover-#{$name}:hover {
+        border: 1px solid $color;
     }
 }
 
 .bg-hover:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
+
 
 @media (min-width: $breakpoint-sm) {
     .hover-display-parent:hover .hover-display {

@@ -330,7 +330,7 @@ export default {
       )
 
       await this.$api.post('job-application/', getAjaxFormData(data, [this.newResumeKey, this.newAcademicTranscriptKey]))
-      await this.authStore.setUserApplications(this.authStore.propUser, true) // Update user applications and application template
+      this.$emit('updateApplications')
       this.isApplicationSaved = true
       // Leave the drawer open to allow user to create an account if they don't have one
       if (this.authStore.propIsAuthenticated) {

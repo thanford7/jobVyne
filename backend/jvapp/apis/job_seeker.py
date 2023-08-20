@@ -2,7 +2,7 @@ import logging
 
 from django.core.paginator import Paginator
 from django.db import IntegrityError
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -18,6 +18,7 @@ from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, EmployerAts
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
+from jvapp.models.location import Location
 from jvapp.models.social import SocialPlatform
 from jvapp.models.tracking import MessageThread, MessageThreadContext
 from jvapp.models.user import JobVyneUser, UserEmployerCandidate
@@ -48,12 +49,13 @@ class ApplicationView(JobVyneAPIView):
     def get(self, request, application_id=None):
         user_id = self.query_params.get('user_id')
         employer_id = self.query_params.get('employer_id')
+        logger.info('Fetching job applications')
         if application_id:
             data = get_serialized_job_application(self.get_applications(self.user, application_id=application_id))
         elif any([user_id, employer_id]):
             page_count = self.query_params.get('page_count')
             if user_id:
-                user = UserView.get_user(self.user, user_id=user_id)
+                user = UserView.get_user(self.user, user_id=user_id, is_include_fetch=False)
                 application_filter = Q(user_id=user.id)
                 if user.is_email_verified:
                     application_filter |= Q(email=user.email)
@@ -356,13 +358,16 @@ class ApplicationView(JobVyneAPIView):
     def get_applications(user, application_id=None, application_filter=None, is_ignore_permissions=False):
         if application_id:
             application_filter = Q(id=application_id)
+            
+        prefetch_employer_job_locations = Prefetch(
+            'employer_job__locations',
+            queryset=Location.objects.prefetch_related('city', 'state', 'country')
+        )
         
         applications = JobApplication.objects \
             .prefetch_related(
-                'employer_job__locations',
-                'employer_job__locations__city',
-                'employer_job__locations__state',
-                'employer_job__locations__country',
+                prefetch_employer_job_locations,
+                'social_link__job_subscriptions'
             )\
             .select_related(
                 'social_link',
