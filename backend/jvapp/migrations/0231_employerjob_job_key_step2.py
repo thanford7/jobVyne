@@ -6,7 +6,7 @@ import uuid
 
 def gen_uuid(apps, schema_editor):
     employer_job_model = apps.get_model('jvapp', 'EmployerJob')
-    for job in employer_job_model.objects.all():
+    for job in employer_job_model.objects.filter():
         job.job_key = uuid.uuid4()
         job.save(update_fields=['job_key'])
 
