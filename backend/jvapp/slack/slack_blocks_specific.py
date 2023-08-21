@@ -244,7 +244,8 @@ job_connection_config = {
 
 
 def get_job_connections_section(job_id):
-    job_connections = EmployerJobConnection.objects.select_related('user').filter(job_id=job_id).order_by(
+    connection_filter = Q(job_id=job_id) & ~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value)
+    job_connections = EmployerJobConnection.objects.select_related('user').filter(connection_filter).order_by(
         'connection_type')
     if not job_connections:
         return None
