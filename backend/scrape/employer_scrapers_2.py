@@ -317,7 +317,7 @@ class CoinbaseScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'coinbase'
 
 
-class RobinhoodScraper(GreenhouseIframeScraper):
+class RobinhoodScraper(GreenhouseApiScraper):
     employer_name = 'Robinhood'
     EMPLOYER_KEY = 'robinhood'
 

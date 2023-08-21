@@ -1,4 +1,4 @@
-from scrape.base_scrapers import LeverScraper
+from scrape.base_scrapers import GreenhouseIframeScraper, GreenhouseScraper, LeverScraper
 
 
 class MapleScraper(LeverScraper):
@@ -19,3 +19,13 @@ class CovariantScraper(LeverScraper):
 class CorestreamScraper(LeverScraper):
     employer_name = 'Corestream'
     EMPLOYER_KEY = 'corestream'
+
+
+class PossibleFinanceScraper(GreenhouseScraper):
+    employer_name = 'Possible Finance'
+    EMPLOYER_KEY = 'possiblefinancialinc'
+    
+    
+class SignifyHealthScraper(GreenhouseIframeScraper):
+    employer_name = 'Signify Health'
+    EMPLOYER_KEY = 'signifyhealth'
