@@ -418,8 +418,6 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_job_filter=Q(job_key=job_key), is_include_fetch=True, order_by=sort_order
             )
             
-        jobs.prefetch_related('job_application')
-        
         paginated_jobs = Paginator(jobs, per_page=36)
         page_count = min(page_count, paginated_jobs.num_pages)
         
