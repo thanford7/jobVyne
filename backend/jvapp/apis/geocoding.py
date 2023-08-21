@@ -106,14 +106,24 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
     longitude = location_dict.get('longitude')
     longitude_text = str(longitude)[:15] if longitude else None
     if not any([city_name, state_name, country_name]):
-        try:
-            location = Location.objects.get(text__iexact='Unknown')
-        except Location.DoesNotExist:
-            location = Location(
-                text='Unknown',
-                is_remote=is_remote
-            )
-            location.save()
+        if is_remote:
+            try:
+                location = Location.objects.get(text__iexact='Remote', is_remote=True)
+            except Location.DoesNotExist:
+                location = Location(
+                    text='Remote',
+                    is_remote=True
+                )
+                location.save()
+        else:
+            try:
+                location = Location.objects.get(text__iexact='Unknown')
+            except Location.DoesNotExist:
+                location = Location(
+                    text='Unknown',
+                    is_remote=False
+                )
+                location.save()
     else:
         location_filter = (
                 Q(is_remote=is_remote, text__iexact=location_dict['text']) |
