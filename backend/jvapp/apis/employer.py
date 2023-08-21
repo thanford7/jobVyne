@@ -704,7 +704,8 @@ class EmployerJobView(JobVyneAPIView):
                     'taxonomy',
                     'taxonomy__taxonomy',
                     'job_connection',
-                    'job_connection__user'
+                    'job_connection__user',
+                    'job_application'
                 )
             )
             
