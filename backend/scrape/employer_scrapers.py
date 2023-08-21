@@ -1,4 +1,5 @@
 from scrape.custom_scraper.amazon import AmazonScraper
+from scrape.custom_scraper.google import GoogleScraper
 from scrape.employer_scrapers_1 import *
 from scrape.employer_scrapers_2 import *
 from scrape.employer_scrapers_3 import *
@@ -18,12 +19,12 @@ from scrape.custom_scraper.packsize import PacksizeScraper
 # TODO: Build PhenomPeople ATS scraper - https://careers.adobe.com/us/en/c/
 
 test_scrapers = {
-    # CIQScraper.employer_name: CIQScraper,
-    # HuuugeScraper.employer_name: HuuugeScraper,
-    # MakerDaoScraper.employer_name: MakerDaoScraper,
+    GoogleScraper.employer_name: GoogleScraper
 }
 
 all_scrapers = {
+    PossibleFinanceScraper.employer_name: PossibleFinanceScraper,
+    SignifyHealthScraper.employer_name: SignifyHealthScraper,
     AmazonScraper.employer_name: AmazonScraper,
     MapleScraper.employer_name: MapleScraper,
     FiCollarScraper.employer_name: FiCollarScraper,

@@ -959,9 +959,9 @@ class BeneschScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'alfredbeneschco'
 
 
-class RobinhoodScraper(GreenhouseScraper):
+class RobinhoodScraper(GreenhouseApiScraper):
     employer_name = 'Robinhood'
-    EMPLOYER_KEY = 'robinhood'
+    EMPLOYER_KEY = 'Robinhood'
 
 
 class MediabrandsScraper(GreenhouseApiScraper):

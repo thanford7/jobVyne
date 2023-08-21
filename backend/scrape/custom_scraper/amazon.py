@@ -19,7 +19,6 @@ class AmazonScraper(Scraper):
         jobs = []
         while (not total_jobs) or (start_job_idx < total_jobs):
             jobs_list, total_jobs = self.get_jobs(start_job_idx)
-            print(total_jobs)
             jobs += jobs_list
             start_job_idx += self.JOBS_PER_PAGE
         

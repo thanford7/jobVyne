@@ -8,7 +8,7 @@ from datetime import timedelta
 from typing import Union
 
 from django.core.paginator import Paginator
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch, Q, QuerySet
 from django.db.transaction import atomic
 from django.utils import timezone
 from rest_framework import status
@@ -329,7 +329,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                     is_use_permissions=False  # This is a public page
                 )
             except SocialLink.DoesNotExist:
-                warning_message = 'This link is no longer active. Showing all jobs.'
+                warning_message = 'This link is no longer active.'
                 
         
         jobs_filter = Q()
@@ -366,7 +366,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         
         is_jobs_closed = False
         is_single_job = False
-        jobs = []
+        jobs = QuerySet()
         if job_subscription_ids:
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
@@ -408,7 +408,10 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order
             )
-        elif link:
+        elif link_id:
+            if not link:
+                no_results_data[WARNING_MESSAGES_KEY] = [warning_message]
+                return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=True)
         elif job_key:
             jobs = EmployerJobView.get_employer_jobs(
