@@ -19,10 +19,10 @@ from scrape.custom_scraper.packsize import PacksizeScraper
 # TODO: Build PhenomPeople ATS scraper - https://careers.adobe.com/us/en/c/
 
 test_scrapers = {
-    GoogleScraper.employer_name: GoogleScraper
 }
 
 all_scrapers = {
+    GoogleScraper.employer_name: GoogleScraper,
     PossibleFinanceScraper.employer_name: PossibleFinanceScraper,
     SignifyHealthScraper.employer_name: SignifyHealthScraper,
     AmazonScraper.employer_name: AmazonScraper,
