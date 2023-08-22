@@ -37,6 +37,9 @@ class GoogleScraper(Scraper):
 
     def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None):
         job_info_html = html.xpath('//div[@class="DkhPwc"]')
+        if not (job_title := job_info_html.xpath('.//h2[@class="p1N2lc"]/text()').get()):
+            print(f'Could not find job title for {job_url}')
+            return None
         job_details_html = job_info_html.xpath('.//div[@class="op1BBf"]')
         locations_text = ''.join(job_details_html.xpath('.//span[contains(@class, "pwO9Dc")]/span/text()').getall())
         raw_locations = [l for l in locations_text.split(';') if l]
@@ -70,7 +73,7 @@ class GoogleScraper(Scraper):
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
-            job_title=job_info_html.xpath('.//h2[@class="p1N2lc"]/text()').get(),
+            job_title=job_title,
             locations=locations,
             job_department=self.DEFAULT_JOB_DEPARTMENT,
             job_description=full_job_description,

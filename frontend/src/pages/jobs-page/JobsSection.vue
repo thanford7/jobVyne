@@ -152,8 +152,10 @@ export default {
     },
     filterCount () {
       return Object.entries(this.jobFilters).reduce((filterCount, [filterKey, val]) => {
-        if (['job_ids', 'search_regex'].includes(filterKey) && val?.length) {
-          filterCount++
+        if (['job_ids', 'search_regex'].includes(filterKey)) {
+          if (val?.length) {
+            filterCount++
+          }
         } else if (!['range_miles', 'location_text'].includes(filterKey) && !dataUtil.isNil(val)) {
           filterCount++
         }
