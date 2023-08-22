@@ -110,7 +110,8 @@ const jobFiltersTemplate = {
   range_miles: 50,
   search_regex: '',
   remote_type_bit: null,
-  minimum_salary: null
+  minimum_salary: null,
+  job_profession_ids: []
 }
 
 const JOBS_PAGES = ['jobs-link', 'job', 'jobs', 'group', 'company', 'profession']
@@ -152,7 +153,7 @@ export default {
     },
     filterCount () {
       return Object.entries(this.jobFilters).reduce((filterCount, [filterKey, val]) => {
-        if (['job_ids', 'search_regex'].includes(filterKey)) {
+        if (['job_ids', 'search_regex', 'job_profession_ids'].includes(filterKey)) {
           if (val?.length) {
             filterCount++
           }
@@ -258,6 +259,7 @@ export default {
       const params = dataUtil.getQueryParams()
       const intKeys = ['remote_type_bit', 'range_miles']
       const floatKeys = ['minimum_salary']
+      const arrayKeys = ['job_ids', 'job_profession_ids']
       intKeys.forEach((key) => {
         if (params[key]) {
           params[key] = Number.parseInt(params[key])
@@ -266,6 +268,11 @@ export default {
       floatKeys.forEach((key) => {
         if (params[key]) {
           params[key] = Number.parseFloat(params[key])
+        }
+      })
+      arrayKeys.forEach((key) => {
+        if (params[key]) {
+          params[key] = dataUtil.getForceArray(params[key]).map((val) => Number.parseInt(val))
         }
       })
       this.jobFilters = dataUtil.pick(params, Object.keys(jobFiltersTemplate))

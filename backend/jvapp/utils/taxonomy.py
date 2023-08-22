@@ -11,48 +11,48 @@ from jvapp.models.employer import EmployerJob, JobTaxonomy, Taxonomy
 
 logger = logging.getLogger(__name__)
 
-TAXONOMY_PROFESSION_EA = 'ea'
-TAXONOMY_PROFESSION_COS = 'cos'
-TAXONOMY_PROFESSION_LAW = 'law'
-TAXONOMY_PROFESSION_GOV = 'gov'
-TAXONOMY_PROFESSION_PRODUCT_MANAGEMENT = 'product-management'
-TAXONOMY_PROFESSION_PRODUCT_ENGINEERING = 'product-engineer'
-TAXONOMY_PROFESSION_PRODUCT_MARKETING = 'product-marketing'
-TAXONOMY_PROFESSION_CUSTOMER_SUCCESS = 'customer-success'
-TAXONOMY_PROFESSION_ACCOUNT_MANAGEMENT = 'account-management'
-TAXONOMY_PROFESSION_CLIENT_SOLUTIONS = 'client-solutions'
-TAXONOMY_PROFESSION_CUSTOMER_SUPPORT = 'customer-support'
-TAXONOMY_PROFESSION_HR = 'hr'
-TAXONOMY_PROFESSION_TA = 'ta'
+TAXONOMY_PROFESSION_EA = 'ea'  # None
+TAXONOMY_PROFESSION_COS = 'cos'  # None
+TAXONOMY_PROFESSION_LAW = 'law'  # x
+TAXONOMY_PROFESSION_GOV = 'gov'  # x
+TAXONOMY_PROFESSION_PRODUCT_MANAGEMENT = 'product-management'  # x
+TAXONOMY_PROFESSION_PRODUCT_ENGINEERING = 'product-engineer'  # x
+TAXONOMY_PROFESSION_PRODUCT_MARKETING = 'product-marketing'  # x
+TAXONOMY_PROFESSION_CUSTOMER_SUCCESS = 'customer-success'  # x
+TAXONOMY_PROFESSION_ACCOUNT_MANAGEMENT = 'account-management'  # x
+TAXONOMY_PROFESSION_CLIENT_SOLUTIONS = 'client-solutions'  # x
+TAXONOMY_PROFESSION_CUSTOMER_SUPPORT = 'customer-support'  # x
+TAXONOMY_PROFESSION_HR = 'hr'  # x
+TAXONOMY_PROFESSION_TA = 'ta'  # x
 TAXONOMY_PROFESSION_ENG_HARDWARE = 'eng-hardware'
-TAXONOMY_PROFESSION_ENG_SOFTWARE = 'eng-software'
-TAXONOMY_PROFESSION_ENG_FRONTEND = 'eng-frontend'
-TAXONOMY_PROFESSION_ENG_BACKEND = 'eng-backend'
-TAXONOMY_PROFESSION_ENG_MOBILE = 'eng-mobile'
-TAXONOMY_PROFESSION_DEVOPS = 'devops'
-TAXONOMY_PROFESSION_QA = 'qa'
-TAXONOMY_PROFESSION_IT = 'it'
-TAXONOMY_PROFESSION_DATA_ANALYSIS = 'data-analysis'
-TAXONOMY_PROFESSION_DATA_SCIENCE = 'data-science'
-TAXONOMY_PROFESSION_ML = 'ml'
-TAXONOMY_PROFESSION_ENG_DATA = 'eng-data'
-TAXONOMY_PROFESSION_DBA = 'dba'
-TAXONOMY_PROFESSION_SDR = 'sdr'
-TAXONOMY_PROFESSION_SALES = 'sales'
-TAXONOMY_PROFESSION_BUS_DEV = 'bus-dev'
-TAXONOMY_PROFESSION_MARKETING = 'marketing'
-TAXONOMY_PROFESSION_MARKETING_GROWTH = 'marketing-growth'
-TAXONOMY_PROFESSION_MARKETING_DIGITAL = 'marketing-digital'
-TAXONOMY_PROFESSION_MARKETING_SEO = 'marketing-seo'
-TAXONOMY_PROFESSION_MARKETING_EVENTS = 'marketing-events'
-TAXONOMY_PROFESSION_PR = 'pr'
-TAXONOMY_PROFESSION_MARKETING_RESEARCH = 'marketing-research'
-TAXONOMY_PROFESSION_UI = 'ui'
-TAXONOMY_PROFESSION_PRODUCT_DESIGN = 'product-design'
-TAXONOMY_PROFESSION_PROJECT_MANAGEMENT = 'project-management'
-TAXONOMY_PROFESSION_BUSINESS_ANALYSIS = 'business-analysis'
-TAXONOMY_PROFESSION_STRATEGY_OPS = 'strategy-ops'
-TAXONOMY_PROFESSION_GROWTH = 'growth'
+TAXONOMY_PROFESSION_ENG_SOFTWARE = 'eng-software'  # x
+TAXONOMY_PROFESSION_ENG_FRONTEND = 'eng-frontend'  # x
+TAXONOMY_PROFESSION_ENG_BACKEND = 'eng-backend'  # x
+TAXONOMY_PROFESSION_ENG_MOBILE = 'eng-mobile'  # x
+TAXONOMY_PROFESSION_DEVOPS = 'devops'  # x
+TAXONOMY_PROFESSION_QA = 'qa'  # x
+TAXONOMY_PROFESSION_IT = 'it'  # x
+TAXONOMY_PROFESSION_DATA_ANALYSIS = 'data-analysis'  # x
+TAXONOMY_PROFESSION_DATA_SCIENCE = 'data-science'  # x
+TAXONOMY_PROFESSION_ML = 'ml'  # x
+TAXONOMY_PROFESSION_ENG_DATA = 'eng-data'  # x
+TAXONOMY_PROFESSION_DBA = 'dba'  # x
+TAXONOMY_PROFESSION_SDR = 'sdr'  # x
+TAXONOMY_PROFESSION_SALES = 'sales'  # x
+TAXONOMY_PROFESSION_BUS_DEV = 'bus-dev'  # x
+TAXONOMY_PROFESSION_MARKETING = 'marketing'  # x
+TAXONOMY_PROFESSION_MARKETING_GROWTH = 'marketing-growth'  # x
+TAXONOMY_PROFESSION_MARKETING_DIGITAL = 'marketing-digital'  # x
+TAXONOMY_PROFESSION_MARKETING_SEO = 'marketing-seo'  # x
+TAXONOMY_PROFESSION_MARKETING_EVENTS = 'marketing-events'  # x
+TAXONOMY_PROFESSION_PR = 'pr'  # x
+TAXONOMY_PROFESSION_MARKETING_RESEARCH = 'marketing-research'  # x
+TAXONOMY_PROFESSION_UI = 'ui'  # x
+TAXONOMY_PROFESSION_PRODUCT_DESIGN = 'product-design'  # x
+TAXONOMY_PROFESSION_PROJECT_MANAGEMENT = 'project-management'  # x
+TAXONOMY_PROFESSION_BUSINESS_ANALYSIS = 'business-analysis'  # x
+TAXONOMY_PROFESSION_STRATEGY_OPS = 'strategy-ops'  # x
+TAXONOMY_PROFESSION_GROWTH = 'growth'  # x
 TAXONOMY_PROFESSION_FINANCE = 'finance'
 TAXONOMY_PROFESSION_ACCOUNTING = 'accounting'
 
@@ -112,6 +112,89 @@ JOB_PROFESSIONS = [
     Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Accounting', key=TAXONOMY_PROFESSION_ACCOUNTING)
 ]
 
+TAXONOMY_PROFESSION_LEGAL_CAT_REGULATORY = 'legal-reg'
+TAXONOMY_PROFESSION_CAT_PRODUCT = 'product'
+TAXONOMY_PROFESSION_CAT_CUSTOMER = 'customer'
+TAXONOMY_PROFESSION_CAT_SALES = 'all-sales'
+TAXONOMY_PROFESSION_CAT_HR_TA = 'hr-ta'
+TAXONOMY_PROFESSION_CAT_SOFTWARE_ENGINEERING = 'all-software'
+TAXONOMY_PROFESSION_CAT_IT_QA = 'all-it'
+TAXONOMY_PROFESSION_CAT_DATA = 'data'
+TAXONOMY_PROFESSION_CAT_MARKETING = 'all-marketing'
+TAXONOMY_PROFESSION_CAT_DESIGN = 'design'
+TAXONOMY_PROFESSION_CAT_BUS_STRAT = 'bus-strat'
+TAXONOMY_PROFESSION_CAT_FIN_ACCT = 'fin-acct'
+
+JOB_PROFESSION_CATEGORIES = [
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Legal & Regulatory',
+                 key=TAXONOMY_PROFESSION_LEGAL_CAT_REGULATORY),
+        [TAXONOMY_PROFESSION_LAW, TAXONOMY_PROFESSION_GOV]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Product', key=TAXONOMY_PROFESSION_CAT_PRODUCT),
+        [TAXONOMY_PROFESSION_PRODUCT_MANAGEMENT, TAXONOMY_PROFESSION_PRODUCT_DESIGN,
+         TAXONOMY_PROFESSION_PRODUCT_ENGINEERING, TAXONOMY_PROFESSION_PRODUCT_MARKETING]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Customer Focus',
+                 key=TAXONOMY_PROFESSION_CAT_CUSTOMER),
+        [TAXONOMY_PROFESSION_CLIENT_SOLUTIONS, TAXONOMY_PROFESSION_CUSTOMER_SUCCESS,
+         TAXONOMY_PROFESSION_CUSTOMER_SUPPORT, TAXONOMY_PROFESSION_ACCOUNT_MANAGEMENT]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Sales (Pre & Post)',
+                 key=TAXONOMY_PROFESSION_CAT_SALES),
+        [TAXONOMY_PROFESSION_ACCOUNT_MANAGEMENT, TAXONOMY_PROFESSION_SALES, TAXONOMY_PROFESSION_CUSTOMER_SUCCESS,
+         TAXONOMY_PROFESSION_SDR, TAXONOMY_PROFESSION_BUS_DEV, TAXONOMY_PROFESSION_GROWTH]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='HR & TA',
+                 key=TAXONOMY_PROFESSION_CAT_HR_TA),
+        [TAXONOMY_PROFESSION_HR, TAXONOMY_PROFESSION_TA]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='All Software Engineering',
+                 key=TAXONOMY_PROFESSION_CAT_SOFTWARE_ENGINEERING),
+        [TAXONOMY_PROFESSION_ENG_SOFTWARE, TAXONOMY_PROFESSION_ENG_FRONTEND, TAXONOMY_PROFESSION_ENG_BACKEND,
+         TAXONOMY_PROFESSION_ENG_MOBILE, TAXONOMY_PROFESSION_ENG_DATA, TAXONOMY_PROFESSION_DEVOPS,
+         TAXONOMY_PROFESSION_ML, TAXONOMY_PROFESSION_DATA_SCIENCE]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='IT & QA',
+                 key=TAXONOMY_PROFESSION_CAT_IT_QA),
+        [TAXONOMY_PROFESSION_IT, TAXONOMY_PROFESSION_QA]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Data',
+                 key=TAXONOMY_PROFESSION_CAT_DATA),
+        [TAXONOMY_PROFESSION_DATA_SCIENCE, TAXONOMY_PROFESSION_ENG_DATA, TAXONOMY_PROFESSION_DATA_ANALYSIS,
+         TAXONOMY_PROFESSION_DBA]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='All Marketing',
+                 key=TAXONOMY_PROFESSION_CAT_MARKETING),
+        [TAXONOMY_PROFESSION_MARKETING_GROWTH, TAXONOMY_PROFESSION_MARKETING_DIGITAL,
+         TAXONOMY_PROFESSION_PRODUCT_MARKETING, TAXONOMY_PROFESSION_MARKETING_EVENTS, TAXONOMY_PROFESSION_MARKETING,
+         TAXONOMY_PROFESSION_MARKETING_SEO, TAXONOMY_PROFESSION_MARKETING_RESEARCH, TAXONOMY_PROFESSION_GROWTH, TAXONOMY_PROFESSION_PR]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Design',
+                 key=TAXONOMY_PROFESSION_CAT_DESIGN),
+        [TAXONOMY_PROFESSION_UI, TAXONOMY_PROFESSION_PRODUCT_DESIGN]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Business & Strategy',
+                 key=TAXONOMY_PROFESSION_CAT_BUS_STRAT),
+        [TAXONOMY_PROFESSION_BUSINESS_ANALYSIS, TAXONOMY_PROFESSION_BUS_DEV, TAXONOMY_PROFESSION_STRATEGY_OPS, TAXONOMY_PROFESSION_PROJECT_MANAGEMENT]
+    ),
+    (
+        Taxonomy(tax_type=Taxonomy.TAX_TYPE_PROFESSION, name='Finance & Accounting',
+                 key=TAXONOMY_PROFESSION_CAT_FIN_ACCT),
+        [TAXONOMY_PROFESSION_FINANCE, TAXONOMY_PROFESSION_ACCOUNTING]
+    ),
+]
+
 JOB_PROFESSION_KEY_MAP = {tax.key: tax for tax in JOB_PROFESSIONS}
 
 INDUSTRIES = [
@@ -163,7 +246,8 @@ ALL_TAXONOMIES = {
 
 
 def update_taxonomies(*args, **kwargs):
-    current_taxonomies = {t.get_unique_key(): t for t in Taxonomy.objects.all()}
+    # Only get "child" taxonomies. We'll add the parent taxonomies once we have the children
+    current_taxonomies = {t.get_unique_key(): t for t in Taxonomy.objects.filter(sub_taxonomies__isnull=True)}
     tax_to_add = []
     tax_to_update = []
     tax_to_delete = []
@@ -183,6 +267,24 @@ def update_taxonomies(*args, **kwargs):
     Taxonomy.objects.bulk_create(tax_to_add)
     Taxonomy.objects.bulk_update(tax_to_update, ['key', 'description', 'sort_order'])
     Taxonomy.objects.filter(id__in=tax_to_delete).delete()
+    
+    # Update parent taxonomies
+    parent_professions = {t.get_unique_key(): t for t in Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_PROFESSION, sub_taxonomies__isnull=False)}
+    used_profession_keys = []
+    for profession_cfg in JOB_PROFESSION_CATEGORIES:
+        parent_profession_raw, child_profession_keys = profession_cfg
+        profession_key = parent_profession_raw.get_unique_key()
+        parent_taxonomy = parent_professions.get(profession_key)
+        used_profession_keys.append(profession_key)
+        if not parent_taxonomy:
+            parent_profession_raw.save()
+            parent_taxonomy = parent_profession_raw
+        child_professions = Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_PROFESSION, key__in=child_profession_keys)
+        parent_taxonomy.sub_taxonomies.set(child_professions)
+        
+    for profession_key, profession in parent_professions.items():
+        if profession_key not in used_profession_keys:
+            profession.delete()
 
 
 def get_or_create_taxonomy(tax_name, tax_type):
@@ -245,8 +347,8 @@ CONFIDENCE_WEIGHT_WEAK = 10
 space_and_word_or_end_re = '(\W.*?$|$)'
 start_or_word_and_space_re = '(^|^.+?\W)'
 engineer_words = '(developer|engineer|architect|engineering)'
-experience_level_words = '(chief|vp|vice president|head|executive|manager|owner|analyst|lead|leader|mgr|director|expert|intern|staff|senior|sr|principal)'
-customer_words = '(customer|client|partner|account|enterprise)'
+experience_level_words = '(chief|vp|vice president|head|executive|manager|owner|analyst|lead|leader|mgr|director|expert|intern|staff|senior|sr|principal|associate)'
+customer_words = '(customer|client|partner|account|enterprise|executive)'
 customer_solution_words = '(integration|specialist|solution|implementation|consultant|onboard|install|train)'
 frontend_language_words = '(react|javascript|html|css|vue)'
 backend_language_words = '(python|pytorch|\.net|java|ruby|drupal|c\+\+|rust|golang|php)'
@@ -354,7 +456,7 @@ JOB_TAXONOMY_TESTS = [
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}{customer_words}.+?(success|delight|engagement|retention|journey|outcomes|excellence|happiness|loyalty|adoption){space_and_word_or_end_re}',
-        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CUSTOMER_SUCCESS, CONFIDENCE_WEIGHT_VERY_STRONG)]
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CUSTOMER_SUCCESS, CONFIDENCE_WEIGHT_STRONG)]
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}{customer_words}{space_and_word_or_end_re}',
@@ -374,6 +476,10 @@ JOB_TAXONOMY_TESTS = [
     TaxonomyTest(
         f'{start_or_word_and_space_re}(account|client|customer|enterprise) (development|partner|director|advocate){space_and_word_or_end_re}$',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_ACCOUNT_MANAGEMENT, CONFIDENCE_WEIGHT_VERY_STRONG)]
+    ),
+    TaxonomyTest(
+        f'{start_or_word_and_space_re}ae{space_and_word_or_end_re}$',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_ACCOUNT_MANAGEMENT, CONFIDENCE_WEIGHT_STRONG)]
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}{customer_words} relation.+?$',
@@ -413,6 +519,10 @@ JOB_TAXONOMY_TESTS = [
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CLIENT_SOLUTIONS, CONFIDENCE_WEIGHT_NORMAL)]
     ),
     TaxonomyTest(
+        f'{start_or_word_and_space_re}(customer|solution) engineer.*?$',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CLIENT_SOLUTIONS, CONFIDENCE_WEIGHT_STRONG)]
+    ),
+    TaxonomyTest(
         f'{start_or_word_and_space_re}{customer_words}.+?{customer_solution_words}.*?$',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CLIENT_SOLUTIONS, CONFIDENCE_WEIGHT_NORMAL)]
     ),
@@ -437,8 +547,8 @@ JOB_TAXONOMY_TESTS = [
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CLIENT_SOLUTIONS, CONFIDENCE_WEIGHT_STRONG)]
     ),
     TaxonomyTest(
-        f'{start_or_word_and_space_re}(account|client|customer|of|partner|product|tech).+?(services?|support|care|experience|excellence){space_and_word_or_end_re}',
-        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CUSTOMER_SUPPORT, CONFIDENCE_WEIGHT_VERY_STRONG)]
+        f'{start_or_word_and_space_re}(account|client|customer|of|partner|product|tech).+?(services?|support|care|experience|excellence|admin|administrator){space_and_word_or_end_re}',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CUSTOMER_SUPPORT, CONFIDENCE_WEIGHT_STRONG)]
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}(service desk|helpdesk|help desk).*?$',
@@ -740,6 +850,18 @@ JOB_TAXONOMY_TESTS = [
         ]
     ),
     TaxonomyTest(
+        f'{start_or_word_and_space_re}marketing\W{experience_level_words}{space_and_word_or_end_re}',
+        [
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_MARKETING, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_MARKETING_DIGITAL, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_MARKETING_GROWTH, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_MARKETING_RESEARCH, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_PRODUCT_MARKETING, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_MARKETING_EVENTS, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_MARKETING_SEO, CONFIDENCE_WEIGHT_STRONG),
+        ]
+    ),
+    TaxonomyTest(
         f'{start_or_word_and_space_re}(content|copywrit).+?$',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_MARKETING, CONFIDENCE_WEIGHT_WEAK)]
     ),
@@ -791,6 +913,10 @@ JOB_TAXONOMY_TESTS = [
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}(management|business) consult.*?',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_STRATEGY_OPS, CONFIDENCE_WEIGHT_VERY_STRONG)]
+    ),
+    TaxonomyTest(
+        f'{start_or_word_and_space_re}(consultant|consulting){space_and_word_or_end_re}',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_STRATEGY_OPS, CONFIDENCE_WEIGHT_STRONG)]
     ),
     TaxonomyTest(

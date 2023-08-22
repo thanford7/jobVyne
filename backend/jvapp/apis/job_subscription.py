@@ -90,7 +90,8 @@ class JobSubscriptionView(JobVyneAPIView):
                 'filter_location__country',
                 'filter_job',
                 'filter_employer',
-                'filter_job_professions'
+                'filter_job_professions',
+                'filter_job_professions__sub_taxonomies'
             ) \
             .filter(subscription_filter)
         
@@ -197,8 +198,9 @@ class JobSubscriptionView(JobVyneAPIView):
     @staticmethod
     def get_job_filter(job_subscription):
         job_filter = Q()
-        if job_title_ids := [jt.id for jt in job_subscription.filter_job_professions.all()]:
-            job_filter &= Q(taxonomy__taxonomy_id__in=job_title_ids)
+        if job_professions := job_subscription.filter_job_professions.all():
+            job_profession_ids = [p.id for p in JobSubscriptionView.get_parent_and_child_professions(job_professions)]
+            job_filter &= Q(taxonomy__taxonomy_id__in=job_profession_ids)
         if job_ids := [j.id for j in job_subscription.filter_job.all()]:
             job_filter &= Q(id__in=job_ids)
         if employer_ids := [e.id for e in job_subscription.filter_employer.all()]:
@@ -221,6 +223,17 @@ class JobSubscriptionView(JobVyneAPIView):
             )
         job_filter &= combined_location_filter
         return job_filter
+    
+    @staticmethod
+    def get_parent_and_child_professions(job_professions):
+        child_professions = []
+        for job_profession in job_professions:
+            child_professions += job_profession.sub_taxonomies.all()
+        deduped_professions = {}
+        for job_profession in child_professions + list(job_professions):
+            deduped_professions[job_profession.id] = job_profession
+        return list(deduped_professions.values())
+        
     
     @staticmethod
     def get_or_create_employer_own_subscription(employer_id):
