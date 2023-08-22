@@ -39,6 +39,12 @@
           label="Minimum salary"
         />
       </div>
+      <div class="col-12">
+        <SelectJobProfession
+          v-model="filters.job_profession_ids"
+          :is-multi="true" :is-required="false"
+        />
+      </div>
     </q-form>
   </DialogBase>
 </template>
@@ -46,12 +52,13 @@
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import InputLocation from 'components/inputs/InputLocation.vue'
 import MoneyInput from 'components/inputs/MoneyInput.vue'
+import SelectJobProfession from 'components/inputs/SelectJobProfession.vue'
 import SelectRemote from 'components/inputs/SelectRemote.vue'
 import dataUtil from 'src/utils/data.js'
 
 export default {
   name: 'DialogJobFilter',
-  components: { MoneyInput, SelectRemote, InputLocation, DialogBase },
+  components: { SelectJobProfession, MoneyInput, SelectRemote, InputLocation, DialogBase },
   props: {
     jobFilters: Object,
     isSingleEmployer: Boolean

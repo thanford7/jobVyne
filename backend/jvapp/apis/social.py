@@ -337,6 +337,14 @@ class SocialLinkJobsView(JobVyneAPIView):
             job_filters = json.loads(job_filters)
             if job_ids := job_filters.get('job_ids'):
                 jobs_filter &= Q(id__in=job_ids)
+            if job_profession_ids := job_filters.get('job_profession_ids'):
+                if not isinstance(job_profession_ids, list):
+                    job_profession_ids = [job_profession_ids]
+                job_professions = Taxonomy.objects.prefetch_related('sub_taxonomies').filter(id__in=job_profession_ids)
+                total_professions = JobSubscriptionView.get_parent_and_child_professions(job_professions)
+                jobs_filter &= (
+                    Q(taxonomy__taxonomy_id__in=[p.id for p in total_professions])
+                )
             if search_regex := job_filters.get('search_regex'):
                 jobs_filter &= (
                         Q(job_title__iregex=f'^.*{search_regex}.*$') |
@@ -387,7 +395,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 is_jobs_closed = True
         elif profession_key:
             try:
-                taxonomy = TaxonomyJobProfessionView.get_job_title_taxonomy(tax_key=profession_key)
+                taxonomy = TaxonomyJobProfessionView.get_job_profession_taxonomy(tax_key=profession_key)
             except Taxonomy.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy=taxonomy)
