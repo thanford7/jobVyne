@@ -53,7 +53,20 @@
               </q-item-section>
             </q-item>
             <div class="text-small q-py-sm q-mx-lg">
-              {{ job.employer.description }}
+              <div class="text-small">
+                <a v-if="job.employer.website" :href="`https://www.${job.employer.website}`" target="_blank">Website</a>
+              </div>
+<!--              <div class="q-my-xs">-->
+<!--                <q-chip v-if="job.employer.industry" icon="factory" size="12px" color="gray-8" title="industry">-->
+<!--                  {{ job.employer.industry }}-->
+<!--                </q-chip>-->
+<!--                <q-chip v-if="job.employer.employee_count_min" icon="groups" size="12px" color="gray-8" title="industry">-->
+<!--                  {{ job.employer.employee_count_min }} - {{ job.employer.employee_count_max }}-->
+<!--                </q-chip>-->
+<!--              </div>-->
+              <div>
+                {{ job.employer.description }}
+              </div>
             </div>
           </template>
           <q-item v-else>
@@ -149,7 +162,7 @@ import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
 import formUtil from 'src/utils/form.js'
-import { getAjaxFormData } from 'src/utils/requests.js'
+import { getAjaxFormData, openUrlInNewTab } from 'src/utils/requests.js'
 
 export default {
   name: 'JobCards',
@@ -173,7 +186,8 @@ export default {
       dateTimeUtil,
       employerStyleUtil,
       formUtil,
-      q: useQuasar()
+      q: useQuasar(),
+      openUrlInNewTab
     }
   },
   methods: {
