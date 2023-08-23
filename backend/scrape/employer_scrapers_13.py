@@ -1,4 +1,5 @@
-from scrape.base_scrapers import GreenhouseIframeScraper, GreenhouseScraper, LeverScraper, PaylocityScraper
+from scrape.base_scrapers import GreenhouseIframeScraper, GreenhouseScraper, LeverScraper, PaylocityScraper, \
+    WorkdayScraper
 
 
 class MapleScraper(LeverScraper):
@@ -34,3 +35,9 @@ class SignifyHealthScraper(GreenhouseIframeScraper):
 class SkillableScraper(PaylocityScraper):
     employer_name = 'Skillable'
     start_url = 'https://recruiting.paylocity.com/recruiting/jobs/All/680f151f-b1e8-48cc-b07c-689df54fa3b4/Skillable'
+    
+    
+class KraftHeinzScraper(WorkdayScraper):
+    employer_name = 'KraftHeinz'
+    start_url = 'https://heinz.wd1.myworkdayjobs.com/en-US/KraftHeinz_Careers'
+    has_job_departments = False
