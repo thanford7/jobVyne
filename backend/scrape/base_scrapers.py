@@ -113,7 +113,7 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        self.skip_urls = skip_urls
+        self.skip_urls = []
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
@@ -167,7 +167,7 @@ class Scraper:
             resp = None
             try:
                 page.on('requestfailed', self.request_failure_logger)
-                page.on('response', self.response_failure_logger)
+                # page.on('response', self.response_failure_logger)
                 resp = await page.goto(url, referer=self.get_start_url(), wait_until=self.PAGE_LOAD_WAIT_EVENT)
                 if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
                     logger.info('Page was redirected. Trying to reload page')
@@ -1362,8 +1362,11 @@ class PaylocityScraper(Scraper):
         await self.close()
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
+        location_text = html.xpath('//div["job-preview-header"]//div[@class="preview-location"]/text()').get()
+        is_remote = 'remote' in location_text.lower()
         standard_job_item = self.get_google_standard_job_item(html)
         if not standard_job_item:
+            logger.info(f'Skipped url because there is no standard job item {job_url}')
             return None
         job_description = standard_job_item.job_description
         description_compensation_data = parse_compensation_text(job_description)
@@ -1372,11 +1375,13 @@ class PaylocityScraper(Scraper):
             [description_compensation_data, standard_job_item.get_compensation_dict()]
         )
         
+        locations = [f'{"Remote " if is_remote else ""}{l}' for l in standard_job_item.locations]
+        
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
             job_title=standard_job_item.job_title,
-            locations=standard_job_item.locations,
+            locations=locations,
             job_department=standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
             job_description=standard_job_item.job_description,
             employment_type=standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,

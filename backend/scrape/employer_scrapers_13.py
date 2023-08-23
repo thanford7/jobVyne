@@ -1,4 +1,4 @@
-from scrape.base_scrapers import GreenhouseIframeScraper, GreenhouseScraper, LeverScraper
+from scrape.base_scrapers import GreenhouseIframeScraper, GreenhouseScraper, LeverScraper, PaylocityScraper
 
 
 class MapleScraper(LeverScraper):
@@ -29,3 +29,8 @@ class PossibleFinanceScraper(GreenhouseScraper):
 class SignifyHealthScraper(GreenhouseIframeScraper):
     employer_name = 'Signify Health'
     EMPLOYER_KEY = 'signifyhealth'
+    
+    
+class SkillableScraper(PaylocityScraper):
+    employer_name = 'Skillable'
+    start_url = 'https://recruiting.paylocity.com/recruiting/jobs/All/680f151f-b1e8-48cc-b07c-689df54fa3b4/Skillable'

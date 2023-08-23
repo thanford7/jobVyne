@@ -971,7 +971,7 @@ class VestiaireScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'vestiairecollective'
 
 
-class BrazeScraper(GreenhouseApiScraper):
+class BrazeScraper(GreenhouseScraper):
     employer_name = 'Braze'
     EMPLOYER_KEY = 'braze'
 
