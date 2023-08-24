@@ -249,15 +249,8 @@ export default {
         return
       }
       await Promise.all([
-        this.loadApplications(),
         this.loadUserFavorites()
       ])
-    },
-    async loadApplications () {
-      if (!this.$refs.jobs) {
-        return
-      }
-      await this.$refs.jobs.loadApplications(true)
     },
     async loadUserFavorites (isForceRefresh = true) {
       if (!this.user?.id) {

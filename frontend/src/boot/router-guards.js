@@ -2,7 +2,7 @@ import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
 import messagesUtil from 'src/utils/messages.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
-import { getAjaxFormData } from 'src/utils/requests'
+import { getAjaxFormData, getCsrfToken } from 'src/utils/requests'
 import { getDataFromMetaString } from 'stores/social-auth-store.js'
 
 const isMainPageFn = (to) => {
@@ -13,9 +13,15 @@ const isMainPageFn = (to) => {
   return to.params.namespace && mainPageNamespaces.includes(to.params.namespace)
 }
 
-export default boot(({ app, router }) => {
+export default boot(({ app, router, ssrContext }) => {
   router.beforeEach(async (to, from) => {
     const $api = app.config.globalProperties.$api
+    // Make sure CSRF cookie is set
+    const csrfToken = getCsrfToken(ssrContext)
+    if (!csrfToken) {
+      await $api.get('auth/login-set-cookie/')
+    }
+
     // Handle oauth callback
     if (to.name === 'auth-callback') {
       const provider = to.params.provider

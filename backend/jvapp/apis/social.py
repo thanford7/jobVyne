@@ -389,7 +389,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_job_filter=jobs_filter,
                 is_include_fetch=True,
                 is_allow_unapproved=is_allow_unapproved,
-                order_by=sort_order
+                order_by=sort_order,
+                applicant_user=self.user
             )
             if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
                 is_jobs_closed = True
@@ -401,7 +402,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy__in=all_professions)
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order
+                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order, applicant_user=self.user
             )
         elif employer_key:
             try:
@@ -415,16 +416,16 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 jobs_filter &= job_subscription_filter
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order
+                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order, applicant_user=self.user
             )
         elif link_id:
             if not link:
                 no_results_data[WARNING_MESSAGES_KEY] = [warning_message]
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
-            jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=True)
+            jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=True, user=self.user)
         elif job_key:
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, order_by=sort_order
+                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, order_by=sort_order, applicant_user=self.user
             )
             
         paginated_jobs = Paginator(jobs, per_page=36)
@@ -482,17 +483,18 @@ class SocialLinkJobsView(JobVyneAPIView):
             'job_department_standardized': job.job_department_standardized,
         }
         
-        if job_application := next((app for app in job.job_application.all()), None):
-            job_data['application'] = {
-                'id': job_application.id,
-                'created_dt': job_application.created_dt,
-                'is_external': job_application.is_external_application
-            }
+        if hasattr(job, 'user_job_applications'):
+            if job_application := next((app for app in job.user_job_applications), None):
+                job_data['application'] = {
+                    'id': job_application.id,
+                    'created_dt': job_application.created_dt,
+                    'is_external': job_application.is_external_application
+                }
             
         return job_data
     
     @staticmethod
-    def get_jobs_from_social_link(link, extra_filter=None, is_include_fetch=True):
+    def get_jobs_from_social_link(link, extra_filter=None, is_include_fetch=True, user=None):
         from jvapp.apis.employer import EmployerJobView
         from jvapp.apis.job_subscription import JobSubscriptionView
         
@@ -502,7 +504,9 @@ class SocialLinkJobsView(JobVyneAPIView):
             job_filter &= extra_filter
         
         logger.info('Fetching jobs')
-        return EmployerJobView.get_employer_jobs(employer_job_filter=job_filter, is_include_fetch=is_include_fetch)
+        return EmployerJobView.get_employer_jobs(
+            employer_job_filter=job_filter, is_include_fetch=is_include_fetch, applicant_user=user
+        )
     
     @staticmethod
     def get_location_filter(location_dict: Union[dict, None], remote_type_bit: int, range_miles: Union[int, None]):

@@ -15,7 +15,10 @@ class SelectEmployer(SelectExternal):
     OPTIONS_LOAD_KEY = 'options-employer'
     
     def __init__(self, *args, focus_on_load=False, **kwargs):
-        super().__init__(self.OPTIONS_LOAD_KEY, 'Select employer', 'Select employer', focus_on_load=focus_on_load)
+        super().__init__(
+            self.OPTIONS_LOAD_KEY, 'Select employer', 'Select employer',
+            focus_on_load=focus_on_load, min_query_length=2
+        )
     
     def get_form_value(self, form_data):
         val = form_data.get(self.OPTIONS_LOAD_KEY)

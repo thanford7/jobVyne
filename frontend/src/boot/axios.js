@@ -1,6 +1,6 @@
 import { boot } from 'quasar/wrappers'
-import { Cookies } from 'quasar'
 import axios from 'axios'
+import { getCsrfToken } from 'src/utils/requests.js'
 import emitter from 'tiny-emitter/instance'
 import md5 from 'md5'
 import { setupCache, serializeQuery } from 'axios-cache-adapter'
@@ -57,10 +57,7 @@ export default boot(({ app, ssrContext, store, router }) => {
   api.cache = cache
 
   api.interceptors.request.use(function (config) {
-    const cookies = process.env.SERVER
-      ? Cookies.parseSSR(ssrContext)
-      : Cookies // otherwise we're on client
-    config.headers['X-CSRFTOKEN'] = cookies.get('csrftoken')
+    config.headers['X-CSRFTOKEN'] = getCsrfToken(ssrContext)
     return config
   }, (error) => {
     return Promise.reject(error)

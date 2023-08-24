@@ -69,15 +69,18 @@ class EmployerView(JobVyneAPIView):
             employer_id = int(employer_id)
             employer = self.get_employers(employer_id=employer_id)
         elif employer_key := self.query_params.get('employer_key'):
-            employer = self.get_employers(employer_key=employer_key)
+            try:
+                employer = self.get_employers(employer_key=employer_key)
+            except Employer.DoesNotExist:
+                return get_error_response('This is a bad URL')
         elif social_link_id := self.query_params.get('social_link_id'):
             try:
                 social_link = SocialLink.objects.get(id=social_link_id)
             except SocialLink.DoesNotExist:
-                return Response(status=status.HTTP_200_OK, data={})
+                return get_error_response('This is a bad URL')
             employer_id = social_link.employer_id
             if not employer_id:
-                return Response(status=status.HTTP_200_OK, data={})
+                return get_error_response('This is a bad URL')
             employer = self.get_employers(employer_id=employer_id)
         
         if employer:
@@ -668,7 +671,7 @@ class EmployerJobView(JobVyneAPIView):
     
     @staticmethod
     def get_employer_jobs(
-            employer_job_id=None, employer_job_filter=None, order_by=('-open_date', 'id'),
+            employer_job_id=None, employer_job_filter=None, order_by=('-open_date', 'id'), applicant_user=None,
             is_only_closed=False, is_include_closed=False, is_include_future=False,
             is_include_fetch=True, is_allow_unapproved=False
     ):
@@ -704,10 +707,16 @@ class EmployerJobView(JobVyneAPIView):
                     'taxonomy',
                     'taxonomy__taxonomy',
                     'job_connection',
-                    'job_connection__user',
-                    'job_application'
+                    'job_connection__user'
                 )
             )
+            if applicant_user:
+                user_application_prefetch = Prefetch(
+                    'job_application',
+                    queryset=JobApplication.objects.filter(user=applicant_user),
+                    to_attr='user_job_applications'
+                )
+                jobs = jobs.prefetch_related(user_application_prefetch)
             
         jobs = jobs.order_by(*order_by).distinct()
         
