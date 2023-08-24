@@ -49,9 +49,15 @@ class JobProcessor:
     def __init__(self, employer, ignore_fields=None, is_use_location_caching=True):
         self.employer = employer
         jobs = self.get_existing_jobs(employer)
+        
+        # It's necessary to keep track of jobs by key (which includes locations) and url
+        # to make sure we don't miss jobs which have updated their location(s)
+        # Alternatively, if an employer changes their applicant tracking system, the URLs
+        # will change, but the job key will (likely) stay the same
         self.jobs_by_key = {j.get_key(): j for j in jobs}
         self.jobs_by_url = {j.application_url: j for j in jobs}
-        self.found_jobs = set()
+        self.found_job_keys = set()
+        self.found_job_urls = set()
         self.location_parser = LocationParser(is_use_location_caching=is_use_location_caching)
         self.job_departments = {j.name.lower(): j for j in JobDepartment.objects.all()}
         self.ignore_fields = ignore_fields or []  # Fields that should not be updated
@@ -158,7 +164,7 @@ class JobProcessor:
                 job_department = JobDepartment(name=job_item.job_department[:100])
                 job_department.save()
             except IntegrityError:
-                job_department = JobDepartment.objects.get(name=job_item.job_department)
+                job_department = JobDepartment.objects.get(name=job_item.job_department[:100])
             
             self.job_departments[job_item.job_department.lower()] = job_department
         
@@ -244,18 +250,22 @@ class ScrapedJobProcessor(JobProcessor):
         
         if is_update_locations:
             job.locations.set(locations)
-        self.found_jobs.add(EmployerJob.generate_job_key(job.job_title, location_ids))
+        self.found_job_keys.add(EmployerJob.generate_job_key(job.job_title, location_ids))
+        self.found_job_urls.add(job.application_url)
         
         return job, is_new_job
     
     def finalize_data(self, skipped_job_urls):
         # Set the close date of a job if it no longer exists on the employers job page
-        skipped_jobs = []
         close_jobs = []
+        jobs_urls_not_found_by_key = {}
         for job_key, job in self.jobs_by_key.items():
             if job.application_url in skipped_job_urls:
-                skipped_jobs.append(job)
-            elif job_key not in self.found_jobs and not job.close_date:
+                continue
+            elif job_key not in self.found_job_keys and not job.close_date:
+                jobs_urls_not_found_by_key[job.application_url] = job
+        for job_url, job in jobs_urls_not_found_by_key.items():
+            if job_url not in self.found_job_urls:
                 job.close_date = timezone.now().date()
                 job.modified_dt = timezone.now()
                 close_jobs.append(job)
@@ -265,10 +275,5 @@ class ScrapedJobProcessor(JobProcessor):
         self.employer.last_job_scrape_success_dt = timezone.now()
         self.employer.has_job_scrape_failure = False
         self.employer.save()
-        
-        # Bulk update the modified timestamp of jobs that were skipped
-        EmployerJob.objects \
-            .filter(id__in=[j.id for j in skipped_jobs]) \
-            .update(modified_dt=timezone.now())
         
         run_job_title_standardization(job_filter=Q(employer_id=self.employer.id), is_non_standardized_only=True)

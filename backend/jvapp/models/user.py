@@ -325,9 +325,11 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     
     @property
     def preferred_jobs_filter(self):
+        from jvapp.apis.job_subscription import JobSubscriptionView
         from jvapp.apis.social import SocialLinkJobsView
+        
         preferred_employers = Q(employer__in=self.membership_employers.all())
-        preferred_professions = Q(taxonomy__taxonomy__in=self.job_search_professions.all())
+        preferred_professions = Q(taxonomy__taxonomy__in=JobSubscriptionView.get_parent_and_child_professions(self.job_search_professions.all()))
         jobs_filter = preferred_employers & preferred_professions
         if self.home_location_id:
             location_dict = get_serialized_location(self.home_location)

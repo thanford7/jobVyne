@@ -5,8 +5,6 @@ import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData } from 'src/utils/requests'
 import { getDataFromMetaString } from 'stores/social-auth-store.js'
 
-const DEPLOY_TS_KEY = 'JV_DEPLOY_TS'
-
 const isMainPageFn = (to) => {
   if (!to) {
     return false
@@ -49,16 +47,7 @@ export default boot(({ app, router }) => {
     // Redirect if user doesn't have access to a specific page
     try {
       const resp = await $api.get('auth/check-auth/')
-      const { user, deploy_ts: deployTS } = resp.data
-
-      // Dynamically imported modules fail to load when a new code version is deployed
-      // The entire page needs to be refreshed when this occurs
-      const localDeployTS = localStorage.getItem(DEPLOY_TS_KEY)
-      if (deployTS && (localDeployTS !== deployTS)) {
-        localStorage.setItem(DEPLOY_TS_KEY, deployTS)
-        window.location = to.fullPath
-        window.location.reload()
-      }
+      const { user } = resp.data
 
       const isAuthenticated = user && !dataUtil.isEmptyOrNil(user)
 

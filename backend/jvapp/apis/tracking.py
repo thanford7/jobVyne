@@ -7,7 +7,7 @@ from django.contrib.gis.geoip2 import GeoIP2
 from django.db import DataError
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -37,6 +37,7 @@ class PageTrackView(APIView):
     permission_classes = [AllowAny]
     
     @method_decorator(csrf_exempt)
+    @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         location_data = None
         try:

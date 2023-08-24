@@ -3,6 +3,7 @@ import json
 from django.db.models import Q
 from django.utils import timezone
 
+from jvapp.apis.taxonomy import TaxonomyJobProfessionView
 from jvapp.models.employer import ConnectionTypeBit, EmployerJob, EmployerJobConnection, Taxonomy
 from jvapp.models.location import REMOTE_TYPES
 from jvapp.slack.slack_blocks import Button, InputOption, InputText, Modal, SectionText, Select, SelectExternal, \
@@ -149,17 +150,30 @@ def get_final_confirmation_modal(title, confirmation_text):
     )
 
 
+def get_profession_label(profession):
+    has_parent = bool(profession.parent_taxonomy.all())
+    inset = '•    ' if has_parent else ''
+    return f'{inset}{profession.name}'
+
+
 def get_profession_selections(set_professions=None, max_selected_items=3):
     profession_selections = None
     if set_professions:
         profession_selections = [
-            InputOption(profession.name, profession.id).get_slack_object() for profession in
+            InputOption(get_profession_label(profession), profession.id).get_slack_object() for profession in
             set_professions
         ]
-    profession_options = [
-        InputOption(tax.name, tax.id).get_slack_object() for tax in
-        Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_PROFESSION).order_by('name')
-    ]
+    
+    professions = TaxonomyJobProfessionView.get_job_profession_taxonomy()
+    profession_options = []
+    for profession in professions:
+        profession_options.append(
+            InputOption(get_profession_label(profession), profession.id).get_slack_object()
+        )
+        for sub_profession in profession.sub_taxonomies.all():
+            profession_options.append(
+                InputOption(get_profession_label(sub_profession), sub_profession.id).get_slack_object()
+            )
     
     return SelectMulti(
         'job_search_professions', 'Professions', 'Professions',

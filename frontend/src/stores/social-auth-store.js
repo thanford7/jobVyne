@@ -10,7 +10,9 @@ This is the process for social authentication:
 (4) The router-guard uses the credentials from the incoming url to authenticate the user
 (5) The router-guard redirects the user to the ultimate page they land on
  */
-const META_STRING_DELIMITER = '|'
+const META_STRING_DELIMITER = '||'
+const KEY_VAL_DELIMITER = '|'
+
 const serializeBasicObject = (targetObj) => {
   if (!targetObj) {
     return ''
@@ -20,7 +22,7 @@ const serializeBasicObject = (targetObj) => {
     if (!objString.length) {
       return param
     }
-    return `${objString}${META_STRING_DELIMITER}${param}`
+    return `${objString}${KEY_VAL_DELIMITER}${param}`
   }, '')
 }
 
@@ -28,7 +30,7 @@ const deserializeBasicObject = (targetStr) => {
   if (!targetStr) {
     return ''
   }
-  const keyValPairs = targetStr.split(META_STRING_DELIMITER)
+  const keyValPairs = targetStr.split(KEY_VAL_DELIMITER)
   return keyValPairs.reduce((targetObj, keyValPair) => {
     const splitIdx = keyValPair.indexOf('=')
     const key = keyValPair.slice(0, splitIdx)

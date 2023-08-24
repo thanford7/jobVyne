@@ -24,7 +24,6 @@ export default {
   },
   computed: {
     isLoggedIn () {
-      console.log(this.user)
       return Boolean(this.user || !dataUtil.isEmpty(this.user))
     }
   },

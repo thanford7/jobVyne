@@ -41,3 +41,8 @@ class KraftHeinzScraper(WorkdayScraper):
     employer_name = 'KraftHeinz'
     start_url = 'https://heinz.wd1.myworkdayjobs.com/en-US/KraftHeinz_Careers'
     has_job_departments = False
+    
+    
+class FlorenceHealthcareScraper(GreenhouseScraper):
+    employer_name = 'Florence Healthcare'
+    EMPLOYER_KEY = 'florencehealthcare'

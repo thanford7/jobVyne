@@ -98,6 +98,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'jobVyne.customMiddleware.AdminRedirectMiddleware',
+    'jobVyne.customMiddleware.DeployVersionMiddleware',
     'jobVyne.customMiddleware.ErrorHandlerMiddleware'
 ]
 

@@ -17,6 +17,8 @@ export const AJAX_EVENTS = {
   SUCCESS: 'ajax-success'
 }
 
+const CODE_VERSION_KEY = 'jv-version'
+
 // https://github.com/RasCarlito/axios-cache-adapter/issues/231
 const { adapter: axiosCacheAdapter, cache } = setupCache({
   // debug: process.env.NODE_ENV !== 'production',
@@ -65,6 +67,13 @@ export default boot(({ app, ssrContext, store, router }) => {
   })
 
   api.interceptors.response.use(function (response) {
+    const codeVersion = response.headers[CODE_VERSION_KEY] || 'default'
+    const localCodeVersion = localStorage.getItem(CODE_VERSION_KEY)
+
+    if (codeVersion !== localCodeVersion) {
+      localStorage.setItem(CODE_VERSION_KEY, codeVersion)
+      window.location.reload()
+    }
     const successMessage = response?.data?.successMessage
     const errorMessages = response?.data?.errorMessages
     const warningMessages = response?.data?.warningMessages
