@@ -47,3 +47,14 @@ class ErrorHandlerMiddleware:
             pass
         logger.exception(message, exc_info=exception)
         return None
+    
+    
+class DeployVersionMiddleware:
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        response = self.get_response(request)
+        response['jv-version'] = settings.DEPLOY_TS
+        return response

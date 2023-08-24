@@ -80,7 +80,6 @@ export default {
 
     // If a value is required and none is populated, use the default link
     if ((!this.modelValue || dataUtil.isEmpty(this.modelValue)) && this.isRequired) {
-      console.log('Set default link')
       const defaultLink = this.socialLinks.find((link) => link.is_default)
       this.$emit('update:model-value', defaultLink)
     }

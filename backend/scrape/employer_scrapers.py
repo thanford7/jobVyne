@@ -22,6 +22,7 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    FlorenceHealthcareScraper.employer_name: FlorenceHealthcareScraper,
     KraftHeinzScraper.employer_name: KraftHeinzScraper,
     SkillableScraper.employer_name: SkillableScraper,
     GoogleScraper.employer_name: GoogleScraper,

@@ -1726,10 +1726,6 @@ class EmployerInfoView(JobVyneAPIView):
             (Q(description__isnull=True) | Q(description_long__isnull=True))
             & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
         )
-        employer_filter &= (
-            Q(year_founded__lte=EmployerInfoView.MIN_AI_YEAR) |
-            Q(year_founded__isnull=True)
-        )
         employer_filter &= Q(email_domains__isnull=False)
         undescribed_employers = Employer.objects.filter(employer_filter)
         if limit:
@@ -1752,7 +1748,7 @@ class EmployerInfoView(JobVyneAPIView):
             employer = await queue.get()
             logger.info(f'Running employer description for {employer.employer_name}')
             try:
-                website_domains = employer.website or employer.email_domains
+                website_domains = employer.email_domains.split(',')[0] if employer.email_domains else None
                 resp, tracker = await ai.ask([
                     {'role': 'system', 'content': EmployerInfoView.DESCRIPTION_PROMPT},
                     {'role': 'user', 'content': f'Company: {employer.employer_name}\nWebsite domains: {website_domains}'}

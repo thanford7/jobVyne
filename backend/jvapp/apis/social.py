@@ -395,10 +395,11 @@ class SocialLinkJobsView(JobVyneAPIView):
                 is_jobs_closed = True
         elif profession_key:
             try:
-                taxonomy = TaxonomyJobProfessionView.get_job_profession_taxonomy(tax_key=profession_key)
+                profession = TaxonomyJobProfessionView.get_job_profession_taxonomy(tax_key=profession_key)
+                all_professions = JobSubscriptionView.get_parent_and_child_professions([profession])
             except Taxonomy.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
-            jobs_filter &= Q(taxonomy__taxonomy=taxonomy)
+            jobs_filter &= Q(taxonomy__taxonomy__in=all_professions)
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order
             )
@@ -639,6 +640,7 @@ class SocialLinkPostJobsView(JobVyneAPIView):
                 .prefetch_related(
                     'membership_employers',
                     'job_search_professions',
+                    'job_search_professions__sub_taxonomies',
                     home_location_prefetch
                 )
                 .get(id=recipient_id)

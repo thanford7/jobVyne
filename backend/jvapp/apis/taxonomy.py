@@ -40,7 +40,7 @@ class TaxonomyJobProfessionView(JobVyneAPIView):
         else:
             tax_filter &= Q(parent_taxonomy__isnull=True)
             
-        taxes = Taxonomy.objects.prefetch_related('sub_taxonomies').filter(tax_filter)
+        taxes = Taxonomy.objects.prefetch_related('sub_taxonomies').filter(tax_filter).order_by('name')
         if any((tax_id, tax_key)):
             if not taxes:
                 raise Taxonomy.DoesNotExist
