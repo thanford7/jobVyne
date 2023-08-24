@@ -1,3 +1,4 @@
+import { Cookies } from 'quasar'
 import dataUtil from 'src/utils/data'
 
 /**
@@ -76,4 +77,11 @@ export const makeApiRequestKey = (...args) => {
 
 export const openUrlInNewTab = (url) => {
   window.open(url, '_blank')
+}
+
+export const getCsrfToken = (ssrContext) => {
+  const cookies = process.env.SERVER
+    ? Cookies.parseSSR(ssrContext)
+    : Cookies // otherwise we're on client
+  return cookies.get('csrftoken')
 }

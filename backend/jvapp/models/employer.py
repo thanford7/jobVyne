@@ -98,16 +98,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_delete(self, user):
         return user.is_admin
-    
-    @property
-    def open_jobs(self):
-        open_filter = (
-            Q(open_date__lte=timezone.now().date())
-            & (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
-            & Q(is_job_approved=True)
-        )
-        return self.employer_job.filter(open_filter)
-    
+
     
 class EmployerSubscription(models.Model, JobVynePermissionsMixin):
     

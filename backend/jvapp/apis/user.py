@@ -381,18 +381,27 @@ class UserCreatedJobView(JobVyneAPIView):
     
     
 class UserFavoriteView(JobVyneAPIView):
-    
     def get(self, request):
         user_id = coerce_int(self.query_params['user_id'])
         if user_id != self.user.id:
             return get_error_response('You do not have permission to view this user')
+        
+        open_job_filter = (
+                Q(employer_job__open_date__lte=timezone.now().date())
+                & (Q(employer_job__close_date__isnull=True) | Q(employer_job__close_date__gt=timezone.now().date()))
+                & Q(employer_job__is_job_approved=True)
+        )
+        employers = Employer.objects.annotate(
+            open_job_count=Count('employer_job', filter=open_job_filter)
+        ).filter(employer_member=self.user)
+        
         return Response(status=status.HTTP_200_OK, data={
             'employers': [{
                 'employer_id': employer.id,
                 'employer_key': employer.employer_key,
                 'employer_name': employer.employer_name,
-                'open_job_count': employer.open_jobs.count()
-            } for employer in self.user.membership_employers.all()]
+                'open_job_count': employer.open_job_count
+            } for employer in employers]
         })
     
     def post(self, request):

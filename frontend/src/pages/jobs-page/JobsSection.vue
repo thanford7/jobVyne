@@ -180,6 +180,12 @@ export default {
         }
         await this.openApplication()
       }
+    },
+    user: {
+      async handler () {
+        await this.loadJobs(true)
+      },
+      deep: true
     }
   },
   methods: {
