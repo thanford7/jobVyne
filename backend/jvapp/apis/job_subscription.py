@@ -113,6 +113,7 @@ class JobSubscriptionView(JobVyneAPIView):
         with atomic():
             set_object_attributes(job_subscription, data, {
                 'title': None,
+                'filter_is_salary_only': AttributeCfg(form_name='is_salary_only'),
                 'filter_remote_type_bit': AttributeCfg(form_name='remote_type_bit'),
                 'filter_range_miles': AttributeCfg(form_name='range_miles')
             })
@@ -205,6 +206,8 @@ class JobSubscriptionView(JobVyneAPIView):
             job_filter &= Q(id__in=job_ids)
         if employer_ids := [e.id for e in job_subscription.filter_employer.all()]:
             job_filter &= Q(employer_id__in=employer_ids)
+        if job_subscription.filter_is_salary_only:
+            job_filter &= (Q(salary_floor__isnull=False) | Q(salary_ceiling__isnull=False))
     
         location_dicts = [get_serialized_location(l) for l in job_subscription.filter_location.all()]
         combined_location_filter = None

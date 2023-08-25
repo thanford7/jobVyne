@@ -80,7 +80,8 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
             'jobs_post_dow_bits': slack_cfg.jobs_post_dow_bits,
             'jobs_post_tod_minutes': slack_cfg.jobs_post_tod_minutes,
             'jobs_post_max_jobs': slack_cfg.jobs_post_max_jobs,
-            'referrals_post_channel': slack_cfg.referrals_post_channel
+            'referrals_post_channel': slack_cfg.referrals_post_channel,
+            'modal_cfg_is_salary_required': slack_cfg.modal_cfg_is_salary_required,
         } if slack_cfg else None
         
         employees = employer.employee.all()

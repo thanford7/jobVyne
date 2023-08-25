@@ -300,7 +300,8 @@ class EmployerSlackView(JobVyneAPIView):
             'jobs_post_dow_bits': None,
             'jobs_post_tod_minutes': None,
             'jobs_post_max_jobs': None,
-            'referrals_post_channel': None
+            'referrals_post_channel': None,
+            'modal_cfg_is_salary_required': None,
         })
         slack_cfg.jv_check_permission(PermissionTypes.EDIT.value, user)
         slack_cfg.save()

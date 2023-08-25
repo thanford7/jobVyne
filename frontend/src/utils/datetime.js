@@ -142,14 +142,8 @@ class DateTimeUtil {
     return Intl.DateTimeFormat().resolvedOptions().timeZone
   }
 
-  getCurrentTimeZoneHourOffset () {
-    const minuteOffset = new Date().getTimezoneOffset()
-    let hourOffset = Math.abs(minuteOffset / 60).toString()
-    // 0 pad the hour offset
-    hourOffset = (hourOffset.length === 1) ? `0${hourOffset}` : hourOffset
-    // A negative offset means the timezone is ahead of UTC so the operator is "+"
-    const operator = (minuteOffset <= 0) ? '+' : '-'
-    return `${operator}${hourOffset}00`
+  getCurrentTimeZoneMinuteOffset () {
+    return new Date().getTimezoneOffset()
   }
 
   getTimeStrFromMinutes (timeMinutes, isAmPm) {

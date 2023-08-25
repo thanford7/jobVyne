@@ -8,8 +8,9 @@
         <q-btn-toggle
           :model-value="dateGroup"
           @update:model-value="$emit('update:dateGroup', $event)"
-          rounded unelevated
+          rounded unelevated size="12px"
           color="grey-5"
+          text-color="black"
           toggle-color="grey-8"
           :options="[
             { label: 'Day', value: GROUPINGS.DATE.key },

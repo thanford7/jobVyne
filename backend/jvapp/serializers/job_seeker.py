@@ -29,7 +29,7 @@ def get_serialized_job_application(job_application: JobApplication):
         'application_status': job_application.application_status,
         'employer_job': {
             'id': job_application.employer_job_id,
-            'url': job_application.employer_job.job_url,
+            'url': job_application.employer_job.jv_relative_job_url,
             'employer_name': job_application.employer_job.employer.employer_name,
             'employer_id': job_application.employer_job.employer_id,
             'employer_key': job_application.employer_job.employer.employer_key,
