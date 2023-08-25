@@ -882,7 +882,7 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                 view=get_final_confirmation_modal(
                     'Job Saved',
                     (
-                        f'Saved the {job.job_title} position for {job.employer.employer_name} to your <{settings.BASE_URL}/candidate/jobs/|JobVyne profile>!'
+                        f'Saved the {job.job_title} position for {job.employer.employer_name} to your <{settings.BASE_URL}/candidate/job-applications/|JobVyne profile>!'
                     )
                 ).get_slack_object(),
                 trigger_id=self.data['trigger_id']

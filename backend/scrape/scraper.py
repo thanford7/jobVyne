@@ -22,7 +22,12 @@ async def get_browser(playwright):
     browser_context.set_default_timeout(JS_LOAD_WAIT_MS)
     await browser_context.set_geolocation({'latitude': 34.02016, 'longitude': -118.44472})
     await browser_context.set_extra_http_headers({
-        'User-Agent': get_random_user_agent()
+        'User-Agent': get_random_user_agent(),
+        'Referer': 'https://www.google.com',
+        'Origin': 'https://www.google.com',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': '*/*'
     })
     return browser, browser_context
 

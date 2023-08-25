@@ -391,8 +391,8 @@ class Scraper:
                         interval = salary_data.get('unitText')
                         if interval:
                             job_item.salary_interval = interval.lower()
-            
-                #Can be used to get company logo instead of manually adding
+                
+                # Can be used to get company logo instead of manually adding
                 company_data = job_data.get('hiringOrganization')
                 if company_data and isinstance(company_data, dict):
                     job_item.logo_url = company_data.get('logo')
@@ -401,7 +401,7 @@ class Scraper:
                             website_url = website_url[0]
                         website_domain = get_website_domain_from_url(website_url)
                         job_item.website_domain = website_domain
-                    
+        
         return job_item
     
     # Override
@@ -621,7 +621,7 @@ class GreenhouseIframeScraper(GreenhouseScraper):
         domain = self.EMPLOYER_KEY or link_values["domain"]
         return f'https://boards.greenhouse.io/embed/job_app?for={domain}&token={link_values["job_id"]}'
 
-    
+
 class GreenhouseApiScraper(GreenhouseScraper):
     """Some employers don't enable an iframe embed so we have to resort to using the API instead
     """
@@ -650,7 +650,7 @@ class GreenhouseApiScraper(GreenhouseScraper):
             params={'pay_transparency': True}
         )
         return json.loads(job_resp.content)
-        
+    
     def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None):
         job_data = self.get_job_data(job_id)
         pay_ranges = [
@@ -677,7 +677,7 @@ class GreenhouseApiScraper(GreenhouseScraper):
         
         job_description = html_parser.unescape(job_data['content'])
         description_compensation_data = parse_compensation_text(job_description)
-
+        
         compensation_data = merge_compensation_data(
             [compensation_data, description_compensation_data]
         )
@@ -686,13 +686,14 @@ class GreenhouseApiScraper(GreenhouseScraper):
         if job_data['location']:
             locations.append(job_data['location']['name'])
         locations += [o['location'] or o['name'] for o in job_data['offices']]
-
+        
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
             job_title=job_data['title'],
             locations=self.process_locations(locations),
-            job_department=job_data['departments'][0]['name'] if job_data['departments'] else self.DEFAULT_JOB_DEPARTMENT,
+            job_department=job_data['departments'][0]['name'] if job_data[
+                'departments'] else self.DEFAULT_JOB_DEPARTMENT,
             job_description=job_description,
             employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
             first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['updated_at'], as_date=True)),
@@ -1151,7 +1152,8 @@ class AshbyHQScraper(Scraper):
             elif job_detail_name == 'department':
                 job_details['department'] = ' - '.join(job_detail.xpath('.//p/span/text()').getall())
             elif job_detail_name == 'compensation':
-                compensation_text = job_detail.xpath('.//span[contains(@class, "_compensationTierSummary")]/text()').get()
+                compensation_text = job_detail.xpath(
+                    './/span[contains(@class, "_compensationTierSummary")]/text()').get()
                 compensation_text_data = parse_compensation_text(compensation_text)
         
         description = html.xpath('//div[contains(@class, "_descriptionText")]').get()
@@ -1173,6 +1175,84 @@ class AshbyHQScraper(Scraper):
             logo_url=standard_job_item.logo_url,
             website_domain=standard_job_item.website_domain,
             **compensation_data
+        )
+
+
+class AshbyHQApiScraper(Scraper):
+    IS_API = True
+    
+    async def scrape_jobs(self):
+        jobs = self.get_jobs()
+        company_data = self.get_company_data()
+        
+        for job in jobs:
+            await self.add_job_links_to_queue(
+                self.get_job_link(job), meta_data={'job_id': job['id'], 'website_url': company_data['publicWebsite']}
+            )
+        
+        await self.close()
+    
+    def get_job_link(self, job_data):
+        return f'https://jobs.ashbyhq.com/{self.EMPLOYER_KEY}/{job_data["id"]}'
+    
+    def get_jobs(self):
+        post_data = {
+            'operationName': 'ApiJobBoardWithTeams',
+            'query': 'query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) {\n  jobBoard: jobBoardWithTeams(\n    organizationHostedJobsPageName: $organizationHostedJobsPageName\n  ) {\n    teams {\n      id\n      name\n      parentTeamId\n      __typename\n    }\n    jobPostings {\n      id\n      title\n      teamId\n      locationId\n      locationName\n      employmentType\n      secondaryLocations {\n        ...JobPostingSecondaryLocationParts\n        __typename\n      }\n      compensationTierSummary\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment JobPostingSecondaryLocationParts on JobPostingSecondaryLocation {\n  locationId\n  locationName\n  __typename\n}',
+            'variables': {'organizationHostedJobsPageName': self.EMPLOYER_KEY}
+        }
+        
+        resp = requests.post(
+            f'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams',
+            json=post_data
+        )
+        data = json.loads(resp.content)
+        return data['data']['jobBoard']['jobPostings']
+    
+    def get_company_data(self):
+        post_data = {
+            'operationName': 'ApiOrganizationFromHostedJobsPageName',
+            'query': 'query ApiOrganizationFromHostedJobsPageName($organizationHostedJobsPageName: String!) {\n  organization: organizationFromHostedJobsPageName(\n    organizationHostedJobsPageName: $organizationHostedJobsPageName\n  ) {\n    ...OrganizationParts\n    __typename\n  }\n}\n\nfragment OrganizationParts on Organization {\n  name\n  publicWebsite\n  customJobsPageUrl\n  allowJobPostIndexing\n  theme {\n    colors\n    showJobFilters\n    showTeams\n    showAutofillApplicationsBox\n    logoWordmarkImageUrl\n    logoSquareImageUrl\n    applicationSubmittedSuccessMessage\n    jobBoardTopDescriptionHtml\n    jobBoardBottomDescriptionHtml\n    __typename\n  }\n  appConfirmationTrackingPixelHtml\n  recruitingPrivacyPolicyUrl\n  activeFeatureFlags\n  timezone\n  __typename\n}',
+            'variables': {'organizationHostedJobsPageName': self.EMPLOYER_KEY}
+        }
+        
+        resp = requests.post(
+            f'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiOrganizationFromHostedJobsPageName',
+            json=post_data
+        )
+        data = json.loads(resp.content)
+        return data['data']['organization']
+    
+    def get_raw_job_data(self, job_id):
+        post_data = {
+            'operationName': 'ApiJobPosting',
+            'query': 'query ApiJobPosting($organizationHostedJobsPageName: String!, $jobPostingId: String!) {\n  jobPosting(\n    organizationHostedJobsPageName: $organizationHostedJobsPageName\n    jobPostingId: $jobPostingId\n  ) {\n    id\n    title\n    departmentName\n    locationName\n    employmentType\n    descriptionHtml\n    isListed\n    isConfidential\n    teamNames\n    applicationForm {\n      ...FormRenderParts\n      __typename\n    }\n    surveyForms {\n      ...FormRenderParts\n      __typename\n    }\n    secondaryLocationNames\n    compensationTierSummary\n    compensationTiers {\n      id\n      title\n      tierSummary\n      __typename\n    }\n    compensationTierGuideUrl\n    scrapeableCompensationSalarySummary\n    compensationPhilosophyHtml\n    applicationLimitCalloutHtml\n    __typename\n  }\n}\n\nfragment JSONBoxParts on JSONBox {\n  value\n  __typename\n}\n\nfragment FileParts on File {\n  id\n  filename\n  __typename\n}\n\nfragment FormFieldEntryParts on FormFieldEntry {\n  id\n  field\n  fieldValue {\n    ... on JSONBox {\n      ...JSONBoxParts\n      __typename\n    }\n    ... on File {\n      ...FileParts\n      __typename\n    }\n    ... on FileList {\n      files {\n        ...FileParts\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  isRequired\n  descriptionHtml\n  isHidden\n  __typename\n}\n\nfragment FormRenderParts on FormRender {\n  id\n  formControls {\n    identifier\n    title\n    __typename\n  }\n  errorMessages\n  sections {\n    title\n    descriptionHtml\n    fieldEntries {\n      ...FormFieldEntryParts\n      __typename\n    }\n    isHidden\n    __typename\n  }\n  sourceFormDefinitionId\n  __typename\n}',
+            'variables': {'organizationHostedJobsPageName': self.EMPLOYER_KEY, 'jobPostingId': str(job_id)}
+        }
+        
+        jobs_resp = requests.post(
+            f'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting',
+            json=post_data
+        )
+        data = json.loads(jobs_resp.content)
+        return data['data']['jobPosting']
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None, website_url=None):
+        job_data = self.get_raw_job_data(job_id)
+        job_description = job_data['descriptionHtml']
+        description_compensation_data = parse_compensation_text(job_description)
+        location = job_data['locationName']
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data['title'],
+            locations=[location],
+            job_department=job_data['departmentName'] or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description,
+            employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
+            website_domain=get_website_domain_from_url(website_url),
+            **description_compensation_data
         )
 
 
@@ -1575,7 +1655,6 @@ class RipplingScraper(Scraper):
             job_department=job_department,
             job_description=description,
             employment_type=self.DEFAULT_EMPLOYMENT_TYPE,
-            first_posted_date=timezone.now().date(),
             **description_compensation_data
         )
 
@@ -1721,7 +1800,6 @@ class StandardJsScraper(StandardScraper):
             await self.wait_for_el(page, self.main_page_wait_sel)
         
         return await self.get_page_html(page)
-
 
 # TODO: JazzHR Scraper
 # https://blavity.applytojob.com/
