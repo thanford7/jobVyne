@@ -314,7 +314,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         if not self.employer_id or not self.employer.email_domains:
             return False
         
-        return get_domain_from_email(self.email) in self.employer.email_domains
+        return get_domain_from_email(self.email) in (self.employer.email_domains + 'jobvyne.com')
 
     @property
     def is_business_email_employer_permitted(self):
