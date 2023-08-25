@@ -79,3 +79,8 @@ class ExperianScraper(SmartRecruitersScraper):
 class EunaSolutionsScraper(BambooHrScraper):
     employer_name = 'EUNA Solutions'
     EMPLOYER_KEY = 'euna'
+    
+    
+class OlaplexScraper(GreenhouseIframeScraper):
+    employer_name = 'Olaplex'
+    EMPLOYER_KEY = 'olaplexcareers'
