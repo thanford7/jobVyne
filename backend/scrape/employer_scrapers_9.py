@@ -1,4 +1,5 @@
-from scrape.base_scrapers import AshbyHQScraper, GreenhouseApiScraper, GreenhouseScraper, JobviteScraper, LeverScraper, \
+from scrape.base_scrapers import AshbyHQApiScraper, AshbyHQScraper, GreenhouseApiScraper, GreenhouseScraper, \
+    JobviteScraper, LeverScraper, \
     RipplingAtsScraper, SmartRecruitersScraper, \
     WorkdayScraper
 
