@@ -14,7 +14,7 @@
               <q-btn
                 v-for="option in GROUP_OPTIONS"
                 :color="(chartGroups.includes(option.key)) ? 'grey-8' : 'grey-6'"
-                rounded :label="option.label"
+                rounded text-color="black" size="12px" :label="option.label"
                 @click="toggleGroup(option.key)"
               />
             </q-btn-group>

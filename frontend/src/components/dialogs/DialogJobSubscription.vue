@@ -5,8 +5,8 @@
     @ok="saveJobSubscription"
   >
     <q-form ref="form">
-      <div class="row q-gutter-y-md q-mt-sm">
-        <div class="col-12">
+      <div class="row q-mt-sm">
+        <div class="col-12 q-mb-sm">
           <q-input
             v-model="formData.title"
             autofocus filled label="Subscription title"
@@ -21,18 +21,27 @@
         <div class="col-12">
           <SelectJobProfession v-model="formData.job_professions" :is-multi="true" :is-required="true"/>
         </div>
-        <div class="col-12">
-          <SelectEmployer v-model="formData.employers" :is-multi="true"/>
+        <div class="col-12 q-mb-sm">
+          <q-toggle
+            v-model="formData.is_salary_only"
+            label="Only jobs with salary information"
+          />
+          <CustomTooltip>
+            If salaries are required in your locality, this option will ensure you do not display any jobs that do not comply with this requirement
+          </CustomTooltip>
         </div>
-        <div class="col-12">
+        <div class="col-12 q-mb-sm">
           <InputLocation
             v-model:location="formData.locations"
             v-model:range_miles="formData.range_miles"
             :is-include-range="true" :is-multi="true"
           />
         </div>
-        <div class="col-12">
+        <div class="col-12 q-mb-sm">
           <SelectRemote v-model="formData.remote_type_bit"/>
+        </div>
+        <div class="col-12">
+          <SelectEmployer v-model="formData.employers" :is-multi="true"/>
         </div>
       </div>
     </q-form>
@@ -65,7 +74,9 @@ export default {
   },
   data () {
     return {
-      formData: {}
+      formData: {
+        is_salary_only: false
+      }
     }
   },
   methods: {

@@ -68,6 +68,10 @@ export default boot(({ app, router, ssrContext }) => {
         return { name: 'login', query: { redirectPageUrl: to.path } }
       }
 
+      if (isAuthenticated && ['home', 'login'].includes(to.name)) {
+        return pagePermissionsUtil.getDefaultLandingPage(user)
+      }
+
       const { canView, canEdit } = pagePermissionsUtil.getUserPagePermissions(user, to.name)
 
       // Redirect user to page where they can verify their email if they haven't already

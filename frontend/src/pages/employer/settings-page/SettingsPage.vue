@@ -1,7 +1,8 @@
 <template>
   <q-page padding>
-    <div class="q-ml-sm">
-      <PageHeader title="Employer settings"/>
+    <div v-if="isLoaded" class="q-ml-sm">
+      <PageHeader
+        :title="`${(isEmployer) ? 'Employer' : 'Group'} settings`"/>
       <q-tabs
         v-model="tab"
         dense
@@ -14,7 +15,7 @@
         <q-tab name="general" label="General"/>
         <q-tab name="security" label="Security"/>
         <q-tab name="integration" label="Integration"/>
-        <q-tab v-if="hasPaymentPermission" name="billing" label="Billing"/>
+        <q-tab v-if="isShowBilling" name="billing" label="Billing"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="general">
@@ -144,7 +145,7 @@
         <q-tab-panel name="integration">
           <IntegrationSection :employer-data="employerData" @update-employer="updateEmployerData()"/>
         </q-tab-panel>
-        <q-tab-panel v-if="hasPaymentPermission" name="billing">
+        <q-tab-panel v-if="isShowBilling" name="billing">
           <q-form ref="planForm" class="q-mb-md">
             <div class="row">
               <div class="col-12 text-h6">
@@ -424,11 +425,11 @@ import PlanSection from 'pages/employer/settings-page/PlanSection.vue'
 import StripeAccountType from 'pages/employer/settings-page/StripeAccountType.vue'
 import StripePaymentFields from 'pages/employer/settings-page/StripePaymentFields.vue'
 import StripePaymentMethodDetails from 'pages/employer/settings-page/StripePaymentMethodDetails.vue'
-import { storeToRefs } from 'pinia/dist/pinia'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import colorUtil from 'src/utils/color.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
+import employerTypeUtil from 'src/utils/employer-types.js'
 import fileUtil, { FILE_TYPES } from 'src/utils/file.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
@@ -481,28 +482,36 @@ export default {
   },
   data () {
     return {
+      isLoaded: false,
       tab: 'general',
       newLogoKey: 'logo',
-      currentEmployerData: this.getEmployerDataCopy(),
-      employerData: this.getEmployerDataCopy(),
-      currentBillingData: this.getEmployerBillingDataCopy(),
-      billingData: this.getEmployerBillingDataCopy(),
+      user: null,
+      isEmployer: true,
+      currentEmployerData: null,
+      employerData: null,
+      currentBillingData: null,
+      billingData: null,
       isSavingBillingData: false,
-      subscriptionData: this.billingStore.getEmployerSubscription(this.user.employer_id),
-      paymentMethods: this.billingStore.getEmployerPaymentMethods(this.user.employer_id),
-      payments: this.billingStore.getEmployerCharges(this.user.employer_id),
+      subscriptionData: null,
+      paymentMethods: null,
+      payments: null,
       colorUtil,
       dataUtil,
       dateTimeUtil,
+      employerTypeUtil,
       fileUtil,
       subscriptionUtil,
       FILE_TYPES,
       isPlansShown: false,
-      isAddPaymentMethod: !this.billingStore.getEmployerPaymentMethods(this.user.employer_id),
+      isAddPaymentMethod: false,
       paymentMethodColumns,
       selectedPaymentMethod: [],
       SUBSCRIPTION_STATUS,
-      pastPaymentColumns
+      pastPaymentColumns,
+      authStore: useAuthStore(),
+      billingStore: useBillingStore(),
+      employerStore: useEmployerStore(),
+      q: useQuasar()
     }
   },
   computed: {
@@ -520,6 +529,9 @@ export default {
         return 0
       }
       return this.subscriptionData.quantity - this.employerData.employee_count_active
+    },
+    isShowBilling () {
+      return this.hasPaymentPermission && this.isEmployer
     }
   },
   watch: {
@@ -635,51 +647,42 @@ export default {
       await this.updatePaymentMethodData()
     }
   },
-  mounted () {
+  async mounted () {
+    Loading.show()
+    await this.authStore.setUser()
+    this.user = this.authStore.propUser
+    await this.updateEmployerData()
+    this.isEmployer = this.employerTypeUtil.isTypeEmployer(this.employerData.organization_type)
+    if (this.isEmployer) {
+      await Promise.all([
+        this.employerStore.setEmployerBilling(this.user.employer_id),
+        this.billingStore.setEmployerCharges(this.user.employer_id),
+        this.billingStore.setEmployerSubscription(this.user.employer_id),
+        this.billingStore.setEmployerPaymentMethods(this.user.employer_id)
+      ])
+
+      this.subscriptionData = this.billingStore.getEmployerSubscription(this.user.employer_id)
+      this.paymentMethods = this.billingStore.getEmployerPaymentMethods(this.user.employer_id)
+      this.payments = this.billingStore.getEmployerCharges(this.user.employer_id)
+      this.currentBillingData = this.getEmployerBillingDataCopy()
+      this.billingData = this.getEmployerBillingDataCopy()
+      this.isAddPaymentMethod = !this.paymentMethods
+    }
+    this.isLoaded = true
+    Loading.hide()
     const { tab } = this.$route.query
     if (tab) {
       this.tab = tab
     }
   },
-  preFetch () {
-    const billingStore = useBillingStore()
-    const employerStore = useEmployerStore()
-    const authStore = useAuthStore()
-    Loading.show()
-
-    return authStore.setUser().then(() => {
-      return Promise.all([
-        employerStore.setEmployer(authStore.propUser.employer_id),
-        employerStore.setEmployerBilling(authStore.propUser.employer_id),
-        billingStore.setEmployerCharges(authStore.propUser.employer_id),
-        billingStore.setEmployerSubscription(authStore.propUser.employer_id),
-        billingStore.setEmployerPaymentMethods(authStore.propUser.employer_id)
-      ])
-    }).finally(() => {
-      Loading.hide()
-    })
-  },
   setup () {
-    const billingStore = useBillingStore()
-    const employerStore = useEmployerStore()
-    const authStore = useAuthStore()
-    const { user } = storeToRefs(authStore)
-
     const globalStore = useGlobalStore()
-    const pageTitle = 'Employer Settings Page'
+    const pageTitle = 'Settings Page'
     const metaData = {
       title: pageTitle,
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-
-    return {
-      authStore,
-      billingStore,
-      employerStore,
-      user,
-      q: useQuasar()
-    }
   }
 }
 </script>

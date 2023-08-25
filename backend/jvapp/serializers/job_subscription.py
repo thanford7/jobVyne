@@ -14,6 +14,7 @@ def get_serialized_job_subscription(job_subscription: JobSubscription):
             'range_miles': job_subscription.filter_range_miles,
             'jobs': [{'title': j.job_title, 'id': j.id} for j in job_subscription.filter_job.all()],
             'employers': [{'name': e.employer_name, 'id': e.id} for e in job_subscription.filter_employer.all()],
-            'remote_type_bit': job_subscription.filter_remote_type_bit
+            'remote_type_bit': job_subscription.filter_remote_type_bit,
+            'is_salary_only': job_subscription.filter_is_salary_only
         }
     }

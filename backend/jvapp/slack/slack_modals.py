@@ -363,6 +363,10 @@ class JobModalViews(SlackMultiViewModal):
                 is_final = self.modal_add_salary_details()
                 if is_final:
                     return
+                
+        if (not self.job.has_salary) and self.slack_cfg.modal_cfg_is_salary_required:
+            self.modal_required_job_salary()
+            return
         
         is_final = self.modal_update_subscriptions()
         if is_final:
@@ -481,6 +485,14 @@ class JobModalViews(SlackMultiViewModal):
                 options=employment_options,
                 initial_option=default_employment_option
             ).get_slack_object(),
+        ]
+        
+        if self.slack_cfg.modal_cfg_is_salary_required:
+            job_detail_blocks.append(
+                SectionText(f'\n💰 {self.slack_cfg.employer.employer_name} requires a salary range for all jobs 💰').get_slack_object()
+            )
+        
+        salary_detail_blocks = [
             Select(
                 'salary-currency', 'Currency', 'Currency',
                 options=currency_options,
@@ -488,12 +500,12 @@ class JobModalViews(SlackMultiViewModal):
             ).get_slack_object(),
             InputNumber(
                 'salary-min', 'Minimum Salary', 'Amount',
-                is_optional=True, min_value=0, is_decimal_allowed=True,
+                is_optional=not self.slack_cfg.modal_cfg_is_salary_required, min_value=0, is_decimal_allowed=True,
                 initial_value=self.job.salary_floor
             ).get_slack_object(),
             InputNumber(
                 'salary-max', 'Maximum Salary', 'Amount',
-                is_optional=True, min_value=0, is_decimal_allowed=True,
+                is_optional=not self.slack_cfg.modal_cfg_is_salary_required, min_value=0, is_decimal_allowed=True,
                 initial_value=self.job.salary_ceiling
             ).get_slack_object(),
             Select(
@@ -502,7 +514,21 @@ class JobModalViews(SlackMultiViewModal):
                 initial_option=default_interval_option
             ).get_slack_object()
         ]
+        
+        job_detail_blocks = job_detail_blocks + salary_detail_blocks
+        
         return self.add_modal(job_detail_blocks, 'Continue to preferences', process_data_once_fn=self.update_job_salary)
+    
+    def modal_required_job_salary(self):
+        return self.add_modal([
+            SectionText(
+                (
+                    f'{self.slack_cfg.employer.employer_name} requires a salary range for all jobs.\n'
+                    f'Unfortunately the <{self.job.preferred_application_url}|{self.job.job_title} position> with {self.employer.employer_name} does not list a salary.\n'
+                    f'If you believe this is an error, please contact {EMAIL_ADDRESS_SUPPORT}'
+                )
+            ).get_slack_object()
+        ], is_final=True)
     
     def modal_update_subscriptions(self):
         subscription_options = [

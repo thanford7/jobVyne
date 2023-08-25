@@ -8,7 +8,7 @@
     :options="filteredEmployers"
     option-value="id"
     option-label="employer_name"
-    label="Employer"
+    :label="`Employer${(isMulti) ? 's' : ''}`"
     lazy-rules
     :rules="rules"
   />

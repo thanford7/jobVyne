@@ -743,7 +743,7 @@ class SlackOptionsInboundView(SlackExternalBaseView):
         elif SelectEmployerJob.OPTIONS_LOAD_KEY_PREPEND in action_id:
             employer_jobs = SelectEmployerJob.get_employer_jobs(options_load_key=action_id, regex_pattern=regex_pattern)
             options = [
-                InputOption(job.job_title, job.id, description=job.locations_text).get_slack_object() for job in
+                InputOption(job.job_title, job.id, description=f'{"" if job.has_salary else "(No Salary) "}{job.locations_text}').get_slack_object() for job in
                 employer_jobs
             ]
             return options

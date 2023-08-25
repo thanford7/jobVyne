@@ -214,7 +214,7 @@ class PagePermissionsUtil {
             key: 'employer-applications',
             label: 'Job Applications',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedFn: isUserEmployerFn
+            isPermittedFn: (userPermissionGroups, userPermissions, employerOrgType) => isUserEmployerFn(userPermissionGroups, userPermissions) && employerTypeUtil.isTypeEmployer(employerOrgType)
           },
           {
             icon: 'groups',

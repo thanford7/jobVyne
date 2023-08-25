@@ -2,6 +2,7 @@ import re
 import uuid
 from enum import Enum, IntEnum
 
+from django.conf import settings
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q, UniqueConstraint
@@ -140,6 +141,7 @@ class EmployerSlack(models.Model, JobVynePermissionsMixin):
     jobs_post_tod_minutes = models.SmallIntegerField(null=True, blank=True)
     jobs_post_max_jobs = models.SmallIntegerField(null=True, blank=True)
     referrals_post_channel = models.CharField(max_length=75, null=True, blank=True)
+    modal_cfg_is_salary_required = models.BooleanField(default=False)
 
     def _jv_can_create(self, user):
         return (
@@ -332,8 +334,19 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         return bool(self.created_user_id)
     
     @property
-    def job_url(self):
+    def jv_relative_job_url(self):
         return f'/job/{self.job_key}/'
+    
+    @property
+    def preferred_application_url(self):
+        if self.employer.is_use_job_url:
+            return self.application_url
+        else:
+            return f'{settings.BASE_URL}{self.jv_relative_job_url}'
+    
+    @property
+    def has_salary(self):
+        return bool(self.salary_floor or self.salary_ceiling)
     
     
 # Keep in sync with community.js
