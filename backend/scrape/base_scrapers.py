@@ -113,7 +113,7 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        self.skip_urls = []
+        self.skip_urls = skip_urls
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in

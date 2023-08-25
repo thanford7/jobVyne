@@ -1,5 +1,6 @@
-from scrape.base_scrapers import GreenhouseIframeScraper, GreenhouseScraper, LeverScraper, PaylocityScraper, \
-    WorkdayScraper
+from scrape.base_scrapers import BambooHrScraper, GreenhouseIframeScraper, GreenhouseScraper, LeverScraper, \
+    PaylocityScraper, \
+    SmartRecruitersScraper, UltiProScraper, WorkdayScraper
 
 
 class MapleScraper(LeverScraper):
@@ -46,3 +47,35 @@ class KraftHeinzScraper(WorkdayScraper):
 class FlorenceHealthcareScraper(GreenhouseScraper):
     employer_name = 'Florence Healthcare'
     EMPLOYER_KEY = 'florencehealthcare'
+    
+    
+class SunLifeScraper(WorkdayScraper):
+    employer_name = 'Sun Life'
+    start_url = 'https://sunlife.wd3.myworkdayjobs.com/en-US/Experienced-Jobs'
+    has_job_departments = False
+    
+    
+class TheTrevorProjectScraper(LeverScraper):
+    employer_name = 'The Trevor Project'
+    EMPLOYER_KEY = 'thetrevorproject'
+    
+    
+class EvolentHealthScraper(WorkdayScraper):
+    employer_name = 'Evolent Health'
+    start_url = 'https://evolent.wd1.myworkdayjobs.com/External'
+    has_job_departments = False
+    
+    
+class MercerAdvisorsScraper(UltiProScraper):
+    employer_name = 'Mercer Advisors Inc'
+    start_url = 'https://recruiting2.ultipro.com/MER1031MRGA/JobBoard/28d24fb4-1c0a-422a-9afa-f8ec27c7a728/'
+    
+    
+class ExperianScraper(SmartRecruitersScraper):
+    employer_name = 'Experian'
+    EMPLOYER_KEY = 'Experian'
+    
+
+class EunaSolutionsScraper(BambooHrScraper):
+    employer_name = 'EUNA Solutions'
+    EMPLOYER_KEY = 'euna'
