@@ -559,7 +559,7 @@ JOB_TAXONOMY_TESTS = [
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CUSTOMER_SUPPORT, CONFIDENCE_WEIGHT_WEAK)]
     ),
     TaxonomyTest(
-        f'{start_or_word_and_space_re}talent.*?(acqui|sourc).*?$',
+        f'{start_or_word_and_space_re}talent.*?(acqui|sourc|development|planning).*?$',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_TA, CONFIDENCE_WEIGHT_VERY_STRONG)]
     ),
     TaxonomyTest(
@@ -578,6 +578,10 @@ JOB_TAXONOMY_TESTS = [
         f'{start_or_word_and_space_re}(hr|people|hrbp|recursos humanos|l&d|hris|diversity|inclusion|dei){space_and_word_or_end_re}',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_HR, CONFIDENCE_WEIGHT_STRONG)],
         test_negate_pattern=f'^.+?(/hr|per hr).*?$'
+    ),
+    TaxonomyTest(
+        f'{start_or_word_and_space_re}talent.*?(development|planning|management).*?$',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_TA, CONFIDENCE_WEIGHT_VERY_STRONG)]
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}(human resource|total reward).*?$',
