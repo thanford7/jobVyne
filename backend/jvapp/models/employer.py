@@ -103,7 +103,6 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     @property
     def main_job_board_link(self):
-        org_type_name = None
         if self.organization_type == self.ORG_TYPE_EMPLOYER:
             org_type_name = 'co'
         elif self.organization_type == self.ORG_TYPE_GROUP:
@@ -111,6 +110,10 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
         else:
             raise ValueError('This org type is not yet supported')
         return f'{settings.BASE_URL}/{org_type_name}/{self.employer_key}'
+    
+    @property
+    def website_domain(self):
+        return self.email_domains.split(',')[0] if self.email_domains else None
 
     
 class EmployerSubscription(models.Model, JobVynePermissionsMixin):

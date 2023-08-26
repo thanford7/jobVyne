@@ -38,6 +38,8 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         'logo_url': employer.logo.url if employer.logo else None,
         'logo_square_88_url': employer.logo_square_88.url if employer.logo_square_88 else None,
         'email_domains': employer.email_domains,
+        'website': employer.website_domain,
+        'ats_name': employer.applicant_tracking_system.name if employer.applicant_tracking_system else None,
         'is_use_job_url': employer.is_use_job_url,
         'company_jobs_page_url': employer.company_jobs_page_url,
         'color_primary': employer.color_primary,

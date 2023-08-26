@@ -129,14 +129,8 @@ class EmployerView(JobVyneAPIView):
         elif employer_key:
             employer_filter = Q(employer_key=employer_key)
         
-        default_job_board_prefetch = Prefetch(
-            'sociallink_set',
-            queryset=SocialLink.objects.prefetch_related('job_subscriptions').filter(is_default=True, owner_id__isnull=True),
-            to_attr='default_job_board'
-        )
-        
         employers = Employer.objects \
-            .select_related('default_bonus_currency') \
+            .select_related('default_bonus_currency', 'applicant_tracking_system') \
             .prefetch_related(
                 'subscription',
                 'employee',
@@ -144,8 +138,7 @@ class EmployerView(JobVyneAPIView):
                 'employee__employer_permission_group__permission_group',
                 'employee__employer_permission_group__permission_group__permissions',
                 'ats_cfg',
-                'slack_cfg',
-                default_job_board_prefetch
+                'slack_cfg'
             ) \
             .filter(employer_filter) \
             .annotate(employee_count=Count('employee'))
