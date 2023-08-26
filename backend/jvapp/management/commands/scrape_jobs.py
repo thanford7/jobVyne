@@ -21,10 +21,10 @@ class Command(BaseCommand):
         schedule_minutes = options['schedule_minutes']
         if schedule_minutes:
             while True:
-                writer('Running Workable ATS job scraping')
-                parse_workable_xml_jobs()
                 writer('Running job scraping')
                 run_job_scrapers(employer_names=None)
+                writer('Running Workable ATS job scraping')
+                parse_workable_xml_jobs()
                 writer(f'Waiting {schedule_minutes} minutes for next run')
                 sleep(schedule_minutes * 60)
         else:
