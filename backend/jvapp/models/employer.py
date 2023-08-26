@@ -266,6 +266,9 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     is_job_approved = models.BooleanField(default=True, db_index=True)
     
     class Meta:
+        # For ordering to use an index, you cannot mix ascending and descending ordering!
+        # https://dba.stackexchange.com/questions/11031/order-by-column-should-have-index-or-not
+        ordering = ('-open_date', '-id')
         indexes = [
             models.Index('open_date', 'id', name='open_date_id_idx')
         ]

@@ -2,7 +2,6 @@ __all__ = ('SocialPlatformView', 'SocialLinkView', 'SocialLinkJobsView', 'ShareS
 
 import json
 import logging
-import math
 from collections import defaultdict
 from datetime import timedelta
 from typing import Union
@@ -306,14 +305,10 @@ class SocialLinkJobsView(JobVyneAPIView):
         job_key = self.query_params.get('job_key')
         job_subscription_ids = self.query_params.getlist('job_subscription_ids[]') or self.query_params.get('job_subscription_ids')
         
-        sort_order = ('-open_date', 'job_department_id', 'id')
-        # Sort job departments in preference for the one the user belongs to
-        # We want to show jobs from this department first
+        # TODO: Add recommended jobs based on page owner's profession
         if page_owner_user_id := self.query_params.get('connection_id'):
             try:
                 page_owner_user = JobVyneUser.objects.select_related('profession').get(id=page_owner_user_id)
-                if page_owner_user.profession:
-                    sort_order = ('job_department_id', '-open_date', 'id')
             except JobVyneUser.DoesNotExist:
                 pass
         
@@ -329,7 +324,6 @@ class SocialLinkJobsView(JobVyneAPIView):
                 )
             except SocialLink.DoesNotExist:
                 warning_message = 'This link is no longer active.'
-                
         
         jobs_filter = Q()
         if job_filters := self.query_params.get('job_filters'):
@@ -376,7 +370,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         jobs = QuerySet()
         if not any((link_id, profession_key, employer_key, job_key, job_subscription_ids)):
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=Q(), is_include_fetch=True, order_by=sort_order, applicant_user=self.user
+                employer_job_filter=Q(), is_include_fetch=True, applicant_user=self.user
             )
         if job_subscription_ids:
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
@@ -392,7 +386,6 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_job_filter=jobs_filter,
                 is_include_fetch=True,
                 is_allow_unapproved=is_allow_unapproved,
-                order_by=sort_order,
                 applicant_user=self.user
             )
             if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
@@ -405,7 +398,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy__in=all_professions)
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order, applicant_user=self.user
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
             )
         elif employer_key:
             try:
@@ -419,7 +412,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 jobs_filter &= job_subscription_filter
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, order_by=sort_order, applicant_user=self.user
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
             )
         elif link_id:
             if not link:
@@ -428,7 +421,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=True, user=self.user)
         elif job_key:
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, order_by=sort_order, applicant_user=self.user
+                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, applicant_user=self.user
             )
             
         paginated_jobs = Paginator(jobs, per_page=36)
