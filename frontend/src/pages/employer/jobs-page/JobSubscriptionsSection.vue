@@ -29,7 +29,7 @@
         <template v-slot:body="props">
           <q-tr :props="props">
             <q-td auto-width>
-              <template v-if="!props.row.is_single_employer">
+              <template v-if="!props.row.is_single_employer || userTypeUtil.isAdmin(user.user_type_bits)">
                 <q-btn
                   outline round dense icon="edit" color="primary"
                   class="q-mr-xs"
@@ -41,7 +41,7 @@
                   @click="deleteJobSubscription(props.row)"
                 />
               </template>
-              <CustomTooltip v-else :is_include_icon="false">
+              <CustomTooltip v-if="props.row.is_single_employer" :is_include_icon="false">
                 <template v-slot:content>
                   <q-chip icon="lock">Employee referral</q-chip>
                 </template>
@@ -76,6 +76,7 @@ import { useQuasar } from 'quasar'
 import locationUtil from 'src/utils/location.js'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
+import userTypeUtil from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useJobSubscriptionStore } from 'stores/job-subscription-store.js'
 
@@ -110,7 +111,8 @@ export default {
       subscriptionFilter: { ...subscriptionFilterTemplate },
       jobSubscriptions: [],
       jobSubscriptionColumns,
-      locationUtil
+      locationUtil,
+      userTypeUtil
     }
   },
   methods: {
