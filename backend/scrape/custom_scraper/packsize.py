@@ -9,6 +9,7 @@ from scrape.job_processor import JobItem
 
 
 class PacksizeScraper(Scraper):
+    ATS_NAME = 'Custom'
     employer_name = 'Packsize'
     IS_REMOVE_QUERY_PARAMS = False
     

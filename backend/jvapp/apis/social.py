@@ -455,6 +455,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 'key': job.employer.employer_key,
                 'logo': job.employer.logo_square_88.url if job.employer.logo_square_88 else None,
                 'description': job.employer.description,
+                'ats': job.employer.applicant_tracking_system.name if job.employer.applicant_tracking_system else None,
                 # 'industry': job.employer.industry,
                 # 'employee_count_min': job.employer.size_min,
                 # 'employee_count_max': job.employer.size_max,

@@ -42,6 +42,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     company_jobs_page_url = models.CharField(max_length=100, null=True, blank=True)  # Used to redirect users if employer's account is inactive
     is_manual_job_entry = models.BooleanField(default=False, blank=True)  # Whether HR users can manually add jobs
     is_use_job_url = models.BooleanField(default=False, blank=True)  # For employers with no relationship to JobVyne we need to redirect users to the job page
+    applicant_tracking_system = models.ForeignKey('ApplicantTrackingSystem', null=True, blank=True, on_delete=models.SET_NULL)
 
     # Company data
     description = models.TextField(null=True, blank=True)
@@ -162,6 +163,11 @@ class EmployerSlack(models.Model, JobVynePermissionsMixin):
                 and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
             )
         )
+    
+    
+class ApplicantTrackingSystem(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+    logo = models.ImageField(blank=True, null=True, upload_to='logos')
     
     
 class EmployerAts(AuditFields, JobVynePermissionsMixin):

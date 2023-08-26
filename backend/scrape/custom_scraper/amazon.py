@@ -9,6 +9,7 @@ from scrape.job_processor import JobItem
 
 
 class AmazonScraper(Scraper):
+    ATS_NAME = 'Custom'
     IS_API = True
     JOBS_PER_PAGE = 100
     employer_name = 'Amazon'

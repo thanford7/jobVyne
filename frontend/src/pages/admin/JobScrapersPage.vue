@@ -46,6 +46,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 const scraperColumns = [
   { name: 'employerName', field: 'employer_name', align: 'left', label: 'Name', sortable: true },
+  { name: 'ats', field: 'ats', align: 'left', label: 'ATS', sortable: true, format: (val) => val || 'Unknown' },
   {
     name: 'scrapeDate',
     field: 'last_job_scrape_success_dt',

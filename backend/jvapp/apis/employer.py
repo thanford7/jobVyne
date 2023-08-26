@@ -696,6 +696,7 @@ class EmployerJobView(JobVyneAPIView):
                 jobs.select_related(
                     'job_department',
                     'employer',
+                    'employer__applicant_tracking_system',
                     'referral_bonus_currency',
                     'salary_currency'
                 )

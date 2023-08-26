@@ -44,11 +44,6 @@ class TruecallerScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'truecaller'
 
 
-class YummyScraper(LeverScraper):
-    employer_name = 'Yummy'
-    EMPLOYER_KEY = 'yummysuperapp'
-
-
 class HqoScraper(AshbyHQScraper):
     employer_name = 'HqO'
     EMPLOYER_KEY = 'hqo'
@@ -133,11 +128,6 @@ class CarsBidsScraper(GreenhouseScraper):
 class ChownowScraper(LeverScraper):
     employer_name = 'ChowNow'
     EMPLOYER_KEY = 'chownow'
-
-
-class TixrScraper(LeverScraper):
-    employer_name = 'TIXR'
-    EMPLOYER_KEY = 'Tixr'
 
 
 class AndurilScraper(LeverScraper):

@@ -96,6 +96,7 @@ class Scraper:
     PAGE_LOAD_WAIT_EVENT = 'load'
     IS_REMOVE_QUERY_PARAMS = True
     EMPLOYER_KEY = None
+    ATS_NAME = None
     start_url = None
     employer_name = None
     job_item_page_wait_sel = None
@@ -412,6 +413,7 @@ class Scraper:
 class BambooHrScraper(Scraper):
     """ There are two entirely different HTML structures on different BambooHR Sites
     """
+    ATS_NAME = 'BambooHR'
     IS_JS_REQUIRED = True
     job_item_page_wait_sel = '.fab-Card'
     
@@ -473,6 +475,7 @@ class BambooHrScraper(Scraper):
 class BambooHrScraper2(Scraper):
     """ There are two entirely different HTML structures on different BambooHR Sites
     """
+    ATS_NAME = 'BambooHR'
     IS_JS_REQUIRED = True
     job_item_page_wait_sel = '.ResAts__card'
     
@@ -531,6 +534,7 @@ class BambooHrScraper2(Scraper):
 
 
 class GreenhouseScraper(Scraper):
+    ATS_NAME = 'Greenhouse'
     TEST_REDIRECT = False
     IS_REMOVE_QUERY_PARAMS = False
     job_item_page_wait_sel = '#header'
@@ -606,6 +610,7 @@ class GreenhouseScraper(Scraper):
 
 
 class GreenhouseIframeScraper(GreenhouseScraper):
+    ATS_NAME = 'Greenhouse'
     TEST_REDIRECT = False
     job_item_page_wait_sel = None
     
@@ -625,6 +630,7 @@ class GreenhouseIframeScraper(GreenhouseScraper):
 class GreenhouseApiScraper(GreenhouseScraper):
     """Some employers don't enable an iframe embed so we have to resort to using the API instead
     """
+    ATS_NAME = 'Greenhouse'
     IS_REMOVE_QUERY_PARAMS = False
     IS_API = True
     
@@ -706,6 +712,7 @@ class GreenhouseApiScraper(GreenhouseScraper):
 
 
 class WorkdayScraper(Scraper):
+    ATS_NAME = 'Workday'
     IS_JS_REQUIRED = True
     job_department_menu_data_automation_id = 'jobFamilyGroup'
     job_department_form_data_automation_id = 'jobFamilyGroupCheckboxGroup'
@@ -919,6 +926,7 @@ class WorkdayScraper(Scraper):
 
 
 class LeverScraper(Scraper):
+    ATS_NAME = 'Lever'
     TEST_REDIRECT = False
     
     async def scrape_jobs(self):
@@ -980,6 +988,7 @@ class LeverScraper(Scraper):
 
 
 class BreezyScraper(Scraper):
+    ATS_NAME = 'Breezy HR'
     USE_ADVANCED_HEADERS = True
     
     async def scrape_jobs(self):
@@ -1031,6 +1040,7 @@ class BreezyScraper(Scraper):
 
 
 class WorkableScraper(Scraper):
+    ATS_NAME = 'Workable'
     IS_API = True
     BASE_FILTER_DATA = {
         'department': [],
@@ -1117,6 +1127,7 @@ class WorkableScraper(Scraper):
 
 
 class AshbyHQScraper(Scraper):
+    ATS_NAME = 'Ashby'
     IS_JS_REQUIRED = True
     job_item_page_wait_sel = '[class*="_descriptionText"]'
     
@@ -1179,6 +1190,7 @@ class AshbyHQScraper(Scraper):
 
 
 class AshbyHQApiScraper(Scraper):
+    ATS_NAME = 'Ashby'
     IS_API = True
     
     async def scrape_jobs(self):
@@ -1257,6 +1269,7 @@ class AshbyHQApiScraper(Scraper):
 
 
 class UltiProScraper(Scraper):
+    ATS_NAME = 'UltiPro'
     IS_REMOVE_QUERY_PARAMS = False
     TEST_REDIRECT = False
     IS_JS_REQUIRED = True
@@ -1306,6 +1319,7 @@ class UltiProScraper(Scraper):
 
 
 class SmartRecruitersScraper(Scraper):
+    ATS_NAME = 'SmartRecruiters'
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.get_start_url())
@@ -1352,6 +1366,7 @@ class SmartRecruitersScraper(Scraper):
 
 
 class SmartRecruitersApiScraper(Scraper):
+    ATS_NAME = 'SmartRecruiters'
     IS_API = True
     JOBS_PER_PAGE = 100  # This is the max
     
@@ -1423,6 +1438,7 @@ class SmartRecruitersApiScraper(Scraper):
 
 
 class PaylocityScraper(Scraper):
+    ATS_NAME = 'Paylocity'
     IS_JS_REQUIRED = True
     job_item_page_wait_sel = '.job-preview-header'
     
@@ -1474,6 +1490,7 @@ class PaylocityScraper(Scraper):
 
 
 class ApplicantProScraper(Scraper):
+    ATS_NAME = 'ApplicantPro'
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.get_start_url())
@@ -1511,6 +1528,7 @@ class ApplicantProScraper(Scraper):
 
 
 class EightfoldScraper(Scraper):
+    ATS_NAME = 'Eightfold'
     IS_API = True
     JOBS_PER_PAGE = 10  # This looks like the max that's supported
     
@@ -1569,6 +1587,7 @@ class EightfoldScraper(Scraper):
 
 
 class JobviteScraper(Scraper):
+    ATS_NAME = 'Jobvite'
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.get_start_url())
@@ -1625,6 +1644,7 @@ class JobviteScraper(Scraper):
 
 
 class RipplingScraper(Scraper):
+    ATS_NAME = 'Rippling'
     
     async def scrape_jobs(self):
         jobs = self.get_jobs()
@@ -1662,6 +1682,7 @@ class RipplingScraper(Scraper):
 
 # NOTE: This is different from RipplingScraper!
 class RipplingAtsScraper(Scraper):
+    ATS_NAME = 'Rippling'
     
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.get_start_url())
@@ -1708,6 +1729,7 @@ class RipplingAtsScraper(Scraper):
 
 
 class RecruiteeScraper(Scraper):
+    ATS_NAME = 'Recruitee'
     TEST_REDIRECT = False
     IS_REMOVE_QUERY_PARAMS = False
     job_item_page_wait_sel = '#header'
