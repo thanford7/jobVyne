@@ -29,7 +29,7 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobConnection, EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
-    EmployerFileTag
+    EmployerFileTag, JobTaxonomy, Taxonomy
 from jvapp.models.external import ExternalCompanyData
 from jvapp.models.job_seeker import JobApplication
 from jvapp.models.location import Location
@@ -661,24 +661,27 @@ class EmployerJobView(JobVyneAPIView):
     
     @staticmethod
     def get_employer_jobs(
-            employer_job_id=None, employer_job_filter=None, order_by=('-open_date', 'id'), applicant_user=None,
+            employer_job_id=None, employer_job_filter=None, order_by=None, applicant_user=None,
             is_only_closed=False, is_include_closed=False, is_include_future=False,
             is_include_fetch=True, is_allow_unapproved=False
     ):
+        # NOTE: Be careful adding the order_by argument since it may cause a full table scan if not on an index
         if employer_job_id:
-            employer_job_filter = Q(id=employer_job_id)
+            standard_job_filter = Q(id=employer_job_id)
         else:
-            employer_job_filter = employer_job_filter or Q()
+            standard_job_filter = Q()
             if not is_allow_unapproved:
-                employer_job_filter &= Q(is_job_approved=True)
+                standard_job_filter &= Q(is_job_approved=True)
             if is_only_closed:
-                employer_job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
+                standard_job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
             elif not is_include_closed:
-                employer_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+                standard_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
             if not is_include_future:
-                employer_job_filter &= Q(open_date__lte=timezone.now().date())
+                standard_job_filter &= Q(open_date__lte=timezone.now().date())
         
-        jobs = EmployerJob.objects.filter(employer_job_filter)
+        jobs = EmployerJob.objects.filter(standard_job_filter)
+        if employer_job_filter:
+            jobs = jobs.filter(employer_job_filter)
         
         if is_include_fetch:
             locations_prefetch = Prefetch(
@@ -709,7 +712,9 @@ class EmployerJobView(JobVyneAPIView):
                 )
                 jobs = jobs.prefetch_related(user_application_prefetch)
             
-        jobs = jobs.order_by(*order_by).distinct()
+        jobs = jobs.distinct()
+        if order_by:
+            jobs.order_by(*order_by)
         
         if employer_job_id:
             if not jobs:
