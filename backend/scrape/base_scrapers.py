@@ -1266,6 +1266,7 @@ class UltiProScraper(Scraper):
         page = await self.get_starting_page()
         
         # Make sure page data has loaded
+        # Issue: REQUEST FAILED: https://www.linkedin.com/li/track net::ERR_ABORTED
         try:
             await self.wait_for_el(page, '#Opportunities')
         except PlaywrightTimeoutError:

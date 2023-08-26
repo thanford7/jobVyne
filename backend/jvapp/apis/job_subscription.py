@@ -129,6 +129,8 @@ class JobSubscriptionView(JobVyneAPIView):
                     job_subscription.filter_job.clear()
                 if job_subscription.filter_employer.all():
                     job_subscription.filter_employer.clear()
+                if job_subscription.filter_job_professions.all():
+                    job_subscription.filter_job_professions.clear()
             
             job_subscription.save()
             

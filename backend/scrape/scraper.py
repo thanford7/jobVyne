@@ -67,7 +67,7 @@ def run_job_scrapers(employer_names=None):
         .values('employer_name', 'last_job_scrape_success_dt')
     )}
     old_date = timezone.datetime(1900, 1, 1, tzinfo=timezone.get_default_timezone())
-    scraper_classes.sort(key=lambda s: employer_last_scrape_date.get(s.employer_name, old_date))
+    scraper_classes.sort(key=lambda s: employer_last_scrape_date.get(s.employer_name) or old_date)
     
     for scraper_class in scraper_classes:
         # Allow scrapers to fail so it doesn't impact other scrapers
