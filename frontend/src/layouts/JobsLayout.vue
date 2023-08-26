@@ -1,7 +1,7 @@
 <template>
   <q-layout view="lHr LpR fFf">
 
-    <q-header v-if="isLoaded" ref="header" elevated class="bg-white text-primary">
+    <q-header v-if="isLoaded" ref="header" elevated reveal class="bg-white text-primary">
       <div class="justify-center row" style="position: relative">
         <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
           <q-toolbar-title shrink>
@@ -22,6 +22,19 @@
             class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center text-center"
           >
             {{ employer.description }}
+          </div>
+          <div class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center items-center text-center text-small">
+            <a v-if="employer.website" :href="`https://www.${employer.website}`" target="_blank">Website</a>
+            <template v-if="employer.ats_name">
+              &nbsp;
+              <CustomTooltip :is_include_icon="false">
+                <template v-slot:icon>
+                  <q-chip size="12px" color="gray-8" dense outline>{{ employer.ats_name }}</q-chip>
+                </template>
+                This is the Applicant Tracking System (ATS) that {{ employer.name }} uses. Some ATSs are easier to use
+                compared with others. If you've been job searching for a bit of time, you'll know which ones 😆
+              </CustomTooltip>
+            </template>
           </div>
         </template>
         <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
@@ -152,6 +165,7 @@
 </template>
 
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import BaseSidebar from 'components/sidebar/BaseSidebar.vue'
 import SidebarMenuItem from 'components/sidebar/SidebarMenuItem.vue'
@@ -211,6 +225,7 @@ export default {
     }
   },
   components: {
+    CustomTooltip,
     SidebarMenuItem,
     BaseSidebar,
     CommunitySection,

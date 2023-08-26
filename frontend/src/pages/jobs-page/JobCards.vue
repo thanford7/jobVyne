@@ -53,17 +53,27 @@
               </q-item-section>
             </q-item>
             <div class="text-small q-py-sm q-mx-lg">
-              <div class="text-small">
+              <div class="text-small flex items-center">
                 <a v-if="job.employer.website" :href="`https://www.${job.employer.website}`" target="_blank">Website</a>
+                <template v-if="job.employer.ats_name">
+                  <CustomTooltip :is_include_icon="false">
+                    <template v-slot:icon>
+                      <q-chip size="12px" color="gray-8" dense outline>{{ job.employer.ats_name }}</q-chip>
+                    </template>
+                    This is the Applicant Tracking System (ATS) that {{ job.employer.name }} uses. Some ATSs are easier to
+                    use
+                    compared with others. If you've been job searching for a bit of time, you'll know which ones 😆
+                  </CustomTooltip>
+                </template>
               </div>
-<!--              <div class="q-my-xs">-->
-<!--                <q-chip v-if="job.employer.industry" icon="factory" size="12px" color="gray-8" title="industry">-->
-<!--                  {{ job.employer.industry }}-->
-<!--                </q-chip>-->
-<!--                <q-chip v-if="job.employer.employee_count_min" icon="groups" size="12px" color="gray-8" title="industry">-->
-<!--                  {{ job.employer.employee_count_min }} - {{ job.employer.employee_count_max }}-->
-<!--                </q-chip>-->
-<!--              </div>-->
+              <!--              <div class="q-my-xs">-->
+              <!--                <q-chip v-if="job.employer.industry" icon="factory" size="12px" color="gray-8" title="industry">-->
+              <!--                  {{ job.employer.industry }}-->
+              <!--                </q-chip>-->
+              <!--                <q-chip v-if="job.employer.employee_count_min" icon="groups" size="12px" color="gray-8" title="industry">-->
+              <!--                  {{ job.employer.employee_count_min }} - {{ job.employer.employee_count_max }}-->
+              <!--                </q-chip>-->
+              <!--              </div>-->
               <div>
                 {{ job.employer.description }}
               </div>
