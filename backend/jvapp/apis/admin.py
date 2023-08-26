@@ -165,21 +165,6 @@ class AdminEmployerView(JobVyneAPIView):
                 employee_seats=employee_seats
             ).save()
         
-        # Create account owner
-        if owner_email := self.data.get('owner_email'):
-            user = JobVyneUser.objects.create_user(
-                owner_email,
-                first_name=self.data.get('owner_first_name'),
-                last_name=self.data.get('owner_last_name'),
-                user_type_bits=JobVyneUser.USER_TYPE_EMPLOYER,
-                employer_id=employer.id,
-                is_employer_owner=True
-            )
-            self.assign_employer_admin_permission(user, employer)
-        
-            # Send welcome email to owner
-            UserView.send_password_reset_email(user, is_new=True)
-        
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Employer successfully created'
         })
@@ -205,16 +190,7 @@ class AdminEmployerView(JobVyneAPIView):
             subscription.status = subscription_status or subscription.status
             subscription.save()
             
-        if owner_id := self.data.get('account_owner_id'):
-            new_account_owner = UserView.get_user(self.user, user_id=owner_id)
-            account_owner = EmployerView.get_employer_account_owner(employer)
-            if account_owner and new_account_owner != account_owner:
-                account_owner.is_employer_owner = False
-                account_owner.save()
-            
-            new_account_owner.is_employer_owner = True
-            new_account_owner.save()
-            self.assign_employer_admin_permission(new_account_owner, employer)
+        # self.assign_employer_admin_permission(new_account_owner, employer)
 
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Employer successfully updated'
@@ -240,21 +216,6 @@ class AdminEmployerView(JobVyneAPIView):
                 'is_manual_subscription': not subscription.stripe_key,
             }
         
-        account_owner = EmployerView.get_employer_account_owner(employer)
-        owner_data = {
-            'owner_id': None,
-            'owner_first_name': None,
-            'owner_last_name': None,
-            'owner_email': None
-        }
-        if account_owner:
-            owner_data = {
-                'owner_id': account_owner.id,
-                'owner_first_name': account_owner.first_name,
-                'owner_last_name': account_owner.last_name,
-                'owner_email': account_owner.email
-            }
-        
         return {
             'id': employer.id,
             'name': employer.employer_name,
@@ -264,8 +225,7 @@ class AdminEmployerView(JobVyneAPIView):
             'joined_date': get_datetime_format_or_none(employer.created_dt),
             'email_domains': employer.email_domains,
             'is_use_job_url': employer.is_use_job_url,
-            **subscription_data,
-            **owner_data
+            **subscription_data
         }
     
     @staticmethod
@@ -348,6 +308,9 @@ class AdminUserView(JobVyneAPIView):
             
         if profession_ids := filters.get('professionIds'):
             users = users.filter(profession_id__in=profession_ids)
+            
+        if is_account_owner := filters.get('isAccountOwner'):
+            users = users.filter(is_employer_owner__in=is_account_owner)
             
         paged_users = Paginator(users, per_page=25)
         data = {

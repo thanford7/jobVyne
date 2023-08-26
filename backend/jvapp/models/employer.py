@@ -99,6 +99,17 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     def _jv_can_delete(self, user):
         return user.is_admin
+    
+    @property
+    def main_job_board_link(self):
+        org_type_name = None
+        if self.organization_type == self.ORG_TYPE_EMPLOYER:
+            org_type_name = 'co'
+        elif self.organization_type == self.ORG_TYPE_GROUP:
+            org_type_name = 'group'
+        else:
+            raise ValueError('This org type is not yet supported')
+        return f'{settings.BASE_URL}/{org_type_name}/{self.employer_key}'
 
     
 class EmployerSubscription(models.Model, JobVynePermissionsMixin):

@@ -38,6 +38,11 @@
         label="Job department" class="q-mb-md"
         :is-required="false" :is-multi="false"
       />
+      <SelectYesNo
+        v-if="isAdmin"
+        v-model="formDataSingle.is_employer_owner" :is-multi="false" label="Is account owner"
+        class="q-mb-md"
+      />
       <SelectPermissionGroup
         label="Permission groups"
         v-model="formDataSingle.permission_group_ids"
@@ -68,6 +73,7 @@ import DialogBase from 'components/dialogs/DialogBase.vue'
 import PasswordInput from 'components/inputs/PasswordInput.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectJobProfession from 'components/inputs/SelectJobProfession.vue'
+import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
@@ -93,7 +99,7 @@ export default {
   name: 'DialogUser',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { SelectJobProfession, PasswordInput, SelectPermissionGroup, DialogBase, SelectEmployer },
+  components: { SelectYesNo, SelectJobProfession, PasswordInput, SelectPermissionGroup, DialogBase, SelectEmployer },
   data () {
     return {
       user_ids: null,

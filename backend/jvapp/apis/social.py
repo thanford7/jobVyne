@@ -305,7 +305,6 @@ class SocialLinkJobsView(JobVyneAPIView):
         employer_key = self.query_params.get('employer_key')
         job_key = self.query_params.get('job_key')
         job_subscription_ids = self.query_params.getlist('job_subscription_ids[]') or self.query_params.get('job_subscription_ids')
-        assert any((link_id, profession_key, employer_key, job_key, job_subscription_ids))
         
         sort_order = ('-open_date', 'job_department_id', 'id')
         # Sort job departments in preference for the one the user belongs to
@@ -375,6 +374,10 @@ class SocialLinkJobsView(JobVyneAPIView):
         is_jobs_closed = False
         is_single_job = False
         jobs = QuerySet()
+        if not any((link_id, profession_key, employer_key, job_key, job_subscription_ids)):
+            jobs = EmployerJobView.get_employer_jobs(
+                employer_job_filter=Q(), is_include_fetch=True, order_by=sort_order, applicant_user=self.user
+            )
         if job_subscription_ids:
             job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)

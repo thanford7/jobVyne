@@ -210,13 +210,12 @@ class SlackBasePoster:
             
             blocks.append({'type': 'divider'})
         
-        general_job_link = SocialLink.objects.get(employer_id=self.slack_cfg.employer.id, owner_id__isnull=True,
-                                                  is_default=True)
+        general_job_link = f'{self.slack_cfg.employer.main_job_board_link}?platform=slack'
         blocks.append({
             'type': 'section',
             'text': {
                 'type': 'mrkdwn',
-                'text': f'*<{general_job_link.get_link_url(platform_name="slack")}|View all open jobs>*'
+                'text': f'*<{general_job_link}|View all open jobs>*'
             }
         })
         return blocks

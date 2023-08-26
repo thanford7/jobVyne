@@ -86,6 +86,7 @@ import PageHeader from 'components/PageHeader.vue'
 import { Loading, useMeta, useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
+import employerTypeUtil from 'src/utils/employer-types.js'
 import { openConfirmDialog } from 'src/utils/requests.js'
 import { SUBSCRIPTION_STATUS } from 'src/utils/subscription.js'
 import { useAdminStore } from 'stores/admin-store.js'
@@ -111,6 +112,14 @@ const employerColumns = [
     sortable: true,
     format: (val) => dataUtil.capitalize(val.toString())
   },
+  {
+    name: 'organizationType',
+    field: 'organization_type',
+    align: 'left',
+    label: 'Organization Type',
+    sortable: true,
+    format: (val) => employerTypeUtil.getEmployerTypeByBit(val)
+  },
   { name: 'employeeSeats', field: 'employee_seats', align: 'center', label: 'Employee Seats', sortable: true },
   { name: 'employeeCount', field: 'employee_count', align: 'center', label: 'Employee Count', sortable: true },
   { name: 'subscriptionStatus', field: 'subscription_status', align: 'left', label: 'Account Status', sortable: true },
@@ -119,13 +128,6 @@ const employerColumns = [
     field: (employer) => dataUtil.getFullName(employer.owner_first_name, employer.owner_last_name),
     align: 'left',
     label: 'Account Owner Name',
-    sortable: true
-  },
-  {
-    name: 'accountOwnerEmail',
-    field: 'owner_email',
-    align: 'left',
-    label: 'Account Owner Email',
     sortable: true
   }
 ]

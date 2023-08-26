@@ -297,20 +297,25 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
 
     @property
     def is_employer_verified(self):
+        if self.is_employer_owner and self.is_email_verified:
+            return True
         if not self.employer_id or not self.employer.email_domains:
             return False
     
         return (
-                (self.is_email_verified and self.is_email_employer_permitted)
-                or (
-                        self.business_email
-                        and self.is_business_email_verified
-                        and get_domain_from_email(self.business_email) in self.employer.email_domains
-                )
+            (self.is_email_verified and self.is_email_employer_permitted)
+            or (
+                    self.business_email
+                    and self.is_business_email_verified
+                    and get_domain_from_email(self.business_email) in self.employer.email_domains
+            )
         )
     
     @property
     def is_email_employer_permitted(self):
+        if self.is_employer_owner or self.is_admin:
+            return True
+        
         if not self.employer_id or not self.employer.email_domains:
             return False
         

@@ -8,7 +8,7 @@
     @blur="employerData.email_domains = getNormalizedEmailDomains(employerData.email_domains)"
     label="Permitted email domains"
     lazy-rules
-    :rules="[ val => val && val.length > 0 || 'At least one email domain is required']"
+    :rules="[ val => !isEmployer || val && val.length > 0 || 'At least one email domain is required']"
   >
     <template v-slot:after>
       <CustomTooltip :is_include_space="true">
@@ -25,6 +25,7 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import employerTypeUtil from 'src/utils/employer-types.js'
 
 const NOT_PERMITTED_DOMAINS = [
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com'
@@ -36,6 +37,11 @@ export default {
     employerData: Object
   },
   components: { CustomTooltip },
+  computed: {
+    isEmployer () {
+      return employerTypeUtil.isTypeEmployer(this.employerData.organization_type)
+    }
+  },
   methods: {
     getNormalizedEmailDomains (rawEmailDomains) {
       if (!rawEmailDomains) {

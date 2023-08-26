@@ -201,6 +201,15 @@
         </CustomTooltip>
       </q-th>
     </template>
+    <template v-slot:header-cell-is_employer_owner="props">
+      <q-th :props="props">
+        {{ props.col.label }}
+        <TableFilter filter-name="Account Owner"
+                     :has-filter="userFilter.isAccountOwner && userFilter.isAccountOwner.length">
+          <SelectYesNo label="Is Account Owner" v-model="userFilter.isAccountOwner"/>
+        </TableFilter>
+      </q-th>
+    </template>
     <template v-slot:header-cell-profession="props">
       <q-th :props="props">
         {{ props.col.label }}
@@ -336,6 +345,7 @@ const userFilterTemplate = {
   permissionGroupIds: null,
   isApprovalRequired: null,
   isActive: null,
+  isAccountOwner: null,
   employerIds: null,
   professionIds: null
 }
@@ -439,6 +449,14 @@ export default {
           format: (val) => (val) ? 'Yes' : 'No',
           sortable: true,
           classes: (row) => (row.has_employee_seat) ? '' : 'text-negative text-bold'
+        },
+        {
+          name: 'is_employer_owner',
+          field: 'is_employer_owner',
+          align: 'center',
+          label: 'Is Account Owner',
+          format: (val) => (val) ? 'Yes' : 'No',
+          sortable: true
         },
         { name: 'first_name', field: 'first_name', align: 'left', label: 'First name', sortable: true },
         { name: 'last_name', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
@@ -559,9 +577,7 @@ export default {
   },
   async mounted () {
     await this.authStore.setUser()
-    await Promise.all([
-      this.fetchUsers()
-    ])
+    await this.fetchUsers()
     if (!this.isAdminMode) {
       await this.employerStore.setEmployerSubscription(this.authStore.propUser.employer_id)
       this.subscription = this.employerStore.getEmployerSubscription(this.authStore.propUser.employer_id)

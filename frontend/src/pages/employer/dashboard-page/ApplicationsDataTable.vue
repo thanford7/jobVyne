@@ -154,7 +154,14 @@ export default {
           sortable: true
         },
         { name: 'jobTitle', field: 'job_title', label: 'Job Title', align: 'left', sortable: true },
-        { name: 'applicantName', field: 'applicant_name', label: 'Applicant', align: 'left', sortable: true },
+        {
+          name: 'applicantName',
+          field: 'applicant_name',
+          label: 'Applicant',
+          align: 'left',
+          sortable: true,
+          format: (val) => val.trim() || 'Anonymous'
+        },
         {
           name: 'applicationDT',
           field: 'date',

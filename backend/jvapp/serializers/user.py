@@ -26,6 +26,7 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
         data['employer_id'] = user.employer_id
         data['employer_name'] = user.employer.employer_name if user.employer else None
         data['employer_org_type'] = user.employer.organization_type if user.employer else 0
+        data['is_employer_owner'] = user.is_employer_owner
         data['is_employer_deactivated'] = user.is_employer_deactivated
         data['has_employee_seat'] = user.has_employee_seat
         data['created_dt'] = get_datetime_format_or_none(user.created_dt)
