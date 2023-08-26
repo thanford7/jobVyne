@@ -1,9 +1,9 @@
 import asyncio
-import datetime
 import logging
 
 from django.conf import settings
 from django.utils import timezone
+from django.utils.timezone import localtime
 from playwright.async_api import async_playwright
 
 from jvapp.models.employer import Employer, EmployerJob
@@ -51,16 +51,24 @@ async def launch_scraper(scraper_class, skip_urls):
 def run_job_scrapers(employer_names=None):
     if not employer_names:
         if settings.IS_LOCAL and test_scrapers:
-            scraper_classes = test_scrapers.values()
+            scraper_classes = list(test_scrapers.values())
         else:
-            scraper_classes = all_scrapers.values()
+            scraper_classes = list(all_scrapers.values())
     else:
         scraper_classes = (
             [all_scrapers.get(employer_name) for employer_name in employer_names] +
             [workable_scrapers.get(employer_name) for employer_name in employer_names]
         )
         scraper_classes = [s for s in scraper_classes if s]
-
+    
+    # Sort scrapers by the oldest successful scrape date
+    employer_last_scrape_date = {e['employer_name']: e['last_job_scrape_success_dt'] for e in (
+        Employer.objects.filter(is_use_job_url=True, organization_type=Employer.ORG_TYPE_EMPLOYER)
+        .values('employer_name', 'last_job_scrape_success_dt')
+    )}
+    old_date = timezone.datetime(1900, 1, 1, tzinfo=timezone.get_default_timezone())
+    scraper_classes.sort(key=lambda s: employer_last_scrape_date.get(s.employer_name, old_date))
+    
     for scraper_class in scraper_classes:
         # Allow scrapers to fail so it doesn't impact other scrapers
         employer = None

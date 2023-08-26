@@ -57,38 +57,6 @@
           </CustomTooltip>
         </template>
       </SelectYesNo>
-      <div class="text-bold">
-        Account owner
-        <CustomTooltip>
-          This will be the person that will be in charge of setting up the system on the employer's end. They will
-          receive employer admin priveleges.
-        </CustomTooltip>
-      </div>
-      <template v-if="employer">
-        <SelectEmployee v-model="formData.account_owner_id" :employer-id="employer.id" :is-multi="false"/>
-      </template>
-      <template v-else>
-        <q-input
-          filled
-          v-model="formData.owner_first_name"
-          label="First name"
-        />
-        <q-input
-          filled
-          v-model="formData.owner_last_name"
-          label="Last name"
-        />
-        <q-input
-          filled
-          v-model="formData.owner_email"
-          label="Email"
-          lazy-rules
-          :rules="[
-            val => !val?.length || formUtil.isGoodEmail(val) || 'Please enter a valid email',
-            val => !val?.length || hasPermittedEmail(val) || 'Email address does not have a permitted domain'
-          ]"
-        />
-      </template>
       <template v-if="canUpdateSubscription">
         <div class="text-bold">
           Subscription
@@ -125,7 +93,6 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import FileDisplayOrUpload from 'components/inputs/FileDisplayOrUpload.vue'
-import SelectEmployee from 'components/inputs/SelectEmployee.vue'
 import SelectOrganizationType from 'components/inputs/SelectOrganizationType.vue'
 import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import InputPermittedEmailDomains from 'pages/employer/settings-page/InputPermittedEmailDomains.vue'
@@ -140,7 +107,7 @@ export default {
   name: 'DialogAdminEmployer',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { SelectOrganizationType, SelectYesNo, SelectEmployee, CustomTooltip, InputPermittedEmailDomains, DialogBase, FileDisplayOrUpload },
+  components: { SelectOrganizationType, SelectYesNo, CustomTooltip, InputPermittedEmailDomains, DialogBase, FileDisplayOrUpload },
   props: {
     employer: [Object, null]
   },
@@ -182,19 +149,6 @@ export default {
       const apiMethod = (this.employer) ? this.$api.put : this.$api.post
       await apiMethod('admin/employer/', getAjaxFormData(data, [this.newLogoKey]))
       this.$emit('ok')
-    },
-    hasPermittedEmail () {
-      if (!this.formData.email_domains || !this.formData.owner_email) {
-        return false
-      }
-      const ownerEmailDomain = this.formData.owner_email.split('@').slice(-1)[0]
-      const permittedDomains = this.formData.email_domains.split(',')
-      for (const permittedDomain of permittedDomains) {
-        if (permittedDomain === ownerEmailDomain) {
-          return true
-        }
-      }
-      return false
     }
   },
   mounted () {

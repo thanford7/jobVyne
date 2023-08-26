@@ -131,7 +131,7 @@ class EmployerView(JobVyneAPIView):
         
         default_job_board_prefetch = Prefetch(
             'sociallink_set',
-            queryset=SocialLink.objects.prefetch_related('job_subscriptions').filter(is_default=True),
+            queryset=SocialLink.objects.prefetch_related('job_subscriptions').filter(is_default=True, owner_id__isnull=True),
             to_attr='default_job_board'
         )
         
@@ -156,10 +156,6 @@ class EmployerView(JobVyneAPIView):
             return employers[0]
         
         return employers
-    
-    @staticmethod
-    def get_employer_account_owner(employer):
-        return next((employee for employee in employer.employee.all() if employee.is_employer_owner), None)
     
 
 class EmployerAtsView(JobVyneAPIView):
@@ -1266,28 +1262,44 @@ class EmployerUserView(JobVyneAPIView):
         )
         user.user_type_bits = user_type_bits
         user.save()
-        referral_link = SocialLinkView.get_or_create_employee_referral_links([user], employer)[0]
         
         uid = get_uid_from_user(user)
         token = generate_user_token(user, 'email')
         reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
-        job_referral_url = referral_link.get_link_url()
-        employer = user.employer
-        send_django_email(
-            'Welcome to JobVyne!',
-            'emails/employer_user_welcome_email.html',
-            to_email=user.email,
-            django_context={
-                'user': user,
-                'employer': employer,
-                'admin_user': self.user,
-                'job_referral_url': job_referral_url,
-                'reset_password_url': reset_password_url,
-                'is_exclude_final_message': False
-            },
-            employer=employer,
-            is_tracked=False
-        )
+        base_django_data = {
+            'user': user,
+            'employer': employer,
+            'admin_user': self.user,
+            'is_exclude_final_message': False,
+            'reset_password_url': reset_password_url,
+            'is_employer_owner': user.is_employer_owner
+        }
+        if employer.organization_type == Employer.ORG_TYPE_EMPLOYER:
+            referral_link = SocialLinkView.get_or_create_employee_referral_links([user], employer)[0]
+            job_referral_url = referral_link.get_link_url()
+            send_django_email(
+                'Welcome to JobVyne!',
+                'emails/employer_user_welcome_email.html',
+                to_email=user.email,
+                django_context={
+                    'job_referral_url': job_referral_url,
+                    **base_django_data
+                },
+                employer=employer,
+                is_tracked=False
+            )
+        elif employer.organization_type == Employer.ORG_TYPE_GROUP:
+            send_django_email(
+                'Welcome to JobVyne!',
+                'emails/group_user_welcome_email.html',
+                to_email=user.email,
+                django_context={
+                    **base_django_data,
+                    'job_board_url': employer.main_job_board_link
+                },
+                employer=employer,
+                is_tracked=False
+            )
         
         success_message = f'Account created for {user.full_name}' if is_new else f'Account already exists for {user.full_name}. Permissions were updated.'
         
@@ -1387,6 +1399,12 @@ class EmployerUserView(JobVyneAPIView):
             JobVyneUser.objects.bulk_update(users_to_update, ['user_type_bits'])
             
             batchCount += BATCH_UPDATE_SIZE
+            
+        if len(users) == 1 and self.user.is_admin and ('is_employer_owner' in self.data):
+            user = users[0]
+            user.is_employer_owner = self.data['is_employer_owner']
+            user.save()
+            
         user_count = len(users)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{user_count} {"user" if user_count == 1 else "users"} updated'

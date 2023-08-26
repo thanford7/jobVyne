@@ -105,6 +105,10 @@ class UserView(JobVyneAPIView):
         if new_business_email != user.business_email:
             user.is_business_email_verified = False
         
+        # If the user's employer has changed, update their owner status
+        if ('employer_id' in self.data) and user.employer_id != self.data['employer_id']:
+            user.is_employer_owner = False
+        
         set_object_attributes(user, self.data, {
             'first_name': AttributeCfg(is_ignore_excluded=True),
             'last_name': AttributeCfg(is_ignore_excluded=True),
@@ -212,11 +216,15 @@ class UserView(JobVyneAPIView):
         try:
             return UserView.get_user(user, user_email=data['email'], is_check_permission=is_check_permission), False
         except JobVyneUser.DoesNotExist:
-            return JobVyneUser.objects.create_user(
-                data['email'],
+            user_data = dict(
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 employer_id=data.get('employer_id'),
+            )
+            if 'is_employer_owner' in data:
+                user_data['is_employer_owner'] = data.get('is_employer_owner')
+            return JobVyneUser.objects.create_user(
+                data['email'], **user_data
             ), True
     
     @staticmethod
