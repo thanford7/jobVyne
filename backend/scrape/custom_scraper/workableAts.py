@@ -9,7 +9,7 @@ from os.path import isfile, join
 
 import requests
 
-from jvapp.models.employer import Employer
+from jvapp.models.employer import ApplicantTrackingSystem, Employer
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_or_none
 from jvapp.utils.money import parse_compensation_text
 from scrape.base_scrapers import WorkableScraper, get_recent_scraped_job_urls
@@ -121,6 +121,12 @@ def parse_workable_xml_jobs():
     if not sorted_employer_jobs:
         logger.error('Error occurred processing Workable jobs data. No records were returned')
     
+    try:
+        ats = ApplicantTrackingSystem.objects.get(name='Workable')
+    except ApplicantTrackingSystem.DoesNotExist:
+        ats = ApplicantTrackingSystem(name='Workable')
+        ats.save()
+    
     current_employer_name = None
     employer_jobs = []
     skip_urls = []
@@ -131,10 +137,14 @@ def parse_workable_xml_jobs():
             employer_jobs = []
             try:
                 employer = Employer.objects.get(employer_name=job_row['employer_name'])
+                if (not employer.applicant_tracking_system) or ats.id != employer.applicant_tracking_system_id:
+                    employer.applicant_tracking_system = ats
+                    employer.save()
             except Employer.DoesNotExist:
                 logger.info(f'Creating new employer: {job_row["employer_name"]}')
                 employer = Employer(
                     employer_name=job_row['employer_name'],
+                    applicant_tracking_system=ats,
                     is_use_job_url=True
                 )
                 employer.save()
@@ -226,11 +236,6 @@ class ArchiproScraper(WorkableScraper):
 class QuantexaScraper(WorkableScraper):
     employer_name = 'Quantexa'
     EMPLOYER_KEY = 'quantexa'
-
-
-class HikeScraper(WorkableScraper):
-    employer_name = 'Hike'
-    EMPLOYER_KEY = 'hike'
 
 
 class BitgetScraper(WorkableScraper):
@@ -538,11 +543,6 @@ class EmploymentHeroScraper(WorkableScraper):
     EMPLOYER_KEY = 'employmenthero'
 
 
-class AldrinScraper(WorkableScraper):
-    employer_name = 'Aldrin'
-    EMPLOYER_KEY = 'aldrin'
-
-
 class WorkableCoScraper(WorkableScraper):
     employer_name = 'Workable'
     EMPLOYER_KEY = 'workable'
@@ -606,11 +606,6 @@ class HeartexScraper(WorkableScraper):
 class SkyMavisScraper(WorkableScraper):
     employer_name = 'Sky Mavis'
     EMPLOYER_KEY = 'skymavis'
-
-
-class ClerkScraper(WorkableScraper):
-    employer_name = 'Clerk'
-    EMPLOYER_KEY = 'clerk'
 
 
 class EntainScraper(WorkableScraper):
@@ -838,11 +833,6 @@ class OmetriaScraper(WorkableScraper):
     EMPLOYER_KEY = 'ometria'
 
 
-class N8nScraper(WorkableScraper):
-    employer_name = 'n8n'
-    EMPLOYER_KEY = 'n8n'
-
-
 class ClubrareScraper(WorkableScraper):
     employer_name = 'ClubRare'
     EMPLOYER_KEY = 'clubrare'
@@ -1058,7 +1048,6 @@ workable_scrapers = {
     NearScraper.employer_name: NearScraper,
     RisingwaveLabsScraper.employer_name: RisingwaveLabsScraper,
     ClubrareScraper.employer_name: ClubrareScraper,
-    N8nScraper.employer_name: N8nScraper,
     OmetriaScraper.employer_name: OmetriaScraper,
     SignalAiScraper.employer_name: SignalAiScraper,
     DextScraper.employer_name: DextScraper,
@@ -1104,7 +1093,6 @@ workable_scrapers = {
     IceyeScraper.employer_name: IceyeScraper,
     SpatialScraper.employer_name: SpatialScraper,
     EntainScraper.employer_name: EntainScraper,
-    ClerkScraper.employer_name: ClerkScraper,
     SkyMavisScraper.employer_name: SkyMavisScraper,
     HeartexScraper.employer_name: HeartexScraper,
     AjaibScraper.employer_name: AjaibScraper,
@@ -1118,7 +1106,6 @@ workable_scrapers = {
     FortanixScraper.employer_name: FortanixScraper,
     KudaScraper.employer_name: KudaScraper,
     WorkableCoScraper.employer_name: WorkableCoScraper,
-    AldrinScraper.employer_name: AldrinScraper,
     EmploymentHeroScraper.employer_name: EmploymentHeroScraper,
     ProphecyScraper.employer_name: ProphecyScraper,
     InsiteScraper.employer_name: InsiteScraper,
@@ -1180,7 +1167,6 @@ workable_scrapers = {
     GohenryScraper.employer_name: GohenryScraper,
     YapilyScraper.employer_name: YapilyScraper,
     BitgetScraper.employer_name: BitgetScraper,
-    HikeScraper.employer_name: HikeScraper,
     QuantexaScraper.employer_name: QuantexaScraper,
     ArchiproScraper.employer_name: ArchiproScraper,
     PaytrixScraper.employer_name: PaytrixScraper,

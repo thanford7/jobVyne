@@ -10,6 +10,7 @@ from scrape.job_processor import JobItem
 
 
 class GoogleScraper(Scraper):
+    ATS_NAME = 'Custom'
     employer_name = 'Google'
     start_url = 'https://www.google.com/about/careers/applications/jobs/results/?hl=en_US'
     

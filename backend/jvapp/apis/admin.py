@@ -102,10 +102,11 @@ class AdminJobScrapersView(JobVyneAPIView):
     permission_classes = [IsAdmin]
     
     def get(self, request):
-        employer_scrapers = Employer.objects.filter(has_job_scraper=True)
+        employer_scrapers = Employer.objects.select_related('applicant_tracking_system').filter(has_job_scraper=True)
         return Response(status=status.HTTP_200_OK, data=[{
             'employer_id': employer.id,
             'employer_name': employer.employer_name,
+            'ats': employer.applicant_tracking_system.name if employer.applicant_tracking_system else None,
             'last_job_scrape_success_dt': get_datetime_format_or_none(employer.last_job_scrape_success_dt),
             'has_job_scrape_failure': employer.has_job_scrape_failure
         } for employer in employer_scrapers])

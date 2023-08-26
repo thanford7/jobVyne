@@ -994,7 +994,7 @@ class TradeRepublicScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'traderepublicbank'
 
 
-class MenloSecurityScraper(GreenhouseScraper):
+class MenloSecurityScraper(AshbyHQScraper):
     employer_name = 'Menlo Security'
     EMPLOYER_KEY = 'menlosecurity'
 

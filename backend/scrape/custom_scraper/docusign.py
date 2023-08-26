@@ -9,6 +9,7 @@ from scrape.job_processor import JobItem
 
 
 class DocuSignScraper(Scraper):
+    ATS_NAME = 'Custom'
     employer_name = 'DocuSign'
     IS_API = True
     JOBS_PER_PAGE = 10  # This is the max

@@ -6,6 +6,7 @@ from scrape.job_processor import JobItem
 
 
 class AncestryScraper(Scraper):
+    ATS_NAME = 'Custom'
     employer_name = 'Ancestry'
     start_url = 'https://careers.ancestry.com/jobs/search'
     

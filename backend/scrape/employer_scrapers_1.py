@@ -249,7 +249,8 @@ class VivianHealthScraper(GreenhouseScraper):
 class WaystarScraper(WorkdayScraper):
     employer_name = 'Waystar'
     start_url = 'https://waystar.wd1.myworkdayjobs.com/Waystar/'
-
+    has_job_departments = False
+    
 
 class YoungLivingEssentialOilsScraper(WorkdayScraper):
     employer_name = 'Young Living Essential Oils'
@@ -673,11 +674,6 @@ class NautilusLabsScraper(GreenhouseIframeScraper):
 class DatabookScraper(GreenhouseScraper):
     employer_name = 'Databook'
     EMPLOYER_KEY = 'databook'
-
-
-class NexlaScraper(GreenhouseScraper):
-    employer_name = 'Nexla'
-    EMPLOYER_KEY = 'nexla'
 
 
 class PollyScraper(LeverScraper):
