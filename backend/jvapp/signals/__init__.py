@@ -74,7 +74,7 @@ def prevent_duplicate_user(sender, instance, *args, **kwargs):
     
 @receiver(post_save, sender=JobVyneUser)
 def create_employee_referral_link(sender, instance, *args, **kwargs):
-    if instance.employer_id:
+    if instance.employer_id and (instance.organization_type & Employer.ORG_TYPE_EMPLOYER):
         SocialLinkView.get_or_create_employee_referral_links([instance], instance.employer)
 
     

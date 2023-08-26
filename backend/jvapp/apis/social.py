@@ -131,6 +131,7 @@ class SocialLinkView(JobVyneAPIView):
             ).filter(owner_id__in=[e.id for e in employees], employer_id=employer.id)
             if (sl.employer_id and sl.owner_id)
         }
+        # TODO: Don't need to create referral links - just use the connection id in the url for each employee
         employee_links = []
         for employee in employees:
             if not employee.employer_id:
