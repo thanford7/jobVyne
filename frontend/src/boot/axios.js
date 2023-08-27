@@ -18,6 +18,7 @@ export const AJAX_EVENTS = {
 }
 
 const CODE_VERSION_KEY = 'jv-version'
+const RELOAD_FLAG_KEY = 'jv-reload'
 
 // https://github.com/RasCarlito/axios-cache-adapter/issues/231
 const { adapter: axiosCacheAdapter, cache } = setupCache({
@@ -66,11 +67,19 @@ export default boot(({ app, ssrContext, store, router }) => {
   api.interceptors.response.use(function (response) {
     const codeVersion = response.headers[CODE_VERSION_KEY] || 'default'
     const localCodeVersion = localStorage.getItem(CODE_VERSION_KEY)
+    const hasReloaded = (localStorage.getItem(RELOAD_FLAG_KEY) || 'false') === 'true'
 
     if (codeVersion !== localCodeVersion) {
       localStorage.setItem(CODE_VERSION_KEY, codeVersion)
+      localStorage.setItem(RELOAD_FLAG_KEY, 'true')
       window.location.reload()
     }
+
+    if (hasReloaded) {
+      localStorage.setItem(RELOAD_FLAG_KEY, 'false')
+      emitter.emit(AJAX_EVENTS.SUCCESS, { message: 'Website has been updated. Reloaded page to get the freshest grapes 🍇' })
+    }
+
     const successMessage = response?.data?.successMessage
     const errorMessages = response?.data?.errorMessages
     const warningMessages = response?.data?.warningMessages
@@ -114,5 +123,7 @@ export default boot(({ app, ssrContext, store, router }) => {
 
   app.config.globalProperties.$global = emitterEvents
 
-  app.config.globalProperties.$log = (txt) => { console.log(txt) }
+  app.config.globalProperties.$log = (txt) => {
+    console.log(txt)
+  }
 })
