@@ -16,7 +16,9 @@ from jvapp.models.tracking import AIRequest
 logger = logging.getLogger(__name__)
 openai.api_key = os.getenv('OPEN_AI_API_KEY')
 
-DEFAULT_MODEL = 'gpt-3.5-turbo'
+M4K = 'gpt-3.5-turbo'
+M16K = 'gpt-3.5-turbo-16k'
+DEFAULT_MODEL = M4K
 
 
 class PromptError(Exception):
