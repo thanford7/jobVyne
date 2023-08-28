@@ -229,17 +229,13 @@ class UserView(JobVyneAPIView):
     
     @staticmethod
     def send_password_reset_email(user, is_new=False):
-        
-        uid = get_uid_from_user(user)
-        token = generate_user_token(user, 'email')
-        reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
         send_django_email(
             'Reset Password',
             'emails/base_reset_password_email.html',
             to_email=user.email,
             django_context={
                 'supportEmail': EMAIL_ADDRESS_SUPPORT,
-                'reset_password_url': reset_password_url,
+                'reset_password_url': user.get_reset_password_link(),
                 'is_new': is_new,
                 'user': user
             },
