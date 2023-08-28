@@ -189,12 +189,16 @@ def social_auth(request, backend):
     if not code:
         return Response('An auth token is required', status=status.HTTP_400_BAD_REQUEST)
     
+    is_login = data.get('isLogin', True)  # We use social auth for login and also to connect to social accounts
+    # User is already logged in. Social auth is not necessary
+    if (not isinstance(request.user, AnonymousUser)) and is_login:
+        return Response(status=status.HTTP_200_OK, data={'user_id': request.user.id})
+    
     state = data.get('state', '').strip()
     if state != settings.AUTH_STATE:
         return get_error_response('Request state is not the same as the callback state')
     
     access_token, social_response = get_access_token_from_code(backend, code)
-    is_login = data.get('isLogin', True)  # We use social auth for login and also to connect to social accounts
     if is_login:
         user = request.backend.do_auth(access_token, response=social_response, user_type_bits=data.get('userTypeBit'))
         if not user:
