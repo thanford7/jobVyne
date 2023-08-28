@@ -3,7 +3,10 @@
 {% block body %}
     <p style="text-align:left">Hi {{ user.first_name }},</p>
     <p style="text-align:left">
-        Welcome to JobVyne! {{ admin_user.full_name }} has created an account for you.
+        Welcome to JobVyne!
+        {% if admin_user %}
+            {{ admin_user.full_name }} has created an account for you.
+        {% endif %}
     </p>
     <p style="text-align:left">
         <span style="font-weight: bold">First of all, what the heck is JobVyne?!</span> JobVyne integrates with existing social sites like LinkedIn and Slack
@@ -11,7 +14,7 @@
     </p>
     <p style="text-align:left">
         We want to thank you for becoming a part of the JobVyne community. Connecting professionals together is our passion and we want to
-        make sure that community leaders and members all have a great experience. If you have any questions, issues, or product feedback, you
+        make sure community leaders and members all have a great experience. If you have any questions, issues, or product feedback, you
         can email me, the founder of JobVyne, at any time at todd@jobvyne.com
     </p>
     {% if is_employer_owner %}

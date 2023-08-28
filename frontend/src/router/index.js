@@ -25,6 +25,15 @@ export default route(function ({ store, ssrContext }) {
     history: createHistory(process.env.VUE_ROUTER_BASE)
   })
 
+  Router.onError((err, to) => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const hasRefresh = searchParams.hasRefresh === 'true'
+    if (!hasRefresh && err.message.includes('Failed to fetch dynamically imported module')) {
+      window.location.searchParams.set('hasRefresh', 'true')
+      window.location = to.fullPath
+    }
+  })
+
   store.use(() => {
     return { $router: Router }
   })

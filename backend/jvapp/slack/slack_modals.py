@@ -1,9 +1,12 @@
 import json
 
 from django.conf import settings
+from rest_framework import status
+from rest_framework.response import Response
 
 from jvapp.apis.employer import EmployerJobConnectionView
 from jvapp.apis.geocoding import LocationParser
+from jvapp.apis.job_seeker import ApplicationExternalView
 from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.social import SocialLinkView
 from jvapp.models.abstract import PermissionTypes
@@ -11,15 +14,16 @@ from jvapp.models.content import JobPost
 from jvapp.models.currency import Currency
 from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, ConnectionTypeBit
 from jvapp.models.user import JobVyneUser, UserSocialSubscription
-from jvapp.slack.slack_blocks_specific import ACTION_KEY_JOB_CONNECTION, SelectEmployer, \
-    SelectEmployerJob, get_home_zip_code_input, get_industry_selections, get_job_connection_select, \
-    get_job_level_selections, \
+from jvapp.slack.slack_blocks_specific import SelectEmployer, \
+    SelectEmployerJob, get_home_zip_code_input, get_industry_selections, \
+    get_job_connections_section, get_job_connections_section_id, get_job_level_selections, \
     get_profession_selections, get_remote_work_selection
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.oauth import OauthProviders
-from jvapp.slack.slack_blocks import Button, Divider, InputCheckbox, InputEmail, InputNumber, InputOption, InputText, \
+from jvapp.slack.slack_blocks import Button, Divider, InputCheckbox, InputEmail, InputNumber, InputOption, \
+    InputRadioButton, InputText, \
     Modal, \
     SectionText, Select
 from jvapp.utils.response import ProcessTimer
@@ -59,11 +63,34 @@ class SlackMultiViewModal:
     START_KEY = 'start'  # Some modals are triggered from a button so we need to know that the first modal is at index 0
     BASE_CALLBACK_ID = None  # Subclass
     DEFAULT_BLOCK_TITLE = None  # Subclass
+    USER_SIGNUP_KEY = 'user-sign-up'
+    USER_SIGNUP_CONFIRM = 'confirm'
+    USER_SIGNUP_DECLINE = 'decline'
+    USER_TYPE_BITS = None
     
-    def __init__(self, slack_user_profile, user, metadata, slack_cfg, action_id=None):
+    def __init__(
+            self, slack_client, slack_user_profile, data, slack_cfg,
+            action_id=None, button_data=None, extra_data=None
+    ):
+        self.slack_client = slack_client
+        self.trigger_id = data.get('trigger_id')
+        self.metadata = {**self.get_modal_metadata(data), **self.get_button_metadata(button_data), **(extra_data or {})}
+        self.message = data.get('message')
+        try:
+            self.channel_id = data['channel']['id']
+        except KeyError:
+            self.channel_id = None
+        self.is_modal_open = bool(data.get('view'))
         self.slack_user_profile = slack_user_profile
-        self.user = user
-        self.metadata = metadata or {}
+        if user_id := self.metadata.get('user_id'):
+            self.user = JobVyneUser.objects.prefetch_related(
+                'job_search_levels',
+                'job_search_industries',
+                'job_search_professions'
+            ).get(id=user_id)
+        else:
+            from jvapp.apis.slack import SlackBaseView
+            self.user = SlackBaseView.get_and_update_user(self.slack_user_profile, self.USER_TYPE_BITS, slack_cfg)
         self.slack_cfg = slack_cfg
         
         if action_id:
@@ -77,6 +104,11 @@ class SlackMultiViewModal:
         
         self.header_blocks = []
         self.modal_views = []
+        for setup_modals in [self.add_user_signup_modal, self.add_user_signup_decline_modal]:
+            is_final = setup_modals()
+            if is_final:
+                return
+        self.init_load_extra_data()
         self.set_modal_views()
     
     def set_modal_views(self) -> list:
@@ -85,6 +117,33 @@ class SlackMultiViewModal:
     def get_trigger_button(self, data):
         # Get the slack button that kicks off the modal view
         raise NotImplementedError()
+    
+    def init_load_extra_data(self):
+        pass
+    
+    def get_modal_response(self):
+        if self.is_modal_open:
+            return Response(status=status.HTTP_200_OK, data={
+                'response_action': 'update',
+                'view': self.modal_view_slack_object
+            })
+        else:
+            self.slack_client.views_open(
+                view=self.modal_view_slack_object,
+                trigger_id=self.trigger_id
+            )
+            return Response(status=status.HTTP_200_OK)
+    
+    def get_modal_metadata(self, data):
+        try:
+            current_meta_data = json.loads(data['view']['private_metadata']) or {}
+            new_meta_data = Modal.get_modal_values(data) or {}
+            return {**current_meta_data, **new_meta_data}
+        except KeyError:
+            return {}
+    
+    def get_button_metadata(self, button_data):
+        return {}
     
     def add_modal(
             self, slack_blocks, submit_text=None, is_final=False, title_text=None,
@@ -106,6 +165,56 @@ class SlackMultiViewModal:
         
         is_final = is_final or (modal_idx == self.current_modal_idx)
         return is_final
+    
+    def add_user_signup_modal(self):
+        # This modal is only needed for new users
+        if self.user and (not self.USER_SIGNUP_KEY in self.metadata):
+            return
+        signup_blocks = [
+            SectionText(
+                (
+                    '👋🏻 Welcome to JobVyne. Our mission is to bring professionals together to help each other land a new job, find events, and grow professionally.\n'
+                    'To help us connect you with other professionals on JobVyne, we need to create a profile for you.\n'
+                    'We will NEVER share your information with any third parties or display your information on JobVyne without your explicit consent.\n'
+                    '<https://www.jobvyne.com/privacy|Our data privacy policy>'
+                )
+            ).get_slack_object(),
+            InputRadioButton(self.USER_SIGNUP_KEY, '🍇 JobVyne Sign Up', [
+                InputOption('Sign me up!', self.USER_SIGNUP_CONFIRM).get_slack_object(),
+                InputOption('I don\'t want to connect with others 😔', self.USER_SIGNUP_DECLINE).get_slack_object()
+            ]).get_slack_object()
+        ]
+        return self.add_modal(
+            signup_blocks, 'Continue', title_text='Welcome to JobVyne'
+        )
+    
+    def add_user_signup_decline_modal(self):
+        if self.user or (not self.USER_SIGNUP_KEY in self.metadata):
+            return False
+        
+        if self.metadata[self.USER_SIGNUP_KEY] == self.USER_SIGNUP_CONFIRM:
+            self.create_user()
+            return False
+        
+        decline_blocks = [
+            SectionText(
+                (
+                    'Sorry you don\'t want to signup for JobVyne. '
+                    'If there is anything we can do to gain your trust or make JobVyne more useful to you, please reach out to '
+                    'our founder at any time: todd@jobvyne.com'
+                )
+            ).get_slack_object()
+        ]
+        
+        return self.add_modal(
+            decline_blocks, None, title_text='Help make JobVyne better!', is_final=True
+        )
+    
+    def create_user(self):
+        from jvapp.apis.slack import SlackBaseView
+        user = SlackBaseView.create_jobvyne_user(self.slack_user_profile, self.USER_TYPE_BITS, self.slack_cfg)
+        self.metadata['user_id'] = user.id
+        self.user = user
     
     @classmethod
     def get_modal_action_id(cls, idx, is_final=False, is_start=False):
@@ -134,6 +243,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
     SUBSCRIPTION_OPTIONS_KEY = 'job_seeker_subscription'
     CONNECT_WITH_MANAGERS_KEY = 'CONNECT'
     DEFAULT_BLOCK_TITLE = 'JobVyne for Job Seekers'
+    USER_TYPE_BITS = JobVyneUser.USER_TYPE_CANDIDATE
     
     def save_job_seeker_preferences(self):
         add_user_job_preferences(self.user, self.metadata)
@@ -337,12 +447,13 @@ class JobModalViews(SlackMultiViewModal):
     SUBSCRIPTION_OPTIONS_KEY = 'job-influencer-subscription'
     CONTACT_OPTIONS_KEY = 'can-contact'
     DEFAULT_BLOCK_TITLE = 'JobVyne Jobs'
+    USER_TYPE_BITS = JobVyneUser.USER_TYPE_INFLUENCER
     
-    def __init__(self, slack_user_profile, user, metadata, slack_cfg, action_id=None):
+    def __init__(self, *args, **kwargs):
         self.job = None
         self.employer = None
         self.can_edit = False
-        super().__init__(slack_user_profile, user, metadata, slack_cfg, action_id=action_id)
+        super().__init__(*args, **kwargs)
     
     def set_modal_views(self):
         is_final = self.modal_select_employer()
@@ -363,7 +474,7 @@ class JobModalViews(SlackMultiViewModal):
                 is_final = self.modal_add_salary_details()
                 if is_final:
                     return
-                
+        
         if (not self.job.has_salary) and self.slack_cfg.modal_cfg_is_salary_required:
             self.modal_required_job_salary()
             return
@@ -489,7 +600,8 @@ class JobModalViews(SlackMultiViewModal):
         
         if self.slack_cfg.modal_cfg_is_salary_required:
             job_detail_blocks.append(
-                SectionText(f'\n💰 {self.slack_cfg.employer.employer_name} requires a salary range for all jobs 💰').get_slack_object()
+                SectionText(
+                    f'\n💰 {self.slack_cfg.employer.employer_name} requires a salary range for all jobs 💰').get_slack_object()
             )
         
         salary_detail_blocks = [
@@ -547,7 +659,7 @@ class JobModalViews(SlackMultiViewModal):
         )
         subscription_blocks = [
             *self.header_blocks,
-            get_job_connection_select(False, is_include_no_connection=True).get_slack_object(),
+            JobConnectionModalViews.get_job_connection_select(False, self.job.id, is_include_no_connection=True).get_slack_object(),
             subscription_checkboxes.get_slack_object()
         ]
         return self.add_modal(subscription_blocks, 'Post job')
@@ -556,7 +668,8 @@ class JobModalViews(SlackMultiViewModal):
         from jvapp.apis.slack import SlackUserGeneratedJobPoster  # Avoid circular import
         
         # Add job connection
-        connection_type = coerce_int(json.loads(self.metadata[ACTION_KEY_JOB_CONNECTION]['value'])['connection_bit'])
+        job_connection_data_key = JobConnectionModalViews.get_modal_action_id(None, is_start=True)
+        connection_type = coerce_int(json.loads(self.metadata[job_connection_data_key]['value'])['connection_bit'])
         is_employer_update = False
         if connection_type in (
                 ConnectionTypeBit.HIRING_MEMBER.value,
@@ -707,13 +820,181 @@ class JobModalViews(SlackMultiViewModal):
         self.job.save()
 
 
+class SaveJobModalViews(SlackMultiViewModal):
+    BASE_CALLBACK_ID = 'jv-save-job'
+    DEFAULT_BLOCK_TITLE = 'Save job'
+    USER_TYPE_BITS = JobVyneUser.USER_TYPE_CANDIDATE
+    
+    def init_load_extra_data(self):
+        application = ApplicationExternalView.update_or_create_application(self.user, self.metadata['job_id'], {})
+        self.job = application.employer_job
+    
+    @classmethod
+    def get_trigger_button(cls, data):
+        job = data['job']
+        return SectionText(
+            f'*⭐ Save {job.job_title} job*\nThis will save the job to your JobVyne profile so you can apply later',
+            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Save', job.id)
+        )
+    
+    def get_button_metadata(self, button_data):
+        if button_data:
+            return {'job_id': coerce_int(button_data)}
+        else:
+            return {}
+        
+    def set_modal_views(self):
+        self.job_save_confirmation_modal()
+        
+    def job_save_confirmation_modal(self):
+        return self.add_modal([
+            SectionText(
+                f'Saved the {self.job.job_title} position for {self.job.employer.employer_name} to your <{settings.BASE_URL}/candidate/job-applications/|JobVyne profile>!'
+            ).get_slack_object()
+        ], title_text='Job saved', is_final=True)
+
+
+class JobConnectionModalViews(SlackMultiViewModal):
+    BASE_CALLBACK_ID = 'job-connection'
+    DEFAULT_BLOCK_TITLE = 'Job connection'
+    USER_TYPE_BITS = JobVyneUser.USER_TYPE_INFLUENCER
+    
+    def init_load_extra_data(self):
+        self.job = EmployerJob.objects.get(id=self.metadata['job_id'])
+        job_connection = EmployerJobConnection(user=self.user, job=self.job)
+        job_connection, is_new = EmployerJobConnectionView.get_and_update_job_connection(job_connection, {
+            'connection_type': self.metadata['connection_type'],
+            'is_allow_contact': True
+        })
+        self.update_job_post_slack_message()
+    
+    @classmethod
+    def get_trigger_button(cls, data):
+        job = data['job']
+        group_name = data['group_name']
+        return SectionText(
+            f'*🔗 Job connection*\nHelp others in {group_name} get hired by connecting them to employees at {job.employer.employer_name}',
+            accessory=JobConnectionModalViews.get_job_connection_select(True, job_id=job.id)
+        )
+    
+    @staticmethod
+    def get_job_connection_value(connection_bit, job_id):
+        return json.dumps({
+            'connection_bit': connection_bit,
+            'job_id': job_id
+        })
+    
+    @staticmethod
+    def get_job_connection_select(is_element_only, job_id=None, is_include_no_connection=False):
+        connection_options = [
+            InputOption(
+                'I am hiring for this job',
+                JobConnectionModalViews.get_job_connection_value(ConnectionTypeBit.HIRING_MEMBER.value, job_id),
+            ).get_slack_object(),
+            InputOption(
+                'I work at this company',
+                JobConnectionModalViews.get_job_connection_value(ConnectionTypeBit.CURRENT_EMPLOYEE.value, job_id),
+            ).get_slack_object(),
+            InputOption(
+                'I previously worked at this company',
+                JobConnectionModalViews.get_job_connection_value(ConnectionTypeBit.FORMER_EMPLOYEE.value, job_id),
+            ).get_slack_object(),
+            InputOption(
+                'I know someone at this company',
+                JobConnectionModalViews.get_job_connection_value(ConnectionTypeBit.KNOW_EMPLOYEE.value, job_id),
+            ).get_slack_object()
+        ]
+        
+        if is_include_no_connection:
+            connection_options.append(
+                InputOption(
+                    'I have no connection to this company',
+                    JobConnectionModalViews.get_job_connection_value(ConnectionTypeBit.NO_CONNECTION.value, job_id),
+                ).get_slack_object()
+            )
+        
+        return Select(
+            JobConnectionModalViews.get_modal_action_id(None, is_start=True),
+            'Job Connection',
+            'Select Connection',
+            options=connection_options,
+            is_element_only=is_element_only
+        )
+    
+    def get_button_metadata(self, button_data):
+        if button_data:
+            return {
+                'job_id': coerce_int(button_data['job_id']),
+                'connection_type': coerce_int(button_data['connection_bit'])
+            }
+        else:
+            return {}
+    
+    def set_modal_views(self):
+        self.job_connection_confirmation_modal()
+    
+    def job_connection_confirmation_modal(self):
+        return self.add_modal([
+            SectionText(
+                f'Added your connection to the {self.job.job_title} position for {self.job.employer.employer_name}. Thanks for helping others in their job search 🍇'
+            ).get_slack_object()
+        ], title_text='Job saved', is_final=True)
+    
+    def update_job_post_slack_message(self):
+        from jvapp.apis.slack import SlackBasePoster
+        
+        # Update the Slack message to show the new job connection
+        message_blocks = self.message['blocks']
+        
+        # Insert the job connection section right after the job details
+        has_target_job_block = False
+        insert_block_idx = 0
+        target_job_block_id = SlackBasePoster.get_job_details_block_id(self.job.id)
+        for block in message_blocks:
+            insert_block_idx += 1
+            if block['block_id'] == target_job_block_id:
+                has_target_job_block = True
+                break
+        
+        if not has_target_job_block:
+            raise ValueError(f'No block ID found for job ID = {self.job.id} in message {self.message}')
+        
+        # Check if there is an existing job connection section
+        has_existing_connection_section = False
+        replace_block_idx = insert_block_idx
+        job_connection_block_id = get_job_connections_section_id(self.job.id)
+        for block in message_blocks[replace_block_idx:]:
+            if block['block_id'] == job_connection_block_id:
+                has_existing_connection_section = True
+                break
+            replace_block_idx += 1
+        
+        # Update message block
+        job_connections_block = get_job_connections_section(self.job.id)
+        if not job_connections_block:
+            raise ValueError(
+                f'Tried to create a job connection block for a job without connections (job ID = {self.job.id})')
+        if has_existing_connection_section:
+            message_blocks[replace_block_idx] = job_connections_block
+        else:
+            message_blocks.insert(insert_block_idx, job_connections_block)
+        
+        self.slack_client.chat_update(
+            channel=self.channel_id,
+            ts=self.message['ts'],
+            as_user=True,
+            blocks=message_blocks
+        )
+
+
 class FollowEmployerModalViews(SlackMultiViewModal):
     BASE_CALLBACK_ID = 'jv-follow-employer'
     DEFAULT_BLOCK_TITLE = 'Follow employer'
+    USER_TYPE_BITS = JobVyneUser.USER_TYPE_CANDIDATE
     
-    def __init__(self, slack_user_profile, user, metadata, slack_cfg, action_id=None):
+    def __init__(self, *args, **kwargs):
         self.job = None
-        super().__init__(slack_user_profile, user, metadata, slack_cfg, action_id=action_id)
+        super().__init__(*args, **kwargs)
     
     @classmethod
     def get_trigger_button(cls, data):
@@ -722,6 +1003,12 @@ class FollowEmployerModalViews(SlackMultiViewModal):
             f'*👀 Follow {job.employer.employer_name}*\nGet notified when this employer posts new, relevant jobs',
             accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Follow', job.id)
         )
+    
+    def get_button_metadata(self, button_data):
+        if button_data:
+            return {'job_id': coerce_int(button_data)}
+        else:
+            return {}
     
     def set_modal_views(self):
         is_final = self.job_preferences_modal()
@@ -755,6 +1042,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
         # Update user preferences
         add_user_home_location(self.user, self.metadata['home_post_code'])
         add_user_job_preferences(self.user, self.metadata)
+        self.user.save()
         
         # Add subscription
         subscription_data = {
@@ -794,10 +1082,11 @@ class FollowEmployerModalViews(SlackMultiViewModal):
 class ShareJobModalViews(SlackMultiViewModal):
     BASE_CALLBACK_ID = 'jv-share-job'
     DEFAULT_BLOCK_TITLE = 'Share job'
+    USER_TYPE_BITS = JobVyneUser.USER_TYPE_INFLUENCER
     
-    def __init__(self, slack_user_profile, user, metadata, slack_cfg, action_id=None):
+    def __init__(self, *args, **kwargs):
         self.job = None
-        super().__init__(slack_user_profile, user, metadata, slack_cfg, action_id=action_id)
+        super().__init__(*args, **kwargs)
     
     @classmethod
     def get_trigger_button(cls, data):
@@ -806,6 +1095,12 @@ class ShareJobModalViews(SlackMultiViewModal):
             f'*✉️ Share {job.job_title} job*\nShare this job with someone outside of {data["group_name"]}. The email will come from JobVyne and you will be CCed.',
             accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Share', job.id)
         )
+    
+    def get_button_metadata(self, button_data):
+        if button_data:
+            return {'job_id': coerce_int(button_data)}
+        else:
+            return {}
     
     def set_modal_views(self):
         is_final = self.send_job_email_modal()

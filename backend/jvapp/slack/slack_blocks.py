@@ -74,8 +74,10 @@ class Modal(SlackBlock):
         for value_dict in list(data['view']['state']['values'].values()):
             for input_key, input_dict in value_dict.items():
                 input_type = input_dict['type']
-                if input_type == 'checkboxes':
+                if input_type == InputCheckbox.INPUT_TYPE:
                     val = InputCheckbox.get_values(input_dict)
+                elif input_type == InputRadioButton.INPUT_TYPE:
+                    val = InputRadioButton.get_value(input_dict)
                 elif input_type == Select.TYPE:
                     val = Select.get_value(input_dict)
                 elif input_type == SelectExternal.TYPE:
@@ -261,7 +263,7 @@ class InputCheckbox(SlackBlock):
         slack_object = {
             'type': 'input',
             'element': {
-                'type': 'checkboxes',
+                'type': self.INPUT_TYPE,
                 'options': self.options,
                 'action_id': self.action_id
             },
@@ -287,6 +289,45 @@ class InputCheckbox(SlackBlock):
             selected_options.append(selected_option_dict['value'])
         
         return selected_options
+    
+    
+class InputRadioButton(SlackBlock):
+    INPUT_TYPE = 'radio_buttons'
+    
+    def __init__(self, action_id, label, options, initial_option_value: str = None, is_focus=False):
+        self.action_id = action_id
+        self.label = label
+        self.options = options
+        self.initial_option_value = initial_option_value
+        self.is_focus = is_focus
+    
+    def get_slack_object(self):
+        slack_object = {
+            'type': 'input',
+            'element': {
+                'type': self.INPUT_TYPE,
+                'options': self.options,
+                'action_id': self.action_id
+            },
+            'label': {
+                'type': 'plain_text',
+                'text': self.label,
+            }
+        }
+        
+        if self.initial_option_value:
+            slack_object['element']['initial_option'] = next((
+                opt for opt in self.options if opt['value'] == self.initial_option_value
+            ), None)
+            
+        if self.is_focus:
+            slack_object['element']['focus_on_load'] = True
+        
+        return slack_object
+    
+    @staticmethod
+    def get_value(input_dict):
+        return input_dict['selected_option']['value']
 
 
 class InputOption(SlackBlock):

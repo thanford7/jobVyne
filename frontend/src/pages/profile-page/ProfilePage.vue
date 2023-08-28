@@ -72,7 +72,7 @@
             <div class="col-12">
               <SelectOrDisplayProfilePic ref="profileUpload" :user-data="userData"/>
             </div>
-            <div class="col-12 col-md-6 q-pr-md-sm">
+            <div class="col-12 col-md-6 q-px-md-sm">
               <q-input
                 filled
                 v-model="userData.first_name"
@@ -83,7 +83,7 @@
                 ]"
               />
             </div>
-            <div class="col-12 col-md-6 q-pl-md-sm">
+            <div class="col-12 col-md-6 q-px-md-sm">
               <q-input
                 filled
                 v-model="userData.last_name"
@@ -94,7 +94,7 @@
                 ]"
               />
             </div>
-            <div class="col-12 col-md-6 q-pr-md-sm">
+            <div class="col-12 col-md-6 q-px-md-sm">
               <q-input
                 filled
                 v-model="userData.email"
@@ -103,7 +103,7 @@
                 class="q-pb-md"
               />
             </div>
-            <div class="col-12 col-md-6 q-pl-md-sm">
+            <div class="col-12 col-md-6 q-px-md-sm">
               <EmailInput
                 v-model="userData.business_email"
                 label="Business email"
@@ -113,23 +113,16 @@
                 ]"
               />
             </div>
-            <div class="col-12 col-md-6 q-pr-md-sm">
-              <q-select
-                filled emit-value map-options
-                v-model="userData.employer_id"
-                :options="potentialEmployers"
-                autocomplete="name"
-                option-value="id"
+            <div v-if="isCompanyUser" class="col-12 col-md-6 q-px-md-sm">
+              <SelectEmployer
+                :is-multi="false" :employers="potentialEmployers" :is-required="true"
                 option-label="name"
-                label="Employer"
-                lazy-rules
-                :rules="[val => val || 'Please select an option']"
               />
             </div>
-            <div class="col-12 col-md-6 q-pl-md-sm">
+            <div class="col-12 col-md-6 q-px-md-sm">
               <SelectUserType v-model="userData.user_type_bits" :is-multi="true"/>
             </div>
-            <div class="col-12 col-md-6 q-pr-md-sm">
+            <div class="col-12 col-md-6 q-px-md-sm">
               <SelectJobProfession v-model="userData.profession_id" :is-multi="false" :is-required="true"/>
             </div>
           </div>
@@ -334,6 +327,7 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import EmailInput from 'components/inputs/EmailInput.vue'
 import PasswordInput from 'components/inputs/PasswordInput.vue'
+import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectJobProfession from 'components/inputs/SelectJobProfession.vue'
 import SelectOrDisplayProfilePic from 'components/inputs/SelectOrDisplayProfilePic.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
@@ -360,6 +354,7 @@ const userPermissionGroupColumns = [
 export default {
   name: 'ProfilePage',
   components: {
+    SelectEmployer,
     SelectJobProfession,
     SocialAccountsTable,
     SelectOrDisplayProfilePic,

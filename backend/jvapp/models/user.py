@@ -7,6 +7,7 @@ __all__ = (
 from collections import defaultdict
 from enum import Enum, IntEnum
 
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import FileExtensionValidator
 from django.db import models
@@ -21,6 +22,7 @@ from jvapp.models.location import REMOTE_TYPES
 from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.email import get_domain_from_email
 from jvapp.utils.file import get_user_upload_location
+from jvapp.utils.security import generate_user_token, get_uid_from_user
 
 
 def generate_password():
@@ -201,6 +203,11 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         permissions_by_employer = self.get_permissions_by_employer()
         permission_names = [p.name for p in permissions_by_employer.get(employer_id) or []]
         return check_method((name in permission_names for name in permission_name))
+    
+    def get_reset_password_link(self):
+        uid = get_uid_from_user(self)
+        token = generate_user_token(self, 'email')
+        return f'{settings.BASE_URL}/password-reset/{uid}/{token}'
 
     @classmethod
     def _jv_filter_perm_query(cls, user, query):

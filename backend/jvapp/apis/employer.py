@@ -53,7 +53,6 @@ __all__ = (
     'EmployerSubscriptionView', 'EmployerInfoView',
 )
 
-from jvapp.utils.security import generate_user_token, get_uid_from_user
 from jvapp.utils.slack import raise_slack_exception_if_error
 
 BATCH_UPDATE_SIZE = 100
@@ -1262,15 +1261,12 @@ class EmployerUserView(JobVyneAPIView):
         user.user_type_bits = user_type_bits
         user.save()
         
-        uid = get_uid_from_user(user)
-        token = generate_user_token(user, 'email')
-        reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
         base_django_data = {
             'user': user,
             'employer': employer,
             'admin_user': self.user,
             'is_exclude_final_message': False,
-            'reset_password_url': reset_password_url,
+            'reset_password_url': user.get_reset_password_link(),
             'is_employer_owner': user.is_employer_owner
         }
         if employer.organization_type == Employer.ORG_TYPE_EMPLOYER:
