@@ -84,3 +84,8 @@ class EunaSolutionsScraper(BambooHrScraper):
 class OlaplexScraper(GreenhouseIframeScraper):
     employer_name = 'Olaplex'
     EMPLOYER_KEY = 'olaplexcareers'
+    
+    
+class BloomerangScraper(GreenhouseScraper):
+    employer_name = 'Bloomerang'
+    EMPLOYER_KEY = 'bloomerang'

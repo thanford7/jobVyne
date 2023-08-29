@@ -117,6 +117,25 @@ class SectionText(SlackBlock):
         return slack_object
     
     
+class SectionFields(SlackBlock):
+    def __init__(self, field_texts: list, block_id=None):
+        self.field_texts = field_texts
+        self.block_id = block_id
+    
+    def get_slack_object(self):
+        slack_object = {
+            'type': 'section',
+            'fields': [{
+                'type': 'mrkdwn',
+                'text': text
+            } for text in self.field_texts]
+        }
+        if self.block_id:
+            slack_object['block_id'] = self.block_id
+        
+        return slack_object
+    
+    
 class SectionActions(SlackBlock):
     def __int__(self, elements):
         # Up to 25 allowed

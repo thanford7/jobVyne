@@ -23,6 +23,7 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    BloomerangScraper.employer_name: BloomerangScraper,
     OlaplexScraper.employer_name: OlaplexScraper,
     EunaSolutionsScraper.employer_name: EunaSolutionsScraper,
     EvolentHealthScraper.employer_name: EvolentHealthScraper,

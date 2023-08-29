@@ -13,7 +13,7 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
-from django.db.models import Q
+from django.db.models import Q, UniqueConstraint
 from django.utils import crypto, timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -355,6 +355,22 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     @property
     def contact_email(self):
         return self.business_email or self.email
+    
+    
+class UserSlackProfile(models.Model):
+    user = models.ForeignKey('JobVyneUser', null=False, blank=False, related_name='slack_profile', on_delete=models.CASCADE)
+    user_key = models.CharField(max_length=20)
+    team_key = models.CharField(max_length=20)
+    # The datetime when JobVyne posted that this user was looking for a job
+    job_seeker_post_dt = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['user_key', 'team_key'],
+                name='unique_user'
+            ),
+        ]
 
 
 class UserFile(models.Model, JobVynePermissionsMixin):

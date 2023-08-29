@@ -131,7 +131,7 @@ class DateTimeUtil {
     } else if (daysDiff === 0) {
       return 'Today'
     } else {
-      return `${absDaysDiff} days ${relative}`
+      return `${dataUtil.pluralize('day', absDaysDiff)} ${relative}`
     }
   }
 

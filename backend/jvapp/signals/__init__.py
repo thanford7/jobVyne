@@ -3,6 +3,7 @@ __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_o
 import re
 
 from django.core.files import File
+from django.db import IntegrityError
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -69,7 +70,7 @@ def prevent_duplicate_user(sender, instance, *args, **kwargs):
     current_user_filter &= ~Q(id=instance.id)
     existing_users = JobVyneUser.objects.filter(current_user_filter)
     if existing_users:
-        raise ValueError('A user with this email address already exists')
+        raise IntegrityError('A user with this email address already exists')
 
     
 @receiver(post_save, sender=JobVyneUser)

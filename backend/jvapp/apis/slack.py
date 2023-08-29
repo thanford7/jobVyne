@@ -5,6 +5,7 @@ import logging
 from typing import Union
 
 from django.conf import settings
+from django.db import IntegrityError
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from django.http import JsonResponse
@@ -23,7 +24,7 @@ from jvapp.apis.social import SocialLinkPostJobsView, SocialLinkView
 from jvapp.models.content import JobPost
 from jvapp.models.employer import Employer, EmployerSlack, ConnectionTypeBit
 from jvapp.models.social import SocialLink
-from jvapp.models.user import JobVyneUser, PermissionName, UserSocialSubscription
+from jvapp.models.user import JobVyneUser, PermissionName, UserSlackProfile, UserSocialSubscription
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.slack.slack_blocks_specific import SelectEmployer, SelectEmployerJob, get_job_connections_section
 from jvapp.utils.data import coerce_int, truncate_text
@@ -81,12 +82,12 @@ class SlackBasePoster:
         if self.IS_PER_JOB_POST:
             for job in jobs:
                 message = self.build_message(job, **self.message_data)
-                resp = self._send_slack_post(message)
+                resp = self.send_slack_post(message)
                 raise_slack_exception_if_error(resp)
                 job_posts.append(self.generate_job_post(job, resp, message))
         else:
             message = self.build_message(jobs, **self.message_data)
-            resp = self._send_slack_post(message)
+            resp = self.send_slack_post(message)
             raise_slack_exception_if_error(resp)
             for job in jobs:
                 job_posts.append(self.generate_job_post(job, resp, message))
@@ -124,7 +125,7 @@ class SlackBasePoster:
     def has_error(self):
         return None
     
-    def _send_slack_post(self, message):
+    def send_slack_post(self, message):
         return self.client.chat_postMessage(
             channel=getattr(self.slack_cfg, self.POST_CHANNEL),
             blocks=json.dumps(message),
@@ -407,7 +408,7 @@ class SlackJobRecipientPoster(SlackBasePoster):
         ]
         return blocks
     
-    def _send_slack_post(self, message):
+    def send_slack_post(self, message):
         assert self.slack_user_id
         
         # Open a conversation with a specific user
@@ -470,7 +471,15 @@ class SlackBaseView(JobVyneAPIView):
     
     @staticmethod
     def get_and_update_user(slack_user_profile, user_type_bits, slack_cfg, employer_id=None):
-        user_filter = Q(email=slack_user_profile['email']) | Q(business_email=slack_user_profile['email'])
+        is_create_slack_profile = False
+        if slack_email := slack_user_profile.get('email'):
+            user_filter = Q(email=slack_email) | Q(business_email=slack_email)
+            is_create_slack_profile = True
+        else:
+            user_filter = (
+                Q(slack_profile__user_key=slack_user_profile['user_key'])
+                & Q(slack_profile__team_key=slack_user_profile['team_key'])
+            )
         try:
             user = (
                 JobVyneUser.objects
@@ -483,6 +492,10 @@ class SlackBaseView(JobVyneAPIView):
             )
         except JobVyneUser.DoesNotExist:
             return None
+        
+        if is_create_slack_profile:
+            SlackBaseView.create_user_slack_profile(user, slack_user_profile)
+            
         is_updated = False
         if (user.user_type_bits & user_type_bits) != user_type_bits:
             user.user_type_bits |= user_type_bits
@@ -517,35 +530,55 @@ class SlackBaseView(JobVyneAPIView):
         return user
     
     @staticmethod
-    def create_jobvyne_user(slack_user_profile, user_type_bits, slack_cfg, employer_id=None):
+    def create_user_slack_profile(user, slack_user_profile):
+        slack_profile_kwargs = dict(
+            user=user, user_key=slack_user_profile['user_key'], team_key=slack_user_profile['team_key']
+        )
+        try:
+            UserSlackProfile.objects.get(**slack_profile_kwargs)
+        except UserSlackProfile.DoesNotExist:
+            slack_profile = UserSlackProfile(**slack_profile_kwargs)
+            slack_profile.save()
+    
+    @staticmethod
+    def create_jobvyne_user(user_email, slack_user_profile, user_type_bits, slack_cfg, employer_id=None):
         if not user_type_bits:
             raise ValueError('At least one user type bit is required')
         profile_picture = SlackBaseView.get_profile_picture(slack_user_profile)
-        user = JobVyneUser.objects.create_user(
-            slack_user_profile['email'],
-            user_type_bits=user_type_bits,
-            first_name=slack_user_profile['first_name'],
-            last_name=slack_user_profile['last_name'],
-            phone_number=slack_user_profile['phone'],
-            employer_id=employer_id,
-            profile_picture=profile_picture
-        )
+        is_send_welcome_email = True
+        try:
+            user = JobVyneUser.objects.create_user(
+                user_email,
+                user_type_bits=user_type_bits,
+                first_name=slack_user_profile['first_name'],
+                last_name=slack_user_profile['last_name'],
+                phone_number=slack_user_profile['phone'],
+                employer_id=employer_id,
+                profile_picture=profile_picture
+            )
+        except IntegrityError:
+            is_send_welcome_email = False
+            user_filter = Q(email=user_email) | Q(business_email=user_email)
+            user = JobVyneUser.objects.get(user_filter)
         
+        SlackBaseView.create_user_slack_profile(user, slack_user_profile)
         SlackBaseView.subscribe_user_to_groups(user, slack_cfg)
-        send_django_email(
-            'Welcome to JobVyne!',
-            'emails/group_user_welcome_email.html',
-            to_email=user.email,
-            django_context={
-                'user': user,
-                'is_exclude_final_message': False,
-                'reset_password_url': user.get_reset_password_link(),
-                'is_employer_owner': False,
-                'job_board_url': slack_cfg.employer.main_job_board_link
-            },
-            employer=slack_cfg.employer,
-            is_tracked=False
-        )
+        
+        if is_send_welcome_email:
+            send_django_email(
+                'Welcome to JobVyne!',
+                'emails/group_user_welcome_email.html',
+                to_email=user.email,
+                django_context={
+                    'user': user,
+                    'is_exclude_final_message': False,
+                    'reset_password_url': user.get_reset_password_link(),
+                    'is_employer_owner': False,
+                    'job_board_url': slack_cfg.employer.main_job_board_link
+                },
+                employer=slack_cfg.employer,
+                is_tracked=False
+            )
         
         return user
 
@@ -721,6 +754,7 @@ class SlackExternalBaseView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data='Unknown team ID')
         self.slack_client = SlackBaseView.get_slack_client(token=self.slack_cfg.oauth_key)
         self.slack_user_profile = SlackBaseView.get_user_profile(self.slack_user_id, self.slack_client)
+        self.slack_user_profile['team_key'] = self.slack_cfg.team_key
         
         super().initial(request, *args, **kwargs)
     
@@ -820,6 +854,7 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                 self.slack_cfg,
                 employer_id=self.slack_cfg.employer_id
             ) or SlackBaseView.create_jobvyne_user(
+                self.slack_user_profile['email'],
                 self.slack_user_profile,
                 JobVyneUser.USER_TYPE_EMPLOYEE,
                 self.slack_cfg,

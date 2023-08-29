@@ -1,6 +1,7 @@
 import json
 
 from django.conf import settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -13,21 +14,27 @@ from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import JobPost
 from jvapp.models.currency import Currency
 from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, ConnectionTypeBit
-from jvapp.models.user import JobVyneUser, UserSocialSubscription
+from jvapp.models.location import REMOTE_TYPES
+from jvapp.models.user import JobVyneUser, UserSlackProfile, UserSocialSubscription
 from jvapp.slack.slack_blocks_specific import SelectEmployer, \
     SelectEmployerJob, get_home_zip_code_input, get_industry_selections, \
     get_job_connections_section, get_job_connections_section_id, get_job_level_selections, \
     get_profession_selections, get_remote_work_selection
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
-from jvapp.utils.datetime import get_datetime_format_or_none
+from jvapp.utils.datetime import TIME_INTERVAL_DAYS, get_datetime_diff, get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.oauth import OauthProviders
 from jvapp.slack.slack_blocks import Button, Divider, InputCheckbox, InputEmail, InputNumber, InputOption, \
     InputRadioButton, InputText, \
     Modal, \
-    SectionText, Select
+    SectionFields, SectionText, Select
 from jvapp.utils.response import ProcessTimer
 from scrape.job_processor import JobItem, UserCreatedJobProcessor
+
+
+# The number of days before we'll post again about a job seeker
+# Makes sure small changes to the profile doesn't blow up slack messages
+JOB_SEEKER_POST_WAIT_DAYS = 30
 
 
 def add_user_home_location(user, post_code):
@@ -63,9 +70,7 @@ class SlackMultiViewModal:
     START_KEY = 'start'  # Some modals are triggered from a button so we need to know that the first modal is at index 0
     BASE_CALLBACK_ID = None  # Subclass
     DEFAULT_BLOCK_TITLE = None  # Subclass
-    USER_SIGNUP_KEY = 'user-sign-up'
-    USER_SIGNUP_CONFIRM = 'confirm'
-    USER_SIGNUP_DECLINE = 'decline'
+    USER_SIGNUP_EMAIL_KEY = 'user-sign-up-email'
     USER_TYPE_BITS = None
     
     def __init__(
@@ -76,6 +81,11 @@ class SlackMultiViewModal:
         self.trigger_id = data.get('trigger_id')
         self.metadata = {**self.get_modal_metadata(data), **self.get_button_metadata(button_data), **(extra_data or {})}
         self.message = data.get('message')
+        # Store data necessary to retrieve the message from which the modal was triggered
+        # We may lose the underlying message data on subsequent modal views so we need a way to retrieve it
+        # We can't store the entire message data in metadata due to Slacks character limits
+        if message := data.get('message'):
+            self.metadata['message_ts'] = message['ts']
         try:
             self.channel_id = data['channel']['id']
         except KeyError:
@@ -145,6 +155,15 @@ class SlackMultiViewModal:
     def get_button_metadata(self, button_data):
         return {}
     
+    def get_slack_message_from_id(self):
+        result = self.slack_client.conversations_history(
+            channel=self.channel_id,
+            inclusive=True,
+            oldest=self.metadata['message_ts'],
+            limit=1
+        )
+        return result['messages'][0]
+    
     def add_modal(
             self, slack_blocks, submit_text=None, is_final=False, title_text=None,
             process_data_fn=None, process_data_once_fn=None
@@ -168,7 +187,7 @@ class SlackMultiViewModal:
     
     def add_user_signup_modal(self):
         # This modal is only needed for new users
-        if self.user and (not self.USER_SIGNUP_KEY in self.metadata):
+        if self.user and (not self.USER_SIGNUP_EMAIL_KEY in self.metadata):
             return
         signup_blocks = [
             SectionText(
@@ -179,23 +198,26 @@ class SlackMultiViewModal:
                     '<https://www.jobvyne.com/privacy|Our data privacy policy>'
                 )
             ).get_slack_object(),
-            InputRadioButton(self.USER_SIGNUP_KEY, '🍇 JobVyne Sign Up', [
-                InputOption('Sign me up!', self.USER_SIGNUP_CONFIRM).get_slack_object(),
-                InputOption('I don\'t want to connect with others 😔', self.USER_SIGNUP_DECLINE).get_slack_object()
-            ]).get_slack_object()
+            InputEmail(
+                self.USER_SIGNUP_EMAIL_KEY,
+                'Account Email',
+                'Email',
+                initial_value=self.slack_user_profile.get('email'),
+            ).get_slack_object()
         ]
         return self.add_modal(
             signup_blocks, 'Continue', title_text='Welcome to JobVyne'
         )
     
     def add_user_signup_decline_modal(self):
-        if self.user or (not self.USER_SIGNUP_KEY in self.metadata):
+        if self.user or (not self.USER_SIGNUP_EMAIL_KEY in self.metadata):
             return False
         
-        if self.metadata[self.USER_SIGNUP_KEY] == self.USER_SIGNUP_CONFIRM:
-            self.create_user()
+        if user_email := self.metadata[self.USER_SIGNUP_EMAIL_KEY]:
+            self.create_user(user_email)
             return False
         
+        # TODO: Remove this
         decline_blocks = [
             SectionText(
                 (
@@ -210,10 +232,11 @@ class SlackMultiViewModal:
             decline_blocks, None, title_text='Help make JobVyne better!', is_final=True
         )
     
-    def create_user(self):
+    def create_user(self, user_email):
         from jvapp.apis.slack import SlackBaseView
-        user = SlackBaseView.create_jobvyne_user(self.slack_user_profile, self.USER_TYPE_BITS, self.slack_cfg)
+        user = SlackBaseView.create_jobvyne_user(user_email, self.slack_user_profile, self.USER_TYPE_BITS, self.slack_cfg)
         self.metadata['user_id'] = user.id
+        self.metadata['email'] = user.email
         self.user = user
     
     @classmethod
@@ -267,7 +290,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
     
     def modal_set_user_info(self):
         home_postal_code = self.user.home_location.postal_code if (self.user and self.user.home_location) else None
-        contact_email = self.slack_user_profile['email']
+        contact_email = self.slack_user_profile.get('email')
         if self.user:
             contact_email = self.user.business_email or self.user.email
         profile_blocks = [
@@ -321,6 +344,8 @@ class JobSeekerModalViews(SlackMultiViewModal):
     def save_user_data(self):
         add_user_home_location(self.user, self.metadata['home_post_code'])
         
+        self.user.first_name = self.metadata['first_name']
+        self.user.last_name = self.metadata['last_name']
         self.user.professional_site_url = self.metadata['professional_site_url']
         self.user.linkedin_url = self.metadata['linkedin_url']
         if self.metadata['contact_email'] != self.user.email:
@@ -436,10 +461,85 @@ class JobSeekerModalViews(SlackMultiViewModal):
             final_text = 'Your subscriptions were already up-to-date. No changes were made.'
         
         final_text += '\n\nIf you want to make changes to your profile or subscriptions you can use the `/jv-job-seeker` command.'
+        
+        self.send_slack_job_seeker_post()
+        
         self.add_modal(
             [SectionText(final_text).get_slack_object()],
             is_final=True
         )
+        
+    def send_slack_job_seeker_post(self):
+        from jvapp.apis.slack import SlackJobPoster
+        if not self.user.is_job_search_visible:
+            return None
+        slack_profile = UserSlackProfile.objects.get(
+            user_key=self.slack_user_profile['user_key'], team_key=self.slack_user_profile['team_key']
+        )
+        
+        # Check to make sure we have waited a sufficient amount of time to repost about this job seeker
+        if slack_profile.job_seeker_post_dt:
+            days_since_post = get_datetime_diff(
+                slack_profile.job_seeker_post_dt, timezone.now(), interval=TIME_INTERVAL_DAYS
+            )
+            if days_since_post < JOB_SEEKER_POST_WAIT_DAYS:
+                return days_since_post
+        
+        job_search_professions_text = ', '.join([tax.name for tax in self.user.job_search_professions.all()])
+        job_levels_text = ', '.join([tax.name for tax in self.user.job_search_levels.all()])
+        job_industries = [tax.name for tax in self.user.job_search_industries.all()]
+        if not job_industries:
+            job_industries_text = 'All'
+        else:
+            job_industries_text = ', '.join(job_industries)
+            
+        if self.user.work_remote_type_bit == REMOTE_TYPES.YES.value:
+            location_text = 'Remote only'
+        elif self.user.work_remote_type_bit == REMOTE_TYPES.NO.value:
+            location_text = f'In office only | Near {self.user.home_location.city.name}'
+        else:
+            location_text = f'Remote or Near {self.user.home_location.city.name}'
+            
+        professional_sites_text = f'<{self.user.linkedin_url}|LinkedIn>'
+        if self.user.professional_site_url:
+            professional_sites_text += f'  <{self.user.professional_site_url}|Portfolio>'
+            
+        message_blocks = [
+            SectionText(
+                (
+                    f'🍇 <@{self.slack_user_profile["user_key"]}> is looking for a new career opportunity 🍇\n'
+                    'Job searching is better as a community. Let\'s all help out!\n\n'
+                    f'Here\'s what {self.user.first_name} is looking for:'
+                )
+            ).get_slack_object(),
+            SectionFields(
+                [
+                    f'*Roles:*\n{job_search_professions_text}',
+                    f'*Levels:*\n{job_levels_text}',
+                    f'*Preferred Industries:*\n{job_industries_text}',
+                    f'*Location:*\n{location_text}'
+                ]
+            ).get_slack_object(),
+            SectionText(
+                (
+                    f'And here are {self.user.first_name}\'s qualifications:\n\n'
+                    f'{professional_sites_text}\n'
+                    f'{self.user.job_search_qualifications}'
+                )
+            ).get_slack_object(),
+            SectionText(
+                (
+                    'Want to connect with more job seekers and hiring managers?\n\n'
+                    f'🤝🏽 Head over to <{self.slack_cfg.employer.main_job_board_link}?tab=community|{self.slack_cfg.employer.employer_name}\'s community page>\n'
+                    f'💼 Create your own job seeker profile by typing `/jv-job-seeker` into any Slack message input\n'
+                    f'🏢 Add a job that you are hiring for or just a cool job you know about by typing `/jv-job`'
+                )
+            ).get_slack_object()
+        ]
+        message_poster = SlackJobPoster(self.slack_cfg, JobPost.PostChannel.SLACK_JOB.value, employer_id=self.slack_cfg.employer.id)
+        message_poster.send_slack_post(message_blocks)
+        slack_profile.job_seeker_post_dt = timezone.now()
+        slack_profile.save()
 
 
 class JobModalViews(SlackMultiViewModal):
@@ -936,14 +1036,21 @@ class JobConnectionModalViews(SlackMultiViewModal):
     def job_connection_confirmation_modal(self):
         return self.add_modal([
             SectionText(
-                f'Added your connection to the {self.job.job_title} position for {self.job.employer.employer_name}. Thanks for helping others in their job search 🍇'
+                (
+                    f'Added your connection to the {self.job.job_title} position for {self.job.employer.employer_name}. '
+                    'Thanks for helping others in their job search 🍇\n\n'
+                    f'You can view all job connections on {self.slack_cfg.employer.employer_name}\'s <{self.slack_cfg.employer.main_job_board_link}?tab=community|community page>'
+                )
             ).get_slack_object()
         ], title_text='Job saved', is_final=True)
     
     def update_job_post_slack_message(self):
+        # Update the Slack message to show the new job connection
         from jvapp.apis.slack import SlackBasePoster
         
-        # Update the Slack message to show the new job connection
+        # message = self.get_slack_message_from_id()
+        if not self.message:
+            return
         message_blocks = self.message['blocks']
         
         # Insert the job connection section right after the job details
