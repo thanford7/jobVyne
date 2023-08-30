@@ -85,11 +85,6 @@ class KucoinScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class AledadeScraper(LeverScraper):
-    employer_name = 'Aledade'
-    EMPLOYER_KEY = 'aledade'
-
-
 class MiraklScraper(GreenhouseScraper):
     employer_name = 'Mirakl'
     EMPLOYER_KEY = 'mirakl'

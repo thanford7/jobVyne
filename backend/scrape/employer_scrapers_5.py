@@ -657,11 +657,6 @@ class RepriseScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'reprise'
 
 
-class ProcoreScraper(SmartRecruitersScraper):
-    employer_name = 'Procore'
-    EMPLOYER_KEY = 'ProcoreTechnologies'
-
-
 class VtexScraper(GreenhouseApiScraper):
     employer_name = 'VTEX'
     EMPLOYER_KEY = 'vtex'

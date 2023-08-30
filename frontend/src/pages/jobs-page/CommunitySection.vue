@@ -36,9 +36,7 @@
                     <a :href="member.linkedin_url" target="_blank">LinkedIn</a>
                     <template v-if="member.professional_site_url">
                       &nbsp;&nbsp;
-                      <a :href="member.professional_site_url" target="_blank">
-                        Professional Site
-                      </a>
+                      <a :href="member.professional_site_url" target="_blank">Professional Site</a>
                     </template>
                     <template v-if="member.email">
                       &nbsp;&nbsp;

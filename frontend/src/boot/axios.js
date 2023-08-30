@@ -1,5 +1,6 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
+import dateTimeUtil from 'src/utils/datetime.js'
 import { getCsrfToken } from 'src/utils/requests.js'
 import emitter from 'tiny-emitter/instance'
 import md5 from 'md5'
@@ -67,12 +68,22 @@ export default boot(({ app, ssrContext, store, router }) => {
   api.interceptors.response.use(function (response) {
     const codeVersion = response.headers[CODE_VERSION_KEY] || 'default'
     const localCodeVersion = localStorage.getItem(CODE_VERSION_KEY)
+    let timeDiffMin = 0
+    if (codeVersion !== 'default' && localCodeVersion) {
+      const codeVersionDt = dateTimeUtil.forceToDate(codeVersion)
+      const localCodeVersionDt = dateTimeUtil.forceToDate(localCodeVersion)
+      timeDiffMin = (codeVersionDt - localCodeVersionDt) / (1000 * 60)
+    }
     const hasReloaded = (localStorage.getItem(RELOAD_FLAG_KEY) || 'false') === 'true'
 
-    if (codeVersion !== localCodeVersion) {
+    if (timeDiffMin > 5) {
       localStorage.setItem(CODE_VERSION_KEY, codeVersion)
       localStorage.setItem(RELOAD_FLAG_KEY, 'true')
       window.location.reload()
+    }
+
+    if (!localCodeVersion) {
+      localStorage.setItem(CODE_VERSION_KEY, codeVersion)
     }
 
     if (hasReloaded) {

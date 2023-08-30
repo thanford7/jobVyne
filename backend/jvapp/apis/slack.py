@@ -259,7 +259,7 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
         try:
             # Check if job has already been posted
             existing_job_post = JobPost.objects.get(
-                job=job, employer_id=self.employer_id, channel=self.post_channel
+                job=job, employer_id=self.employer_id, channel=self.post_channel, recipient_id__isnull=True
             )
             return None
         except JobPost.DoesNotExist:

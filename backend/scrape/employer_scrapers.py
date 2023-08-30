@@ -17,12 +17,22 @@ from scrape.employer_scrapers_13 import *
 from scrape.custom_scraper.ancestry import AncestryScraper
 from scrape.custom_scraper.packsize import PacksizeScraper
 
-# TODO: Build PhenomPeople ATS scraper - https://careers.adobe.com/us/en/c/
-
 test_scrapers = {
+    # AdobeScraper.employer_name: AdobeScraper,
+    # YelpScraper.employer_name: YelpScraper,
+    # GeneralElectricScraper.employer_name: GeneralElectricScraper,
+    # AspenDentalScraper.employer_name: AspenDentalScraper,
+    # ThermoFisherScraper.employer_name: ThermoFisherScraper,
 }
 
 all_scrapers = {
+    IgniteReadingScraper.employer_name: IgniteReadingScraper,
+    GreifScraper.employer_name: GreifScraper,
+    CircanaScraper.employer_name: CircanaScraper,
+    ScribeScraper.employer_name: ScribeScraper,
+    CenteneCorporationScraper.employer_name: CenteneCorporationScraper,
+    SnapIncScraper.employer_name: SnapIncScraper,
+    CohereHealthScraper.employer_name: CohereHealthScraper,
     BloomerangScraper.employer_name: BloomerangScraper,
     OlaplexScraper.employer_name: OlaplexScraper,
     EunaSolutionsScraper.employer_name: EunaSolutionsScraper,
@@ -573,7 +583,6 @@ all_scrapers = {
     KindbodyScraper.employer_name: KindbodyScraper,
     MaltScraper.employer_name: MaltScraper,
     ParcellabScraper.employer_name: ParcellabScraper,
-    RainScraper.employer_name: RainScraper,
     GalaxyDigitalScraper.employer_name: GalaxyDigitalScraper,
     RezoScraper.employer_name: RezoScraper,
     RothysScraper.employer_name: RothysScraper,
@@ -1535,7 +1544,6 @@ all_scrapers = {
     RossumScraper.employer_name: RossumScraper,
     CadenceScraper.employer_name: CadenceScraper,
     FactsetScraper.employer_name: FactsetScraper,
-    ProcoreScraper.employer_name: ProcoreScraper,
     VtexScraper.employer_name: VtexScraper,
     MediamathScraper.employer_name: MediamathScraper,
     PigmentScraper.employer_name: PigmentScraper,

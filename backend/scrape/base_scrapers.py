@@ -8,10 +8,12 @@ import re
 import tempfile
 from datetime import timedelta
 from json import JSONDecodeError
+from math import ceil
 from urllib.parse import unquote
 
 import requests
 from aiohttp import ClientSession
+from django.conf import settings
 from django.utils import timezone
 from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
@@ -114,7 +116,7 @@ class Scraper:
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
         self.session = ClientSession(headers=headers)
-        self.skip_urls = skip_urls
+        self.skip_urls = [] if settings.IS_LOCAL else skip_urls
         logger.info(f'scraper {self.session} created')
         self.base_url = get_base_url(self.get_start_url())
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
@@ -147,6 +149,8 @@ class Scraper:
         storage.save(html_file_path, html_file)
     
     async def request_failure_logger(self, request):
+        if '/track' in request.url:
+            return
         logger.info(f'REQUEST FAILED: {request.url} {request.failure}')
     
     def response_failure_logger(self, response):
@@ -1273,7 +1277,7 @@ class UltiProScraper(Scraper):
     IS_REMOVE_QUERY_PARAMS = False
     TEST_REDIRECT = False
     IS_JS_REQUIRED = True
-    job_item_page_wait_sel = '[data-automation="opportunity-title"]'
+    job_item_page_wait_sel = '[data-automation="job-description"]'
     
     async def scrape_jobs(self):
         page = await self.get_starting_page()
@@ -1300,7 +1304,7 @@ class UltiProScraper(Scraper):
     
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         # Ultipro doesn't have the ld+json standard
-        description = html.xpath('//*[@data-automation="job-description"]').get()
+        description = html.xpath('//*[@data-automation="job-description"]/parent::div').get()
         description_compensation_data = parse_compensation_text(description)
         posted_date = html.xpath('//*[@data-automation="job-posted-date"]/text()').get()
         if posted_date:
@@ -1322,22 +1326,35 @@ class SmartRecruitersScraper(Scraper):
     ATS_NAME = 'SmartRecruiters'
     
     async def scrape_jobs(self):
-        html_dom = await self.get_html_from_url(self.get_start_url())
-        await self.add_job_links_to_queue(
-            list(html_dom.xpath('//div[contains(@class, "openings-body")]//a/@href').getall()))
+        page_idx = 0
+        while True:
+            jobs_html = self.get_page_data(page_idx)
+            if not jobs_html:
+                break
+            await self.add_job_links_to_queue(jobs_html.xpath('//a/@href').getall())
+            page_idx += 1
+        
         await self.close()
     
     def get_start_url(self):
         return f'https://careers.smartrecruiters.com/{self.EMPLOYER_KEY}/'
     
+    def get_page_data(self, page_idx):
+        resp = requests.get(f'https://careers.smartrecruiters.com/{self.EMPLOYER_KEY}/api/more?page={page_idx}')
+        html_text = resp.content
+        if not html_text:
+            return None
+        return Selector(text=html_text.decode('latin-1'))
+    
     def get_job_data_from_html(self, html, job_url=None, job_department=None):
         job_data_html = html.xpath('//main[contains(@class, "jobad-main")]')
+        job_title = job_data_html.xpath('.//h1[@class="job-title"]/text()').get()
         job_description = job_data_html.xpath('.//div[@itemprop="description"]').get()
         description_compensation_data = parse_compensation_text(job_description)
         location_html = job_data_html.xpath('.//spl-job-location')
         location_text = location_html.xpath('./@formattedaddress').get()
         remote_type = location_html.xpath('./@workplacetype').get()
-        if remote_type == 'remote':
+        if remote_type == 'remote' and ('remote' not in location_text.lower()):
             location_text = f'Remote: {location_text}'
         
         posted_date = html.xpath('//meta[@itemprop="datePosted"]/@content').get()
@@ -1346,7 +1363,6 @@ class SmartRecruitersScraper(Scraper):
         
         job_details = job_data_html.xpath('.//li[@class="job-detail"]/text()').getall()
         job_department = None
-        # TODO: Make sure this works for multiple smartrecruiters employers
         for job_detail in job_details:
             if 'department' in job_detail.lower():
                 job_department = job_detail.replace('Department:', '').strip()
@@ -1355,7 +1371,7 @@ class SmartRecruitersScraper(Scraper):
         return JobItem(
             employer_name=self.employer_name,
             application_url=job_url,
-            job_title=job_data_html.xpath('.//h1[@class="job-title"]/text()').get(),
+            job_title=job_title,
             locations=[location_text],
             job_department=job_department,
             job_description=job_description,
@@ -1767,7 +1783,78 @@ class RecruiteeScraper(Scraper):
             website_domain=standard_job_item.website_domain,
             **compensation_data
         )
-
+    
+    
+class PhenomPeopleScraper(Scraper):
+    ATS_NAME = 'Phenom'
+    IS_JS_REQUIRED = True
+    JOBS_PER_PAGE = 10
+    job_item_page_wait_sel = '.job-info'
+    
+    async def scrape_jobs(self):
+        page = await self.get_starting_page()
+        await self.wait_for_el(page, '[data-ph-at-id="jobs-list"]')
+        html_dom = await self.get_page_html(page)
+        jobs_count = int(html_dom.xpath('//div[contains(@class, "phs-jobs-list-count")]/@data-ph-at-count').get())
+        total_page_count = ceil(jobs_count / self.JOBS_PER_PAGE)
+        page_count = 0
+        while page_count < total_page_count:
+            if page_count != 0:
+                await page.close()
+                page = await self.visit_page_with_retry(self.get_next_page_url(page_count))
+                await self.wait_for_el(page, '[data-ph-at-id="jobs-list"]')
+                html_dom = await self.get_page_html(page)
+            job_links = html_dom.xpath('//ul[@data-ph-at-id="jobs-list"]//span[@role="heading"]//a/@href').getall()
+            await self.add_job_links_to_queue(job_links)
+            page_count += 1
+        await self.close()
+        
+    def get_next_page_url(self, page_idx):
+        start_url = self.get_start_url()
+        if page_idx == 0:
+            return start_url
+        return f'{start_url}?s=1&from={page_idx * self.JOBS_PER_PAGE}'
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, api_data=None):
+        standard_job_item = self.get_google_standard_job_item(html)
+        if not standard_job_item:
+            logger.info('Unable to parse JobItem from document. No standard job data (ld+json).')
+            return None
+        
+        job_details = html.xpath('//div[@class="job-header-block"]')
+        job_description = html.xpath('//section[@class="job-description"]').get()
+        description_compensation_data = parse_compensation_text(job_description)
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, standard_job_item.get_compensation_dict()]
+        )
+        
+        locations = [l.strip() for l in job_details.xpath('.//span[contains(@class, "job-location")]/text()').getall() if l and l.strip()]
+        department = [d.strip() for d in job_details.xpath('.//span[contains(@class, "job-category")]/text()').getall() if d and d.strip()]
+        if department:
+            department = department[0]
+        
+        employment_type = [t.strip() for t in job_details.xpath('.//span[contains(@class, "type")]/text()').getall() if t and t.strip()]
+        if employment_type:
+            employment_type = employment_type[0]
+            
+        job_title = job_details.xpath('.//h1[@class="job-title"]/text()').get()
+        if job_title:
+            job_title = job_title.strip()
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_title or standard_job_item.job_title,
+            locations=locations or standard_job_item.locations,
+            job_department=department or standard_job_item.job_department or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description,
+            employment_type=employment_type or standard_job_item.employment_type or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=standard_job_item.first_posted_date,
+            logo_url=standard_job_item.logo_url,
+            website_domain=standard_job_item.website_domain,
+            **compensation_data
+        )
+    
 
 class StandardScraper(Scraper):
     jobs_xpath_sel = None

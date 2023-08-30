@@ -659,24 +659,37 @@ class EmployerJobView(JobVyneAPIView):
         return employer_job
     
     @staticmethod
+    def get_employer_job_filter(
+        employer_job_id=None, is_only_closed=False, is_include_closed=False, is_include_future=False,
+        is_allow_unapproved=False
+    ):
+        if employer_job_id:
+            return Q(id=employer_job_id)
+        
+        job_filter = Q()
+        if not is_allow_unapproved:
+            job_filter &= Q(is_job_approved=True)
+        if is_only_closed:
+            job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
+        elif not is_include_closed:
+            job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+        if not is_include_future:
+            job_filter &= Q(open_date__lte=timezone.now().date())
+        
+        return job_filter
+        
+    
+    @staticmethod
     def get_employer_jobs(
             employer_job_id=None, employer_job_filter=None, order_by=None, applicant_user=None,
-            is_only_closed=False, is_include_closed=False, is_include_future=False,
-            is_include_fetch=True, is_allow_unapproved=False
+            is_include_fetch=True, is_only_closed=False, is_include_closed=False, is_include_future=False,
+            is_allow_unapproved=False
     ):
         # NOTE: Be careful adding the order_by argument since it may cause a full table scan if not on an index
-        if employer_job_id:
-            standard_job_filter = Q(id=employer_job_id)
-        else:
-            standard_job_filter = Q()
-            if not is_allow_unapproved:
-                standard_job_filter &= Q(is_job_approved=True)
-            if is_only_closed:
-                standard_job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
-            elif not is_include_closed:
-                standard_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
-            if not is_include_future:
-                standard_job_filter &= Q(open_date__lte=timezone.now().date())
+        standard_job_filter = EmployerJobView.get_employer_job_filter(
+            employer_job_id=employer_job_id, is_only_closed=is_only_closed, is_include_closed=is_include_closed,
+            is_include_future=is_include_future, is_allow_unapproved=is_allow_unapproved
+        )
         
         jobs = EmployerJob.objects.filter(standard_job_filter)
         if employer_job_filter:

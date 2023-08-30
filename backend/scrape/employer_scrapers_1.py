@@ -691,7 +691,7 @@ class ValimailScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'valimailinc'
 
 
-class ClimateAiScraper(LeverScraper):
+class ClimateAiScraper(GreenhouseScraper):
     employer_name = 'ClimateAi'
     EMPLOYER_KEY = 'climateai'
 
@@ -927,11 +927,6 @@ class EasyPostScraper(LeverScraper):
 class CabifyScraper(GreenhouseScraper):
     employer_name = 'Cabify'
     EMPLOYER_KEY = 'cabify'
-
-
-class UpsideScraper(GreenhouseIframeScraper):
-    employer_name = 'Upside'
-    EMPLOYER_KEY = 'ericbuckleygetupsidegreenhouseio'
 
 
 class AutomoxScraper(LeverScraper):

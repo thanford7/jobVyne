@@ -1,4 +1,7 @@
-from django.db.models import Q
+import logging
+
+from django.db.models import Prefetch, Q
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -6,8 +9,10 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView
 from jvapp.apis.social import SocialLinkView
 from jvapp.models import JobVyneUser
-from jvapp.models.employer import ConnectionTypeBit
+from jvapp.models.employer import ConnectionTypeBit, EmployerJobConnection
 from jvapp.utils.data import coerce_int
+
+logger = logging.getLogger(__name__)
 
 
 class CommunityMemberView(JobVyneAPIView):
@@ -27,6 +32,16 @@ class CommunityMemberView(JobVyneAPIView):
             user_filter = Q(membership_groups__id=employer_id) | Q(membership_employers__id=employer_id)
         else:
             user_filter = Q(membership_professions__key=profession)
+            
+        job_connections_prefetch = Prefetch(
+            'job_connection',
+            queryset=(
+                EmployerJobConnection.objects
+                .select_related('job', 'job__employer')
+                .prefetch_related('job__locations')
+                .filter(Q(job__close_date__isnull=True) | Q(job__close_date__gt=timezone.now().date()))
+            )
+        )
 
         members = (
             JobVyneUser.objects
@@ -37,16 +52,15 @@ class CommunityMemberView(JobVyneAPIView):
                 'job_search_levels',
                 'job_search_industries',
                 'job_search_professions',
-                'job_connection',
-                'job_connection__job',
-                'job_connection__job__employer',
-                'job_connection__job__locations',
+                job_connections_prefetch
             )
             .filter(user_filter).distinct()
         )
+        
+        logger.info('Fetching community members')
         serialized_members = [self.get_serialized_member(m, member_type) for m in members]
         serialized_members = [m for m in serialized_members if not member_type or (member_type & m['member_type_bits'])]
-        serialized_members.sort(key=lambda x: x['id'])
+        serialized_members.sort(key=lambda x: x['id'], reverse=True)
         return Response(status=status.HTTP_200_OK, data=serialized_members)
     
     @staticmethod

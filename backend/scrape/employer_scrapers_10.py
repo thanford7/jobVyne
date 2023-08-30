@@ -497,11 +497,6 @@ class ParcellabScraper(LeverScraper):
     EMPLOYER_KEY = 'parcellab'
 
 
-class RainScraper(GreenhouseScraper):
-    employer_name = 'Rain'
-    EMPLOYER_KEY = 'rain'
-
-
 class GreenhouseAtsScraper(GreenhouseScraper):
     employer_name = 'Greenhouse'
     EMPLOYER_KEY = 'greenhouse'

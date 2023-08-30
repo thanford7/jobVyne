@@ -442,6 +442,10 @@ JOB_TAXONOMY_TESTS = [
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_PRODUCT_MANAGEMENT, CONFIDENCE_WEIGHT_STRONG)]
     ),
     TaxonomyTest(
+        f'{start_or_word_and_space_re}product\Wmanager{space_and_word_or_end_re}',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_PRODUCT_MANAGEMENT, CONFIDENCE_WEIGHT_VERY_STRONG)]
+    ),
+    TaxonomyTest(
         f'{start_or_word_and_space_re}product\W.*?engineer{space_and_word_or_end_re}',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_PRODUCT_MANAGEMENT, CONFIDENCE_WEIGHT_STRONG)]
     ),

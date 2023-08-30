@@ -1,6 +1,7 @@
-from scrape.base_scrapers import BambooHrScraper, GreenhouseIframeScraper, GreenhouseScraper, LeverScraper, \
+from scrape.base_scrapers import BambooHrScraper, GreenhouseApiScraper, GreenhouseIframeScraper, GreenhouseScraper, \
+    LeverScraper, \
     PaylocityScraper, \
-    SmartRecruitersScraper, UltiProScraper, WorkdayScraper
+    PhenomPeopleScraper, SmartRecruitersScraper, UltiProScraper, WorkdayScraper
 
 
 class MapleScraper(LeverScraper):
@@ -89,3 +90,70 @@ class OlaplexScraper(GreenhouseIframeScraper):
 class BloomerangScraper(GreenhouseScraper):
     employer_name = 'Bloomerang'
     EMPLOYER_KEY = 'bloomerang'
+    
+    
+class CohereHealthScraper(GreenhouseIframeScraper):
+    employer_name = 'Cohere Health'
+    EMPLOYER_KEY = 'coherehealth'
+    
+    
+class UpsideScraper(GreenhouseApiScraper):
+    employer_name = 'Upside'
+    EMPLOYER_KEY = 'ericbuckleygetupsidegreenhouseio'
+    
+    
+class SnapIncScraper(WorkdayScraper):
+    employer_name = 'Snap Inc'
+    start_url = 'https://wd1.myworkdaysite.com/recruiting/snapchat/snap'
+    has_job_departments = False
+    
+    
+class CenteneCorporationScraper(PhenomPeopleScraper):
+    employer_name = 'Centene Corporation'
+    start_url = 'https://jobs.centene.com/us/en/search-results'
+    
+    
+class AdobeScraper(PhenomPeopleScraper):
+    employer_name = 'Adobe'
+    start_url = 'https://careers.adobe.com/us/en/search-results'
+    
+    
+class YelpScraper(PhenomPeopleScraper):
+    employer_name = 'Yelp'
+    start_url = 'https://www.yelp.careers/us/en/search-results'
+    
+    
+class GeneralElectricScraper(PhenomPeopleScraper):
+    employer_name = 'General Electric'
+    start_url = 'https://jobs.gecareers.com/global/en/search-results'
+    
+    
+class AspenDentalScraper(PhenomPeopleScraper):
+    employer_name = 'Aspen Dental'
+    start_url = 'https://careers.aspendental.com/us/en/search-results'
+    
+
+class ThermoFisherScraper(PhenomPeopleScraper):
+    employer_name = 'Thermo Fisher Scientific'
+    start_url = 'https://jobs.thermofisher.com/global/en/search-results'
+    
+    
+class IgniteReadingScraper(GreenhouseIframeScraper):
+    employer_name = 'Ignite! Reading'
+    EMPLOYER_KEY = 'ignitereading'
+    
+    
+class GreifScraper(WorkdayScraper):
+    employer_name = 'Greif'
+    start_url = 'https://greif.wd5.myworkdayjobs.com/Greif'
+    has_job_departments = False
+    
+    
+class CircanaScraper(UltiProScraper):
+    employer_name = 'Circana'
+    start_url = 'https://recruiting2.ultipro.com/INF1019IRINC/JobBoard/17a8d008-9efe-4e51-8460-47ee205d5229/'
+    
+    
+class ScribeScraper(GreenhouseIframeScraper):
+    employer_name = 'Scribe'
+    EMPLOYER_KEY = 'scribe'
