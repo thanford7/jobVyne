@@ -212,3 +212,27 @@ def get_job_connections_section(job_id):
         job_connection_texts.append(f'({cfg["text"]}) {job_connection.user.full_name}')
     section_text += '\n'.join(job_connection_texts) + '\n\n'
     return SectionText(section_text, get_job_connections_section_id(job_id)).get_slack_object()
+
+
+FIRST_NAME_KEY = 'first_name'
+
+
+def get_first_name_input(initial_value):
+    return InputText(
+        FIRST_NAME_KEY,
+        'First Name',
+        'First Name',
+        initial_value=initial_value,
+    ).get_slack_object()
+
+
+LAST_NAME_KEY = 'last_name'
+
+
+def get_last_name_input(initial_value):
+    return InputText(
+        LAST_NAME_KEY,
+        'Last Name',
+        'Last Name',
+        initial_value=initial_value,
+    ).get_slack_object()

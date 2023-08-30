@@ -69,7 +69,7 @@ export default boot(({ app, ssrContext, store, router }) => {
     const codeVersion = response.headers[CODE_VERSION_KEY] || 'default'
     const localCodeVersion = localStorage.getItem(CODE_VERSION_KEY)
     let timeDiffMin = 0
-    if (codeVersion !== 'default' && localCodeVersion) {
+    if ((codeVersion !== 'default') && localCodeVersion) {
       const codeVersionDt = dateTimeUtil.forceToDate(codeVersion)
       const localCodeVersionDt = dateTimeUtil.forceToDate(localCodeVersion)
       timeDiffMin = (codeVersionDt - localCodeVersionDt) / (1000 * 60)

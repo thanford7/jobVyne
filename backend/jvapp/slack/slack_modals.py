@@ -16,10 +16,10 @@ from jvapp.models.currency import Currency
 from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, ConnectionTypeBit
 from jvapp.models.location import REMOTE_TYPES
 from jvapp.models.user import JobVyneUser, UserSlackProfile, UserSocialSubscription
-from jvapp.slack.slack_blocks_specific import SelectEmployer, \
-    SelectEmployerJob, get_home_zip_code_input, get_industry_selections, \
+from jvapp.slack.slack_blocks_specific import FIRST_NAME_KEY, LAST_NAME_KEY, SelectEmployer, \
+    SelectEmployerJob, get_first_name_input, get_home_zip_code_input, get_industry_selections, \
     get_job_connections_section, get_job_connections_section_id, get_job_level_selections, \
-    get_profession_selections, get_remote_work_selection
+    get_last_name_input, get_profession_selections, get_remote_work_selection
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
 from jvapp.utils.datetime import TIME_INTERVAL_DAYS, get_datetime_diff, get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
@@ -203,7 +203,9 @@ class SlackMultiViewModal:
                 'Account Email',
                 'Email',
                 initial_value=self.slack_user_profile.get('email'),
-            ).get_slack_object()
+            ).get_slack_object(),
+            get_first_name_input(self.slack_user_profile.get('first_name')),
+            get_last_name_input(self.slack_user_profile.get('last_name'))
         ]
         return self.add_modal(
             signup_blocks, 'Continue', title_text='Welcome to JobVyne'
@@ -214,7 +216,9 @@ class SlackMultiViewModal:
             return False
         
         if user_email := self.metadata[self.USER_SIGNUP_EMAIL_KEY]:
-            self.create_user(user_email)
+            first_name = self.metadata[FIRST_NAME_KEY]
+            last_name = self.metadata[LAST_NAME_KEY]
+            self.create_user(user_email, first_name, last_name)
             return False
         
         # TODO: Remove this
@@ -232,7 +236,7 @@ class SlackMultiViewModal:
             decline_blocks, None, title_text='Help make JobVyne better!', is_final=True
         )
     
-    def create_user(self, user_email):
+    def create_user(self, user_email, first_name, last_name):
         from jvapp.apis.slack import SlackBaseView
         user = SlackBaseView.create_jobvyne_user(user_email, self.slack_user_profile, self.USER_TYPE_BITS, self.slack_cfg)
         self.metadata['user_id'] = user.id
@@ -302,18 +306,8 @@ class JobSeekerModalViews(SlackMultiViewModal):
                 }
             },
             Divider().get_slack_object(),
-            InputText(
-                'first_name',
-                'First Name',
-                'First Name',
-                initial_value=self.user.first_name if self.user else self.slack_user_profile['first_name'],
-            ).get_slack_object(),
-            InputText(
-                'last_name',
-                'Last Name',
-                'Last Name',
-                initial_value=self.user.last_name if self.user else self.slack_user_profile['last_name'],
-            ).get_slack_object(),
+            get_first_name_input(self.user.first_name if self.user else self.slack_user_profile.get('first_name')),
+            get_last_name_input(self.user.last_name if self.user else self.slack_user_profile.get('last_name')),
             InputText(
                 'linkedin_url',
                 'LinkedIn',
@@ -817,7 +811,8 @@ class JobModalViews(SlackMultiViewModal):
             employer_id=self.metadata['group_id'],
             message_data={
                 'slack_user_profile': self.slack_user_profile,
-                'job_connection': job_connection
+                'job_connection': job_connection,
+                'user': self.user
             }
         )
         is_not_sent = job_poster.send_slack_job_post(self.job)

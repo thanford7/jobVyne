@@ -554,7 +554,7 @@ class SocialLinkJobsView(JobVyneAPIView):
 
 
 class SocialLinkPostJobsView(JobVyneAPIView):
-    JOB_LOOKBACK_DAYS = 60
+    JOB_LOOKBACK_DAYS = 20
     MAX_JOBS = 10
     
     def get(self, request):

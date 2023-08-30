@@ -267,6 +267,7 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
     
     def build_message(self, jobs, slack_user_profile=None, job_connection=None, **kwargs):
         assert slack_user_profile and job_connection
+        user = self.message_data['user']
         connection_descriptions = {
             ConnectionTypeBit.HIRING_MEMBER.value: 'is part of the hiring team',
             ConnectionTypeBit.CURRENT_EMPLOYEE.value: 'works at the employer',
@@ -276,15 +277,15 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
         }
         connection_description = connection_descriptions[job_connection.connection_type] + ' for this job'
         connection_details = [
-            f'ℹ️ {slack_user_profile["first_name"]} {connection_description}'
+            f'ℹ️ {user.first_name} {connection_description}'
         ]
         if job_connection.is_allow_contact:
             connection_details.append(
-                f'🤝 {slack_user_profile["first_name"]} is open to inquiries about this job'
+                f'🤝 {user.first_name} is open to inquiries about this job'
             )
         else:
             connection_details.append(
-                f'❌ {slack_user_profile["first_name"]} is NOT open to inquiries about this job'
+                f'❌ {user.first_name} is NOT open to inquiries about this job'
             )
         
         blocks = [
@@ -505,8 +506,8 @@ class SlackBaseView(JobVyneAPIView):
         ):
             user.profile_picture = profile_picture
             is_updated = True
-        first_name = slack_user_profile['first_name']
-        last_name = slack_user_profile['last_name']
+        first_name = slack_user_profile.get('first_name')
+        last_name = slack_user_profile.get('last_name')
         for val, attr in (
                 (first_name, 'first_name'),
                 (last_name, 'last_name')
@@ -541,7 +542,7 @@ class SlackBaseView(JobVyneAPIView):
             slack_profile.save()
     
     @staticmethod
-    def create_jobvyne_user(user_email, slack_user_profile, user_type_bits, slack_cfg, employer_id=None):
+    def create_jobvyne_user(user_email, slack_user_profile, user_type_bits, slack_cfg, employer_id=None, first_name=None, last_name=None):
         if not user_type_bits:
             raise ValueError('At least one user type bit is required')
         profile_picture = SlackBaseView.get_profile_picture(slack_user_profile)
@@ -550,9 +551,9 @@ class SlackBaseView(JobVyneAPIView):
             user = JobVyneUser.objects.create_user(
                 user_email,
                 user_type_bits=user_type_bits,
-                first_name=slack_user_profile['first_name'],
-                last_name=slack_user_profile['last_name'],
-                phone_number=slack_user_profile['phone'],
+                first_name=first_name or slack_user_profile.get('first_name'),
+                last_name=last_name or slack_user_profile.get('last_name'),
+                phone_number=slack_user_profile.get('phone'),
                 employer_id=employer_id,
                 profile_picture=profile_picture
             )

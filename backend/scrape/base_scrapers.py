@@ -1350,6 +1350,9 @@ class SmartRecruitersScraper(Scraper):
         job_data_html = html.xpath('//main[contains(@class, "jobad-main")]')
         job_title = job_data_html.xpath('.//h1[@class="job-title"]/text()').get()
         job_description = job_data_html.xpath('.//div[@itemprop="description"]').get()
+        if not job_description:
+            logger.info(f'No description found for {job_title} at {job_url}')
+            return None
         description_compensation_data = parse_compensation_text(job_description)
         location_html = job_data_html.xpath('.//spl-job-location')
         location_text = location_html.xpath('./@formattedaddress').get()

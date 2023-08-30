@@ -1,6 +1,7 @@
 from scrape.custom_scraper.amazon import AmazonScraper
 from scrape.custom_scraper.docusign import DocuSignScraper
 from scrape.custom_scraper.google import GoogleScraper
+from scrape.custom_scraper.microsoft import MicrosoftScraper
 from scrape.employer_scrapers_1 import *
 from scrape.employer_scrapers_2 import *
 from scrape.employer_scrapers_3 import *
@@ -26,6 +27,7 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    MicrosoftScraper.employer_name: MicrosoftScraper,
     IgniteReadingScraper.employer_name: IgniteReadingScraper,
     GreifScraper.employer_name: GreifScraper,
     CircanaScraper.employer_name: CircanaScraper,
