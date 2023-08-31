@@ -1,6 +1,6 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
-import dateTimeUtil from 'src/utils/datetime.js'
+// import dateTimeUtil from 'src/utils/datetime.js'
 import { getCsrfToken } from 'src/utils/requests.js'
 import emitter from 'tiny-emitter/instance'
 import md5 from 'md5'
@@ -18,8 +18,8 @@ export const AJAX_EVENTS = {
   SUCCESS: 'ajax-success'
 }
 
-const CODE_VERSION_KEY = 'jv-version'
-const RELOAD_FLAG_KEY = 'jv-reload'
+// const CODE_VERSION_KEY = 'jv-version'
+// const RELOAD_FLAG_KEY = 'jv-reload'
 
 // https://github.com/RasCarlito/axios-cache-adapter/issues/231
 const { adapter: axiosCacheAdapter, cache } = setupCache({
@@ -66,30 +66,30 @@ export default boot(({ app, ssrContext, store, router }) => {
   })
 
   api.interceptors.response.use(function (response) {
-    const codeVersion = response.headers[CODE_VERSION_KEY] || 'default'
-    const localCodeVersion = localStorage.getItem(CODE_VERSION_KEY)
-    let timeDiffMin = 0
-    if ((codeVersion !== 'default') && localCodeVersion) {
-      const codeVersionDt = dateTimeUtil.forceToDate(codeVersion)
-      const localCodeVersionDt = dateTimeUtil.forceToDate(localCodeVersion)
-      timeDiffMin = (codeVersionDt - localCodeVersionDt) / (1000 * 60)
-    }
-    const hasReloaded = (localStorage.getItem(RELOAD_FLAG_KEY) || 'false') === 'true'
+    // const codeVersion = response.headers[CODE_VERSION_KEY] || 'default'
+    // const localCodeVersion = localStorage.getItem(CODE_VERSION_KEY)
+    // let timeDiffMin = 0
+    // if ((codeVersion !== 'default') && localCodeVersion) {
+    //   const codeVersionDt = dateTimeUtil.forceToDate(codeVersion)
+    //   const localCodeVersionDt = dateTimeUtil.forceToDate(localCodeVersion)
+    //   timeDiffMin = (codeVersionDt - localCodeVersionDt) / (1000 * 60)
+    // }
+    // const hasReloaded = (localStorage.getItem(RELOAD_FLAG_KEY) || 'false') === 'true'
 
-    if (timeDiffMin > 5) {
-      localStorage.setItem(CODE_VERSION_KEY, codeVersion)
-      localStorage.setItem(RELOAD_FLAG_KEY, 'true')
-      window.location.reload()
-    }
-
-    if (!localCodeVersion) {
-      localStorage.setItem(CODE_VERSION_KEY, codeVersion)
-    }
-
-    if (hasReloaded) {
-      localStorage.setItem(RELOAD_FLAG_KEY, 'false')
-      emitter.emit(AJAX_EVENTS.SUCCESS, { message: 'Website has been updated. Reloaded page to get the freshest grapes 🍇' })
-    }
+    // if (timeDiffMin > 5) {
+    //   localStorage.setItem(CODE_VERSION_KEY, codeVersion)
+    //   localStorage.setItem(RELOAD_FLAG_KEY, 'true')
+    //   window.location.reload()
+    // }
+    //
+    // if (!localCodeVersion) {
+    //   localStorage.setItem(CODE_VERSION_KEY, codeVersion)
+    // }
+    //
+    // if (hasReloaded) {
+    //   localStorage.setItem(RELOAD_FLAG_KEY, 'false')
+    //   emitter.emit(AJAX_EVENTS.SUCCESS, { message: 'Website has been updated. Reloaded page to get the freshest grapes 🍇' })
+    // }
 
     const successMessage = response?.data?.successMessage
     const errorMessages = response?.data?.errorMessages

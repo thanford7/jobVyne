@@ -34,7 +34,7 @@ from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.image import convert_url_to_image
 from jvapp.utils.oauth import OauthProviders
 from jvapp.utils.slack import raise_slack_exception_if_error
-from jvapp.slack.slack_blocks import InputOption, Select, SelectExternal
+from jvapp.slack.slack_blocks import Button, Divider, InputOption, SectionActions, SectionText, Select, SelectExternal
 from jvapp.slack.slack_modals import FollowEmployerModalViews, JobConnectionModalViews, JobModalViews, \
     JobSeekerModalViews, SaveJobModalViews, \
     ShareJobModalViews
@@ -234,19 +234,17 @@ class SlackJobPoster(SlackBasePoster):
         return False
     
     def build_message(self, jobs, **kwargs):
+        button_data = {
+            'employer_name': self.slack_cfg.employer.employer_name,
+            'group_community_url': f'{self.slack_cfg.employer.main_job_board_link}?tab=community'
+        }
         blocks = [
-            {
-                'type': 'section',
-                'text': {
-                    'type': 'mrkdwn',
-                    'text': (
-                        ':grapes: JobVyne has a fresh batch of jobs ready to be plucked and enjoyed with a fresh glass of "get hired".\n'
-                        'Have a job you want to post? Use `/jv-job`\n'
-                        'Looking for a job? Use `/jv-job-seeker` to connect with hiring managers'
-                    )
-                }
-            },
-            {'type': 'divider'},
+            SectionText(
+                ':grapes: JobVyne has a fresh batch of jobs ready to be plucked and enjoyed with a fresh glass of "get hired".\n'
+            ).get_slack_object(),
+            JobModalViews.get_trigger_button(button_data).get_slack_object(),
+            JobSeekerModalViews.get_trigger_button(button_data).get_slack_object(),
+            Divider().get_slack_object(),
             *self._get_slack_message_jobs_list(jobs)
         ]
         return blocks
@@ -840,13 +838,24 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             action_type = self.base_data['type']
             if action_type in [Select.TYPE, SelectExternal.TYPE]:
                 button_data = json.loads(self.base_data['selected_option']['value'])
+            elif action_type in [Button.TYPE]:
+                button_data = {
+                    'button_value': self.base_data['value'],
+                    'post_channel_name': self.data['channel']['name']
+                }
             else:
                 button_data = json.loads(self.base_data['value'])
         else:
             raise ValueError('Unknown inbound type')
         
+        extra_data = {
+            'slack_user_id': self.slack_user_id,
+            'group_name': self.slack_cfg.employer.employer_name,
+            'group_id': self.slack_cfg.employer_id
+        }
+        
         modal_args = (self.slack_client, self.slack_user_profile, self.data, self.slack_cfg)
-        modal_kwargs = dict(action_id=action_id, button_data=button_data)
+        modal_kwargs = dict(action_id=action_id, button_data=button_data, extra_data=extra_data)
         
         if action_id == 'jv-referral':
             user = SlackBaseView.get_and_update_user(
@@ -919,14 +928,10 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             modal_views = JobConnectionModalViews(*modal_args, **modal_kwargs)
             return modal_views.get_modal_response()
         elif FollowEmployerModalViews.is_modal_view(action_id):
-            modal_views = FollowEmployerModalViews(
-                *modal_args, **modal_kwargs, extra_data={'slack_user_id': self.slack_user_id}
-            )
+            modal_views = FollowEmployerModalViews( *modal_args, **modal_kwargs)
             return modal_views.get_modal_response()
         elif ShareJobModalViews.is_modal_view(action_id):
-            modal_views = ShareJobModalViews(
-                *modal_args, **modal_kwargs, extra_data={'slack_user_id': self.slack_user_id}
-            )
+            modal_views = ShareJobModalViews(*modal_args, **modal_kwargs)
             return modal_views.get_modal_response()
         
         return Response(status=status.HTTP_200_OK)

@@ -1,5 +1,7 @@
+import { AJAX_EVENTS } from 'boot/axios.js'
 import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
+import emitter from 'tiny-emitter/instance'
 import messagesUtil from 'src/utils/messages.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import { getAjaxFormData, getCsrfToken } from 'src/utils/requests'
@@ -14,6 +16,28 @@ const isMainPageFn = (to) => {
 }
 
 export default boot(({ app, router, ssrContext }) => {
+  router.onError((error, route) => {
+    // Dynamic routes will fail if a user has a page open and a new version of the app is deployer
+    if (error.message.toLowerCase().includes('failed to fetch dynamically imported module') && !route.query.reload) {
+      window.location.assign(dataUtil.getUrlWithParams({
+        path: route.fullPath,
+        addParams: [{ key: 'reload', val: 1 }]
+      }))
+    }
+  })
+
+  router.afterEach((to, from) => {
+    // Remove the reload query param so we can be ready for another dynamic import failure!
+    if (to.query.reload) {
+      const url = dataUtil.getUrlWithParams({
+        path: to.fullPath,
+        deleteParams: ['reload']
+      })
+      window.history.pushState({ path: url }, '', url)
+      emitter.emit(AJAX_EVENTS.SUCCESS, { message: 'Website has been updated. Reloaded page to get the freshest grapes 🍇' })
+    }
+  })
+
   router.beforeEach(async (to, from) => {
     const $api = app.config.globalProperties.$api
     // Make sure CSRF cookie is set

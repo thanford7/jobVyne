@@ -150,6 +150,7 @@ class SectionActions(SlackBlock):
 
 
 class Button(SlackBlock):
+    TYPE = 'button'
     
     def __init__(self, action_id, label, value, url=None, color=None):
         self.action_id = action_id
@@ -364,7 +365,7 @@ class InputOption(SlackBlock):
         slack_object = {
             'text': {
                 'type': 'plain_text',
-                'text': self.label,
+                'text': self.label[:75],
             },
             'value': self.value
         }
@@ -372,7 +373,7 @@ class InputOption(SlackBlock):
         if self.description:
             slack_object['description'] = {
                 'type': 'plain_text',
-                'text': self.description
+                'text': self.description[:75]
             }
         
         return slack_object
@@ -477,7 +478,7 @@ class SelectMulti(Select):
 
 class SelectExternal(SlackBlock):
     TYPE = 'external_select'
-    OPTIONS_LIMIT = 25  # Technically the limit is 100, but that's just too many options!
+    OPTIONS_LIMIT = 90  # Technically the limit is 100
     
     def __init__(self, action_id, label, placeholder, min_query_length=3, focus_on_load=False, **kwargs):
         self.action_id = action_id

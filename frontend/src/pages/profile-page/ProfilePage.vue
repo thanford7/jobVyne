@@ -113,10 +113,13 @@
                 ]"
               />
             </div>
-            <div v-if="isCompanyUser" class="col-12 col-md-6 q-px-md-sm">
+            <div v-if="isCompanyUser && potentialEmployers" class="col-12 col-md-6 q-px-md-sm">
               <SelectEmployer
-                :is-multi="false" :employers="potentialEmployers" :is-required="true"
-                option-label="name"
+                v-model="userData.employer_id"
+                :is-multi="false" :employers="potentialEmployers.map((emp) => {
+                  emp.employer_name = emp.name
+                  return emp
+                })" :is-required="true"
               />
             </div>
             <div class="col-12 col-md-6 q-px-md-sm">

@@ -153,6 +153,8 @@ class SlackMultiViewModal:
             return {}
     
     def get_button_metadata(self, button_data):
+        # Note that this data is only provided on the first user action, not subsequent modals
+        # Check for button_data and return an empty dict is none is present
         return {}
     
     def get_slack_message_from_id(self):
@@ -271,6 +273,14 @@ class JobSeekerModalViews(SlackMultiViewModal):
     CONNECT_WITH_MANAGERS_KEY = 'CONNECT'
     DEFAULT_BLOCK_TITLE = 'JobVyne for Job Seekers'
     USER_TYPE_BITS = JobVyneUser.USER_TYPE_CANDIDATE
+    
+    @classmethod
+    def get_trigger_button(cls, data):
+        return SectionText(
+            f'Looking for your next job and want to receive customized job recommendations and connect with others in the <{data["group_community_url"]}|{data["employer_name"]} community>?',
+            # The value of this button is unimportant. We get all the data we need from standard Slack metadata
+            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Create profile', 'btn-job-seeker', color='green')
+        )
     
     def save_job_seeker_preferences(self):
         add_user_job_preferences(self.user, self.metadata)
@@ -548,6 +558,20 @@ class JobModalViews(SlackMultiViewModal):
         self.employer = None
         self.can_edit = False
         super().__init__(*args, **kwargs)
+    
+    @classmethod
+    def get_trigger_button(cls, data):
+        return SectionText(
+            f'Hiring for a job or have a cool job to share with the {data["employer_name"]} community?',
+            # The value of this button is unimportant. We get all the data we need from standard Slack metadata
+            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Post job', 'btn-post-job', color='green')
+        )
+    
+    def get_button_metadata(self, button_data):
+        if not button_data:
+            return {}
+            
+        return button_data
     
     def set_modal_views(self):
         is_final = self.modal_select_employer()
@@ -934,7 +958,7 @@ class SaveJobModalViews(SlackMultiViewModal):
     
     def get_button_metadata(self, button_data):
         if button_data:
-            return {'job_id': coerce_int(button_data)}
+            return {'job_id': coerce_int(button_data['button_value'])}
         else:
             return {}
         
@@ -1108,7 +1132,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
     
     def get_button_metadata(self, button_data):
         if button_data:
-            return {'job_id': coerce_int(button_data)}
+            return {'job_id': coerce_int(button_data['button_value'])}
         else:
             return {}
     
@@ -1200,7 +1224,7 @@ class ShareJobModalViews(SlackMultiViewModal):
     
     def get_button_metadata(self, button_data):
         if button_data:
-            return {'job_id': coerce_int(button_data)}
+            return {'job_id': coerce_int(button_data['button_value'])}
         else:
             return {}
     
