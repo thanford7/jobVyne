@@ -1,7 +1,8 @@
 <template>
-  <div v-if="isLoaded" class="row q-gutter-y-md" style="min-width: 500px;">
+  <div class="row q-gutter-y-md" style="min-width: 500px;">
     <div class="col-12">
       <q-table
+        :loading="!isLoaded"
         :rows="jobSubscriptions"
         :columns="jobSubscriptionColumns"
       >

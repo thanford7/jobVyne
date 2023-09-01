@@ -90,9 +90,15 @@ def get_final_confirmation_modal(title, confirmation_text):
 
 
 def get_profession_label(profession):
-    has_parent = bool(profession.parent_taxonomy.all())
+    if isinstance(profession, Taxonomy):
+        has_parent = bool(profession.parent_taxonomy.all())
+        name = profession.name
+    else:
+        has_parent = profession.get('has_parent')
+        name = profession['name']
+    
     inset = '•    ' if has_parent else ''
-    return f'{inset}{profession.name}'
+    return f'{inset}{name}'
 
 
 def get_profession_selections(set_professions=None, max_selected_items=3):
@@ -103,15 +109,15 @@ def get_profession_selections(set_professions=None, max_selected_items=3):
             set_professions
         ]
     
-    professions = TaxonomyJobProfessionView.get_job_profession_taxonomy()
+    professions = TaxonomyJobProfessionView.get_job_profession_taxonomy(is_include_subs=True, is_include_job_count=False)
     profession_options = []
     for profession in professions:
         profession_options.append(
-            InputOption(get_profession_label(profession), profession.id).get_slack_object()
+            InputOption(get_profession_label(profession), profession['id']).get_slack_object()
         )
-        for sub_profession in profession.sub_taxonomies.all():
+        for sub_profession in profession['sub_professions']:
             profession_options.append(
-                InputOption(get_profession_label(sub_profession), sub_profession.id).get_slack_object()
+                InputOption(get_profession_label(sub_profession), sub_profession['id']).get_slack_object()
             )
     
     return SelectMulti(

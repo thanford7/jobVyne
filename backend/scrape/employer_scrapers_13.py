@@ -157,3 +157,8 @@ class CircanaScraper(UltiProScraper):
 class ScribeScraper(GreenhouseIframeScraper):
     employer_name = 'Scribe'
     EMPLOYER_KEY = 'scribe'
+
+
+class GabbScraper(GreenhouseScraper):
+    employer_name = 'Gabb Wireless'
+    EMPLOYER_KEY = 'gabbwirelessinc'

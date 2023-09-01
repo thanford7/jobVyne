@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from collections import defaultdict
+from datetime import timedelta
 from functools import reduce
 from io import StringIO
 
@@ -674,7 +675,9 @@ class EmployerJobView(JobVyneAPIView):
         elif not is_include_closed:
             job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
         if not is_include_future:
-            job_filter &= Q(open_date__lte=timezone.now().date())
+            start_date = timezone.now().date() - timedelta(days=30 * 3)
+            end_date = timezone.now().date()
+            job_filter &= Q(open_date__range=(start_date, end_date))
         
         return job_filter
         

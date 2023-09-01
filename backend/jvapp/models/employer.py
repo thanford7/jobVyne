@@ -270,7 +270,9 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         # https://dba.stackexchange.com/questions/11031/order-by-column-should-have-index-or-not
         ordering = ('-open_date', '-id')
         indexes = [
-            models.Index('open_date', 'id', name='open_date_id_idx')
+            models.Index('open_date', 'id', name='open_date_id_idx'),
+            models.Index('close_date', 'open_date', name='open_close_idx')
+            
         ]
     
     def __str__(self):
@@ -408,7 +410,7 @@ class Taxonomy(models.Model):
     ]
     
     tax_type = models.CharField(max_length=20)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, db_index=True)
     key = models.CharField(max_length=50, unique=True, null=True, blank=True)
     sub_taxonomies = models.ManyToManyField('self', related_name='parent_taxonomy', symmetrical=False)
     # TODO: Add descriptions for job levels category

@@ -27,6 +27,7 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    GabbScraper.employer_name: GabbScraper,
     MicrosoftScraper.employer_name: MicrosoftScraper,
     IgniteReadingScraper.employer_name: IgniteReadingScraper,
     GreifScraper.employer_name: GreifScraper,

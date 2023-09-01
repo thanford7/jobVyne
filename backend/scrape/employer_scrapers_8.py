@@ -636,7 +636,7 @@ class BloomreachScraper(GreenhouseScraper):
 
 class VintedScraper(GreenhouseApiScraper):
     employer_name = 'Vinted'
-    EMPLOYER_KEY = 'vinteduab'
+    EMPLOYER_KEY = 'vinteden'
 
 
 class TravelperkScraper(GreenhouseApiScraper):

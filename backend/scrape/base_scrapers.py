@@ -111,7 +111,12 @@ class Scraper:
         self.playwright = playwright
         self.browser = browser
         headers = {
-            'User-Agent': get_random_user_agent()
+            'User-Agent': get_random_user_agent(),
+            'Referer': 'https://www.google.com',
+            'Origin': 'https://www.google.com',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept': '*/*'
         }
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
@@ -1340,7 +1345,8 @@ class SmartRecruitersScraper(Scraper):
         return f'https://careers.smartrecruiters.com/{self.EMPLOYER_KEY}/'
     
     def get_page_data(self, page_idx):
-        resp = requests.get(f'https://careers.smartrecruiters.com/{self.EMPLOYER_KEY}/api/more?page={page_idx}')
+        request_url = f'https://careers.smartrecruiters.com/{self.EMPLOYER_KEY}/api/more?page={page_idx}'
+        resp = requests.get(request_url)
         html_text = resp.content
         if not html_text:
             return None
@@ -1803,8 +1809,7 @@ class PhenomPeopleScraper(Scraper):
         page_count = 0
         while page_count < total_page_count:
             if page_count != 0:
-                await page.close()
-                page = await self.visit_page_with_retry(self.get_next_page_url(page_count))
+                await page.goto(self.get_next_page_url(page_count))
                 await self.wait_for_el(page, '[data-ph-at-id="jobs-list"]')
                 html_dom = await self.get_page_html(page)
             job_links = html_dom.xpath('//ul[@data-ph-at-id="jobs-list"]//span[@role="heading"]//a/@href').getall()

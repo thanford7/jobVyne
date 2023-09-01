@@ -393,11 +393,13 @@ class SocialLinkJobsView(JobVyneAPIView):
                 is_jobs_closed = True
         elif profession_key:
             try:
-                profession = TaxonomyJobProfessionView.get_job_profession_taxonomy(tax_key=profession_key)
-                all_professions = JobSubscriptionView.get_parent_and_child_professions([profession])
+                profession = TaxonomyJobProfessionView.get_job_profession_taxonomy(
+                    tax_key=profession_key, is_include_subs=True
+                )
+                profession_ids = [profession['id']] + [sp['id'] for sp in profession['sub_professions']]
             except Taxonomy.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
-            jobs_filter &= Q(taxonomy__taxonomy__in=all_professions)
+            jobs_filter &= Q(taxonomy__taxonomy_id__in=profession_ids)
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
             )

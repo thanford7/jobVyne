@@ -1,6 +1,6 @@
 from scrape.base_scrapers import AshbyHQScraper, \
     EightfoldScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
-    GreenhouseScraper, LeverScraper, SmartRecruitersScraper, \
+    GreenhouseScraper, LeverScraper, SmartRecruitersApiScraper, SmartRecruitersScraper, \
     WorkdayScraper
 
 
@@ -643,7 +643,7 @@ class OcadoScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class AdevintaScraper(SmartRecruitersScraper):
+class AdevintaScraper(SmartRecruitersApiScraper):
     employer_name = 'Adevinta'
     EMPLOYER_KEY = 'Adevinta'
 
