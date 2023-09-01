@@ -45,7 +45,7 @@ IS_LOCAL = env('IS_LOCAL', cast=bool)
 if IS_LOCAL:
     CSRF_TRUSTED_ORIGINS = ['https://localhost']
 else:
-    CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com']
+    CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com', 'https://jobvyne.com', 'https://jobvyne.webflow.io']
 
 SUBDOMAIN = env('SUBDOMAIN', default='app')
 # COMMUNICATION_ADDRESS is used for email webhooks
@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
+    'corsheaders',
     'jvapp',
     'django_celery_beat',
     'django_celery_results',
@@ -92,6 +93,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.BrokenLinkEmailsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -124,6 +126,12 @@ SOCIAL_AUTH_PIPELINE = (
     'jobVyne.customSocialPipeline.save_user_credentials',
 )
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://.+?\.jobvyne\.com$',
+    r'^https://jobvyne\.com$',
+    r'^https://jobvyne\.webflow\.io$',
+]
+
 AUTH_STATE = env('AUTH_STATE')
 SOCIAL_AUTH_FACEBOOK_KEY = env('FACEBOOK_KEY')
 SOCIAL_AUTH_FACEBOOK_SECRET = env('FACEBOOK_SECRET')
@@ -134,6 +142,11 @@ SOCIAL_AUTH_LINKEDIN_SECRET = env('LINKEDIN_SECRET')
 SOCIAL_AUTH_SLACK_KEY = env('SLACK_CLIENT_ID')
 SOCIAL_AUTH_SLACK_SECRET = env('SLACK_CLIENT_SECRET')
 
+
+# this is needed to get a user's email from Facebook. See:
+# https://stackoverflow.com/questions/32024327/facebook-doesnt-return-email-python-social-auth
+# https://stackoverflow.com/a/32129851/6084948
+# https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/
 SOCIAL_AUTH_FACEBOOK_API_VERSION = '14.0'
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
@@ -154,14 +167,6 @@ SOCIAL_AUTH_LINKEDIN_OAUTH2_EXTRA_DATA = [
     ('emailAddress', 'email_address'),
     ('profilePicture', 'picture')
 ]
-
-# this is needed to get a user's email from Facebook. See:
-# https://stackoverflow.com/questions/32024327/facebook-doesnt-return-email-python-social-auth
-# https://stackoverflow.com/a/32129851/6084948
-# https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/
-SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
-    "fields": "id,name,email",
-}
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
