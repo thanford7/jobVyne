@@ -528,7 +528,7 @@ class JobSeekerModalViews(SlackMultiViewModal):
                 (
                     f'And here are {self.user.first_name}\'s qualifications:\n\n'
                     f'{professional_sites_text}\n'
-                    f'{self.user.job_search_qualifications}'
+                    f'{self.user.job_search_qualifications if self.user.job_search_qualifications else ""}'
                 )
             ).get_slack_object(),
             SectionText(

@@ -423,11 +423,17 @@ class Taxonomy(models.Model):
     
     def get_unique_key(self):
         return self.tax_type, self.name
+    
+    @property
+    def jobs_url(self):
+        if self.tax_type == self.TAX_TYPE_PROFESSION:
+            return f'{settings.BASE_URL}/profession/{self.key}'
+        return None
 
 
 class JobTaxonomy(AuditFields):
     job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='taxonomy')
-    taxonomy = models.ForeignKey(Taxonomy, on_delete=models.CASCADE)
+    taxonomy = models.ForeignKey(Taxonomy, on_delete=models.CASCADE, related_name='job')
 
     class Meta:
         constraints = [

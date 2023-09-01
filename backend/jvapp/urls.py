@@ -1,9 +1,10 @@
 from django.urls import path, re_path
+from django.views.decorators.cache import cache_page
 
 from jvapp.apis import (
     admin, ats, auth, community, content, currency, data, donation_org, email, employer, job_seeker, job, jobs,
     job_subscription,
-    karma, message, notification, sales, slack, social, stripe, taxonomy, test, tracking, user
+    karma, message, notification, sales, search, slack, social, stripe, taxonomy, test, tracking, user
 )
 from jvapp.apis.geocoding import LocationSearchView
 
@@ -52,6 +53,7 @@ urlpatterns = [
     re_path('^job-subscription/(?P<subscription_id>[0-9]+)?/?$', job_subscription.JobSubscriptionView.as_view()),
     path('notification-preference/', notification.UserNotificationPreferenceView.as_view()),
     path('page-view/', tracking.PageTrackView.as_view()),
+    path('search/entity/', cache_page(60 * 60 * 24)(search.SearchEntityView.as_view())),
     re_path('^social-content-item/(?P<item_id>[0-9]+)?/?$', content.SocialContentItemView.as_view()),
     path('social-link/share/', social.ShareSocialLinkView.as_view()),
     re_path('^social-link/(?P<link_id>\S+)?/?$', social.SocialLinkView.as_view()),

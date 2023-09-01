@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -30,17 +30,34 @@ class TaxonomyJobProfessionView(JobVyneAPIView):
             return get_success_response('Taxonomy created')
         
     @staticmethod
-    def get_job_profession_taxonomy(tax_id=None, tax_key=None):
+    def get_job_profession_taxonomy(tax_id=None, tax_key=None, search_text=None):
         # Only get parent taxonomies
         tax_filter = Q(tax_type=Taxonomy.TAX_TYPE_PROFESSION)
         if tax_id:
             tax_filter &= Q(id=tax_id)
         elif tax_key:
             tax_filter &= Q(key=tax_key)
+        elif search_text:
+            tax_filter &= Q(name__iregex=f'^.*{search_text}.*$') | Q(sub_taxonomies__name__iregex=f'^.*{search_text}.*$')
         else:
             tax_filter &= Q(parent_taxonomy__isnull=True)
+        
+        sub_taxonomy_filter = Q()
+        if search_text:
+            sub_taxonomy_filter = Q(name__iregex=f'^.*{search_text}.*$')
+        sub_profession_prefetch = Prefetch(
+            'sub_taxonomies',
+            queryset=Taxonomy.objects.filter(sub_taxonomy_filter).annotate(job_count=Count('job')),
+            to_attr='filtered_sub_taxonomies'
+        )
             
-        taxes = Taxonomy.objects.prefetch_related('sub_taxonomies').filter(tax_filter).order_by('name')
+        taxes = (
+            Taxonomy.objects
+            .prefetch_related(sub_profession_prefetch)
+            .filter(tax_filter)
+            .annotate(job_count=Count('job'))
+            .order_by('name')
+        )
         if any((tax_id, tax_key)):
             if not taxes:
                 raise Taxonomy.DoesNotExist
@@ -50,16 +67,26 @@ class TaxonomyJobProfessionView(JobVyneAPIView):
     
     @staticmethod
     def serialize_profession(profession):
-        return {
-            'id': profession.id,
-            'name': profession.name,
-            'key': profession.key,
-            'description': profession.description,
-            'sub_professions': [{
+        total_job_count = 0
+        sub_professions = []
+        for sp in profession.filtered_sub_taxonomies:
+            sub_professions.append({
                 'id': sp.id,
+                'url': sp.jobs_url,
                 'name': sp.name,
                 'key': sp.key,
                 'description': sp.description,
-            } for sp in profession.sub_taxonomies.all()]
+                'job_count': sp.job_count
+            })
+            total_job_count += sp.job_count
+        
+        return {
+            'id': profession.id,
+            'url': profession.jobs_url,
+            'name': profession.name,
+            'key': profession.key,
+            'description': profession.description,
+            'sub_professions': sub_professions,
+            'job_count': total_job_count
         }
     
