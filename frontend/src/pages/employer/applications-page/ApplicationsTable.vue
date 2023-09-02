@@ -116,7 +116,7 @@
       <div class="col-12">
         <div v-if="isEmployer && !user.connected_emails?.length" class="callout-card">
           <q-icon name="lightbulb" color="warning" size="24px"/>
-          Want to email applicants? Connect your Google account on your <a href="/user/profile?tab=connection">Account page</a>.
+          Want to email applicants? Connect your Google account on your <a href="/account/settings?tab=connection">Account page</a>.
         </div>
         <q-tabs
           v-model="applicationFilter.application_status"

@@ -333,7 +333,7 @@ class PagePermissionsUtil {
         }
       }
     }
-    return this.getRouterPageCfg('profile')
+    return this.getRouterPageCfg('account-settings')
   }
 
   getRouterPageCfg (pageKey, userTypeBit = null) {
@@ -341,7 +341,7 @@ class PagePermissionsUtil {
     const pageCfg = this.userPagePermissionCfgs[pageKey]
 
     if (!pageCfg) {
-      routerCfg.params.namespace = 'user'
+      routerCfg.params.namespace = 'account'
       // Use the existing user type bit if this is a generic user page
       routerCfg.params.userTypeBit = userTypeBit
     } else {

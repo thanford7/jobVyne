@@ -257,7 +257,9 @@ class Scraper:
         be used since it is more lightweight than get_page_html
         """
         async with self.session.get(url) as resp:
-            resp.raise_for_status()
+            if not resp.ok:
+                logger.warning(f'Failed to load page: {url}\n({resp.status}) {resp.reason}')
+            # resp.raise_for_status()
             html = await resp.text()
             return Selector(text=html)
     
@@ -1470,13 +1472,15 @@ class SmartRecruitersApiScraper(Scraper):
     JOBS_PER_PAGE = 100  # This is the max
     
     async def scrape_jobs(self):
+        has_started = False
         total_jobs = None
         start_job_idx = 0
         jobs = []
-        while (not total_jobs) or (start_job_idx < total_jobs):
+        while (not has_started) or (start_job_idx < total_jobs):
             jobs_list, total_jobs = self.get_jobs(start_job_idx)
             jobs += jobs_list
             start_job_idx += self.JOBS_PER_PAGE
+            has_started = True
         
         for job in jobs:
             await self.add_job_links_to_queue(self.get_job_link(job['id']), meta_data={'job_id': job['id']})

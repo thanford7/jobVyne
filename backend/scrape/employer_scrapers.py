@@ -24,7 +24,6 @@ test_scrapers = {
     # GeneralElectricScraper.employer_name: GeneralElectricScraper,
     # AspenDentalScraper.employer_name: AspenDentalScraper,
     # ThermoFisherScraper.employer_name: ThermoFisherScraper,
-    CenteneCorporationScraper.employer_name: CenteneCorporationScraper,
 }
 
 all_scrapers = {

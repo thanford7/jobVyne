@@ -60,7 +60,7 @@ export default boot(({ app, router, ssrContext }) => {
         return { name: 'error' }
       }
 
-      return { path: redirectPageUrl || '/user/profile', query: redirectParams }
+      return { path: redirectPageUrl || '/account/settings', query: redirectParams }
     }
 
     // Capture page view
@@ -100,7 +100,7 @@ export default boot(({ app, router, ssrContext }) => {
 
       // Redirect user to page where they can verify their email if they haven't already
       if (!canView) {
-        return { name: 'profile', params: { namespace: 'user', key: 'profile' }, query: { tab: 'security' } }
+        return { name: 'account-settings', params: { namespace: 'account', key: 'settings' }, query: { tab: 'security' } }
       }
 
       // Add meta permission to edit which can be used by the page

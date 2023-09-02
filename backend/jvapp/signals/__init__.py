@@ -129,6 +129,19 @@ def link_job_applications(sender, instance, *args, **kwargs):
         ).save()
         
         
+@receiver(post_save, sender=JobVyneUser)
+def create_user_key(sender, instance, created, *args, **kwargs):
+    if created:
+        if instance.full_name:
+            instance.user_key = re.sub('[^a-z0-9]', '-', instance.full_name.lower())
+            existing_user_filter = Q(user_key=instance.user_key) & ~Q(id=instance.id)
+            if JobVyneUser.objects.filter(existing_user_filter):
+                instance.user_key = f'{instance.user_key}{instance.id}'
+        else:
+            instance.user_key = f'user-{instance.id}'
+        instance.save()
+        
+        
 @receiver(post_save, sender=Employer)
 def add_job_application_requirements(sender, instance, created, *args, **kwargs):
     # Only add requirements if this is a new employer

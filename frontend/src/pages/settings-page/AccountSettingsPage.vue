@@ -11,24 +11,24 @@
             <template v-if="isCompanyUser && user.employer_id">
               You must verify an email that is covered under your company's email domains.
               Use the "Send verification email" button in the
-              <a href="/user/profile/?tab=security">"Security" profile section</a>
+              <a href="/account/settings/?tab=security">"Security" profile section</a>
               to complete this action. The following domains
               are covered:
               <ul>
                 <li v-for="domain in supportedEmailDomains">{{ domain }}</li>
               </ul>
               If your primary email is not covered under any of these domains, go to the <a
-              href="/user/profile/?tab=general">"General" profile section</a>
+              href="/account/settings/?tab=general">"General" profile section</a>
               to add your business email.
             </template>
             <template v-else-if="isCompanyUser && !user.employer_id && potentialEmployers.length">
               As an employee or employer user, you must first select your employer. You can select
-              your employer in the <a href="/user/profile/?tab=general">"General" profile section</a>.
+              your employer in the <a href="/account/settings/?tab=general">"General" profile section</a>.
             </template>
             <template v-else-if="isCompanyUser && !user.employer_id && !potentialEmployers.length">
               As an employee or employer user, you must first select your employer. Your current email
               address does not match with any employers on the JobVyne platform. If you have not yet
-              added your business email, add it in the <a href="/user/profile/?tab=general">"General" profile
+              added your business email, add it in the <a href="/account/settings/?tab=general">"General" profile
               section</a>.
               If your employer is still not found, you can use the help menu to receive assistance from the JobVyne
               team.
@@ -355,7 +355,7 @@ const userPermissionGroupColumns = [
 ]
 
 export default {
-  name: 'ProfilePage',
+  name: 'AccountSettingsPage',
   components: {
     SelectEmployer,
     SelectJobProfession,
@@ -543,7 +543,7 @@ export default {
     const { user } = storeToRefs(authStore)
 
     const globalStore = useGlobalStore()
-    const pageTitle = 'Profile Page'
+    const pageTitle = 'Account Page'
     const metaData = {
       title: pageTitle,
       titleTemplate: globalStore.getPageTitle

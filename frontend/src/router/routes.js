@@ -239,13 +239,13 @@ const routes = [
   },
 
   {
-    path: '/:namespace(user)',
+    path: '/:namespace(account)',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
       {
-        path: ':key(profile)',
-        name: 'profile',
-        component: () => import('pages/profile-page/ProfilePage.vue')
+        path: ':key(settings)',
+        name: 'settings',
+        component: () => import('pages/settings-page/AccountSettingsPage.vue')
       },
       {
         path: ':key(feedback)',
@@ -293,6 +293,13 @@ const routes = [
   {
     path: '/profession/:professionKey',
     name: 'profession',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/jv/:userKey',
+    name: 'profile',
     meta: { isNoAuth: true, trackRoute: true },
     component: () => import('layouts/JobsLayout.vue')
   },

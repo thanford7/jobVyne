@@ -154,7 +154,7 @@ import { USER_TYPES } from 'src/utils/user-types'
 const generalMenuList = [
   {
     icon: 'badge',
-    key: 'profile',
+    key: 'settings',
     label: 'Account',
     separator: false
   },

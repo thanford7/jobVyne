@@ -145,6 +145,7 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
+    user_key = models.CharField(max_length=160, unique=True, null=True, blank=True)
     linkedin_url = models.CharField(max_length=200, null=True, blank=True)
     professional_site_url = models.URLField(null=True, blank=True)
     phone_number = models.CharField(max_length=25, null=True, blank=True)
