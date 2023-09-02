@@ -150,14 +150,18 @@ def save_raw_location(location_dict: dict, is_remote: bool, raw_location_text=No
                 raise e
     
     if is_save_location_lookup and raw_location_text:
+        raw_text = raw_location_text[:200]
         try:
             LocationLookup(
-                text=raw_location_text[:200],
+                text=raw_text,
                 location=location,
                 raw_result=raw_data
             ).save()
         except IntegrityError:
-            pass
+            location_lookup = LocationLookup.objects.get(text=raw_text)
+            location_lookup.location = location
+            location_lookup.raw_result = raw_data
+            location_lookup.save()
     
     return location
 
@@ -174,7 +178,8 @@ class LocationParser:
         location_text = location_text.lower()
         is_remote = bool(re.match('^.*?(remote|anywhere|virtual).*?$', location_text, re.IGNORECASE))
         if location := self.location_lookups.get(location_text):
-            return location
+            if location.is_remote == is_remote:
+                return location
         
         address = re.sub('remote|anywhere|virtual|:', '', location_text, flags=re.IGNORECASE).strip()
         zip_code = None
@@ -185,6 +190,10 @@ class LocationParser:
         location = save_raw_location(location, is_remote, raw_location_text=location_text, raw_data=raw_data, is_save_location_lookup=self.is_use_location_caching)
         self.location_lookups[location_text] = location
         return location
+    
+    @classmethod
+    def get_is_remote(cls, location_text):
+        return bool(re.match('^.*?(remote|anywhere|virtual).*?$', location_text, re.IGNORECASE))
         
     
 class LocationSearchView(JobVyneAPIView):

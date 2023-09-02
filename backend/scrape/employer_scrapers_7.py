@@ -1,4 +1,4 @@
-from scrape.base_scrapers import AshbyHQScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, \
     GreenhouseApiScraper, \
     GreenhouseScraper, LeverScraper, RipplingScraper, SmartRecruitersScraper, \
     WorkdayScraper
@@ -40,7 +40,7 @@ class MimecastScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class ArtaFinanceScraper(AshbyHQScraper):
+class ArtaFinanceScraper(AshbyHQApiV2Scraper):
     employer_name = 'Arta Finance'
     EMPLOYER_KEY = 'artafinance'
 
@@ -552,7 +552,7 @@ class NightfallAiScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'nightfall'
 
 
-class MethodFinancialScraper(AshbyHQScraper):
+class MethodFinancialScraper(AshbyHQApiV2Scraper):
     employer_name = 'Method Financial'
     EMPLOYER_KEY = 'method'
 
@@ -932,7 +932,7 @@ class WizelineScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'wizeline'
 
 
-class KeyrockScraper(AshbyHQScraper):
+class KeyrockScraper(AshbyHQApiV2Scraper):
     employer_name = 'Keyrock'
     EMPLOYER_KEY = 'keyrock'
 

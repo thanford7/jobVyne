@@ -1,4 +1,4 @@
-from scrape.base_scrapers import AshbyHQScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, \
     GreenhouseApiScraper, \
     GreenhouseScraper, LeverScraper, SmartRecruitersScraper, \
     WorkdayScraper
@@ -100,7 +100,7 @@ class VardaScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'vardaspace'
 
 
-class PagosScraper(AshbyHQScraper):
+class PagosScraper(AshbyHQApiV2Scraper):
     employer_name = 'Pagos'
     EMPLOYER_KEY = 'pagos'
 
@@ -227,7 +227,7 @@ class AllbirdsScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'allbirds'
 
 
-class SednaScraper(AshbyHQScraper):
+class SednaScraper(AshbyHQApiV2Scraper):
     employer_name = 'Sedna'
     EMPLOYER_KEY = 'sedna'
 
@@ -333,7 +333,7 @@ class RibbonHealthScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'ribbonhealth'
 
 
-class VantageScraper(AshbyHQScraper):
+class VantageScraper(AshbyHQApiV2Scraper):
     employer_name = 'Vantage'
     EMPLOYER_KEY = 'vantage'
 
@@ -474,7 +474,7 @@ class TypeformScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'typeform'
 
 
-class MagicalScraper(AshbyHQScraper):
+class MagicalScraper(AshbyHQApiV2Scraper):
     employer_name = 'Magical'
     EMPLOYER_KEY = 'Magical'
 
@@ -579,7 +579,7 @@ class VrchatScraper(LeverScraper):
     EMPLOYER_KEY = 'vrchat'
 
 
-class LinearScraper(AshbyHQScraper):
+class LinearScraper(AshbyHQApiV2Scraper):
     employer_name = 'Linear'
     EMPLOYER_KEY = 'Linear'
 
@@ -609,7 +609,7 @@ class KayakScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'kayak'
 
 
-class StytchScraper(AshbyHQScraper):
+class StytchScraper(AshbyHQApiV2Scraper):
     employer_name = 'Stytch'
     EMPLOYER_KEY = 'stytch'
 
@@ -664,7 +664,7 @@ class InventaScraper(LeverScraper):
     EMPLOYER_KEY = 'inventa'
 
 
-class LightningLabsScraper(AshbyHQScraper):
+class LightningLabsScraper(AshbyHQApiV2Scraper):
     employer_name = 'Lightning Labs'
     EMPLOYER_KEY = 'lightning'
 
@@ -799,7 +799,7 @@ class ProductboardScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'productboard'
 
 
-class BasetenScraper(AshbyHQScraper):
+class BasetenScraper(AshbyHQApiV2Scraper):
     employer_name = 'BaseTen'
     EMPLOYER_KEY = 'baseten'
 
@@ -839,7 +839,7 @@ class HyperscienceScraper(LeverScraper):
     EMPLOYER_KEY = 'hyperscience'
 
 
-class CortexScraper(AshbyHQScraper):
+class CortexScraper(AshbyHQApiV2Scraper):
     employer_name = 'Cortex'
     EMPLOYER_KEY = 'cortex'
 
@@ -889,12 +889,12 @@ class FullstoryScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'fullstory'
 
 
-class QuoraScraper(AshbyHQScraper):
+class QuoraScraper(AshbyHQApiV2Scraper):
     employer_name = 'Quora'
     EMPLOYER_KEY = 'quora'
 
 
-class GensynScraper(AshbyHQScraper):
+class GensynScraper(AshbyHQApiV2Scraper):
     employer_name = 'Gensyn'
     EMPLOYER_KEY = 'gensyn'
 
@@ -994,7 +994,7 @@ class TradeRepublicScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'traderepublicbank'
 
 
-class MenloSecurityScraper(AshbyHQScraper):
+class MenloSecurityScraper(AshbyHQApiV2Scraper):
     employer_name = 'Menlo Security'
     EMPLOYER_KEY = 'menlosecurity'
 
@@ -1105,7 +1105,7 @@ class OpenseaScraper(LeverScraper):
     EMPLOYER_KEY = 'OpenSea'
 
 
-class VantaScraper(AshbyHQScraper):
+class VantaScraper(AshbyHQApiV2Scraper):
     employer_name = 'Vanta'
     EMPLOYER_KEY = 'vanta'
 
@@ -1115,7 +1115,7 @@ class DydxScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'dydx'
 
 
-class SardineScraper(AshbyHQScraper):
+class SardineScraper(AshbyHQApiV2Scraper):
     employer_name = 'Sardine'
     EMPLOYER_KEY = 'sardine'
 
@@ -1125,7 +1125,7 @@ class ClickatellScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'clickatell18'
 
 
-class WetransferScraper(AshbyHQScraper):
+class WetransferScraper(AshbyHQApiV2Scraper):
     employer_name = 'WeTransfer'
     EMPLOYER_KEY = 'wetransfer'
 

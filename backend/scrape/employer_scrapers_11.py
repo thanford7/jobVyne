@@ -1,4 +1,5 @@
-from scrape.base_scrapers import AshbyHQScraper, BambooHrScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, BambooHrScraper, GreenhouseApiScraper, \
+    GreenhouseIframeScraper, \
     GreenhouseScraper, LeverScraper, \
     SmartRecruitersScraper, WorkdayScraper
 
@@ -73,7 +74,7 @@ class IncidentIoScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'incidentio'
 
 
-class MonteCarloScraper(AshbyHQScraper):
+class MonteCarloScraper(AshbyHQApiV2Scraper):
     employer_name = 'Monte Carlo'
     EMPLOYER_KEY = 'montecarlodata'
 
@@ -108,7 +109,7 @@ class HeapScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'heap'
 
 
-class MazeScraper(AshbyHQScraper):
+class MazeScraper(AshbyHQApiV2Scraper):
     employer_name = 'Maze'
     EMPLOYER_KEY = 'mazedesign'
 
@@ -186,7 +187,7 @@ class AcquiaScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'acquia'
 
 
-class RoseRocketScraper(AshbyHQScraper):
+class RoseRocketScraper(AshbyHQApiV2Scraper):
     employer_name = 'Rose Rocket'
     EMPLOYER_KEY = 'rose%20rocket'
 
@@ -364,7 +365,7 @@ class HypebeastScraper(LeverScraper):
     EMPLOYER_KEY = 'hypebeast'
 
 
-class GraphiteSoftwareScraper(AshbyHQScraper):
+class GraphiteSoftwareScraper(AshbyHQApiV2Scraper):
     employer_name = 'Graphite Software'
     EMPLOYER_KEY = 'Graphite'
 
@@ -389,7 +390,7 @@ class UdemyScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'udemy'
 
 
-class BigeyeScraper(AshbyHQScraper):
+class BigeyeScraper(AshbyHQApiV2Scraper):
     employer_name = 'Bigeye'
     EMPLOYER_KEY = 'bigeye'
 
@@ -399,7 +400,7 @@ class Mark43Scraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'mark43'
 
 
-class WriterScraper(AshbyHQScraper):
+class WriterScraper(AshbyHQApiV2Scraper):
     employer_name = 'Writer'
     EMPLOYER_KEY = 'writer'
 
@@ -434,7 +435,7 @@ class QuiddScraper(LeverScraper):
     EMPLOYER_KEY = 'quidd'
 
 
-class CensusScraper(AshbyHQScraper):
+class CensusScraper(AshbyHQApiV2Scraper):
     employer_name = 'Census'
     EMPLOYER_KEY = 'Census'
 
@@ -454,7 +455,7 @@ class SpotheroScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'spothero'
 
 
-class OmniCreatorProductsScraper(AshbyHQScraper):
+class OmniCreatorProductsScraper(AshbyHQApiV2Scraper):
     employer_name = 'Omni Creator Products'
     EMPLOYER_KEY = 'ocp'
 
@@ -629,7 +630,7 @@ class RoverScraper(LeverScraper):
     EMPLOYER_KEY = 'rover'
 
 
-class UnionAiScraper(AshbyHQScraper):
+class UnionAiScraper(AshbyHQApiV2Scraper):
     employer_name = 'Union AI'
     EMPLOYER_KEY = 'Union'
 
@@ -639,7 +640,7 @@ class SentryScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'sentry'
 
 
-class PragmaPlatformScraper(AshbyHQScraper):
+class PragmaPlatformScraper(AshbyHQApiV2Scraper):
     employer_name = 'Pragma Platform'
     EMPLOYER_KEY = 'pragmaplatform'
 
@@ -684,7 +685,7 @@ class ChiaScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'chianetworkinc'
 
 
-class DittoScraper(AshbyHQScraper):
+class DittoScraper(AshbyHQApiV2Scraper):
     employer_name = 'Ditto'
     EMPLOYER_KEY = 'ditto'
 
@@ -714,7 +715,7 @@ class ProviScraper(LeverScraper):
     EMPLOYER_KEY = 'provi'
 
 
-class HalbornScraper(AshbyHQScraper):
+class HalbornScraper(AshbyHQApiV2Scraper):
     employer_name = 'Halborn'
     EMPLOYER_KEY = 'halborn'
 
@@ -780,7 +781,7 @@ class UnicoScraper(LeverScraper):
     EMPLOYER_KEY = 'unico'
 
 
-class ZippinScraper(AshbyHQScraper):
+class ZippinScraper(AshbyHQApiV2Scraper):
     employer_name = 'Zippin'
     EMPLOYER_KEY = 'zippin'
 
@@ -830,7 +831,7 @@ class BallertvScraper(LeverScraper):
     EMPLOYER_KEY = 'baller'
 
 
-class HangScraper(AshbyHQScraper):
+class HangScraper(AshbyHQApiV2Scraper):
     employer_name = 'Hang'
     EMPLOYER_KEY = 'Hang'
 
@@ -840,7 +841,7 @@ class SupersideScraper(LeverScraper):
     EMPLOYER_KEY = 'superside'
 
 
-class MultiverseScraper(AshbyHQScraper):
+class MultiverseScraper(AshbyHQApiV2Scraper):
     employer_name = 'Multiverse'
     EMPLOYER_KEY = 'multiverse'
 
@@ -871,12 +872,12 @@ class GantryScraper(LeverScraper):
     EMPLOYER_KEY = 'gantry'
 
 
-class WayflyerScraper(AshbyHQScraper):
+class WayflyerScraper(AshbyHQApiV2Scraper):
     employer_name = 'Wayflyer'
     EMPLOYER_KEY = 'wayflyer'
 
 
-class MollieScraper(AshbyHQScraper):
+class MollieScraper(AshbyHQApiV2Scraper):
     employer_name = 'Mollie'
     EMPLOYER_KEY = 'mollie'
 
@@ -921,7 +922,7 @@ class MmhmmScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'allturtles'
 
 
-class BelieverScraper(AshbyHQScraper):
+class BelieverScraper(AshbyHQApiV2Scraper):
     employer_name = 'Believer'
     EMPLOYER_KEY = 'believer'
 
@@ -936,7 +937,7 @@ class SpykeScraper(LeverScraper):
     EMPLOYER_KEY = 'spyke-games'
 
 
-class BlockworksScraper(AshbyHQScraper):
+class BlockworksScraper(AshbyHQApiV2Scraper):
     employer_name = 'Blockworks'
     EMPLOYER_KEY = 'Blockworks'
 
@@ -1001,7 +1002,7 @@ class VeriffScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'veriff'
 
 
-class SequenceScraper(AshbyHQScraper):
+class SequenceScraper(AshbyHQApiV2Scraper):
     employer_name = 'Sequence'
     EMPLOYER_KEY = 'sequence'
 
@@ -1016,7 +1017,7 @@ class ZoraScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'zora'
 
 
-class ParafinScraper(AshbyHQScraper):
+class ParafinScraper(AshbyHQApiV2Scraper):
     employer_name = 'Parafin'
     EMPLOYER_KEY = 'parafin'
 
@@ -1066,7 +1067,7 @@ class SweepScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'sweep'
 
 
-class NextMatterScraper(AshbyHQScraper):
+class NextMatterScraper(AshbyHQApiV2Scraper):
     employer_name = 'Next Matter'
     EMPLOYER_KEY = 'nextmatter'
 
@@ -1076,7 +1077,7 @@ class CalmScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'calm'
 
 
-class TomeScraper(AshbyHQScraper):
+class TomeScraper(AshbyHQApiV2Scraper):
     employer_name = 'Tome'
     EMPLOYER_KEY = 'Tome'
 
@@ -1101,7 +1102,7 @@ class FlockFreightScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'flockfreight'
 
 
-class CloudtrucksScraper(AshbyHQScraper):
+class CloudtrucksScraper(AshbyHQApiV2Scraper):
     employer_name = 'CloudTrucks'
     EMPLOYER_KEY = 'cloudtrucks'
 

@@ -1,4 +1,5 @@
-from scrape.base_scrapers import AshbyHQApiScraper, AshbyHQScraper, GreenhouseApiScraper, GreenhouseScraper, \
+from scrape.base_scrapers import AshbyHQApiScraper, AshbyHQApiV2Scraper, AshbyHQScraper, GreenhouseApiScraper, \
+    GreenhouseScraper, \
     JobviteScraper, LeverScraper, \
     RipplingAtsScraper, SmartRecruitersScraper, \
     WorkdayScraper
@@ -44,7 +45,7 @@ class TruecallerScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'truecaller'
 
 
-class HqoScraper(AshbyHQScraper):
+class HqoScraper(AshbyHQApiV2Scraper):
     employer_name = 'HqO'
     EMPLOYER_KEY = 'hqo'
 
@@ -322,7 +323,7 @@ class VacasaScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'vacasa'
 
 
-class QventusScraper(AshbyHQScraper):
+class QventusScraper(AshbyHQApiV2Scraper):
     employer_name = 'Qventus'
     EMPLOYER_KEY = 'qventus'
 
@@ -342,7 +343,7 @@ class VoltronDataScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'voltrondata'
 
 
-class SelectStarScraper(AshbyHQScraper):
+class SelectStarScraper(AshbyHQApiV2Scraper):
     employer_name = 'Select Star'
     EMPLOYER_KEY = 'selectstar'
 
@@ -703,7 +704,7 @@ class CmrSurgicalScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'cmrsurgical'
 
 
-class WaterplanScraper(AshbyHQScraper):
+class WaterplanScraper(AshbyHQApiV2Scraper):
     employer_name = 'Waterplan'
     EMPLOYER_KEY = 'Waterplan'
 
@@ -718,12 +719,12 @@ class BrightflowAiScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'brightflowai'
 
 
-class JuniScraper(AshbyHQScraper):
+class JuniScraper(AshbyHQApiV2Scraper):
     employer_name = 'Juni'
     EMPLOYER_KEY = 'juni'
 
 
-class AwayScraper(AshbyHQScraper):
+class AwayScraper(AshbyHQApiV2Scraper):
     employer_name = 'Away'
     EMPLOYER_KEY = 'away'
 
@@ -783,7 +784,7 @@ class WunderkindScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'wunderkind'
 
 
-class RattleScraper(AshbyHQScraper):
+class RattleScraper(AshbyHQApiV2Scraper):
     employer_name = 'Rattle'
     EMPLOYER_KEY = 'Rattle'
 
@@ -793,7 +794,7 @@ class CloudkitchensScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'css'
 
 
-class ModernTreasuryScraper(AshbyHQScraper):
+class ModernTreasuryScraper(AshbyHQApiV2Scraper):
     employer_name = 'Modern Treasury'
     EMPLOYER_KEY = 'moderntreasury'
 
@@ -843,7 +844,7 @@ class PermutiveScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'permutive'
 
 
-class SlopeScraper(AshbyHQScraper):
+class SlopeScraper(AshbyHQApiV2Scraper):
     employer_name = 'Slope'
     EMPLOYER_KEY = 'slope'
 

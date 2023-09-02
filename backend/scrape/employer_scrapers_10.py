@@ -1,4 +1,5 @@
-from scrape.base_scrapers import AshbyHQScraper, GreenhouseApiScraper, GreenhouseScraper, LeverScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, GreenhouseApiScraper, GreenhouseScraper, \
+    LeverScraper, \
     SmartRecruitersApiScraper, SmartRecruitersScraper, WorkdayScraper
 
 
@@ -32,7 +33,7 @@ class SofiScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'sofi'
 
 
-class FilmhubScraper(AshbyHQScraper):
+class FilmhubScraper(AshbyHQApiV2Scraper):
     employer_name = 'Filmhub'
     EMPLOYER_KEY = 'filmhub'
 
@@ -52,7 +53,7 @@ class OrumScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'orum'
 
 
-class AnrokScraper(AshbyHQScraper):
+class AnrokScraper(AshbyHQApiV2Scraper):
     employer_name = 'Anrok'
     EMPLOYER_KEY = 'anrok'
 
@@ -128,7 +129,7 @@ class RoofstockScraper(LeverScraper):
     EMPLOYER_KEY = 'roofstock'
 
 
-class AuroraSolarScraper(AshbyHQScraper):
+class AuroraSolarScraper(AshbyHQApiV2Scraper):
     employer_name = 'Aurora Solar'
     EMPLOYER_KEY = 'aurorasolar'
 
@@ -347,7 +348,7 @@ class MetalScraper(LeverScraper):
     EMPLOYER_KEY = 'metallicus'
 
 
-class JuniperSquareScraper(AshbyHQScraper):
+class JuniperSquareScraper(AshbyHQApiV2Scraper):
     employer_name = 'Juniper Square'
     EMPLOYER_KEY = 'junipersquare'
 
@@ -397,12 +398,12 @@ class NextrollScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'nextroll'
 
 
-class LiltScraper(AshbyHQScraper):
+class LiltScraper(AshbyHQApiV2Scraper):
     employer_name = 'Lilt'
     EMPLOYER_KEY = 'lilt'
 
 
-class ParadigmScraper(AshbyHQScraper):
+class ParadigmScraper(AshbyHQApiV2Scraper):
     employer_name = 'Paradigm'
     EMPLOYER_KEY = 'Paradigm'
 
@@ -630,7 +631,7 @@ class HeroesScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'heroes'
 
 
-class ZampFinanceScraper(AshbyHQScraper):
+class ZampFinanceScraper(AshbyHQApiV2Scraper):
     employer_name = 'Zamp Finance'
     EMPLOYER_KEY = 'zamp'
 
@@ -645,7 +646,7 @@ class TeadsScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'teads'
 
 
-class SearchlightScraper(AshbyHQScraper):
+class SearchlightScraper(AshbyHQApiV2Scraper):
     employer_name = 'Searchlight'
     EMPLOYER_KEY = 'searchlight'
 
@@ -780,7 +781,7 @@ class BamboohrScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'bamboohr17'
 
 
-class PraxisScraper(AshbyHQScraper):
+class PraxisScraper(AshbyHQApiV2Scraper):
     employer_name = 'Praxis'
     EMPLOYER_KEY = 'Praxis'
 
@@ -800,7 +801,7 @@ class LightningAiScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'lightningai'
 
 
-class ColumnScraper(AshbyHQScraper):
+class ColumnScraper(AshbyHQApiV2Scraper):
     employer_name = 'Column'
     EMPLOYER_KEY = 'column'
 
@@ -850,12 +851,12 @@ class SubstackScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'substack'
 
 
-class LeapsomeScraper(AshbyHQScraper):
+class LeapsomeScraper(AshbyHQApiV2Scraper):
     employer_name = 'Leapsome'
     EMPLOYER_KEY = 'Leapsome'
 
 
-class ItalicScraper(AshbyHQScraper):
+class ItalicScraper(AshbyHQApiV2Scraper):
     employer_name = 'Italic'
     EMPLOYER_KEY = 'italic'
 
@@ -876,7 +877,7 @@ class Op3nScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'op3n'
 
 
-class SorareScraper(AshbyHQScraper):
+class SorareScraper(AshbyHQApiV2Scraper):
     employer_name = 'Sorare'
     EMPLOYER_KEY = 'sorare'
 
@@ -904,7 +905,7 @@ class StrapiScraper(LeverScraper):
     EMPLOYER_KEY = 'strapi'
 
 
-class CorvusInsuranceScraper(AshbyHQScraper):
+class CorvusInsuranceScraper(AshbyHQApiV2Scraper):
     employer_name = 'Corvus Insurance'
     EMPLOYER_KEY = 'corvus'
 
@@ -944,7 +945,7 @@ class AxioScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'axio'
 
 
-class CalderaScraper(AshbyHQScraper):
+class CalderaScraper(AshbyHQApiV2Scraper):
     employer_name = 'Caldera'
     EMPLOYER_KEY = 'Caldera'
 
@@ -999,7 +1000,7 @@ class AbTastyScraper(LeverScraper):
     EMPLOYER_KEY = 'abtasty'
 
 
-class JerryScraper(AshbyHQScraper):
+class JerryScraper(AshbyHQApiV2Scraper):
     employer_name = 'Jerry'
     EMPLOYER_KEY = 'Jerry'
 

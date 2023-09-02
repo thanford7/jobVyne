@@ -1,4 +1,4 @@
-from scrape.base_scrapers import AshbyHQScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, \
     GreenhouseApiScraper, \
     GreenhouseScraper, LeverScraper, SmartRecruitersScraper, \
     WorkdayScraper
@@ -150,7 +150,7 @@ class LastEnergyScraper(LeverScraper):
     EMPLOYER_KEY = 'last-energy'
 
 
-class HumaansScraper(AshbyHQScraper):
+class HumaansScraper(AshbyHQApiV2Scraper):
     employer_name = 'Humaans'
     EMPLOYER_KEY = 'humaans'
 
@@ -175,7 +175,7 @@ class EventbriteScraper(LeverScraper):
     EMPLOYER_KEY = 'eventbrite'
 
 
-class IroncladScraper(AshbyHQScraper):
+class IroncladScraper(AshbyHQApiV2Scraper):
     employer_name = 'Ironclad'
     EMPLOYER_KEY = 'ironcladhq'
 
@@ -292,7 +292,7 @@ class HarmonyScraper(LeverScraper):
     EMPLOYER_KEY = 'harmony'
 
 
-class OneScraper(AshbyHQScraper):
+class OneScraper(AshbyHQApiV2Scraper):
     employer_name = 'One'
     EMPLOYER_KEY = 'oneapp'
 
@@ -452,7 +452,7 @@ class SymboticScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class GraphiteScraper(AshbyHQScraper):
+class GraphiteScraper(AshbyHQApiV2Scraper):
     employer_name = 'Graphite'
     EMPLOYER_KEY = 'Graphitehq'
 

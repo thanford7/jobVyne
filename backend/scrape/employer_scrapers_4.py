@@ -1,10 +1,10 @@
-from scrape.base_scrapers import AshbyHQScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, \
     GreenhouseApiScraper, \
     GreenhouseScraper, LeverScraper, SmartRecruitersScraper, \
     WorkdayScraper
 
 
-class SleeperScraper(AshbyHQScraper):
+class SleeperScraper(AshbyHQApiV2Scraper):
     employer_name = 'Sleeper'
     EMPLOYER_KEY = 'sleeper'
 
@@ -649,7 +649,7 @@ class BrilliantScraper(LeverScraper):
     EMPLOYER_KEY = 'brilliant'
 
 
-class DuneAnalyticsScraper(AshbyHQScraper):
+class DuneAnalyticsScraper(AshbyHQApiV2Scraper):
     employer_name = 'Dune Analytics'
     EMPLOYER_KEY = 'dune'
 
@@ -660,7 +660,7 @@ class Q2HoldingsScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class UnitScraper(AshbyHQScraper):
+class UnitScraper(AshbyHQApiV2Scraper):
     employer_name = 'Unit'
     EMPLOYER_KEY = 'unit'
 
@@ -790,7 +790,7 @@ class Pax8Scraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'pax8'
 
 
-class FirstbaseScraper(AshbyHQScraper):
+class FirstbaseScraper(AshbyHQApiV2Scraper):
     employer_name = 'Firstbase'
     EMPLOYER_KEY = 'firstbaseio'
 
@@ -871,7 +871,7 @@ class CerebralScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'cerebral'
 
 
-class BeameryScraper(AshbyHQScraper):
+class BeameryScraper(AshbyHQApiV2Scraper):
     employer_name = 'Beamery'
     EMPLOYER_KEY = 'beamery'
 
@@ -902,7 +902,7 @@ class ViamScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'viamrobotics'
 
 
-class GorgiasScraper(AshbyHQScraper):
+class GorgiasScraper(AshbyHQApiV2Scraper):
     employer_name = 'Gorgias'
     EMPLOYER_KEY = 'gorgias'
 

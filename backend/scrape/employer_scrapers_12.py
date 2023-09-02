@@ -1,4 +1,5 @@
-from scrape.base_scrapers import AshbyHQScraper, BreezyScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, BreezyScraper, GreenhouseApiScraper, \
+    GreenhouseIframeScraper, \
     GreenhouseScraper, LeverScraper, \
     RecruiteeScraper, SmartRecruitersScraper, UltiProScraper, WorkdayScraper
 
@@ -73,7 +74,7 @@ class YounitedScraper(LeverScraper):
     EMPLOYER_KEY = 'younited'
 
 
-class ShiftsmartScraper(AshbyHQScraper):
+class ShiftsmartScraper(AshbyHQApiV2Scraper):
     employer_name = 'Shiftsmart'
     EMPLOYER_KEY = 'shiftsmart'
 
@@ -138,7 +139,7 @@ class EnervenueScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'enervenue'
 
 
-class ImpulseScraper(AshbyHQScraper):
+class ImpulseScraper(AshbyHQApiV2Scraper):
     employer_name = 'Impulse'
     EMPLOYER_KEY = 'impulse'
 
@@ -254,7 +255,7 @@ class AmpRoboticsScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'amprobotics'
 
 
-class EightSleepScraper(AshbyHQScraper):
+class EightSleepScraper(AshbyHQApiV2Scraper):
     employer_name = 'Eight Sleep'
     EMPLOYER_KEY = 'eightsleep'
 
@@ -289,7 +290,7 @@ class CorelightScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'corelight'
 
 
-class ModernfiScraper(AshbyHQScraper):
+class ModernfiScraper(AshbyHQApiV2Scraper):
     employer_name = 'ModernFi'
     EMPLOYER_KEY = 'modernfi'
 
@@ -491,7 +492,7 @@ class GearsetScraper(LeverScraper):
     EMPLOYER_KEY = 'gearset'
 
 
-class NotableScraper(AshbyHQScraper):
+class NotableScraper(AshbyHQApiV2Scraper):
     employer_name = 'Notable'
     EMPLOYER_KEY = 'notable'
 
@@ -563,7 +564,7 @@ class LittleOtterScraper(LeverScraper):
     EMPLOYER_KEY = 'littleotter'
 
 
-class BrightlineScraper(AshbyHQScraper):
+class BrightlineScraper(AshbyHQApiV2Scraper):
     employer_name = 'Brightline'
     EMPLOYER_KEY = 'hellobrightline'
 

@@ -1,4 +1,4 @@
-from scrape.base_scrapers import AshbyHQScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, \
     EightfoldScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
     GreenhouseScraper, LeverScraper, SmartRecruitersApiScraper, SmartRecruitersScraper, \
     WorkdayScraper
@@ -9,7 +9,7 @@ class MoovScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'moovfinancial'
 
 
-class ExponentialScraper(AshbyHQScraper):
+class ExponentialScraper(AshbyHQApiV2Scraper):
     employer_name = 'Exponential'
     EMPLOYER_KEY = 'exponential'
 
@@ -764,7 +764,7 @@ class BynderScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'bynderjobs'
 
 
-class MarshmallowScraper(AshbyHQScraper):
+class MarshmallowScraper(AshbyHQApiV2Scraper):
     employer_name = 'Marshmallow'
     EMPLOYER_KEY = 'marshmallow'
 
@@ -797,7 +797,7 @@ class NxpSemiScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class DeelScraper(AshbyHQScraper):
+class DeelScraper(AshbyHQApiV2Scraper):
     employer_name = 'Deel'
     EMPLOYER_KEY = 'deel'
 
@@ -972,7 +972,7 @@ class InmobiScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'inmobi'
 
 
-class QuantstampScraper(AshbyHQScraper):
+class QuantstampScraper(AshbyHQApiV2Scraper):
     employer_name = 'Quantstamp'
     EMPLOYER_KEY = 'quantstamp'
 

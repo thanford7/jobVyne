@@ -70,7 +70,6 @@ class TaxonomyJobProfessionView(JobVyneAPIView):
             taxonomy_job_count_map = {
                 t['taxonomy_id']: t['job_count'] for t in (
                     JobTaxonomy.objects
-                    .filter(taxonomy_id__in=taxonomy_ids)
                     .filter(current_job_filter)
                     .values('taxonomy_id')
                     .annotate(job_count=Count('taxonomy_id'))

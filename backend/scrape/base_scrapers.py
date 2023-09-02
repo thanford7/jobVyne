@@ -19,6 +19,7 @@ from parsel import Selector
 from playwright._impl._api_types import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import expect
 
+from jvapp.apis.geocoding import LocationParser
 from jvapp.models.employer import EmployerJob
 from jvapp.utils.data import capitalize, coerce_float, coerce_int, get_base_url, get_website_domain_from_url
 from jvapp.utils.datetime import get_datetime_format_or_none, get_datetime_from_unix, get_datetime_or_none
@@ -1275,6 +1276,79 @@ class AshbyHQApiScraper(Scraper):
             website_domain=get_website_domain_from_url(website_url),
             **description_compensation_data
         )
+    
+    
+class AshbyHQApiV2Scraper(Scraper):
+    ATS_NAME = 'Ashby'
+    IS_API = True
+    
+    async def scrape_jobs(self):
+        jobs = self.get_jobs()
+        company_data = self.get_company_data()
+        
+        for job in jobs:
+            await self.add_job_links_to_queue(
+                job['jobUrl'], meta_data={'job_data': job, 'website_url': company_data['publicWebsite']}
+            )
+        
+        await self.close()
+    
+    def get_jobs(self):
+        resp = requests.get(
+            f'https://api.ashbyhq.com/posting-api/job-board/{self.EMPLOYER_KEY}',
+            params={'includeCompensation': True}
+        )
+        data = json.loads(resp.content)
+        return data['jobs']
+    
+    def get_company_data(self):
+        post_data = {
+            'operationName': 'ApiOrganizationFromHostedJobsPageName',
+            'query': 'query ApiOrganizationFromHostedJobsPageName($organizationHostedJobsPageName: String!) {\n  organization: organizationFromHostedJobsPageName(\n    organizationHostedJobsPageName: $organizationHostedJobsPageName\n  ) {\n    ...OrganizationParts\n    __typename\n  }\n}\n\nfragment OrganizationParts on Organization {\n  name\n  publicWebsite\n  customJobsPageUrl\n  allowJobPostIndexing\n  theme {\n    colors\n    showJobFilters\n    showTeams\n    showAutofillApplicationsBox\n    logoWordmarkImageUrl\n    logoSquareImageUrl\n    applicationSubmittedSuccessMessage\n    jobBoardTopDescriptionHtml\n    jobBoardBottomDescriptionHtml\n    __typename\n  }\n  appConfirmationTrackingPixelHtml\n  recruitingPrivacyPolicyUrl\n  activeFeatureFlags\n  timezone\n  __typename\n}',
+            'variables': {'organizationHostedJobsPageName': self.EMPLOYER_KEY}
+        }
+        
+        resp = requests.post(
+            f'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiOrganizationFromHostedJobsPageName',
+            json=post_data
+        )
+        data = json.loads(resp.content)
+        return data['data']['organization']
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None, job_data=None, website_url=None):
+        job_description = job_data['descriptionHtml']
+        description_compensation_data = parse_compensation_text(job_description) or {}
+        if compensation_data := (job_data.get('compensation') or {}):
+            if compensation_summary := compensation_data.get('summaryComponents'):
+                comp = next((c for c in compensation_summary if c['compensationType'].lower() == 'salary'), None)
+                if comp:
+                    compensation_data = {
+                        'salary_currency': comp['currencyCode'],
+                        'salary_floor': comp['minValue'],
+                        'salary_ceiling': comp['maxValue'],
+                        'salary_interval': 'year'
+                    }
+        
+        compensation_data = merge_compensation_data(
+            [description_compensation_data, compensation_data]
+        )
+        
+        location = job_data['location']
+        if job_data['isRemote'] and (not LocationParser.get_is_remote(location)):
+            location = f'Remote: {location}'
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data['title'],
+            locations=[location],
+            job_department=job_data['department'] or self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description,
+            employment_type=job_data['employmentType'] or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['publishedAt'], as_date=True)),
+            website_domain=get_website_domain_from_url(website_url),
+            **compensation_data
+        )
 
 
 class UltiProScraper(Scraper):
@@ -1808,8 +1882,11 @@ class PhenomPeopleScraper(Scraper):
         total_page_count = ceil(jobs_count / self.JOBS_PER_PAGE)
         page_count = 0
         while page_count < total_page_count:
-            if page_count != 0:
-                await page.goto(self.get_next_page_url(page_count))
+            next_button_sel = 'a[data-ph-at-id="pagination-next-link"]'
+            has_next_page = await page.locator(f'css={next_button_sel}').is_visible()
+            if page_count != 0 and has_next_page:
+                await page.locator(f'css={next_button_sel}').click()
+                # await page.goto(self.get_next_page_url(page_count))
                 await self.wait_for_el(page, '[data-ph-at-id="jobs-list"]')
                 html_dom = await self.get_page_html(page)
             job_links = html_dom.xpath('//ul[@data-ph-at-id="jobs-list"]//span[@role="heading"]//a/@href').getall()

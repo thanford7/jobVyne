@@ -2,7 +2,8 @@ import re
 
 from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
 
-from scrape.base_scrapers import ApplicantProScraper, AshbyHQScraper, BambooHrScraper, BreezyScraper, \
+from scrape.base_scrapers import ApplicantProScraper, AshbyHQApiV2Scraper, AshbyHQScraper, BambooHrScraper, \
+    BreezyScraper, \
     GreenhouseApiScraper, GreenhouseIframeScraper, \
     GreenhouseScraper, LeverScraper, PaylocityScraper, SmartRecruitersScraper, UltiProScraper, \
     WorkdayScraper
@@ -236,7 +237,7 @@ class VestaTechScraper(LeverScraper):
     EMPLOYER_KEY = 'vesta-tech'
 
 
-class VirtaHealthScraper(AshbyHQScraper):
+class VirtaHealthScraper(AshbyHQApiV2Scraper):
     EMPLOYER_KEY = 'virtahealth'
     employer_name = 'Virta Health'
 
@@ -596,7 +597,7 @@ class WeirScraper(WorkdayScraper):
         )
 
 
-class MedelyScraper(AshbyHQScraper):
+class MedelyScraper(AshbyHQApiV2Scraper):
     employer_name = 'Medely'
     EMPLOYER_KEY = 'medely'
 
@@ -651,7 +652,7 @@ class HungryrootScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'hungryroot'
 
 
-class PulleyScraper(AshbyHQScraper):
+class PulleyScraper(AshbyHQApiV2Scraper):
     employer_name = 'Pulley'
     EMPLOYER_KEY = 'Pulley'
 
@@ -661,7 +662,7 @@ class BoulevardScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'boulevard'
 
 
-class PostScraper(AshbyHQScraper):
+class PostScraper(AshbyHQApiV2Scraper):
     employer_name = 'Post'
     EMPLOYER_KEY = 'Post'
 

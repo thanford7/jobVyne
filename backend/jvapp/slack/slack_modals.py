@@ -949,11 +949,14 @@ class SaveJobModalViews(SlackMultiViewModal):
         self.job = application.employer_job
     
     @classmethod
-    def get_trigger_button(cls, data):
+    def get_trigger_button(cls, data, is_btn_only=True):
         job = data['job']
+        button = Button(cls.get_modal_action_id(None, is_start=True), 'Save job', job.id)
+        if is_btn_only:
+            return button
         return SectionText(
             f'*⭐ Save {job.job_title} job*\nThis will save the job to your JobVyne profile so you can apply later',
-            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Save', job.id)
+            accessory=button
         )
     
     def get_button_metadata(self, button_data):
@@ -1123,11 +1126,14 @@ class FollowEmployerModalViews(SlackMultiViewModal):
         super().__init__(*args, **kwargs)
     
     @classmethod
-    def get_trigger_button(cls, data):
+    def get_trigger_button(cls, data, is_btn_only=True):
         job = data['job']
+        button = Button(cls.get_modal_action_id(None, is_start=True), 'Follow employer', job.id)
+        if is_btn_only:
+            return button
         return SectionText(
             f'*👀 Follow {job.employer.employer_name}*\nGet notified when this employer posts new, relevant jobs',
-            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Follow', job.id)
+            accessory=button
         )
     
     def get_button_metadata(self, button_data):
@@ -1215,11 +1221,14 @@ class ShareJobModalViews(SlackMultiViewModal):
         super().__init__(*args, **kwargs)
     
     @classmethod
-    def get_trigger_button(cls, data):
+    def get_trigger_button(cls, data, is_btn_only=True):
         job = data['job']
+        button = Button(cls.get_modal_action_id(None, is_start=True), 'Share job', job.id)
+        if is_btn_only:
+            return button
         return SectionText(
             f'*✉️ Share {job.job_title} job*\nShare this job with someone outside of {data["group_name"]}. The email will come from JobVyne and you will be CCed.',
-            accessory=Button(cls.get_modal_action_id(None, is_start=True), 'Share', job.id)
+            accessory=button
         )
     
     def get_button_metadata(self, button_data):

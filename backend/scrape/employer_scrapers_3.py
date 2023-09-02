@@ -1,4 +1,4 @@
-from scrape.base_scrapers import AshbyHQScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, \
     GreenhouseApiScraper, \
     GreenhouseScraper, LeverScraper, SmartRecruitersScraper, \
     WorkdayScraper
@@ -200,7 +200,7 @@ class SeismicScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'seismicsoftware'
 
 
-class RyeScraper(AshbyHQScraper):
+class RyeScraper(AshbyHQApiV2Scraper):
     employer_name = 'Rye'
     EMPLOYER_KEY = 'rye'
 
@@ -696,7 +696,7 @@ class HivebriteScraper(LeverScraper):
     EMPLOYER_KEY = 'hivebrite'
 
 
-class HeyjobsScraper(AshbyHQScraper):
+class HeyjobsScraper(AshbyHQApiV2Scraper):
     employer_name = 'HeyJobs'
     EMPLOYER_KEY = 'heyjobs'
 
@@ -737,12 +737,12 @@ class AnalogDevicesScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class FormaScraper(AshbyHQScraper):
+class FormaScraper(AshbyHQApiV2Scraper):
     employer_name = 'Forma'
     EMPLOYER_KEY = 'forma'
 
 
-class CrusoeEnergyScraper(AshbyHQScraper):
+class CrusoeEnergyScraper(AshbyHQApiV2Scraper):
     employer_name = 'Crusoe Energy'
     EMPLOYER_KEY = 'Crusoe'
 
@@ -951,7 +951,7 @@ class LyraHealthScraper(LeverScraper):
     EMPLOYER_KEY = 'lyrahealth'
 
 
-class ImmersiveLabsScraper(AshbyHQScraper):
+class ImmersiveLabsScraper(AshbyHQApiV2Scraper):
     employer_name = 'Immersive Labs'
     EMPLOYER_KEY = 'immersivelabs'
 

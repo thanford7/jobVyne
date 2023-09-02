@@ -191,24 +191,22 @@ class SlackBasePoster:
                 blocks.append(job_connections_block)
             
             #### Actions - need to edit post for some of these actions
-            # Save job
-            blocks.append(SaveJobModalViews.get_trigger_button({'job': job}).get_slack_object())
-            
-            # Follow employer
+            actions = [SaveJobModalViews.get_trigger_button({'job': job})]
             if not is_followed_employer:
-                blocks.append(FollowEmployerModalViews.get_trigger_button({'job': job}).get_slack_object())
+                actions.append(FollowEmployerModalViews.get_trigger_button({'job': job}))
+            actions.append(
+                ShareJobModalViews.get_trigger_button(
+                    {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
+                )
+            )
+            
+            job_actions = SectionActions(actions).get_slack_object()
+            blocks.append(job_actions)
             
             # Job connection
             blocks.append(JobConnectionModalViews.get_trigger_button(
                 {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
             ).get_slack_object())
-            
-            # Share with someone
-            blocks.append(
-                ShareJobModalViews.get_trigger_button(
-                    {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
-                ).get_slack_object()
-            )
             
             blocks.append({'type': 'divider'})
         

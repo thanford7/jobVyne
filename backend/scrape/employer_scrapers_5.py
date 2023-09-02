@@ -1,4 +1,4 @@
-from scrape.base_scrapers import AshbyHQScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, AshbyHQScraper, \
     GreenhouseApiScraper, \
     GreenhouseScraper, LeverScraper, SmartRecruitersScraper, \
     WorkdayScraper
@@ -80,7 +80,7 @@ class AirtableScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'airtable'
 
 
-class InscribeScraper(AshbyHQScraper):
+class InscribeScraper(AshbyHQApiV2Scraper):
     employer_name = 'Inscribe'
     EMPLOYER_KEY = 'InscribeAI'
 
@@ -174,7 +174,7 @@ class AvailityScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class ReplitScraper(AshbyHQScraper):
+class ReplitScraper(AshbyHQApiV2Scraper):
     employer_name = 'Replit'
     EMPLOYER_KEY = 'replit'
 
@@ -240,7 +240,7 @@ class CreditbookScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'creditbook'
 
 
-class SisuDataScraper(AshbyHQScraper):
+class SisuDataScraper(AshbyHQApiV2Scraper):
     employer_name = 'Sisu Data'
     EMPLOYER_KEY = 'sisudata'
 
@@ -330,7 +330,7 @@ class EcovadisScraper(SmartRecruitersScraper):
     EMPLOYER_KEY = 'ecovadis'
 
 
-class PocusScraper(AshbyHQScraper):
+class PocusScraper(AshbyHQApiV2Scraper):
     employer_name = 'Pocus'
     EMPLOYER_KEY = 'pocus'
 
@@ -360,7 +360,7 @@ class GoldbellyScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'goldbelly'
 
 
-class SpeakScraper(AshbyHQScraper):
+class SpeakScraper(AshbyHQApiV2Scraper):
     employer_name = 'Speak'
     EMPLOYER_KEY = 'Speak'
 
@@ -424,12 +424,12 @@ class SpotterScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'spotter'
 
 
-class MystenLabsScraper(AshbyHQScraper):
+class MystenLabsScraper(AshbyHQApiV2Scraper):
     employer_name = 'Mysten Labs'
     EMPLOYER_KEY = 'mystenlabs'
 
 
-class VetcoveScraper(AshbyHQScraper):
+class VetcoveScraper(AshbyHQApiV2Scraper):
     employer_name = 'Vetcove'
     EMPLOYER_KEY = 'Vetcove'
 
@@ -469,7 +469,7 @@ class MarklogicScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'marklogic'
 
 
-class EppoScraper(AshbyHQScraper):
+class EppoScraper(AshbyHQApiV2Scraper):
     employer_name = 'Eppo'
     EMPLOYER_KEY = 'eppo'
 
@@ -515,7 +515,7 @@ class MarigoldScraper(WorkdayScraper):
     has_job_departments = False
 
 
-class AstronomerScraper(AshbyHQScraper):
+class AstronomerScraper(AshbyHQApiV2Scraper):
     employer_name = 'Astronomer'
     EMPLOYER_KEY = 'astronomer'
 
@@ -647,7 +647,7 @@ class SendcloudScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'sendcloud'
 
 
-class SiftScraper(AshbyHQScraper):
+class SiftScraper(AshbyHQApiV2Scraper):
     employer_name = 'Sift'
     EMPLOYER_KEY = 'sift'
 
@@ -705,7 +705,7 @@ class RossumScraper(GreenhouseApiScraper):
     EMPLOYER_KEY = 'rossum'
 
 
-class MessagebirdScraper(AshbyHQScraper):
+class MessagebirdScraper(AshbyHQApiV2Scraper):
     employer_name = 'MessageBird'
     EMPLOYER_KEY = 'messagebird'
 

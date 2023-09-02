@@ -137,7 +137,7 @@ class SectionFields(SlackBlock):
     
     
 class SectionActions(SlackBlock):
-    def __int__(self, elements):
+    def __init__(self, elements):
         # Up to 25 allowed
         # Elements can be buttons, select menus, overflow menus, or date pickers
         self.elements = elements
