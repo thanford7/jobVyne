@@ -7,9 +7,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
-from jvapp.apis.social import SocialLinkView
 from jvapp.models import JobVyneUser
-from jvapp.models.employer import ConnectionTypeBit, EmployerJobConnection
+from jvapp.models.employer import ConnectionTypeBit, EmployerConnection
 from jvapp.utils.data import coerce_int
 
 logger = logging.getLogger(__name__)
@@ -33,13 +32,11 @@ class CommunityMemberView(JobVyneAPIView):
         else:
             user_filter = Q(membership_professions__key=profession)
             
-        job_connections_prefetch = Prefetch(
-            'job_connection',
+        employer_connections_prefetch = Prefetch(
+            'employer_connection',
             queryset=(
-                EmployerJobConnection.objects
-                .select_related('job', 'job__employer')
-                .prefetch_related('job__locations')
-                .filter(Q(job__close_date__isnull=True) | Q(job__close_date__gt=timezone.now().date()))
+                EmployerConnection.objects
+                .select_related('employer')
             )
         )
 
@@ -52,7 +49,7 @@ class CommunityMemberView(JobVyneAPIView):
                 'job_search_levels',
                 'job_search_industries',
                 'job_search_professions',
-                job_connections_prefetch
+                employer_connections_prefetch
             )
             .filter(user_filter).distinct()
         )
@@ -64,24 +61,38 @@ class CommunityMemberView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data=serialized_members)
     
     @staticmethod
-    def get_serialized_member(user: JobVyneUser, member_type_filter):
-        job_connections = []
-        for jc in user.job_connection.all():
-            if jc.connection_type == ConnectionTypeBit.NO_CONNECTION:
+    def get_employer_connection_text(employer_connections, employer_limit=4):
+        filtered_connections = {}
+        has_more = False
+        for employer_connection in employer_connections:
+            if filtered_connections.get(employer_connection['employer_name']):
                 continue
-            # TODO: This is not performant. Think about how to optimize
-            job_link = SocialLinkView.get_or_create_single_job_link(jc.job, owner_id=user.id)
-            job_connections.append({
-                'is_allow_contact': jc.is_allow_contact,
-                'connection_type': jc.connection_type,
-                'job_title': jc.job.job_title,
-                'job_employer': jc.job.employer.employer_name,
-                'job_employer_logo_url': jc.job.employer.logo_square_88.url if jc.job.employer.logo_square_88 else None,
-                'job_location': jc.job.locations_text,
-                'is_job_remote': jc.job.is_remote,
-                'job_url': job_link.get_link_url()
+            filtered_connections[employer_connection['employer_name']] = employer_connection['connection_type']
+            if len(filtered_connections) == employer_limit:
+                has_more = True
+                break
+        connection_text = ', '.join([
+            f'{name}{" (hiring team)" if connection_type == ConnectionTypeBit.HIRING_MEMBER.value else ""}'
+            for name, connection_type in filtered_connections.items()
+        ])
+        if has_more:
+            connection_text += ', and more...'
+            
+        return connection_text
+            
+            
+    
+    @staticmethod
+    def get_serialized_member(user: JobVyneUser, member_type_filter):
+        employer_connections = []
+        for ec in user.employer_connection.all():
+            if ec.connection_type == ConnectionTypeBit.NO_CONNECTION.value:
+                continue
+            employer_connections.append({
+                'employer_name': ec.employer.employer_name,
+                'connection_type': ec.connection_type,
             })
-        job_connections.sort(key=lambda x: (x['connection_type'], x['job_title']))
+        employer_connections.sort(key=lambda x: (x['connection_type'], x['employer_name']))
         member_data = {
             'id': user.id,
             'first_name': user.first_name,
@@ -90,7 +101,8 @@ class CommunityMemberView(JobVyneAPIView):
             'professional_site_url': user.professional_site_url,
             'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
             'member_type_bits': 0,
-            'job_connections': job_connections
+            'employer_connection_count': len(set([ec['employer_name'] for ec in employer_connections])),
+            'employer_connection_text': CommunityMemberView.get_employer_connection_text(employer_connections)
         }
         
         if user.employer:

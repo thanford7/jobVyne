@@ -26,7 +26,7 @@ from jvapp.models.employer import Employer, EmployerSlack, ConnectionTypeBit
 from jvapp.models.social import SocialLink
 from jvapp.models.user import JobVyneUser, PermissionName, UserSlackProfile, UserSocialSubscription
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
-from jvapp.slack.slack_blocks_specific import SelectEmployer, SelectEmployerJob, get_job_connections_section
+from jvapp.slack.slack_blocks_specific import SelectEmployer, SelectEmployerJob, get_employer_connections_section
 from jvapp.utils.data import coerce_int, truncate_text
 from jvapp.utils.datetime import WEEKDAY_BITS, get_datetime_format_or_none, get_datetime_minutes, get_dow_bit, \
     get_unix_datetime
@@ -187,8 +187,8 @@ class SlackBasePoster:
             
             blocks.append(job_details)
             
-            if job_connections_block := get_job_connections_section(job.id):
-                blocks.append(job_connections_block)
+            if employer_connections_block := get_employer_connections_section(job, self.slack_cfg.employer.id):
+                blocks.append(employer_connections_block)
             
             #### Actions - need to edit post for some of these actions
             actions = [SaveJobModalViews.get_trigger_button({'job': job})]
@@ -261,8 +261,8 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
         except JobPost.DoesNotExist:
             return [job]
     
-    def build_message(self, jobs, slack_user_profile=None, job_connection=None, **kwargs):
-        assert slack_user_profile and job_connection
+    def build_message(self, jobs, slack_user_profile=None, employer_connection=None, **kwargs):
+        assert slack_user_profile and employer_connection
         user = self.message_data['user']
         connection_descriptions = {
             ConnectionTypeBit.HIRING_MEMBER.value: 'is part of the hiring team',
@@ -271,11 +271,11 @@ class SlackUserGeneratedJobPoster(SlackBasePoster):
             ConnectionTypeBit.KNOW_EMPLOYEE.value: 'knows someone who works at the employer',
             ConnectionTypeBit.NO_CONNECTION.value: 'has no connection with the employer',
         }
-        connection_description = connection_descriptions[job_connection.connection_type] + ' for this job'
+        connection_description = connection_descriptions[employer_connection.connection_type] + ' for this job'
         connection_details = [
             f'ℹ️ {user.first_name} {connection_description}'
         ]
-        if job_connection.is_allow_contact:
+        if employer_connection.is_allow_contact:
             connection_details.append(
                 f'🤝 {user.first_name} is open to inquiries about this job'
             )

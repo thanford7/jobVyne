@@ -383,6 +383,7 @@ class ConnectionTypeBit(IntEnum):
     NO_CONNECTION = 16
     
 
+# TODO: Drop EmployerJobConnection once migrated to EmployerConnection
 class EmployerJobConnection(AuditFields):
 
     user = models.ForeignKey(JobVyneUser, on_delete=models.CASCADE, related_name='job_connection')
@@ -395,6 +396,22 @@ class EmployerJobConnection(AuditFields):
             UniqueConstraint(
                 fields=['user', 'job'],
                 name='unique_user_job'
+            ),
+        ]
+
+
+class EmployerConnection(AuditFields):
+    user = models.ForeignKey(JobVyneUser, on_delete=models.CASCADE, related_name='employer_connection')
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='user_connection')
+    connection_type = models.SmallIntegerField()
+    hiring_jobs = models.ManyToManyField('EmployerJob')  # If this user is a hiring manager, there may be one or more jobs they are hiring for
+    is_allow_contact = models.BooleanField()  # Whether users can contact the connection
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['user', 'employer'],
+                name='unique_employer_connection'
             ),
         ]
 

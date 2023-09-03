@@ -303,6 +303,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         link_id = self.query_params.get('link_id')
         profession_key = self.query_params.get('profession_key')
         employer_key = self.query_params.get('employer_key')
+        user_key = self.query_params.get('user_key')
         job_key = self.query_params.get('job_key')
         job_subscription_ids = self.query_params.getlist('job_subscription_ids[]') or self.query_params.get('job_subscription_ids')
         
@@ -369,7 +370,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         is_jobs_closed = False
         is_single_job = False
         jobs = QuerySet()
-        if not any((link_id, profession_key, employer_key, job_key, job_subscription_ids)):
+        if not any((link_id, profession_key, employer_key, user_key, job_key, job_subscription_ids)):
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=Q(), is_include_fetch=True, applicant_user=self.user
             )
@@ -417,6 +418,12 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
             )
+        elif user_key:
+            try:
+                user = JobVyneUser.objects.get(user_key=user_key)
+            except JobVyneUser.DoesNotExist:
+                return Response(status=status.HTTP_200_OK, data=no_results_data)
+            
         elif link_id:
             if not link:
                 no_results_data[WARNING_MESSAGES_KEY] = [warning_message]

@@ -27,6 +27,16 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    AccrueSavingsScraper.employer_name: AccrueSavingsScraper,
+    CapTechScraper.employer_name: CapTechScraper,
+    BoxablScraper.employer_name: BoxablScraper,
+    RaftScraper.employer_name: RaftScraper,
+    GoodDogScraper.employer_name: GoodDogScraper,
+    ReorgScraper.employer_name: ReorgScraper,
+    PrizePicksScraper.employer_name: PrizePicksScraper,
+    StyliticsScraper.employer_name: StyliticsScraper,
+    WayScraper.employer_name: WayScraper,
+    OverjetScraper.employer_name: OverjetScraper,
     GabbScraper.employer_name: GabbScraper,
     MicrosoftScraper.employer_name: MicrosoftScraper,
     IgniteReadingScraper.employer_name: IgniteReadingScraper,

@@ -295,13 +295,13 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     def is_hiring_manager(self):
         from jvapp.models.employer import ConnectionTypeBit  # Avoid circular import
         return any((
-            jc.connection_type & ConnectionTypeBit.HIRING_MEMBER
-            for jc in self.job_connection.all()
+            ec.connection_type & ConnectionTypeBit.HIRING_MEMBER
+            for ec in self.employer_connection.all()
         ))
     
     @property
     def is_can_contact(self):
-        return any((jc.is_allow_contact for jc in self.job_connection.all())) or self.is_job_search_visible
+        return any((ec.is_allow_contact for ec in self.employer_connection.all())) or self.is_job_search_visible
 
     @property
     def is_employer_verified(self):
@@ -504,3 +504,24 @@ class UserSocialSubscription(AuditFields):
     
     class Meta:
         unique_together = ('user', 'provider', 'subscription_type')
+        
+        
+class UserConnection(AuditFields):
+    owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='owner_connection')
+    connection_user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.CASCADE, related_name='other_connection')
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    email = models.EmailField(null=True, blank=True)
+    linkedin_handle = models.CharField(max_length=100, null=True, blank=True)
+    employer_raw = models.CharField(max_length=200, null=True, blank=True)
+    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='connection')
+    job_title = models.CharField(max_length=100, null=True, blank=True)
+    profession = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL)
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(fields=['owner', 'connection_user', 'employer_raw'], condition=Q(connection_user__isnull=False), name='unique_user_connection'),
+            UniqueConstraint(fields=['owner', 'first_name', 'last_name', 'employer_raw'], name='unique_user_connection_name'),
+            UniqueConstraint(fields=['owner', 'email', 'employer_raw'], condition=Q(email__isnull=False), name='unique_user_connection_email'),
+            UniqueConstraint(fields=['owner', 'linkedin_handle', 'employer_raw'], name='unique_user_connection_linkedin'),
+        ]

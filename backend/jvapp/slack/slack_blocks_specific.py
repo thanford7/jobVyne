@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from jvapp.apis.taxonomy import TaxonomyJobProfessionView
-from jvapp.models.employer import ConnectionTypeBit, EmployerJob, EmployerJobConnection, Taxonomy
+from jvapp.models.employer import ConnectionTypeBit, EmployerConnection, EmployerJob, EmployerJobConnection, Taxonomy
 from jvapp.models.location import REMOTE_TYPES
 from jvapp.slack.slack_blocks import Button, InputOption, InputText, Modal, SectionText, Select, SelectExternal, \
     SelectMulti
@@ -190,11 +190,11 @@ def get_home_zip_code_input(current_postal_code=None):
     )
 
 
-def get_job_connections_section_id(job_id):
-    return f'job_connections_{job_id}'
+def get_employer_connections_section_id(employer_id):
+    return f'employer_connections_{employer_id}'
 
 
-job_connection_config = {
+employer_connection_config = {
     ConnectionTypeBit.HIRING_MEMBER.value: {'text': 'Hiring team', 'star_count': 4},
     ConnectionTypeBit.CURRENT_EMPLOYEE.value: {'text': 'Employee', 'star_count': 3},
     ConnectionTypeBit.FORMER_EMPLOYEE.value: {'text': 'Past employee', 'star_count': 2},
@@ -202,22 +202,34 @@ job_connection_config = {
 }
 
 
-def get_job_connections_section(job_id):
-    connection_filter = Q(job_id=job_id) & ~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value)
-    job_connections = EmployerJobConnection.objects.select_related('user').filter(connection_filter).order_by(
-        'connection_type')
-    if not job_connections:
+def get_employer_connections_section(job, group_employer_id):
+    connection_filter = (
+        Q(employer_id=job.employer_id)
+        & ~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value)
+        & Q(user__membership_groups__id=group_employer_id)
+    )
+    employer_connections = (
+        EmployerConnection.objects
+        .select_related('user')
+        .prefetch_related('hiring_jobs')
+        .filter(connection_filter)
+        .order_by('connection_type')
+    )
+    if not employer_connections:
         return None
     section_text = (
         ':grapes: *JOB CONNECTIONS* :grapes: \n'
         '💡 You are 700% more likely to be hired from a referral! Connect with the people below:\n'
     )
-    job_connection_texts = []
-    for job_connection in job_connections:
-        cfg = job_connection_config[job_connection.connection_type]
-        job_connection_texts.append(f'({cfg["text"]}) {job_connection.user.full_name}')
-    section_text += '\n'.join(job_connection_texts) + '\n\n'
-    return SectionText(section_text, get_job_connections_section_id(job_id)).get_slack_object()
+    employer_connection_texts = []
+    for employer_connection in employer_connections:
+        connection_type = employer_connection.connection_type
+        if (employer_connection.connection_type == ConnectionTypeBit.CURRENT_EMPLOYEE.value) and (job.id in employer_connection.hiring_jobs.all().values_list('id', flat=True)):
+            connection_type = ConnectionTypeBit.HIRING_MEMBER.value
+        cfg = employer_connection_config[connection_type]
+        employer_connection_texts.append(f'({cfg["text"]}) {employer_connection.user.full_name}')
+    section_text += '\n'.join(employer_connection_texts) + '\n\n'
+    return SectionText(section_text, get_employer_connections_section_id(job.employer_id)).get_slack_object()
 
 
 FIRST_NAME_KEY = 'first_name'

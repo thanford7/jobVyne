@@ -162,3 +162,48 @@ class ScribeScraper(GreenhouseIframeScraper):
 class GabbScraper(GreenhouseScraper):
     employer_name = 'Gabb Wireless'
     EMPLOYER_KEY = 'gabbwirelessinc'
+    
+    
+class PrizePicksScraper(GreenhouseIframeScraper):
+    employer_name = 'PrizePicks'
+    EMPLOYER_KEY = 'prizepicks'
+    
+
+class StyliticsScraper(GreenhouseScraper):
+    employer_name = 'Stylitics'
+    EMPLOYER_KEY = 'stylitics'
+    
+    
+class WayScraper(LeverScraper):
+    employer_name = 'Way'
+    EMPLOYER_KEY = 'Way'
+
+
+class GoodDogScraper(GreenhouseIframeScraper):
+    employer_name = 'Good Dog'
+    EMPLOYER_KEY = 'gooddog'
+
+
+class ReorgScraper(LeverScraper):
+    employer_name = 'Reorg'
+    EMPLOYER_KEY = 'reorgresearch'
+
+
+class CapTechScraper(SmartRecruitersScraper):
+    employer_name = 'CapTech'
+    EMPLOYER_KEY = 'CapTechConsulting'
+    
+    
+class BoxablScraper(BambooHrScraper):
+    employer_name = 'Boxabl'
+    EMPLOYER_KEY = 'boxabl'
+
+
+class RaftScraper(GreenhouseScraper):
+    employer_name = 'Raft'
+    EMPLOYER_KEY = 'raft'
+    
+    
+class AccrueSavingsScraper(LeverScraper):
+    employer_name = 'Accrue'
+    EMPLOYER_KEY = 'Accrue'

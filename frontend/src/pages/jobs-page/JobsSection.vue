@@ -114,7 +114,7 @@ const jobFiltersTemplate = {
   job_profession_ids: []
 }
 
-const JOBS_PAGES = ['jobs-link', 'job', 'jobs', 'group', 'company', 'profession']
+const JOBS_PAGES = ['jobs-link', 'job', 'jobs', 'group', 'company', 'profession', 'profile']
 
 export default {
   name: 'JobsSection',
@@ -339,6 +339,7 @@ export default {
         linkId: this.$route.params.filterId,
         connectionId: this.$route.query.connect,
         employerKey: this.$route.params.employerKey,
+        userKey: this.$route.params.userKey,
         isEmployer: this.$route.name === 'company',
         professionKey: this.$route.params.professionKey,
         jobKey: this.$route.params.jobKey,

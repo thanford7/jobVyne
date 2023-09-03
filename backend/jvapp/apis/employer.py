@@ -27,7 +27,9 @@ from jvapp.apis.social import SocialLinkView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobConnection, EmployerReferralBonusRule, \
+from jvapp.models.employer import ConnectionTypeBit, Employer, EmployerAuthGroup, EmployerConnection, \
+    EmployerJobConnection, \
+    EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
     EmployerFileTag, JobTaxonomy, Taxonomy
@@ -680,7 +682,6 @@ class EmployerJobView(JobVyneAPIView):
             job_filter &= Q(open_date__range=(start_date, end_date))
         
         return job_filter
-        
     
     @staticmethod
     def get_employer_jobs(
@@ -715,8 +716,8 @@ class EmployerJobView(JobVyneAPIView):
                     locations_prefetch,
                     'taxonomy',
                     'taxonomy__taxonomy',
-                    'job_connection',
-                    'job_connection__user'
+                    'employer__user_connection',
+                    'employer__user_connection__user'
                 )
             )
             if applicant_user:
@@ -739,41 +740,52 @@ class EmployerJobView(JobVyneAPIView):
         return jobs
     
     
-class EmployerJobConnectionView(JobVyneAPIView):
+class EmployerConnectionView(JobVyneAPIView):
     
     def get(self, request):
         pass
     
     @staticmethod
-    def get_job_connections(job_id=None, user_id=None, group_id=None):
-        assert any((job_id, user_id, group_id))
+    def get_employer_connections(job=None, user_id=None, group_id=None):
+        assert any((job, user_id, group_id))
         connection_filter = Q()
-        if job_id:
-            connection_filter &= Q(job_id=job_id)
+        if job:
+            connection_filter &= Q(employer_id=job.employer_id)
         if user_id:
             connection_filter &= Q(user_id=user_id)
         if group_id:
             connection_filter &= Q(group_id=None)
             
-        return EmployerJobConnection.objects.filter(connection_filter)
+        return EmployerConnection.objects.filter(connection_filter)
     
     @staticmethod
-    def get_and_update_job_connection(job_connection, data):
-        if not job_connection.id:
+    def get_and_update_employer_connection(employer_connection, data):
+        if not employer_connection.id:
             try:
-                job_connection = EmployerJobConnection.objects.get(
-                    user_id=job_connection.user_id, job_id=job_connection.job_id
+                employer_connection = EmployerConnection.objects.get(
+                    user_id=employer_connection.user_id, employer_id=employer_connection.employer_id
                 )
-            except EmployerJobConnection.DoesNotExist:
+            except EmployerConnection.DoesNotExist:
                 pass
         
-        set_object_attributes(job_connection, data, {
+        hiring_job = None
+        if data['connection_type'] == ConnectionTypeBit.HIRING_MEMBER.value:
+            data['connection_type'] = ConnectionTypeBit.CURRENT_EMPLOYEE.value
+            hiring_job = data.get('job')
+        
+        set_object_attributes(employer_connection, data, {
             'connection_type': None,
             'is_allow_contact': None
         })
-        is_new = not job_connection.id
-        job_connection.save()
-        return job_connection, is_new
+        
+        if hiring_job:
+            employer_connection.hiring_jobs.add(hiring_job)
+        elif job := data.get('job'):
+            employer_connection.hiring_jobs.remove(job)
+        
+        is_new = not employer_connection.id
+        employer_connection.save()
+        return employer_connection, is_new
 
 
 class EmployerJobApplicationView(JobVyneAPIView):

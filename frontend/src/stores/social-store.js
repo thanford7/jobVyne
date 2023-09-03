@@ -34,6 +34,7 @@ export const useSocialStore = defineStore('social', {
       linkId = null,
       connectionId = null,
       employerKey = null,
+      userKey = null,
       isEmployer = null,
       professionKey = null,
       jobKey = null,
@@ -42,7 +43,7 @@ export const useSocialStore = defineStore('social', {
       jobFilters = null,
       isForceRefresh = false
     }) {
-      const key = makeApiRequestKey(linkId, connectionId, employerKey, isEmployer, professionKey, jobKey, jobSubscriptionIds, pageNumber, JSON.stringify(jobFilters))
+      const key = makeApiRequestKey(linkId, connectionId, employerKey, userKey, isEmployer, professionKey, jobKey, jobSubscriptionIds, pageNumber, JSON.stringify(jobFilters))
       if (!isForceRefresh && this.socialLinkJobs[key]) {
         return
       }
@@ -52,6 +53,7 @@ export const useSocialStore = defineStore('social', {
           link_id: linkId,
           connection_id: connectionId,
           employer_key: employerKey,
+          user_key: userKey,
           is_employer: isEmployer,
           profession_key: professionKey,
           job_key: jobKey,
@@ -116,6 +118,7 @@ export const useSocialStore = defineStore('social', {
       linkId = null,
       connectionId = null,
       employerKey = null,
+      userKey = null,
       isEmployer = null,
       professionKey = null,
       jobKey = null,
@@ -123,7 +126,7 @@ export const useSocialStore = defineStore('social', {
       pageNumber = 1,
       jobFilters = null
     }) {
-      const key = makeApiRequestKey(linkId, connectionId, employerKey, isEmployer, professionKey, jobKey, jobSubscriptionIds, pageNumber, JSON.stringify(jobFilters))
+      const key = makeApiRequestKey(linkId, connectionId, employerKey, userKey, isEmployer, professionKey, jobKey, jobSubscriptionIds, pageNumber, JSON.stringify(jobFilters))
       return this.socialLinkJobs[key]
     },
     getSocialLinkPostJobs ({ userId = null, employerId = null, socialLinkId = null, socialChannel = null }) {

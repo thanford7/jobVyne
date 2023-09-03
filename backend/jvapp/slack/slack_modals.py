@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
-from jvapp.apis.employer import EmployerJobConnectionView
+from jvapp.apis.employer import EmployerConnectionView
 from jvapp.apis.geocoding import LocationParser
 from jvapp.apis.job_seeker import ApplicationExternalView
 from jvapp.apis.job_subscription import JobSubscriptionView
@@ -13,12 +13,12 @@ from jvapp.apis.social import SocialLinkView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import JobPost
 from jvapp.models.currency import Currency
-from jvapp.models.employer import Employer, EmployerJob, EmployerJobConnection, ConnectionTypeBit
+from jvapp.models.employer import Employer, EmployerConnection, EmployerJob, EmployerJobConnection, ConnectionTypeBit
 from jvapp.models.location import REMOTE_TYPES
 from jvapp.models.user import JobVyneUser, UserSlackProfile, UserSocialSubscription
 from jvapp.slack.slack_blocks_specific import FIRST_NAME_KEY, LAST_NAME_KEY, SelectEmployer, \
     SelectEmployerJob, get_first_name_input, get_home_zip_code_input, get_industry_selections, \
-    get_job_connections_section, get_job_connections_section_id, get_job_level_selections, \
+    get_employer_connections_section, get_employer_connections_section_id, get_job_level_selections, \
     get_last_name_input, get_profession_selections, get_remote_work_selection
 from jvapp.utils.data import capitalize, coerce_float, coerce_int
 from jvapp.utils.datetime import TIME_INTERVAL_DAYS, get_datetime_diff, get_datetime_format_or_none
@@ -798,9 +798,10 @@ class JobModalViews(SlackMultiViewModal):
             self.user.employer_id = self.employer.id
             self.user.save()
         
-        job_connection = EmployerJobConnection(user=self.user, job=self.job)
+        employer_connection = EmployerConnection(user=self.user, employer_id=self.job.employer_id)
         is_allow_contact = self.CONTACT_OPTIONS_KEY in self.metadata[self.SUBSCRIPTION_OPTIONS_KEY]
-        job_connection, is_new = EmployerJobConnectionView.get_and_update_job_connection(job_connection, {
+        employer_connection, is_new = EmployerConnectionView.get_and_update_employer_connection(employer_connection, {
+            'job': self.job,
             'connection_type': connection_type,
             'is_allow_contact': is_allow_contact
         })
@@ -835,7 +836,7 @@ class JobModalViews(SlackMultiViewModal):
             employer_id=self.metadata['group_id'],
             message_data={
                 'slack_user_profile': self.slack_user_profile,
-                'job_connection': job_connection,
+                'employer_connection': employer_connection,
                 'user': self.user
             }
         )
@@ -951,7 +952,7 @@ class SaveJobModalViews(SlackMultiViewModal):
     @classmethod
     def get_trigger_button(cls, data, is_btn_only=True):
         job = data['job']
-        button = Button(cls.get_modal_action_id(None, is_start=True), 'Save job', job.id)
+        button = Button(cls.get_modal_action_id(None, is_start=True), 'Save job', job.id, color='green')
         if is_btn_only:
             return button
         return SectionText(
@@ -983,10 +984,9 @@ class JobConnectionModalViews(SlackMultiViewModal):
     
     def init_load_extra_data(self):
         self.job = EmployerJob.objects.get(id=self.metadata['job_id'])
-        job_connection = EmployerJobConnection(user=self.user, job=self.job)
-        job_connection, is_new = EmployerJobConnectionView.get_and_update_job_connection(job_connection, {
-            'connection_type': self.metadata['connection_type'],
-            'is_allow_contact': True
+        employer_connection = EmployerConnection(user=self.user, employer=self.job.employer)
+        employer_connection, is_new = EmployerConnectionView.get_and_update_employer_connection(employer_connection, {
+            'is_allow_contact': True, 'job': self.job, 'connection_type': self.metadata['connection_type']
         })
         self.update_job_post_slack_message()
     
@@ -1091,7 +1091,7 @@ class JobConnectionModalViews(SlackMultiViewModal):
         # Check if there is an existing job connection section
         has_existing_connection_section = False
         replace_block_idx = insert_block_idx
-        job_connection_block_id = get_job_connections_section_id(self.job.id)
+        job_connection_block_id = get_employer_connections_section_id(self.job.employer_id)
         for block in message_blocks[replace_block_idx:]:
             if block['block_id'] == job_connection_block_id:
                 has_existing_connection_section = True
@@ -1099,14 +1099,14 @@ class JobConnectionModalViews(SlackMultiViewModal):
             replace_block_idx += 1
         
         # Update message block
-        job_connections_block = get_job_connections_section(self.job.id)
-        if not job_connections_block:
+        employer_connections_block = get_employer_connections_section(self.job, self.slack_cfg.employer.id)
+        if not employer_connections_block:
             raise ValueError(
-                f'Tried to create a job connection block for a job without connections (job ID = {self.job.id})')
+                f'Tried to create an employer connection block for a job without connections (job ID = {self.job.id})')
         if has_existing_connection_section:
-            message_blocks[replace_block_idx] = job_connections_block
+            message_blocks[replace_block_idx] = employer_connections_block
         else:
-            message_blocks.insert(insert_block_idx, job_connections_block)
+            message_blocks.insert(insert_block_idx, employer_connections_block)
         
         self.slack_client.chat_update(
             channel=self.channel_id,
@@ -1128,7 +1128,7 @@ class FollowEmployerModalViews(SlackMultiViewModal):
     @classmethod
     def get_trigger_button(cls, data, is_btn_only=True):
         job = data['job']
-        button = Button(cls.get_modal_action_id(None, is_start=True), 'Follow employer', job.id)
+        button = Button(cls.get_modal_action_id(None, is_start=True), 'Follow employer', job.id, color='green')
         if is_btn_only:
             return button
         return SectionText(
@@ -1223,7 +1223,7 @@ class ShareJobModalViews(SlackMultiViewModal):
     @classmethod
     def get_trigger_button(cls, data, is_btn_only=True):
         job = data['job']
-        button = Button(cls.get_modal_action_id(None, is_start=True), 'Share job', job.id)
+        button = Button(cls.get_modal_action_id(None, is_start=True), 'Share job', job.id, color='green')
         if is_btn_only:
             return button
         return SectionText(

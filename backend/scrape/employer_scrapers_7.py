@@ -852,7 +852,7 @@ class FigureScraper(GreenhouseScraper):
     EMPLOYER_KEY = 'figureai'
 
 
-class CowbellCyberScraper(GreenhouseScraper):
+class CowbellCyberScraper(GreenhouseApiScraper):
     employer_name = 'Cowbell Cyber'
     EMPLOYER_KEY = 'cowbellcyber'
 

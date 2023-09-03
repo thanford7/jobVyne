@@ -108,6 +108,7 @@
         <q-tab-panels v-model="tab" animated keep-alive class="no-overflow">
           <q-tab-panel name="jobs" style="position: relative;">
             <JobsSection
+              v-if="tab === 'jobs'"
               ref="jobs"
               :user="user"
               :employer="employer"
@@ -120,6 +121,7 @@
           </q-tab-panel>
           <q-tab-panel name="community">
             <CommunitySection
+              v-if="tab === 'community'"
               :user="user"
               :employer="employer"
             />

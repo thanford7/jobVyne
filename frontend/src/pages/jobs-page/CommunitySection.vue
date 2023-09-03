@@ -81,69 +81,16 @@
                     <div>{{ member.job_search_qualifications }}</div>
                   </template>
                 </template>
-                <template v-if="member.job_connections?.length">
+                <template v-if="member.employer_connection_count">
                   <div
                     class="text-bold q-pt-sm"
                     :class="(communityUtil.isJobSeeker(member.member_type_bits)) ? 'q-mt-sm border-top-1-gray-100' : ''"
                   >
-                    Job connections:
+                    {{ dataUtil.pluralize('employer connection', member.employer_connection_count) }}
                   </div>
-                  <q-list separator>
-                    <q-item v-for="jobConnection in member.job_connections" clickable
-                            @click="openUrlInNewTab(jobConnection.job_url)">
-                      <q-item-section avatar>
-                        <q-avatar rounded>
-                          <img :src="jobConnection.job_employer_logo_url">
-                        </q-avatar>
-                      </q-item-section>
-                      <q-item-section>
-                        <div>
-                          {{ jobConnection.job_title }}
-                        </div>
-                        <div>
-                          {{ jobConnection.job_employer }}
-                        </div>
-                        <div class="text-small">
-                          <q-chip v-if="jobConnection.is_job_remote" label="Remote" dense/>
-                          {{ jobConnection.job_location }}
-                        </div>
-                      </q-item-section>
-                      <q-item-section side top>
-                        <template v-if="communityUtil.isConnectionHiringMember(jobConnection.connection_type)">
-                          <q-item-label caption>
-                            {{ CONNECTION_TYPES[jobConnection.connection_type].name }}
-                          </q-item-label>
-                          <div>
-                            <q-icon v-for="n in 4" name="star" color="orange" :times="n"/>
-                          </div>
-                        </template>
-                        <template v-if="communityUtil.isConnectionCurrentEmployee(jobConnection.connection_type)">
-                          <q-item-label caption>
-                            {{ CONNECTION_TYPES[jobConnection.connection_type].name }}
-                          </q-item-label>
-                          <div>
-                            <q-icon v-for="n in 3" name="star" color="orange" :times="n"/>
-                          </div>
-                        </template>
-                        <template v-if="communityUtil.isConnectionFormerEmployee(jobConnection.connection_type)">
-                          <q-item-label caption>
-                            {{ CONNECTION_TYPES[jobConnection.connection_type].name }}
-                          </q-item-label>
-                          <div>
-                            <q-icon v-for="n in 2" name="star" color="orange" :times="n"/>
-                          </div>
-                        </template>
-                        <template v-if="communityUtil.isConnectionKnowEmployee(jobConnection.connection_type)">
-                          <q-item-label caption>
-                            {{ CONNECTION_TYPES[jobConnection.connection_type].name }}
-                          </q-item-label>
-                          <div>
-                            <q-icon v-for="n in 1" name="star" color="orange" :times="n"/>
-                          </div>
-                        </template>
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
+                  <div class="text-small">
+                    {{ member.employer_connection_text }}
+                  </div>
                 </template>
               </q-card-section>
             </q-card>
@@ -158,6 +105,7 @@
 import communityUtil, { CONNECTION_TYPES, MEMBER_TYPE_ALL, MEMBER_TYPES } from 'src/utils/community.js'
 import { openUrlInNewTab } from 'src/utils/requests.js'
 import { useCommunityStore } from 'stores/community-store.js'
+import dataUtil from '../../utils/data.js'
 
 /* eslint-disable vue/no-unused-vars */
 
@@ -176,6 +124,7 @@ export default {
       },
       communityStore: useCommunityStore(),
       communityUtil,
+      dataUtil,
       CONNECTION_TYPES,
       openUrlInNewTab
     }
