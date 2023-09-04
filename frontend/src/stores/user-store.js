@@ -10,20 +10,20 @@ export const useUserStore = defineStore('user', {
   }),
 
   actions: {
-    async setUserProfile ({ userId = null, socialLinkId = null, isForceRefresh = false }) {
-      if (!userId && !socialLinkId) {
+    async setUserProfile ({ userId = null, userKey = null, isForceRefresh = false }) {
+      if (!userId && !userKey) {
         return
       }
-      if (!isForceRefresh && this.userProfile[userId || socialLinkId]) {
+      if (!isForceRefresh && this.userProfile[userId || userKey]) {
         return
       }
       const resp = await this.$api.get('user/profile/', {
         params: {
           user_id: userId,
-          social_link_id: socialLinkId
+          user_key: userKey
         }
       })
-      this.userProfile[userId || socialLinkId] = resp.data
+      this.userProfile[userId || userKey] = resp.data
     },
     async setUserEmployeeChecklist (userId) {
       const resp = await this.$api.get(`user/employee-checklist/${userId}/`)
@@ -53,8 +53,8 @@ export const useUserStore = defineStore('user', {
       })
       this.userFavorites[userId] = resp.data
     },
-    getUserProfile ({ userId = null, socialLinkId = null }) {
-      return this.userProfile[userId || socialLinkId]
+    getUserProfile ({ userId = null, userKey = null }) {
+      return this.userProfile[userId || userKey]
     },
     getPaginatedUserCreatedJobs ({ pageCount = 1, userId = null, isApproved = null, isClosed = false }) {
       const key = makeApiRequestKey(pageCount, userId, isApproved, isClosed)

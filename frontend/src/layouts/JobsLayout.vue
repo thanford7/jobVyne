@@ -5,7 +5,9 @@
       <div class="justify-center row" style="position: relative">
         <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
           <q-toolbar-title shrink>
-            <img v-if="employer?.logo_url" :src="employer.logo_url" alt="Logo"
+            <img v-if="isUserPage" :src="profile.profile_picture_url" alt="Profile Picture"
+                 style="height: 40px; max-width: 120px; object-fit: scale-down; border-radius: 50px;">
+            <img v-else-if="employer?.logo_url" :src="employer.logo_url" alt="Logo"
                  style="height: 40px; max-width: 120px; object-fit: scale-down">
             <img v-else src="~assets/jobVyneLogo.png" alt="Logo"
                  style="height: 40px; max-width: 120px; object-fit: scale-down">
@@ -37,6 +39,30 @@
             </template>
           </div>
         </template>
+        <template v-else-if="isUserPage">
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-md-sm flex justify-center text-h6 text-center"
+          >
+            {{ profile.first_name }} {{ profile.last_name }}
+          </div>
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center text-center"
+          >
+            <LocationChip v-if="profile.home_location" :locations="[profile.home_location]" icon="home"/>
+            <q-chip
+              v-if="profile.job_title"
+              color="grey-7" text-color="white" size="md" icon="work"
+            >
+              {{ profile.job_title }}
+            </q-chip>
+            <q-chip
+              v-if="profile.employer_name"
+              color="grey-7" text-color="white" size="md" icon="business"
+            >
+              {{ profile.employer_name }}
+            </q-chip>
+          </div>
+        </template>
         <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
           <q-btn
             unelevated round dense color="grey-8"
@@ -51,8 +77,6 @@
               v-if="employerTypeUtil.isTypeGroup(employer?.organization_type)"
               id="jv-tab-community" name="community" label="Community"
             />
-            <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me"
-                   :label="`About ${profile?.first_name}`"/>
           </q-tabs>
         </ResponsiveWidth>
       </div>
@@ -126,35 +150,6 @@
               :employer="employer"
             />
           </q-tab-panel>
-          <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
-            <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
-              <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
-                <div class="flex items-center">
-                  <img
-                    v-if="profile.profile_picture_url"
-                    :src="profile.profile_picture_url"
-                    alt="Profile picture"
-                    class="q-mr-md"
-                    style="height: 150px; object-fit: scale-down; border-radius: 10px; float: left;"
-                  >
-                  <div class="q-gutter-y-sm">
-                    <div class="text-h6 text-bold">{{ profile.first_name }} {{ profile.last_name }}</div>
-                    <div>{{ profile.job_title }}</div>
-                    <div v-if="profile.home_location">{{ locationUtil.getFullLocation(profile.home_location) }}</div>
-                    <div v-if="profile.employment_start_date">
-                      {{ dataUtil.pluralize('year', employmentYears) }} at {{ employer.name }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-md-4 q-pl-md-md">
-                <div v-for="response in profile.profile_responses">
-                  <div class="text-h6">{{ response.question }}</div>
-                  <div class="q-mt-sm q-mb-md">{{ response.response }}</div>
-                </div>
-              </div>
-            </div>
-          </q-tab-panel>
         </q-tab-panels>
         <q-page-scroller position="bottom-right" :scroll-offset="100" :offset="[40, 40]">
           <q-btn round color="primary" icon="arrow_upward"/>
@@ -169,6 +164,7 @@
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
+import LocationChip from 'components/LocationChip.vue'
 import BaseSidebar from 'components/sidebar/BaseSidebar.vue'
 import SidebarMenuItem from 'components/sidebar/SidebarMenuItem.vue'
 import CommunitySection from 'pages/jobs-page/CommunitySection.vue'
@@ -227,6 +223,7 @@ export default {
     }
   },
   components: {
+    LocationChip,
     CustomTooltip,
     SidebarMenuItem,
     BaseSidebar,
@@ -237,17 +234,11 @@ export default {
     FormJobApplication
   },
   computed: {
-    employmentYears () {
-      if (!this.profile.employment_start_date) {
-        return null
-      }
-      return dateTimeUtil.getDateDifference(this.profile.employment_start_date, dateTimeUtil.now(), 'years')
-    },
-    isShowEmployeeProfile () {
-      return Boolean(this.profile && this.profile.is_profile_viewable && this.profile.profile_responses.length)
-    },
     isEmployerPage () {
       return ['company', 'group'].includes(this.$route.name)
+    },
+    isUserPage () {
+      return this.$route.name === 'profile'
     }
   },
   watch: {
@@ -278,7 +269,7 @@ export default {
       this.userFavorites = this.userStore.getUserFavorites(this.user.id)
     },
     async setLinkOwnerProfile () {
-      const params = { socialLinkId: this.$route.params.filterId }
+      const params = { userKey: this.$route.params.userKey }
       await this.userStore.setUserProfile(params)
       this.profile = this.userStore.getUserProfile(params)
     },

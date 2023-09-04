@@ -664,7 +664,7 @@ class EmployerJobView(JobVyneAPIView):
     @staticmethod
     def get_employer_job_filter(
         employer_job_id=None, is_only_closed=False, is_include_closed=False, is_include_future=False,
-        is_allow_unapproved=False
+        is_allow_unapproved=False, lookback_days=None
     ):
         if employer_job_id:
             return Q(id=employer_job_id)
@@ -677,9 +677,12 @@ class EmployerJobView(JobVyneAPIView):
         elif not is_include_closed:
             job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
         if not is_include_future:
-            start_date = timezone.now().date() - timedelta(days=30 * 3)
             end_date = timezone.now().date()
-            job_filter &= Q(open_date__range=(start_date, end_date))
+            if lookback_days:
+                start_date = timezone.now().date() - timedelta(days=30 * 3)
+                job_filter &= Q(open_date__range=(start_date, end_date))
+            else:
+                job_filter &= Q(open_date__lte=end_date)
         
         return job_filter
     
@@ -687,12 +690,12 @@ class EmployerJobView(JobVyneAPIView):
     def get_employer_jobs(
             employer_job_id=None, employer_job_filter=None, order_by=None, applicant_user=None,
             is_include_fetch=True, is_only_closed=False, is_include_closed=False, is_include_future=False,
-            is_allow_unapproved=False
+            is_allow_unapproved=False, lookback_days=None
     ):
         # NOTE: Be careful adding the order_by argument since it may cause a full table scan if not on an index
         standard_job_filter = EmployerJobView.get_employer_job_filter(
             employer_job_id=employer_job_id, is_only_closed=is_only_closed, is_include_closed=is_include_closed,
-            is_include_future=is_include_future, is_allow_unapproved=is_allow_unapproved
+            is_include_future=is_include_future, is_allow_unapproved=is_allow_unapproved, lookback_days=lookback_days
         )
         
         jobs = EmployerJob.objects.filter(standard_job_filter)

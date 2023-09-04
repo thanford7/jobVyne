@@ -1,5 +1,5 @@
 from scrape.base_scrapers import BambooHrScraper, GreenhouseApiScraper, GreenhouseIframeScraper, GreenhouseScraper, \
-    LeverScraper, \
+    JobviteScraper, LeverScraper, \
     PaylocityScraper, \
     PhenomPeopleScraper, SmartRecruitersScraper, UltiProScraper, WorkdayScraper
 
@@ -113,24 +113,21 @@ class CenteneCorporationScraper(PhenomPeopleScraper):
     start_url = 'https://jobs.centene.com/us/en/search-results'
     
     
-class AdobeScraper(PhenomPeopleScraper):
-    employer_name = 'Adobe'
-    start_url = 'https://careers.adobe.com/us/en/search-results'
-    
-    
 class YelpScraper(PhenomPeopleScraper):
     employer_name = 'Yelp'
     start_url = 'https://www.yelp.careers/us/en/search-results'
     
     
-class GeneralElectricScraper(PhenomPeopleScraper):
+class GeneralElectricScraper(WorkdayScraper):
     employer_name = 'General Electric'
-    start_url = 'https://jobs.gecareers.com/global/en/search-results'
+    start_url = 'https://ge.wd5.myworkdayjobs.com/GE_ExternalSite'
+    has_job_departments = False
     
     
-class AspenDentalScraper(PhenomPeopleScraper):
+class AspenDentalScraper(WorkdayScraper):
     employer_name = 'Aspen Dental'
-    start_url = 'https://careers.aspendental.com/us/en/search-results'
+    start_url = 'https://aspendental.wd1.myworkdayjobs.com/Careers_Aspen_Dental/'
+    has_job_departments = False
     
 
 class ThermoFisherScraper(PhenomPeopleScraper):
@@ -207,3 +204,13 @@ class RaftScraper(GreenhouseScraper):
 class AccrueSavingsScraper(LeverScraper):
     employer_name = 'Accrue'
     EMPLOYER_KEY = 'Accrue'
+    
+    
+class UnitedAirlinesScraper(PhenomPeopleScraper):
+    employer_name = 'United Airlines'
+    start_url = 'https://careers.united.com/us/en/search-results'
+    
+    
+class PulsePointScraper(JobviteScraper):
+    employer_name = 'PulsePoint'
+    EMPLOYER_KEY = 'pulsepoint'

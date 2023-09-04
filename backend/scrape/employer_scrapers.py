@@ -19,14 +19,15 @@ from scrape.custom_scraper.ancestry import AncestryScraper
 from scrape.custom_scraper.packsize import PacksizeScraper
 
 test_scrapers = {
-    # AdobeScraper.employer_name: AdobeScraper,
     # YelpScraper.employer_name: YelpScraper,
-    # GeneralElectricScraper.employer_name: GeneralElectricScraper,
-    # AspenDentalScraper.employer_name: AspenDentalScraper,
     # ThermoFisherScraper.employer_name: ThermoFisherScraper,
+    # UnitedAirlinesScraper.employer_name: UnitedAirlinesScraper,
 }
 
 all_scrapers = {
+    GeneralElectricScraper.employer_name: GeneralElectricScraper,
+    AspenDentalScraper.employer_name: AspenDentalScraper,
+    PulsePointScraper.employer_name: PulsePointScraper,
     AccrueSavingsScraper.employer_name: AccrueSavingsScraper,
     CapTechScraper.employer_name: CapTechScraper,
     BoxablScraper.employer_name: BoxablScraper,

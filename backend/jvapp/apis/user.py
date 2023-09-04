@@ -159,7 +159,7 @@ class UserView(JobVyneAPIView):
     
     @staticmethod
     def get_user(
-            user, user_id=None, employer_id_permissions=None,
+            user, user_id=None, user_key=None, employer_id_permissions=None,
             user_email=None, user_filter=None, is_check_permission=True,
             is_include_fetch=True
     ):
@@ -167,6 +167,8 @@ class UserView(JobVyneAPIView):
             user_filter = Q(id=user_id)
         elif user_email:
             user_filter = Q(email=user_email) | Q(business_email=user_email)
+        elif user_key:
+            user_filter = Q(user_key=user_key)
        
         employer_permissions_filter = Q(employer_id=employer_id_permissions) if employer_id_permissions else Q()
         employer_permissions = Prefetch(
@@ -201,7 +203,7 @@ class UserView(JobVyneAPIView):
                 ))
             )
         
-        if user_id or user_email:
+        if any((user_id, user_email, user_key)):
             if not users:
                 raise JobVyneUser.DoesNotExist
             return users[0]
@@ -265,17 +267,9 @@ class UserProfileView(JobVyneAPIView):
     
     def get(self, request):
         user_id = self.query_params.get('user_id')
-        social_link_id = self.query_params.get('social_link_id')
-        assert any((user_id, social_link_id))
-        if social_link_id:
-            try:
-                user_id = SocialLink.objects.get(id=social_link_id).owner_id
-            except SocialLink.DoesNotExist:
-                return Response(status=status.HTTP_200_OK, data=None)
-        if not user_id:
-            return Response(status=status.HTTP_200_OK, data=None)
-        
-        user = UserView.get_user(self.user, user_id=user_id, is_check_permission=False)
+        user_key = self.query_params.get('user_key')
+        assert any((user_id, user_key))
+        user = UserView.get_user(self.user, user_id=user_id, user_key=user_key, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data=get_serialized_user_profile(user))
     
     

@@ -18,12 +18,13 @@ from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MES
 from jvapp.apis.taxonomy import TaxonomyJobProfessionView
 from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.employer import Employer, Taxonomy
+from jvapp.models.employer import ConnectionTypeBit, Employer, EmployerConnection, Taxonomy
 from jvapp.models.job_seeker import JobApplication
 from jvapp.models.job_subscription import JobSubscription
 from jvapp.models.location import Location, REMOTE_TYPES
 from jvapp.models.social import *
 from jvapp.models.tracking import Message, PageView
+from jvapp.models.user import UserConnection
 from jvapp.serializers.employer import get_serialized_currency, get_serialized_employer_job
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.social import *
@@ -180,7 +181,7 @@ class SocialLinkView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_or_update_link(link, data, user=None, job_ids: list =None):
+    def create_or_update_link(link, data, user=None, job_ids: list = None):
         cfg = {
             'is_default': AttributeCfg(is_ignore_excluded=True),
             'name': AttributeCfg(form_name='link_name', is_ignore_excluded=True)
@@ -205,7 +206,8 @@ class SocialLinkView(JobVyneAPIView):
             }
             existing_links_map = {
                 tuple(sorted([js.id for js in sl.job_subscriptions.all()])): sl for sl in
-                SocialLink.objects.prefetch_related('job_subscriptions').filter(owner_id=data.get('owner_id'), employer_id=data.get('employer_id'))
+                SocialLink.objects.prefetch_related('job_subscriptions').filter(owner_id=data.get('owner_id'),
+                                                                                employer_id=data.get('employer_id'))
             }
             link = existing_links_map.get(job_subscription_ids, link)
         
@@ -276,10 +278,10 @@ class SocialLinkView(JobVyneAPIView):
         links = SocialLink.objects \
             .select_related('employer', 'owner') \
             .prefetch_related(
-                subscriptions_prefetch,
-                app_prefetch,
-                page_view_prefetch
-            ) \
+            subscriptions_prefetch,
+            app_prefetch,
+            page_view_prefetch
+        ) \
             .filter(social_link_filter)
         
         if is_use_permissions:
@@ -295,6 +297,7 @@ class SocialLinkView(JobVyneAPIView):
 
 class SocialLinkJobsView(JobVyneAPIView):
     permission_classes = [AllowAny]
+    LOOKBACK_DAYS = 90
     
     def get(self, request):
         from jvapp.apis.job_subscription import JobSubscriptionView
@@ -305,7 +308,8 @@ class SocialLinkJobsView(JobVyneAPIView):
         employer_key = self.query_params.get('employer_key')
         user_key = self.query_params.get('user_key')
         job_key = self.query_params.get('job_key')
-        job_subscription_ids = self.query_params.getlist('job_subscription_ids[]') or self.query_params.get('job_subscription_ids')
+        job_subscription_ids = self.query_params.getlist('job_subscription_ids[]') or self.query_params.get(
+            'job_subscription_ids')
         
         # TODO: Add recommended jobs based on page owner's profession
         if page_owner_user_id := self.query_params.get('connection_id'):
@@ -372,10 +376,12 @@ class SocialLinkJobsView(JobVyneAPIView):
         jobs = QuerySet()
         if not any((link_id, profession_key, employer_key, user_key, job_key, job_subscription_ids)):
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=Q(), is_include_fetch=True, applicant_user=self.user
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user,
+                lookback_days=self.LOOKBACK_DAYS
             )
         if job_subscription_ids:
-            job_subscriptions = JobSubscriptionView.get_job_subscriptions(subscription_filter=Q(id__in=job_subscription_ids))
+            job_subscriptions = JobSubscriptionView.get_job_subscriptions(
+                subscription_filter=Q(id__in=job_subscription_ids))
             job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
             jobs_filter &= job_subscription_filter
             
@@ -388,7 +394,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_job_filter=jobs_filter,
                 is_include_fetch=True,
                 is_allow_unapproved=is_allow_unapproved,
-                applicant_user=self.user
+                applicant_user=self.user,
+                lookback_days=self.LOOKBACK_DAYS
             )
             if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
                 is_jobs_closed = True
@@ -402,7 +409,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy_id__in=profession_ids)
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
             )
         elif employer_key:
             try:
@@ -416,14 +423,49 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 jobs_filter &= job_subscription_filter
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
             )
         elif user_key:
             try:
-                user = JobVyneUser.objects.get(user_key=user_key)
+                employer_connection_prefetch = Prefetch(
+                    'employer_connection',
+                    queryset=EmployerConnection.objects.filter(
+                        ~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value)),
+                    to_attr='employer_connections'
+                )
+                user_connection_prefetch = Prefetch(
+                    'owner_connection',
+                    queryset=UserConnection.objects.filter(employer_id__isnull=False),
+                    to_attr='user_connections'
+                )
+                user = (
+                    JobVyneUser.objects
+                    .select_related('home_location', 'home_location__city', 'home_location__state',
+                                    'home_location__country')
+                    .prefetch_related(employer_connection_prefetch, user_connection_prefetch)
+                    .get(user_key=user_key)
+                )
+                connection_employer_ids = [ec.employer_id for ec in user.employer_connections] + [uc.employer_id for uc
+                                                                                                  in
+                                                                                                  user.user_connections]
+                jobs_filter &= Q(employer_id__in=set(connection_employer_ids))
+                
+                if user.home_location:
+                    jobs_filter &= SocialLinkJobsView.get_location_filter(
+                        {
+                            'city': user.home_location.city.name if user.home_location.city else None,
+                            'state': user.home_location.state.name if user.home_location.state else None,
+                            'country': user.home_location.country.name if user.home_location.country else None
+                        },
+                        0,
+                        None
+                    )
+                
+                jobs = EmployerJobView.get_employer_jobs(
+                    employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
+                )
             except JobVyneUser.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
-            
         elif link_id:
             if not link:
                 no_results_data[WARNING_MESSAGES_KEY] = [warning_message]
@@ -431,9 +473,9 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=True, user=self.user)
         elif job_key:
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, applicant_user=self.user
+                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
             )
-            
+        
         paginated_jobs = Paginator(jobs, per_page=36)
         page_count = min(page_count, paginated_jobs.num_pages)
         
@@ -448,7 +490,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             data[WARNING_MESSAGES_KEY] = [warning_message]
         
         return Response(status=status.HTTP_200_OK, data=data)
-
+    
     @staticmethod
     def get_serialized_job(job):
         job_data = {
@@ -497,7 +539,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                     'created_dt': job_application.created_dt,
                     'is_external': job_application.is_external_application
                 }
-            
+        
         return job_data
     
     @staticmethod
@@ -526,15 +568,16 @@ class SocialLinkJobsView(JobVyneAPIView):
         if city and range_miles:
             start_point = Location.get_geometry_point(location_dict['latitude'], location_dict['longitude'])
             location_filter = (
-                Q(locations__geometry__within_miles=(start_point, range_miles)) |
-                (Q(locations__city__name__isnull=True) & Q(locations__state__name=state)) |
-                (Q(locations__city__name__isnull=True) & Q(locations__state__name__isnull=True) & Q(locations__country__name=country))
+                    Q(locations__geometry__within_miles=(start_point, range_miles)) |
+                    (Q(locations__city__name__isnull=True) & Q(locations__state__name=state)) |
+                    (Q(locations__city__name__isnull=True) & Q(locations__state__name__isnull=True) & Q(
+                        locations__country__name=country))
             )
         elif state or country:
             if state:
                 location_filter = (
-                    Q(locations__state__name=state) |
-                    (Q(locations__state__name__isnull=True) & Q(locations__country__name=country))
+                        Q(locations__state__name=state) |
+                        (Q(locations__state__name__isnull=True) & Q(locations__country__name=country))
                 )
             elif country:
                 location_filter = Q(locations__country__name=country)
@@ -546,7 +589,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                 # Some remote jobs don't have a country. In this case, we assume it's a global remote job
                 remote_filter &= (Q(locations__country__name=country) | Q(locations__country__name__isnull=True))
         
-        if remote_type_bit and (remote_type_bit & REMOTE_TYPES.NO.value) and not (remote_type_bit & REMOTE_TYPES.YES.value):
+        if remote_type_bit and (remote_type_bit & REMOTE_TYPES.NO.value) and not (
+                remote_type_bit & REMOTE_TYPES.YES.value):
             remote_filter = Q(locations__is_remote=False)
         
         if remote_filter and location_filter:
@@ -708,7 +752,6 @@ class SocialLinkPostJobsView(JobVyneAPIView):
                 remove_employer_ids = []
         
         return distributed_jobs
-        
 
 
 class ShareSocialLinkView(JobVyneAPIView):

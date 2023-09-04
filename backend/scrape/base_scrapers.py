@@ -12,7 +12,7 @@ from math import ceil
 from urllib.parse import unquote
 
 import requests
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ServerDisconnectedError
 from django.conf import settings
 from django.utils import timezone
 from parsel import Selector
@@ -178,7 +178,7 @@ class Scraper:
             resp = None
             try:
                 page.on('requestfailed', self.request_failure_logger)
-                # page.on('response', self.response_failure_logger)
+                page.on('response', self.response_failure_logger)
                 resp = await page.goto(url, referer=self.get_start_url(), wait_until=self.PAGE_LOAD_WAIT_EVENT)
                 if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
                     logger.info('Page was redirected. Trying to reload page')
@@ -239,18 +239,26 @@ class Scraper:
                 new_url = await self.do_job_page_js(page)
                 if new_url:
                     url = new_url
-                    page_html = await self.get_html_from_url(url)
+                    page_html = await self.get_html_from_url_with_retry(url)
                 else:
                     page_html = await self.get_page_html(page)
                 await page.close()
             else:
-                page_html = await self.get_html_from_url(url)
+                page_html = await self.get_html_from_url_with_retry(url)
             meta_data = meta_data or {}
             job_item = self.get_job_data_from_html(page_html, job_url=url, **meta_data)
             if job_item:
                 self.job_items.append(job_item)
             logger.info(f'Job page scraped ({current_page}) -- {(job_item and job_item.job_title) or "no job found"}')
             self.queue.task_done()
+            
+    async def get_html_from_url_with_retry(self, url):
+        try:
+            resp = await self.get_html_from_url(url)
+            return resp
+        except ServerDisconnectedError:
+            resp = await self.get_html_from_url(url)
+            return resp
     
     async def get_html_from_url(self, url):
         """Return an HTML selector. If no JavaScript interaction is needed, this method should
@@ -1290,7 +1298,7 @@ class AshbyHQApiV2Scraper(Scraper):
         
         for job in jobs:
             await self.add_job_links_to_queue(
-                job['jobUrl'], meta_data={'job_data': job, 'website_url': company_data['publicWebsite']}
+                job['jobUrl'], meta_data={'job_data': job, 'website_url': company_data['publicWebsite'] if company_data else None}
             )
         
         await self.close()
@@ -1695,7 +1703,7 @@ class JobviteScraper(Scraper):
     async def scrape_jobs(self):
         html_dom = await self.get_html_from_url(self.get_start_url())
         await self.add_job_links_to_queue(
-            html_dom.xpath('//table[@class="jv-job-list"]//tr//a/@href').getall()
+            html_dom.xpath('//*[@class="jv-job-list"]//a/@href').getall()
         )
         await self.close()
     
@@ -1880,6 +1888,7 @@ class PhenomPeopleScraper(Scraper):
     
     async def scrape_jobs(self):
         page = await self.get_starting_page()
+        await self.save_page_info(page)
         await self.wait_for_el(page, '[data-ph-at-id="jobs-list"]')
         html_dom = await self.get_page_html(page)
         jobs_count = int(html_dom.xpath('//div[contains(@class, "phs-jobs-list-count")]/@data-ph-at-count').get())

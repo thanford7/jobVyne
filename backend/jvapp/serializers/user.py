@@ -80,10 +80,15 @@ def get_serialized_user_profile(user: JobVyneUser, is_get_profile=False):
         'first_name': user.first_name,
         'last_name': user.last_name,
         'job_title': user.job_title,
+        'employer_name': user.employer.employer_name if user.employer else None,
         'profession_id': user.profession.id if user.profession else None,
         'profession_name': user.profession.name if user.profession else None,
         'employment_start_date': user.employment_start_date,
-        'home_location': get_serialized_location(user.home_location) if user.home_location else None,
+        'home_location': {
+            'city': user.home_location.city.name if user.home_location.city else None,
+            'state': user.home_location.state.name if user.home_location.state else None,
+            'country': user.home_location.country.name if user.home_location.country else None
+        } if user.home_location else None,
         'is_profile_viewable': user.is_profile_viewable
     }
     
