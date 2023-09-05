@@ -21,7 +21,7 @@
           >
             <q-card>
               <div class="bg-grey-3 q-px-md">
-                {{ communityUtil.get_member_type_label(member.member_type_bits) }}
+                {{ communityUtil.getMemberTypeLabel(member.member_type_bits) }}
               </div>
               <q-item class="border-bottom-1-gray-300">
                 <q-item-section avatar>
@@ -86,7 +86,9 @@
                     class="text-bold q-pt-sm"
                     :class="(communityUtil.isJobSeeker(member.member_type_bits)) ? 'q-mt-sm border-top-1-gray-100' : ''"
                   >
-                    {{ dataUtil.pluralize('employer connection', member.employer_connection_count) }}
+                    <a :href="`/jv/${member.user_key}`" target="_blank">
+                      {{ dataUtil.pluralize('employer connection', member.employer_connection_count) }}
+                    </a>
                   </div>
                   <div class="text-small">
                     {{ member.employer_connection_text }}

@@ -18,6 +18,7 @@ urlpatterns = [
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
     path('admin/user-created-job/approval/', admin.AdminUserCreatedJobApprovalView.as_view()),
     path('community/members/', community.CommunityMemberView.as_view()),
+    path('community/job-connections/', community.JobConnectionsView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
     path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),

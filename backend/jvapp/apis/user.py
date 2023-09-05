@@ -338,7 +338,7 @@ class UserCreatedJobView(JobVyneAPIView):
             EmployerJob.objects
             .select_related('employer', 'created_user')
             .prefetch_related(
-                'employer_connection',
+                'employer__user_connection',
                 'locations',
                 'locations__city',
                 'locations__state',

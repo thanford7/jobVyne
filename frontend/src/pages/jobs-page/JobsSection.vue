@@ -5,7 +5,7 @@
         <div class="col-12 q-mb-md">
           <q-btn
             v-if="!isSingleJob"
-            label="Filter jobs" color="primary" icon="filter_alt" class="q-mr-sm"
+            label="Filter jobs" :style="employerStyleUtil.getButtonStyle(employer)" icon="filter_alt" class="q-mr-sm"
             @click="openJobFilter()"
           >
             <q-badge color="info" floating>{{ filterCount }}</q-badge>
@@ -44,6 +44,7 @@
               <JobCards
                 class="col-12 col-md-9 q-mt-md"
                 :user="user"
+                :employer="employer"
                 :user-favorites="userFavorites"
                 :jobs="jobs"
                 :is-single-employer="isSingleEmployer"
@@ -325,7 +326,7 @@ export default {
       return this.q.dialog({
         component: DialogLogin,
         componentProps: {
-          isCreate,
+          isCreateDefault: isCreate,
           redirectPageUrl: window.location.pathname,
           redirectParams: dataUtil.getQueryParams(),
           userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE],

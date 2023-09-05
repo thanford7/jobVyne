@@ -394,8 +394,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_job_filter=jobs_filter,
                 is_include_fetch=True,
                 is_allow_unapproved=is_allow_unapproved,
-                applicant_user=self.user,
-                lookback_days=self.LOOKBACK_DAYS
+                applicant_user=self.user
             )
             if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
                 is_jobs_closed = True
@@ -409,7 +408,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
             jobs_filter &= Q(taxonomy__taxonomy_id__in=profession_ids)
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user,
+                lookback_days=self.LOOKBACK_DAYS
             )
         elif employer_key:
             try:
@@ -423,7 +423,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 jobs_filter &= job_subscription_filter
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
             )
         elif user_key:
             try:
@@ -445,11 +445,15 @@ class SocialLinkJobsView(JobVyneAPIView):
                     .prefetch_related(employer_connection_prefetch, user_connection_prefetch)
                     .get(user_key=user_key)
                 )
-                connection_employer_ids = [ec.employer_id for ec in user.employer_connections] + [uc.employer_id for uc
-                                                                                                  in
-                                                                                                  user.user_connections]
+                connection_employer_ids = (
+                        [ec.employer_id for ec in user.employer_connections]
+                        + [uc.employer_id for uc in user.user_connections]
+                )
                 jobs_filter &= Q(employer_id__in=set(connection_employer_ids))
                 
+                # Limit jobs to close to the user's home location
+                # This is important for large global companies. For example if the user is connected to Google
+                # and lives in the US, it's not likely they can help connect someone to Google in India
                 if user.home_location:
                     jobs_filter &= SocialLinkJobsView.get_location_filter(
                         {
@@ -462,7 +466,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                     )
                 
                 jobs = EmployerJobView.get_employer_jobs(
-                    employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
+                    employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user,
+                    lookback_days=self.LOOKBACK_DAYS
                 )
             except JobVyneUser.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
@@ -473,16 +478,38 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs = self.get_jobs_from_social_link(link, extra_filter=jobs_filter, is_include_fetch=True, user=self.user)
         elif job_key:
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, applicant_user=self.user, lookback_days=self.LOOKBACK_DAYS
+                employer_job_filter=Q(job_key=job_key), is_include_fetch=True, applicant_user=self.user,
+                lookback_days=self.LOOKBACK_DAYS
             )
         
         paginated_jobs = Paginator(jobs, per_page=36)
         page_count = min(page_count, paginated_jobs.num_pages)
+        jobs = paginated_jobs.get_page(page_count)
+        employer_ids = set([j.employer_id for j in jobs])
+        employer_connections = (
+            EmployerConnection.objects
+            .select_related('user')
+            .prefetch_related('hiring_jobs')
+            .filter(employer_id__in=employer_ids)
+            .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value))
+        )
+        employer_connections_map = defaultdict(list)
+        for conn in employer_connections:
+            employer_connections_map[conn.employer_id].append(conn)
+        
+        user_connections = (
+            UserConnection.objects
+            .select_related('owner', 'profession')
+            .filter(employer_id__in=employer_ids)
+        )
+        user_connections_map = defaultdict(list)
+        for conn in user_connections:
+            user_connections_map[conn.employer_id].append(conn)
         
         data = {
             'total_page_count': paginated_jobs.num_pages,
             'total_job_count': paginated_jobs.count,
-            'jobs': [self.get_serialized_job(job) for job in paginated_jobs.get_page(page_count)],
+            'jobs': [self.get_serialized_job(job, employer_connections_map, user_connections_map, self.user) for job in jobs],
             'is_jobs_closed': is_jobs_closed,
             'is_single_job': is_single_job
         }
@@ -492,7 +519,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         return Response(status=status.HTTP_200_OK, data=data)
     
     @staticmethod
-    def get_serialized_job(job):
+    def get_serialized_job(job, employer_connections, user_connections, user):
         job_data = {
             'employer': {
                 'id': job.employer_id,
@@ -530,7 +557,29 @@ class SocialLinkJobsView(JobVyneAPIView):
             'locations': [get_serialized_location(l) for l in job.locations.all()],
             'locations_text': job.locations_text,
             'job_department_standardized': job.job_department_standardized,
+            'own_connection': 0
         }
+        
+        general_connections = defaultdict(int)
+        for conn in (employer_connections.get(job.employer_id) or []):
+            is_owner = False
+            if user and user.id == conn.user_id:
+                is_owner = True
+            is_hiring_team = job.id in [hiring_job.id for hiring_job in conn.hiring_jobs.all()]
+            connection_type = conn.connection_type
+            if is_hiring_team and conn.connection_type == ConnectionTypeBit.CURRENT_EMPLOYEE.value:
+                connection_type = ConnectionTypeBit.HIRING_MEMBER.value
+            if is_owner:
+                job_data['own_connection'] = conn.connection_type
+                continue
+            
+            general_connections[connection_type] += 1
+        
+        job_data['general_connections'] = []
+        for connection_type, connection_count in general_connections.items():
+            job_data['general_connections'].append({'connection_type': connection_type, 'connection_count': connection_count})
+        
+        job_data['general_connections'].sort(key=lambda x: x['connection_type'])
         
         if hasattr(job, 'user_job_applications'):
             if job_application := next((app for app in job.user_job_applications), None):

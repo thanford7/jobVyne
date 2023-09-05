@@ -945,6 +945,68 @@ class WorkdayScraper(Scraper):
         return job_hrefs[0]
 
 
+class WorkdayApiScraper(Scraper):
+    ATS_NAME = 'Workday'
+    IS_API = True
+    JOBS_BASE_API_URL = None
+    JOBS_PER_PAGE = 20
+    
+    async def scrape_jobs(self):
+        has_started = False
+        total_jobs = None
+        start_job_idx = 0
+        while (not has_started) or (start_job_idx < total_jobs):
+            jobs_list, total_jobs = self.get_jobs(start_job_idx)
+            for job in jobs_list:
+                await self.add_job_links_to_queue(self.get_job_link(job['externalPath']), meta_data={'external_path': job['externalPath']})
+            start_job_idx += self.JOBS_PER_PAGE
+            has_started = True
+        
+        await self.close()
+    
+    def get_jobs(self, start_job_idx):
+        jobs_resp = requests.post(
+            f'{self.JOBS_BASE_API_URL}/jobs',
+            json={
+                'appliedFacets': {},
+                'limit': self.JOBS_PER_PAGE,
+                'offset': start_job_idx,
+                'searchText': ''
+            }
+        )
+        jobs_data = json.loads(jobs_resp.content)
+        return jobs_data['jobPostings'], jobs_data['total']
+    
+    def get_job_link(self, external_path):
+        return f'{self.get_start_url()}{external_path}'
+    
+    def get_job_data(self, external_path):
+        job_resp = requests.get(
+            f'{self.JOBS_BASE_API_URL}{external_path}',
+            params={'pay_transparency': True}
+        )
+        return json.loads(job_resp.content)['jobPostingInfo']
+    
+    def get_job_data_from_html(self, html, job_url=None, job_department=None, job_id=None, external_path=None):
+        job_data = self.get_job_data(external_path)
+        job_description = html_parser.unescape(job_data['jobDescription'])
+        description_compensation_data = parse_compensation_text(job_description)
+        
+        locations = list(set([job_data['location']] + job_data.get('additionalLocations', [])))
+        
+        return JobItem(
+            employer_name=self.employer_name,
+            application_url=job_url,
+            job_title=job_data['title'],
+            locations=locations,
+            job_department=self.DEFAULT_JOB_DEPARTMENT,
+            job_description=job_description,
+            employment_type=job_data['timeType'] or self.DEFAULT_EMPLOYMENT_TYPE,
+            first_posted_date=get_datetime_format_or_none(get_datetime_or_none(job_data['startDate'], as_date=True)),
+            **description_compensation_data
+        )
+
+
 class LeverScraper(Scraper):
     ATS_NAME = 'Lever'
     TEST_REDIRECT = False

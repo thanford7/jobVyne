@@ -3,7 +3,8 @@ import { makeApiRequestKey } from 'src/utils/requests.js'
 
 export const useCommunityStore = defineStore('community', {
   state: () => ({
-    members: {} // {key: [member1, member2, ...]}
+    members: {}, // {key: [member1, member2, ...]}
+    jobConnections: {} // {jobId: [connection1, ...]}
   }),
 
   actions: {
@@ -17,9 +18,21 @@ export const useCommunityStore = defineStore('community', {
       })
       this.members[key] = resp.data
     },
+    async setJobConnections ({ jobId = null, isForceRefresh = false }) {
+      if (this.jobConnections[jobId] && !isForceRefresh) {
+        return
+      }
+      const resp = await this.$api.get('community/job-connections/', {
+        params: { job_id: jobId }
+      })
+      this.jobConnections[jobId] = resp.data
+    },
     getMembers ({ memberType = null, employerId = null, professionKey = null }) {
       const key = makeApiRequestKey(memberType, employerId, professionKey)
       return this.members[key] || []
+    },
+    getJobConnections (jobId) {
+      return this.jobConnections[jobId] || []
     }
   }
 })

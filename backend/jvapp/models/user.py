@@ -525,3 +525,7 @@ class UserConnection(AuditFields):
             UniqueConstraint(fields=['owner', 'email', 'employer_raw'], condition=Q(email__isnull=False), name='unique_user_connection_email'),
             UniqueConstraint(fields=['owner', 'linkedin_handle', 'employer_raw'], name='unique_user_connection_linkedin'),
         ]
+    
+    @property
+    def full_name(self):
+        return ' '.join([n for n in [self.first_name, self.last_name] if n])

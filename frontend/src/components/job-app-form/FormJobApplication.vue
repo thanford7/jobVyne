@@ -126,6 +126,38 @@
               </q-file>
             </template>
           </FileDisplayOrUpload>
+          <FileDisplayOrUpload
+            v-if="isFieldShown('cover_letter')"
+            ref="coverLetterUpload"
+            :label="(isFieldOptional('cover_letter')) ? 'Cover letter*' : 'Cover letter'"
+            :file-url="formData.cover_letter_url"
+            :new-file="formData.cover_letter"
+            :new-file-key="newCoverLetterKey"
+            file-url-key="cover_letter_url"
+          >
+            <template v-slot:fileInput>
+              <q-file
+                ref="newCoverLetterUpload"
+                filled bottom-slots clearable
+                v-model="formData.cover_letter"
+                :label="(isFieldOptional('cover_letter')) ? 'Cover letter*' : 'Cover letter'"
+                class="q-mb-none jv-form-job-app-cover-letter"
+                :accept="allowedFileExtensionsStr"
+                max-file-size="1000000"
+                lazy-rules="ondemand"
+                :rules="[ val => {
+                  if (!this.$refs.coverLetterUpload.isUpload) {
+                    return true
+                  }
+                  return isFieldOptional('cover_letter') || val || 'A cover letter is required'
+                }]"
+              >
+                <template v-slot:append>
+                  <q-icon name="cloud_upload"/>
+                </template>
+              </q-file>
+            </template>
+          </FileDisplayOrUpload>
           <div class="text-small text-gray-3">
             *Optional
           </div>
@@ -229,6 +261,7 @@ export default {
       formData: this.resetFormData(),
       newResumeKey: 'resume',
       newAcademicTranscriptKey: 'academic_transcript',
+      newCoverLetterKey: 'cover_letter',
       isApplicationSaved: false,
       isSaving: false,
       isVerifyEmail: false,
@@ -329,7 +362,7 @@ export default {
         { job_id: this.jobApplication.id, filter_id: this.$route.params.filterId }
       )
 
-      await this.$api.post('job-application/', getAjaxFormData(data, [this.newResumeKey, this.newAcademicTranscriptKey]))
+      await this.$api.post('job-application/', getAjaxFormData(data, [this.newResumeKey, this.newAcademicTranscriptKey, this.newCoverLetterKey]))
       this.$emit('updateApplications')
       this.isApplicationSaved = true
       // Leave the drawer open to allow user to create an account if they don't have one

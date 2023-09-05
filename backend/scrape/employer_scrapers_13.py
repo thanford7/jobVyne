@@ -1,7 +1,7 @@
 from scrape.base_scrapers import BambooHrScraper, GreenhouseApiScraper, GreenhouseIframeScraper, GreenhouseScraper, \
     JobviteScraper, LeverScraper, \
     PaylocityScraper, \
-    PhenomPeopleScraper, SmartRecruitersScraper, UltiProScraper, WorkdayScraper
+    PhenomPeopleScraper, SmartRecruitersScraper, UltiProScraper, WorkdayApiScraper, WorkdayScraper
 
 
 class MapleScraper(LeverScraper):
@@ -118,8 +118,9 @@ class YelpScraper(PhenomPeopleScraper):
     start_url = 'https://www.yelp.careers/us/en/search-results'
     
     
-class GeneralElectricScraper(WorkdayScraper):
+class GeneralElectricScraper(WorkdayApiScraper):
     employer_name = 'General Electric'
+    JOBS_BASE_API_URL = 'https://ge.wd5.myworkdayjobs.com/wday/cxs/ge/GE_ExternalSite'
     start_url = 'https://ge.wd5.myworkdayjobs.com/GE_ExternalSite'
     has_job_departments = False
     
@@ -214,3 +215,25 @@ class UnitedAirlinesScraper(PhenomPeopleScraper):
 class PulsePointScraper(JobviteScraper):
     employer_name = 'PulsePoint'
     EMPLOYER_KEY = 'pulsepoint'
+    
+    
+class BlueBeamScraper(GreenhouseScraper):
+    employer_name = 'Bluebeam'
+    EMPLOYER_KEY = 'bluebeam'
+    
+    
+class AnchorageDigitalScraper(LeverScraper):
+    employer_name = 'Anchorage Digital'
+    EMPLOYER_KEY = 'anchorage'
+    
+    
+class LivelyScraper(GreenhouseScraper):
+    employer_name = 'Lively'
+    EMPLOYER_KEY = 'lively43'
+    
+    
+class DisneyScraper(WorkdayApiScraper):
+    employer_name = 'Disney'
+    JOBS_BASE_API_URL = 'https://disney.wd5.myworkdayjobs.com/wday/cxs/disney/disneycareer'
+    start_url = 'https://disney.wd5.myworkdayjobs.com/en-US/disneycareer'
+    has_job_departments = False

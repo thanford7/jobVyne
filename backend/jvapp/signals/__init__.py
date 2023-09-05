@@ -176,6 +176,11 @@ def add_job_application_requirements(sender, instance, created, *args, **kwargs)
         EmployerJobApplicationRequirement(
             created_dt=timezone.now(), modified_dt=timezone.now(),
             application_field='academic_transcript', is_required=False, is_optional=False, is_hidden=True, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='cover_letter', is_required=False, is_optional=False, is_hidden=True,
+            is_locked=False
         )
     ]
     for application_requirement in requirements:

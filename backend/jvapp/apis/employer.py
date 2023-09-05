@@ -718,9 +718,7 @@ class EmployerJobView(JobVyneAPIView):
                 .prefetch_related(
                     locations_prefetch,
                     'taxonomy',
-                    'taxonomy__taxonomy',
-                    'employer__user_connection',
-                    'employer__user_connection__user'
+                    'taxonomy__taxonomy'
                 )
             )
             if applicant_user:
@@ -781,13 +779,14 @@ class EmployerConnectionView(JobVyneAPIView):
             'is_allow_contact': None
         })
         
+        is_new = not employer_connection.id
+        employer_connection.save()
+        
         if hiring_job:
             employer_connection.hiring_jobs.add(hiring_job)
         elif job := data.get('job'):
             employer_connection.hiring_jobs.remove(job)
         
-        is_new = not employer_connection.id
-        employer_connection.save()
         return employer_connection, is_new
 
 

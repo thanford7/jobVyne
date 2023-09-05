@@ -3,6 +3,16 @@
     :base-title-text="(isCreate) ? 'Create account' : 'Login'"
     :is-include-buttons="false"
   >
+    <div v-if="isShowLoginToggle" class="q-mb-md">
+      <q-btn-toggle
+        v-model="isCreate"
+        toggle-color="grey-7" spread
+        :options="[
+          { label: 'Login', value: false },
+          { label: 'Create account', value: true }
+        ]"
+      />
+    </div>
     <AuthAll
       :is-create="isCreate"
       :redirect-page-url="redirectPageUrl"
@@ -23,9 +33,13 @@ export default {
   inheritAttrs: false,
   components: { AuthAll, DialogBase },
   props: {
-    isCreate: {
+    isCreateDefault: {
       type: Boolean,
       default: false
+    },
+    isShowLoginToggle: {
+      type: Boolean,
+      default: true
     },
     redirectPageUrl: {
       type: [String, null]
@@ -38,6 +52,11 @@ export default {
     },
     styleOverride: {
       type: [Object, null]
+    }
+  },
+  data () {
+    return {
+      isCreate: this.isCreateDefault
     }
   },
   methods: {

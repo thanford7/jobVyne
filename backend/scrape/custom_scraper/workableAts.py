@@ -1011,6 +1011,11 @@ class ScreencastifyScraper(WorkableScraper):
 class WowzaScraper(WorkableScraper):
     employer_name = 'Wowza Media Systems'
     EMPLOYER_KEY = 'wowza-media-systems'
+    
+    
+class FleetioScraper(WorkableScraper):
+    employer_name = 'Fleetio'
+    EMPLOYER_KEY = 'fleetio'
 
 
 workable_scrapers = {

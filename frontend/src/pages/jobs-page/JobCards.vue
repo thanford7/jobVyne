@@ -60,7 +60,8 @@
                     <template v-slot:icon>
                       <q-chip size="12px" color="gray-8" dense outline>{{ job.employer.ats_name }}</q-chip>
                     </template>
-                    This is the Applicant Tracking System (ATS) that {{ job.employer.name }} uses. Some ATSs are easier to
+                    This is the Applicant Tracking System (ATS) that {{ job.employer.name }} uses. Some ATSs are easier
+                    to
                     use
                     compared with others. If you've been job searching for a bit of time, you'll know which ones 😆
                   </CustomTooltip>
@@ -141,7 +142,7 @@
                   v-if="!job.is_use_job_url"
                   ripple
                   class="jv-apply-btn q-mb-sm" label="Apply" size="md"
-                  :style="employerStyleUtil.getButtonStyle(job.employer)"
+                  :style="employerStyleUtil.getButtonStyle(employer)"
                   @click.prevent.stop="$emit('openApplication', job.id)"
                 />
                 <template v-else>
@@ -149,11 +150,52 @@
                     label="Apply on employer site"
                     ripple
                     class="jv-apply-btn q-mb-sm" icon="launch" size="md"
-                    :style="employerStyleUtil.getButtonStyle(job.employer)"
+                    :style="employerStyleUtil.getButtonStyle(employer)"
                     @click.prevent="saveExternalApplication(job)"
                   />
                 </template>
               </template>
+            </div>
+            <div v-if="job.general_connections?.length || job.own_connection"
+                 class="col-12 border-top-1-gray-100 q-py-sm q-px-sm">
+              <div class="text-bold q-mb-sm">
+                <CustomTooltip :is_include_icon="false">
+                  <template v-slot:content>Job Connections</template>
+                  You are 700% more likely to land a job interview if you are referred by an employee. Use your
+                  connections
+                  to get a warm intro! 🔥
+                </CustomTooltip>
+              </div>
+              <div v-if="job.own_connection" class="text-small">
+                <q-icon name="info"/>
+                <span v-if="communityUtil.isConnectionHiringMember(job.own_connection)">
+                  You are part of the hiring team for this job
+                </span>
+                <span v-else-if="communityUtil.isConnectionCurrentEmployee(job.own_connection)">
+                  You work at this company
+                </span>
+                <span v-else-if="communityUtil.isConnectionFormerEmployee(job.own_connection)">
+                  You previously worked at this company
+                </span>
+              </div>
+              <q-list v-if="job.general_connections" class="text-small" dense separator>
+                <q-item v-for="connection in job.general_connections">
+                  <q-item-section>
+                    {{ getGeneralConnectionLabel(connection) }}
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-btn @click="openConnectionsDialog(job)" size="sm" color="grey-8">
+                      <CustomTooltip v-if="!isLoggedIn" :is_include_icon="false">
+                        <template v-slot:content>
+                          <q-icon name="lock"/>
+                        </template>
+                        You must login or create an account to view connections
+                      </CustomTooltip>
+                      &nbsp;&nbsp;View
+                    </q-btn>
+                  </q-item-section>
+                </q-item>
+              </q-list>
             </div>
           </div>
         </q-card>
@@ -165,19 +207,24 @@
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogJobRequirements from 'components/dialogs/DialogJobRequirements.vue'
+import DialogLogin from 'components/dialogs/DialogLogin.vue'
+import DialogShowEmployerConnections from 'components/dialogs/DialogShowEmployerConnections.vue'
 import LocationChip from 'components/LocationChip.vue'
 import { useQuasar } from 'quasar'
 import colorUtil from 'src/utils/color.js'
+import communityUtil from 'src/utils/community.js'
 import dataUtil from 'src/utils/data.js'
 import dateTimeUtil from 'src/utils/datetime.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
 import formUtil from 'src/utils/form.js'
 import { getAjaxFormData, openUrlInNewTab } from 'src/utils/requests.js'
+import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 
 export default {
   name: 'JobCards',
   props: {
     user: [Object, null],
+    employer: [Object, null],
     userFavorites: Object,
     jobs: Object,
     isSingleEmployer: Boolean,
@@ -192,6 +239,7 @@ export default {
   data () {
     return {
       pageNumber: 1,
+      communityUtil,
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
@@ -200,7 +248,28 @@ export default {
       openUrlInNewTab
     }
   },
+  computed: {
+    isLoggedIn () {
+      return this.user && !dataUtil.isEmpty(this.user)
+    }
+  },
   methods: {
+    getGeneralConnectionLabel (connection) {
+      let connectionLabel = dataUtil.pluralize('connection', connection.connection_count)
+      if (communityUtil.isConnectionHiringMember(connection.connection_type)) {
+        connectionLabel += (connection.connection_count === 1) ? ' is' : ' are'
+        connectionLabel += ' hiring for this job'
+      } else if (communityUtil.isConnectionCurrentEmployee(connection.connection_type)) {
+        connectionLabel += (connection.connection_count === 1) ? ' works' : ' work'
+        connectionLabel += ' at this company'
+      } else if (communityUtil.isConnectionFormerEmployee(connection.connection_type)) {
+        connectionLabel += ' used to work at this company'
+      } else if (communityUtil.isConnectionKnowEmployee(connection.connection_type)) {
+        connectionLabel += (connection.connection_count === 1) ? ' knows' : ' know'
+        connectionLabel += ' someone who works at this company'
+      }
+      return connectionLabel
+    },
     isUserFavoriteEmployer (employer) {
       if (!this.userFavorites?.employers) {
         return false
@@ -208,6 +277,22 @@ export default {
       return Boolean(
         this.userFavorites?.employers.find((favoriteEmployer) => favoriteEmployer.employer_id === employer.id)
       )
+    },
+    openConnectionsDialog (job) {
+      if (!this.isLoggedIn) {
+        return this.q.dialog({
+          component: DialogLogin,
+          componentProps: {
+            redirectPageUrl: window.location.pathname,
+            redirectParams: dataUtil.getQueryParams(),
+            userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE]
+          }
+        })
+      }
+      return this.q.dialog({
+        component: DialogShowEmployerConnections,
+        componentProps: { job }
+      })
     },
     async addFavoriteEmployer (employerId) {
       await this.$api.post('user/favorite/', getAjaxFormData({

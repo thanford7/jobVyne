@@ -10,7 +10,7 @@
       toggle-color="grey-7"
       class="q-mb-md border-1-gray-300"
       :options="jobSections"
-      spread size="md" ripple
+      spread :size="(utilStore.isUnderBreakPoint('sm')) ? 'xs' : 'md'" ripple
     />
     <div v-if="isHtml" v-html="sectionValue"/>
     <div v-else-if="isText">
@@ -28,6 +28,7 @@
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import dataUtil from 'src/utils/data.js'
+import { useUtilStore } from 'stores/utility-store.js'
 
 const JOB_SECTION_REQUIREMENTS = 'responsibilities'
 const JOB_SECTION_QUALIFICATIONS = 'qualifications'
@@ -54,7 +55,8 @@ export default {
     return {
       showSection: jobSections[0].value,
       jobSections,
-      dataUtil
+      dataUtil,
+      utilStore: useUtilStore()
     }
   },
   computed: {

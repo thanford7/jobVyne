@@ -1,14 +1,14 @@
 import logging
 
 from django.db.models import Prefetch, Q
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.apis._apiBase import JobVyneAPIView, get_error_response
 from jvapp.models import JobVyneUser
-from jvapp.models.employer import ConnectionTypeBit, EmployerConnection
+from jvapp.models.employer import ConnectionTypeBit, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
+from jvapp.models.user import UserConnection
 from jvapp.utils.data import coerce_int
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class CommunityMemberView(JobVyneAPIView):
             'employer_connection',
             queryset=(
                 EmployerConnection.objects
-                .select_related('employer')
+                .select_related('employer').filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value))
             )
         )
 
@@ -57,7 +57,7 @@ class CommunityMemberView(JobVyneAPIView):
         logger.info('Fetching community members')
         serialized_members = [self.get_serialized_member(m, member_type) for m in members]
         serialized_members = [m for m in serialized_members if not member_type or (member_type & m['member_type_bits'])]
-        serialized_members.sort(key=lambda x: x['id'], reverse=True)
+        serialized_members.sort(key=lambda x: x['joined_dt'], reverse=True)
         return Response(status=status.HTTP_200_OK, data=serialized_members)
     
     @staticmethod
@@ -94,7 +94,8 @@ class CommunityMemberView(JobVyneAPIView):
             })
         employer_connections.sort(key=lambda x: (x['connection_type'], x['employer_name']))
         member_data = {
-            'id': user.id,
+            'user_key': user.user_key,
+            'joined_dt': user.created_dt,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'linkedin_url': user.linkedin_url,
@@ -134,3 +135,96 @@ class CommunityMemberView(JobVyneAPIView):
             member_data['email'] = user.contact_email
             
         return member_data
+    
+    
+class JobConnectionsView(JobVyneAPIView):
+    
+    def get(self, request):
+        job_id = coerce_int(self.query_params.get('job_id'))
+        if not job_id:
+            return get_error_response('A job ID is required')
+        
+        employer_connections_prefetch = Prefetch(
+            'employer__user_connection',
+            queryset=(
+                EmployerConnection.objects
+                .select_related('user', 'user__profession')
+                .prefetch_related('hiring_jobs')
+                .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value) & ~Q(user_id=self.user.id))
+            ),
+            to_attr='employer_connections'
+        )
+        user_connections_prefetch = Prefetch(
+            'employer__connection',
+            queryset=(
+                UserConnection.objects.select_related('profession').filter(~Q(owner_id=self.user.id))
+            ),
+            to_attr='user_connections'
+        )
+        job_profession_prefetch = Prefetch(
+            'taxonomy',
+            queryset=JobTaxonomy.objects.select_related('taxonomy').filter(taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION),
+            to_attr='profession'
+        )
+        
+        job = (
+            EmployerJob.objects
+            .prefetch_related(employer_connections_prefetch, user_connections_prefetch, job_profession_prefetch)
+            .get(id=job_id)
+        )
+        job_profession = next((p.taxonomy for p in job.profession), None)
+        employer_connections = [
+            JobConnectionsView.get_serialized_employer_connection(ec, job, job_profession) for ec in job.employer.employer_connections
+        ]
+        user_connections = [
+            JobConnectionsView.get_serialized_user_connection(uc, job_profession) for uc in job.employer.user_connections
+        ]
+        
+        all_connections = employer_connections + user_connections
+        all_connections.sort(key=lambda x: (-x['is_same_profession'], x['connection_type']))
+        
+        return Response(status=status.HTTP_200_OK, data=all_connections)
+    
+    @staticmethod
+    def get_serialized_employer_connection(employer_connection, job, job_profession):
+        connection_type = employer_connection.connection_type
+        is_hiring_team = job.id in [j.id for j in employer_connection.hiring_jobs.all()]
+        if connection_type == ConnectionTypeBit.CURRENT_EMPLOYEE.value and is_hiring_team:
+            connection_type = ConnectionTypeBit.HIRING_MEMBER.value
+            
+        is_same_profession = False
+        if job_profession and employer_connection.user.profession:
+            is_same_profession = job_profession.id == employer_connection.user.profession.id
+        
+        return {
+            'connection_type': connection_type,
+            'full_name': employer_connection.user.full_name,
+            'user_key': employer_connection.user.user_key,
+            'linkedin_url': employer_connection.user.linkedin_url,
+            'is_same_profession': is_same_profession,
+            'profession': {
+                'name': employer_connection.user.profession.name,
+                'key': employer_connection.user.profession.key,
+            } if employer_connection.user.profession else None
+        }
+    
+    @staticmethod
+    def get_serialized_user_connection(user_connection, job_profession):
+        is_same_profession = False
+        if job_profession and user_connection.profession:
+            is_same_profession = job_profession.id == user_connection.profession.id
+        return {
+            'connection_type': ConnectionTypeBit.CURRENT_EMPLOYEE.value,
+            'full_name': user_connection.full_name,
+            'owner': {
+                'user_key': user_connection.owner.user_key,
+                'full_name': user_connection.owner.full_name
+            },
+            'linkedin_url': f'https://www.linkedin.com/in/{user_connection.linkedin_handle}',
+            'job_title': user_connection.job_title,
+            'is_same_profession': is_same_profession,
+            'profession': {
+                'name': user_connection.profession.name,
+                'key': user_connection.profession.key,
+            } if user_connection.profession else None
+        }

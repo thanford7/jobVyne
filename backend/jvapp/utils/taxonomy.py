@@ -353,6 +353,7 @@ customer_solution_words = '(integration|specialist|solution|implementation|consu
 frontend_language_words = '(react|javascript|html|css|vue)'
 backend_language_words = '(python|pytorch|\.net|java|ruby|drupal|c\+\+|rust|golang|php)'
 devops_words = '(devops|secops|infrastructure|cloud|security|devsecops|privacy|secdev|dev ops|site reliability|aws|azure)'
+hr_words = '(hr|people|hrbp|recursos humanos|l&d|hris|diversity|inclusion|dei)'
 
 TaxonomyConfidenceWeight = namedtuple('TaxonomyConfidenceWeight', 'taxonomy_key, weight')
 
@@ -579,9 +580,13 @@ JOB_TAXONOMY_TESTS = [
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_TA, CONFIDENCE_WEIGHT_VERY_STRONG)]
     ),
     TaxonomyTest(
-        f'{start_or_word_and_space_re}(hr|people|hrbp|recursos humanos|l&d|hris|diversity|inclusion|dei){space_and_word_or_end_re}',
-        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_HR, CONFIDENCE_WEIGHT_STRONG)],
+        f'{start_or_word_and_space_re}{hr_words}{space_and_word_or_end_re}',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_HR, CONFIDENCE_WEIGHT_VERY_STRONG)],
         test_negate_pattern=f'^.+?(/hr|per hr).*?$'
+    ),
+    TaxonomyTest(
+        f'{start_or_word_and_space_re}hr business partner{space_and_word_or_end_re}',
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_HR, CONFIDENCE_WEIGHT_VERY_STRONG)]
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}talent.*?(development|planning|management).*?$',
@@ -799,7 +804,8 @@ JOB_TAXONOMY_TESTS = [
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}(partner|alliance|acquisition|m&a).*?$',
-        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_BUS_DEV, CONFIDENCE_WEIGHT_VERY_STRONG)]
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_BUS_DEV, CONFIDENCE_WEIGHT_STRONG)],
+        test_negate_pattern=f'^.*?(talent|people).*?$'
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}digital (marketer|marketing|campaign|content){space_and_word_or_end_re}',
@@ -898,7 +904,8 @@ JOB_TAXONOMY_TESTS = [
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}(project|program) (manage|coordinat|implement|mang|lead).*?$',
-        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_PROJECT_MANAGEMENT, CONFIDENCE_WEIGHT_VERY_STRONG)]
+        [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_PROJECT_MANAGEMENT, CONFIDENCE_WEIGHT_VERY_STRONG)],
+        test_negate_pattern=f'{start_or_word_and_space_re}{hr_words}{space_and_word_or_end_re}'
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}pmo{space_and_word_or_end_re}',

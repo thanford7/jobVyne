@@ -15,13 +15,14 @@ def base_application_serializer(app: JobApplication or JobApplicationTemplate):
         'phone_number': app.phone_number,
         'linkedin_url': app.linkedin_url,
         'resume_url': app.resume.url if app.resume else None,
-        'academic_transcript_url': app.academic_transcript.url if app.academic_transcript else None
+        'academic_transcript_url': app.academic_transcript.url if app.academic_transcript else None,
     }
 
 
 def get_serialized_job_application(job_application: JobApplication):
     data = {
         **base_application_serializer(job_application),
+        'cover_letter_url': job_application.cover_letter.url if job_application.cover_letter else None,
         'social_link_id': job_application.social_link_id,
         # If application is external, the applicant can edit the application status manually
         # since we can't update it from the ATS or JobVyne job tracking

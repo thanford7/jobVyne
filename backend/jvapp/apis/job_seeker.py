@@ -30,7 +30,6 @@ from jvapp.utils.email import EMAIL_ADDRESS_SEND, send_django_email
 
 __all__ = ('ApplicationView', 'ApplicationTemplateView')
 
-
 logger = logging.getLogger(__name__)
 
 APPLICATION_SAVE_CFG = {
@@ -61,12 +60,14 @@ class ApplicationView(JobVyneAPIView):
                     application_filter |= Q(email=user.email)
             else:
                 application_filter = Q(employer_job__employer_id=employer_id)
-            applications = self.get_applications(self.user, application_filter=application_filter).order_by('-created_dt')
+            applications = self.get_applications(self.user, application_filter=application_filter).order_by(
+                '-created_dt')
             if page_count:
                 paged_applications = Paginator(applications, per_page=25)
                 data = {
                     'total_page_count': paged_applications.num_pages,
-                    'applications': [get_serialized_job_application(ja) for ja in paged_applications.get_page(page_count)]
+                    'applications': [get_serialized_job_application(ja) for ja in
+                                     paged_applications.get_page(page_count)]
                 }
             else:
                 data = [
@@ -112,14 +113,20 @@ class ApplicationView(JobVyneAPIView):
             resume = resume[0]
         elif application_template:
             resume = application_template.resume
-            
+        
         if academic_transcript := self.files.get('academic_transcript'):
             academic_transcript = academic_transcript[0]
         elif application_template:
             academic_transcript = application_template.academic_transcript
         
+        if cover_letter := self.files.get('cover_letter'):
+            cover_letter = cover_letter[0]
+        
         # Save application to Django model
-        self.create_application(user, application, self.data, resume=resume, academic_transcript=academic_transcript)
+        self.create_application(
+            user, application, self.data, resume=resume, academic_transcript=academic_transcript,
+            cover_letter=cover_letter
+        )
         
         ## Send notification emails
         employer = application.employer_job.employer
@@ -132,12 +139,14 @@ class ApplicationView(JobVyneAPIView):
             'link_name': application.social_link.name if application.social_link else None,
             'employer': employer
         }
-        if any([resume, academic_transcript]):
+        if any([resume, academic_transcript, cover_letter]):
             files = []
             if resume:
                 files.append(application.resume)
             if academic_transcript:
                 files.append(application.academic_transcript)
+            if cover_letter:
+                files.append(application.cover_letter)
         else:
             files = None
         
@@ -154,7 +163,7 @@ class ApplicationView(JobVyneAPIView):
         
         # Email the referrer (if there is one)
         if referrer_user and UserNotificationPreferenceView.get_is_notification_enabled(
-            referrer_user, NotificationPreferenceKey.NEW_APPLICATION.value
+                referrer_user, NotificationPreferenceKey.NEW_APPLICATION.value
         ):
             send_django_email(
                 f'Congratulations, you have a new referral',
@@ -167,7 +176,7 @@ class ApplicationView(JobVyneAPIView):
                 },
                 employer=employer
             )
-            
+        
         # TODO: Email the referring organization if they have notification emails configured
         
         # Send a notification to the employer if they have it configured
@@ -202,7 +211,7 @@ class ApplicationView(JobVyneAPIView):
             if not user.is_candidate:
                 user.user_type_bits |= JobVyneUser.USER_TYPE_CANDIDATE
                 user.save()
-
+        
         # Refetch application to get related models
         application = self.get_applications(
             self.user,
@@ -215,7 +224,7 @@ class ApplicationView(JobVyneAPIView):
             ats_cfg = EmployerAts.objects.get(employer_id=application.employer_job.employer_id)
             ats_api = get_ats_api(ats_cfg)
             self.save_application_to_ats(ats_api, user, application)
-
+        
         return Response(
             status=status.HTTP_200_OK,
             data={
@@ -227,7 +236,8 @@ class ApplicationView(JobVyneAPIView):
         application = self.get_applications(self.user, application_id=application_id)
         referrer_id = application.social_link.owner_id if application.social_link else application.referrer_user_id
         if self.user.id != referrer_id:
-            return Response('You do not have permission to review this application', status=status.HTTP_401_UNAUTHORIZED)
+            return Response('You do not have permission to review this application',
+                            status=status.HTTP_401_UNAUTHORIZED)
         
         set_object_attributes(application, self.data, {
             'feedback_know_applicant': None,
@@ -264,12 +274,13 @@ class ApplicationView(JobVyneAPIView):
             referrer_note = f'''
                 {referrer.first_name} {referrer.last_name} ({referrer.email}) provided feedback on this candidate:
                 Do you know the applicant? {application.get_know_applicant_label()}
-                Would you recommend this applicant for the { application.employer_job.job_title } position? {application.get_recommend_applicant_label(application.feedback_recommend_this_job)}
+                Would you recommend this applicant for the {application.employer_job.job_title} position? {application.get_recommend_applicant_label(application.feedback_recommend_this_job)}
                 Would you recommend this applicant for any position? {application.get_recommend_applicant_label(application.feedback_recommend_any_job)}
                 Additional feedback:
                 {application.feedback_note}
             '''
-            ats_api.add_application_note(referrer_note, candidate_key=ats_api.get_candidate_key(application.ats_application_key))
+            ats_api.add_application_note(referrer_note,
+                                         candidate_key=ats_api.get_candidate_key(application.ats_application_key))
         
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Job application feedback successfully updated'
@@ -277,7 +288,10 @@ class ApplicationView(JobVyneAPIView):
     
     @staticmethod
     @atomic
-    def create_application(user, application, data, resume=None, academic_transcript=None, is_external=False):
+    def create_application(
+        user, application, data, resume=None, academic_transcript=None, cover_letter=None,
+        is_external=False
+    ):
         application.user = user
         platform = None
         if platform_name := data.get('platform_name'):
@@ -302,6 +316,7 @@ class ApplicationView(JobVyneAPIView):
         application.referrer_employer = employer
         application.resume = resume
         application.academic_transcript = academic_transcript
+        application.cover_letter = cover_letter
         
         if is_external and not application.id:
             application.application_status = JobApplication.ApplicationStatus.INTERESTED.value
@@ -310,7 +325,7 @@ class ApplicationView(JobVyneAPIView):
         ApplicationView.add_application_referral_bonus(application)
         application.save()
         return application
-        
+    
     @staticmethod
     def save_application_to_ats(ats_api, applicant, application):
         try:
@@ -324,19 +339,21 @@ class ApplicationView(JobVyneAPIView):
                     ).save()
                 except IntegrityError:
                     pass
-        
+            
             application.ats_application_key = ats_application_key
             application.save()
             return True
-    
+        
         # Capture the issue if something went wrong
         except AtsError as e:
             application.notification_ats_failure_dt = timezone.now()
             application.notification_ats_failure_msg = str(e)
             application.save()
-            logger.exception(f'Failed to push application to {ats_api.NAME} ATS for employer ID ({application.employer_job.employer_id})', e)
+            logger.exception(
+                f'Failed to push application to {ats_api.NAME} ATS for employer ID ({application.employer_job.employer_id})',
+                e)
             return False
-        
+    
     @staticmethod
     def add_application_referral_bonus(application):
         job = EmployerJobView.get_employer_jobs(employer_job_id=application.employer_job_id)
@@ -358,7 +375,7 @@ class ApplicationView(JobVyneAPIView):
     def get_applications(user, application_id=None, application_filter=None, is_ignore_permissions=False):
         if application_id:
             application_filter = Q(id=application_id)
-            
+        
         prefetch_employer_job_locations = Prefetch(
             'employer_job__locations',
             queryset=Location.objects.prefetch_related('city', 'state', 'country')
@@ -366,15 +383,15 @@ class ApplicationView(JobVyneAPIView):
         
         applications = JobApplication.objects \
             .prefetch_related(
-                prefetch_employer_job_locations,
-                'social_link__job_subscriptions'
-            )\
+            prefetch_employer_job_locations,
+            'social_link__job_subscriptions'
+        ) \
             .select_related(
-                'social_link',
-                'social_link__owner',
-                'employer_job',
-                'employer_job__employer',
-            ) \
+            'social_link',
+            'social_link__owner',
+            'employer_job',
+            'employer_job__employer',
+        ) \
             .filter(application_filter)
         
         if not is_ignore_permissions:
@@ -420,15 +437,15 @@ class ApplicationTemplateView(JobVyneAPIView):
         permission_type = PermissionTypes.EDIT.value if application_template.id else PermissionTypes.CREATE.value
         application_template.jv_check_permission(permission_type, user)
         application_template.save()
-        
+    
     @staticmethod
     def get_application_template(owner_id):
         try:
             return JobApplicationTemplate.objects.get(owner_id=owner_id)
         except JobApplicationTemplate.DoesNotExist:
             return None
-        
-        
+
+
 class ApplicationExternalView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
@@ -447,7 +464,8 @@ class ApplicationExternalView(JobVyneAPIView):
     
     @staticmethod
     def update_or_create_application(user, job_id, data):
-        application = ApplicationExternalView.get_existing_application(user, job_id) or JobApplication(is_external_application=True)
+        application = ApplicationExternalView.get_existing_application(user, job_id) or JobApplication(
+            is_external_application=True)
         if user and application.is_external_application:
             data['email'] = user.email
             data['first_name'] = user.first_name
@@ -459,12 +477,12 @@ class ApplicationExternalView(JobVyneAPIView):
     def get_existing_application(user, job_id):
         if not user:
             return False
-
+        
         # Check if this person has already applied
         applications = JobApplication.objects.filter(user=user, employer_job_id=job_id)
         return applications[0] if applications else None
-    
-    
+
+
 class ApplicationStatusView(JobVyneAPIView):
     
     def post(self, request):
@@ -472,17 +490,16 @@ class ApplicationStatusView(JobVyneAPIView):
         application_status = self.data['application_status']
         application = JobApplication.objects.get(id=application_id)
         if not any((
-            application.user_id == self.user.id,
-            application.email == self.user.email and self.user.is_email_verified
+                application.user_id == self.user.id,
+                application.email == self.user.email and self.user.is_email_verified
         )):
             return get_error_response('You do not have permission to edit this application')
         if (
-            (not application.is_external_application)
-            and application_status not in JobApplication.USER_EDITABLE_APPLICATION_STATUSES
+                (not application.is_external_application)
+                and application_status not in JobApplication.USER_EDITABLE_APPLICATION_STATUSES
         ):
             return get_error_response('You cannot change the application to this status')
         
         application.application_status = application_status
         application.save()
         return get_success_response('Application status was updated')
-        

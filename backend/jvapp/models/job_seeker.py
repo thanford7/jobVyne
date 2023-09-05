@@ -114,6 +114,12 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     
     ats_application_key = models.CharField(max_length=40, null=True, blank=True)
     
+    cover_letter = models.FileField(
+        upload_to=get_user_upload_location,
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_FILE)],
+        null=True, blank=True
+    )
+    
     class Meta:
         unique_together = ('employer_job', 'email')
         

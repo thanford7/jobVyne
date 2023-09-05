@@ -187,6 +187,7 @@ class ApplicationsView(BaseDataView):
             'linkedin_url': application.linkedin_url,
             'resume_url': application.resume.url if application.resume else None,
             'academic_transcript_url': application.academic_transcript.url if application.academic_transcript else None,
+            'cover_letter_url': application.cover_letter.url if application.cover_letter else None,
             'created_dt': get_datetime_format_or_none(application.created_dt),
             'locations': [get_serialized_location(l) for l in application.employer_job.locations.all()],
             'application_status': application.application_status

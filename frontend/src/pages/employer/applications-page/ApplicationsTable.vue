@@ -275,6 +275,10 @@
               <q-icon name="feed"/>&nbsp;
               <a :href="application.academic_transcript_url" target="_blank">Academic Transcript</a>
             </div>
+            <div v-if="application.cover_letter_url">
+              <q-icon name="feed"/>&nbsp;
+              <a :href="application.cover_letter_url" target="_blank">Cover Letter</a>
+            </div>
             <div v-if="application.linkedin_url">
               <q-icon name="fa-brands fa-linkedin"/>&nbsp;
               <a :href="application.linkedin_url" target="_blank">LinkedIn Profile</a>

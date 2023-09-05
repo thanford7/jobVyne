@@ -25,7 +25,7 @@ export const CONNECTION_TYPES = {
 }
 
 class CommunityUtil {
-  get_member_type_label (memberTypeBits) {
+  getMemberTypeLabel (memberTypeBits) {
     let memberTypeLabel = Object.entries(MEMBER_TYPES).reduce((labels, [memberTypeBit, memberType]) => {
       if (memberTypeBit & memberTypeBits) {
         labels.push(memberType.name)
