@@ -1661,9 +1661,11 @@ class EmployerInfoView(JobVyneAPIView):
     CONCURRENT_REQUESTS = 10
     MIN_AI_YEAR = 2020
     DESCRIPTION_PROMPT = (
-        'You are helping describe companies in 1 sentence. '
-        'The description should begin with "(name of company) is a" and proceed with the description. '
-        'Your response should be RFC8259 compliant JSON in the format: {"name": "(name of company)", "description": "(description)"}'
+        'You are helping describe a company. The user will provide a company name and a list of website domains used by the company. You should provide a'
+        '(description) which is limited to 1 sentence and a (description_long) which is limited to 5 sentences.\n'
+        'Both the (description) and (description_long) should begin with "(name of company) is a" and proceed with the description.\n'
+        'Your response should be RFC8259 compliant JSON in the format:\n'
+        '{"name": "(name of company)", "description": "(description)", "description_long": "(description_long)"}'
     )
 
     @staticmethod
@@ -1708,11 +1710,15 @@ class EmployerInfoView(JobVyneAPIView):
         
     @staticmethod
     def fill_employer_description(limit=None, employer_filter=None):
-        employer_filter = employer_filter or (Q(description__isnull=True) & Q(organization_type=Employer.ORG_TYPE_EMPLOYER))
+        employer_filter = employer_filter or (
+            (Q(description__isnull=True) | Q(description_long__isnull=True))
+            & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
+        )
         employer_filter &= (
             Q(year_founded__lte=EmployerInfoView.MIN_AI_YEAR) |
             Q(year_founded__isnull=True)
         )
+        employer_filter &= Q(email_domains__isnull=False)
         undescribed_employers = Employer.objects.filter(employer_filter)
         if limit:
             undescribed_employers = undescribed_employers[:limit]
@@ -1724,7 +1730,7 @@ class EmployerInfoView(JobVyneAPIView):
             )
     
             Employer.objects.bulk_update(
-                employers_to_process, ['description']
+                employers_to_process, ['description', 'description_long']
             )
             employer_idx += EmployerInfoView.CONCURRENT_REQUESTS
 
@@ -1734,11 +1740,13 @@ class EmployerInfoView(JobVyneAPIView):
             employer = await queue.get()
             logger.info(f'Running employer description for {employer.employer_name}')
             try:
+                website_domains = employer.website or employer.email_domains
                 resp, tracker = await ai.ask([
                     {'role': 'system', 'content': EmployerInfoView.DESCRIPTION_PROMPT},
-                    {'role': 'user', 'content': employer.employer_name}
+                    {'role': 'user', 'content': f'Company: {employer.employer_name}\nWebsite domains: {website_domains}'}
                 ], is_test=False)
-                employer.description = resp['description']
+                employer.description = resp.get('description')
+                employer.description_long = resp.get('description_long')
             except (PromptError, RateLimitError):
                 pass
         

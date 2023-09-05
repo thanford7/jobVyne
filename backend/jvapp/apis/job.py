@@ -105,8 +105,9 @@ class JobClassificationView(JobVyneAPIView):
             'Job responsibilities will likely be listed close to the word "responsibilities" in a bulleted list or comma separated list.\n'
             'Job qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
             'Technical qualifications will likely be listed close to the word "qualifications" or "skills" in a bulleted list or comma separated list.\n'
+            'Also provide a description of the job which should be at most 5 sentences long. The most important information about the job will likely be at the beginning of the text that the user provides.\n'
             'Your response should make sure to use proper capitalization and punctuation, especially for proper nouns. Your response should be RFC8259 compliant JSON in the format:\n'
-            f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": []}}\n'
+            f'{{"JOB_RESPONSIBILITIES": [], "JOB_QUALIFICATIONS": [], "TECHNICAL_QUALIFICATIONS": [], "JOB_DESCRIPTION": ""}}\n'
         )
         
         job_idx = 0
@@ -119,7 +120,7 @@ class JobClassificationView(JobVyneAPIView):
             if not is_test:
                 EmployerJob.objects.bulk_update(
                     jobs_to_process,
-                    ['qualifications_prompt', 'qualifications', 'technical_qualifications', 'responsibilities']
+                    ['qualifications_prompt', 'qualifications', 'technical_qualifications', 'responsibilities', 'job_description_summary']
                 )
                 
             job_idx += JobClassificationView.CONCURRENT_REQUESTS
@@ -148,6 +149,7 @@ class JobClassificationView(JobVyneAPIView):
                 job.qualifications = resp.get('JOB_QUALIFICATIONS')
                 job.technical_qualifications = resp.get('TECHNICAL_QUALIFICATIONS')
                 job.responsibilities = resp.get('JOB_RESPONSIBILITIES')
+                job.job_description_summary = resp.get('JOB_DESCRIPTION')
             except PromptError:
                 pass
         
