@@ -50,6 +50,7 @@ async def parse_response(openai_response, request_tracker=None):
                 request_tracker.result_status = request_tracker.RESULT_STATUS_UNPARSEABLE
                 await sync_to_async(request_tracker.save)()
             logger.info('Error occurred when parsing model response')
+            logger.info(f'Response was: {content}')
             raise PromptParseError from ex
     
     if request_tracker:

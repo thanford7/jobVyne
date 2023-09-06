@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from urllib.request import urlopen
+from urllib import request
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -14,11 +14,20 @@ class WebReader:
 
     def __init__(self):
         self.conn_sem = asyncio.Semaphore(self.MAX_CONNECTIONS)
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
+        })
         self.tasks = []
 
     def read_sync(self, url):
-        page = urlopen(url)
+        req = request.Request(
+            url,
+            data=None,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
+            }
+        )
+        page = request.urlopen(req)
         html = page.read().decode('utf-8')
         return BeautifulSoup(html, 'html.parser')
 
@@ -32,7 +41,7 @@ class WebReader:
                         html = 'UNPARSEABLE'
                     await cb(BeautifulSoup(html, 'html.parser'))
             except:
-                logger.info(f'Could not read URL {url}')
+                logger.info(f'Error reading or summarizing URL {url}')
 
     def read_async(self, url, cb):
         """Read a URL and call cb when the data returns"""

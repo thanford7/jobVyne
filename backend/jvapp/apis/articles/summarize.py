@@ -30,9 +30,9 @@ SUMMARIZE_PROMPT = (
     'Also, capture the names and URLs of any companies mentioned, any industries the article involves, and any professions the article involves. \n'
     f'The allowed industries are: {", ".join(INDUSTRIES)}\n'
     f'The allowed professions are: {", ".join(PROFESSIONS)}\n'
-    'Your response should be RFC8259 compliant JSON in the format:\n'
+    'Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.:\n'
     '{'
-        '"summary": "(summary of article),'
+        '"summary": (summary of article),'
         '"companies": [{"company_name": company, "company_url": URL of the company if available}, ...],'
         '"industries": [(list of industries)]'
         '"professions": [(list of professions)]'
@@ -68,6 +68,8 @@ def pull_articles(limit):
         article.save()
 
 class ArticleSource(abc.ABC):
+    source = None
+
     def __init__(self, web_reader:WebReader, articles:list):
         self.web_reader = web_reader
         self.articles = articles
@@ -89,6 +91,7 @@ class ArticleSource(abc.ABC):
             {'role': 'user', 'content': text}
         ], model=model)
         article = Article(
+            source=self.source,
             url=url,
             title=title,
             summary=resp.get('summary'),
@@ -126,6 +129,8 @@ class ListArticleSource(ArticleSource):
 
 
 class HN(ListArticleSource):
+    source = 'Hacker News'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         index_page_bs = self.web_reader.read_sync('https://news.ycombinator.com/')
@@ -140,4 +145,22 @@ class HN(ListArticleSource):
             title = a_bs.text
             self.queue.append((url, title))
 
-article_source_classes = [HN]
+class TheRegister(ListArticleSource):
+    source = 'The Register'
+
+    def __init__(self, *args, **kwargs):
+        BASE_URL = 'https://www.theregister.com'
+        super().__init__(*args, **kwargs)
+        index_page_bs = self.web_reader.read_sync(BASE_URL)
+
+        for article in index_page_bs.find_all('article'):
+            sl = article.find('a', class_='story_link')
+            if sl is None:
+                continue
+            url = BASE_URL + sl.get('href')
+            if Article.objects.filter(url=url).exists():
+                continue
+            title = article.find('h4').text
+            self.queue.append((url, title))
+
+article_source_classes = [HN, TheRegister]
