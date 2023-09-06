@@ -21,9 +21,15 @@ M4K_WORDS = 3000
 M4K_CUTOFF_WORDS = M4K_WORDS - RESP_WORDS
 M16K_WORDS = 12000
 M16K_CUTOFF_WORDS = M16K_WORDS - RESP_WORDS
+INDUSTRIES, PROFESSIONS = (
+    [t.name for t in Taxonomy.objects.filter(tax_type=tt)]
+    for tt in (Taxonomy.TAX_TYPE_INDUSTRY, Taxonomy.TAX_TYPE_PROFESSION)
+)
 SUMMARIZE_PROMPT = (
     'You are summarizing an article in 3-5 sentences. Use the author\'s point of view and tone of voice when summarizing. '
-    'Also, capture the names and URLs of any companies mentioned, any industries the article involves, and any professions the article involves. '
+    'Also, capture the names and URLs of any companies mentioned, any industries the article involves, and any professions the article involves. \n'
+    f'The allowed industries are: {", ".join(INDUSTRIES)}\n'
+    f'The allowed professions are: {", ".join(PROFESSIONS)}\n'
     'Your response should be RFC8259 compliant JSON in the format:\n'
     '{'
         '"summary": "(summary of article),'
@@ -40,7 +46,6 @@ def pull_articles(limit):
     articles = []
     try:
         for article_source_class in article_source_classes:
-            # FIXME: Will unnecessarily instantiate classes after limit is hit
             article_source = article_source_class(web_reader, articles)
             while article_source.has_more() and num_articles_pulled < limit:
                 article_source.get_next()
@@ -56,8 +61,8 @@ def pull_articles(limit):
             try:
                 taxonomy = Taxonomy.objects.get(tax_type=tax_type, name=name)
             except Taxonomy.DoesNotExist:
-                taxonomy = Taxonomy(tax_type=tax_type, name=name)
-                taxonomy.save()
+                logger.info(f'AI chose invalid {tax_type} taxonomy {name} for URL {article.url}')
+                continue
             m2m = getattr(article, prop_name)
             m2m.add(taxonomy)
         article.save()

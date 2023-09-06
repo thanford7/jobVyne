@@ -111,9 +111,9 @@ async def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     try:
         resp = await send_request(model, prompt)
     except InvalidRequestError as e:
-        if model == LARGE_TEXT_MODEL:
+        if model == M16K:
             raise e
-        resp = await send_request(LARGE_TEXT_MODEL, prompt)
+        resp = await send_request(M16K, prompt)
     end_time = datetime.datetime.now()
     model_request_duration = math.ceil((end_time - start_time).total_seconds())
     if is_test:
