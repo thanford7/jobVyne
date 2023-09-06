@@ -87,7 +87,7 @@ export default {
   async mounted () {
     const communityStore = useCommunityStore()
     await communityStore.setJobConnections({ jobId: this.job.id })
-    this.jobConnections = communityStore.getJobConnections(this.job.id)
+    this.jobConnections = communityStore.getJobConnections({ jobId: this.job.id })
   }
 }
 </script>

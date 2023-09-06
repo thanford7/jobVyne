@@ -81,6 +81,11 @@ class PagePermissionsUtil {
             icon: 'star',
             key: 'candidate-favorites',
             label: 'Favorites'
+          },
+          {
+            icon: 'hub',
+            key: 'candidate-connections',
+            label: 'Connections'
           }
         ]
       },

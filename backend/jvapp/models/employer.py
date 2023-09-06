@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models import Q, UniqueConstraint
 from django.utils import timezone
 
-from jvapp.models._customDjangoField import LowercaseCharField
+from jvapp.models._customDjangoField import LowercaseCharField, SeparatedValueField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
 
 __all__ = (
@@ -34,6 +34,7 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     organization_type = models.SmallIntegerField(default=ORG_TYPE_EMPLOYER)
     employer_name = models.CharField(max_length=150, unique=True)
+    employer_name_aliases = SeparatedValueField('|', max_length=200, null=True, blank=True)
     employer_key = models.CharField(max_length=160, unique=True, null=True, blank=True)
     logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     logo_square_88 = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)

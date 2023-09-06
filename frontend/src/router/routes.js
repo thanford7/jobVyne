@@ -117,6 +117,12 @@ const routes = [
         name: 'candidate-favorites',
         meta: { userTypeBits: USER_TYPES.Candidate },
         component: () => import('pages/candidate/FavoritesPage.vue')
+      },
+      {
+        path: 'connections',
+        name: 'candidate-connections',
+        meta: { userTypeBits: USER_TYPES.Candidate },
+        component: () => import('pages/candidate/ConnectionsPage.vue')
       }
     ]
   },

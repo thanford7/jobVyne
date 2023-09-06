@@ -18,21 +18,23 @@ export const useCommunityStore = defineStore('community', {
       })
       this.members[key] = resp.data
     },
-    async setJobConnections ({ jobId = null, isForceRefresh = false }) {
-      if (this.jobConnections[jobId] && !isForceRefresh) {
+    async setJobConnections ({ jobId = null, userId = null, isForceRefresh = false }) {
+      const key = makeApiRequestKey(jobId, userId)
+      if (this.jobConnections[key] && !isForceRefresh) {
         return
       }
       const resp = await this.$api.get('community/job-connections/', {
-        params: { job_id: jobId }
+        params: { job_id: jobId, user_id: userId }
       })
-      this.jobConnections[jobId] = resp.data
+      this.jobConnections[key] = resp.data
     },
     getMembers ({ memberType = null, employerId = null, professionKey = null }) {
       const key = makeApiRequestKey(memberType, employerId, professionKey)
       return this.members[key] || []
     },
-    getJobConnections (jobId) {
-      return this.jobConnections[jobId] || []
+    getJobConnections ({ jobId = null, userId = null }) {
+      const key = makeApiRequestKey(jobId, userId)
+      return this.jobConnections[key] || []
     }
   }
 })

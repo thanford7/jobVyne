@@ -54,19 +54,16 @@ def bulk_load_users(csv_file, employer):
         if employer.email_domains:
             if not get_domain_from_email(email) in employer.email_domains:
                 raise FieldDefinition.InvalidFieldData(f'Email {email} not allowed for employer {employer}')
-
-    try:
-        with atomic():
-            return bulk_load_objects(csv_file, models.JobVyneUser, [
-                FieldDefinition(model_field='email', aliases=['emailaddress'], is_key=True, validate_fn=email_check),
-                FieldDefinition(model_field='first_name', aliases=['first']),
-                FieldDefinition(model_field='last_name', aliases=['last']),
-                FieldDefinition(model_field='phone_number', aliases=['phone']),
-                FieldDefinition(model_field='employer', default=employer),
-                FieldDefinition(model_field='user_type_bits', override=models.JobVyneUser.USER_TYPE_EMPLOYEE),
-            ], instance_create_fn=models.JobVyneUser.objects.create_user)
-    except FieldDefinition.InvalidFieldData:
-        logger.info('Error uploading CSV')
+    
+    with atomic():
+        return bulk_load_objects(csv_file, models.JobVyneUser, [
+            FieldDefinition(model_field='email', aliases=['emailaddress'], is_key=True, validate_fn=email_check),
+            FieldDefinition(model_field='first_name', aliases=['first']),
+            FieldDefinition(model_field='last_name', aliases=['last']),
+            FieldDefinition(model_field='phone_number', aliases=['phone']),
+            FieldDefinition(model_field='employer', default=employer),
+            FieldDefinition(model_field='user_type_bits', override=models.JobVyneUser.USER_TYPE_EMPLOYEE),
+        ], instance_create_fn=models.JobVyneUser.objects.create_user)
 
 
 def bulk_load_objects(csv_file, model, field_definitions, instance_create_fn=None, key_clean_fn=None):

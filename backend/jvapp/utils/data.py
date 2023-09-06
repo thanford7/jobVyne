@@ -28,8 +28,8 @@ def set_object_attributes(obj: object, data: dict, form_cfg: dict):
         if val is None and attribute_cfg.is_protect_existing:
             continue
         setattr(obj, key, val)
-        
-        
+
+
 def get_list_intersection(list1, list2):
     return list(set(list1) & set(list2))
 
@@ -79,7 +79,7 @@ def coerce_float(val, default=None, is_raise_error=False):
         if is_raise_error:
             raise e
         return default
-    
+
 
 def round_to(num, round_num):
     return round(num / round_num) * round_num
@@ -129,7 +129,7 @@ def truncate_text(text, max_length, truncation_text='...', is_whole_words=True):
         if char_count >= max_length:
             break
         word_idx += 1
-        char_count += 1 # Account for the space we will add between words
+        char_count += 1  # Account for the space we will add between words
     
     truncated_text = ' '.join(words[:word_idx + 1])
     if len(truncated_text) > max_length:
@@ -138,3 +138,18 @@ def truncate_text(text, max_length, truncation_text='...', is_whole_words=True):
         else:
             truncated_text = truncated_text[:max_length]
     return truncated_text
+
+
+emoji_pattern = re.compile(
+    "["
+       u"\U0001F600-\U0001F64F"  # emoticons
+       u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+       u"\U0001F680-\U0001F6FF"  # transport & map symbols
+       u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+       "]+",
+    flags=re.UNICODE
+)
+
+
+def get_text_without_emojis(text):
+    return emoji_pattern.sub(r'', text)

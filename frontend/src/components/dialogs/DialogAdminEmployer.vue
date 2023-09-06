@@ -13,6 +13,13 @@
         lazy-rules
         :rules="[ val => val && val.length > 0 || 'Employer name is required']"
       />
+      <q-input
+        v-model="formData.name_aliases"
+        filled
+        label="Alternate employer names"
+        hint="Pipe (|) separated list of names"
+        lazy-rules
+      />
       <SelectOrganizationType v-model="formData.organization_type"/>
       <FileDisplayOrUpload
         ref="logoUpload"

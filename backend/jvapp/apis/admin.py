@@ -1,9 +1,12 @@
 import json
 import logging
+from collections import defaultdict
 
 from django.core.paginator import Paginator
 from django.db.models import F, Q
 from django.db.transaction import atomic
+from django.utils import timezone
+from rapidfuzz import fuzz, process
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -15,7 +18,7 @@ from jvapp.apis.job_seeker import ApplicationView
 from jvapp.apis.user import UserView
 from jvapp.management.commands.ats_data_pull import save_ats_data
 from jvapp.models.employer import Employer, EmployerAts, EmployerAuthGroup, EmployerJob, EmployerSubscription
-from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
+from jvapp.models.user import JobVyneUser, UserConnection, UserEmployerPermissionGroup
 from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.job_seeker import base_application_serializer
@@ -23,7 +26,7 @@ from jvapp.serializers.user import get_serialized_user
 from jvapp.tasks import task_run_job_scrapers
 from jvapp.utils.data import AttributeCfg, coerce_bool, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
-from jvapp.utils.taxonomy import run_job_title_standardization, update_taxonomies
+from jvapp.utils.taxonomy import get_standardized_job_taxonomy, run_job_title_standardization, update_taxonomies
 from scrape.custom_scraper.workableAts import parse_workable_xml_jobs
 from scrape.scraper import run_job_scrapers
 
@@ -220,6 +223,7 @@ class AdminEmployerView(JobVyneAPIView):
         return {
             'id': employer.id,
             'name': employer.employer_name,
+            'name_aliases': employer.employer_name_aliases,
             'organization_type': employer.organization_type,
             'job_board_url': employer.main_job_board_link,
             'logo_url': employer.logo_square_88.url if employer.logo_square_88 else None,
@@ -233,6 +237,7 @@ class AdminEmployerView(JobVyneAPIView):
     def update_employer(employer, data, files):
         set_object_attributes(employer, data, {
             'employer_name': AttributeCfg(form_name='name'),
+            'employer_name_aliases': AttributeCfg(form_name='name_aliases'),
             'email_domains': None,
             'is_use_job_url': None,
             'organization_type': None
@@ -348,3 +353,79 @@ class AdminTaxonomyView(JobVyneAPIView):
         update_taxonomies()
         run_job_title_standardization(is_non_standardized_only=not self.data['is_run_all'])
         return get_success_response('Taxonomy updated')
+    
+    
+class AdminUserConnectionsView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def post(self, request):
+        is_null_only = self.data.get('is_null_only')
+        is_exclude_employer = self.data.get('is_exclude_employer')
+        is_exclude_profession = self.data.get('is_exclude_profession')
+        user_connections = AdminUserConnectionsView.get_user_connections(
+            is_null_only=is_null_only,
+            is_exclude_employer=is_exclude_employer,
+            is_exclude_profession=is_exclude_profession
+        )
+        
+        if not is_exclude_employer:
+            employer_map = AdminUserConnectionsView.get_employer_map()
+            AdminUserConnectionsView.update_employers(user_connections, employer_map, is_null_only=is_null_only)
+            
+        if not is_exclude_profession:
+            AdminUserConnectionsView.update_professions(user_connections, is_null_only=is_null_only)
+            
+        return get_success_response('Updated user connections')
+    
+    @staticmethod
+    def get_user_connections(is_null_only=False, is_exclude_employer=False, is_exclude_profession=False):
+        connection_filter = None
+        if is_null_only:
+            if not is_exclude_employer:
+                connection_filter = Q(employer__isnull=True)
+            if not is_exclude_profession:
+                if not connection_filter:
+                    connection_filter = Q(profession__isnull=True)
+                else:
+                    connection_filter |= Q(profession__isnull=True)
+        
+        connection_filter = connection_filter or Q()
+        return UserConnection.objects.filter(connection_filter)
+    
+    @staticmethod
+    def get_employer_map():
+        employer_map = {}
+        for e in (
+            Employer.objects
+            .filter(organization_type=Employer.ORG_TYPE_EMPLOYER)
+            .values('employer_name', 'employer_name_aliases', 'id')
+        ):
+            employer_map[e['employer_name'].lower()] = e['id']
+            if aliases := e['employer_name_aliases']:
+                for alias in aliases:
+                    employer_map[alias.lower()] = e['id']
+        return employer_map
+    
+    @staticmethod
+    def update_employers(user_connections, employer_map, is_null_only=False):
+        for connection in user_connections:
+            if is_null_only and connection.employer_id:
+                continue
+            
+            connection.employer_id = employer_map.get(connection.employer_raw.lower())
+            connection.modified_dt = timezone.now()
+            
+        UserConnection.objects.bulk_update(user_connections, ['employer_id', 'modified_dt'])
+        
+    @staticmethod
+    def update_professions(user_connections, is_null_only=False):
+        update_user_connections = []
+        for connection in user_connections:
+            if is_null_only and connection.profession_id:
+                continue
+            
+            connection.profession = get_standardized_job_taxonomy(connection.job_title)
+            connection.modified_dt = timezone.now()
+            update_user_connections.append(connection)
+        
+        UserConnection.objects.bulk_update(update_user_connections, ['profession', 'modified_dt'])

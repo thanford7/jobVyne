@@ -227,7 +227,7 @@ class AnchorageDigitalScraper(LeverScraper):
     EMPLOYER_KEY = 'anchorage'
     
     
-class LivelyScraper(GreenhouseScraper):
+class LivelyScraper(GreenhouseApiScraper):
     employer_name = 'Lively'
     EMPLOYER_KEY = 'lively43'
     

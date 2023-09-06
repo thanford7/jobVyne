@@ -16,6 +16,7 @@ urlpatterns = [
     path('admin/job-scraper/', admin.AdminJobScrapersView.as_view()),
     path('admin/taxonomy-update/', admin.AdminTaxonomyView.as_view()),
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
+    path('admin/user-connections/', admin.AdminUserConnectionsView.as_view()),
     path('admin/user-created-job/approval/', admin.AdminUserCreatedJobApprovalView.as_view()),
     path('community/members/', community.CommunityMemberView.as_view()),
     path('community/job-connections/', community.JobConnectionsView.as_view()),

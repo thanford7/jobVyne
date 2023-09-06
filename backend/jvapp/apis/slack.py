@@ -177,11 +177,11 @@ class SlackBasePoster:
                     {
                         'type': 'mrkdwn',
                         'text': f'*Salary:*\n{job.salary_text}'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Post date:*\n{get_datetime_format_or_none(job.open_date)}'
                     }
+                    # {
+                    #     'type': 'mrkdwn',
+                    #     'text': f'*Post date:*\n{get_datetime_format_or_none(job.open_date)}'
+                    # }
                 ],
             }
             
@@ -204,9 +204,9 @@ class SlackBasePoster:
             blocks.append(job_actions)
             
             # Job connection
-            blocks.append(JobConnectionModalViews.get_trigger_button(
-                {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
-            ).get_slack_object())
+            # blocks.append(JobConnectionModalViews.get_trigger_button(
+            #     {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
+            # ).get_slack_object())
             
             blocks.append({'type': 'divider'})
         
@@ -582,7 +582,7 @@ class SlackBaseView(JobVyneAPIView):
 
 class SlackJobsMessageView(SlackBaseView):
     # Jobs later than this will not be posted
-    MAX_JOBS = 5
+    MAX_JOBS = 6
     DEFAULT_DOW_BITS = WEEKDAY_BITS
     DEFAULT_TIME_OF_DAY_MINUTES = 12 * 60
     

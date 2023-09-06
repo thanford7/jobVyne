@@ -37,6 +37,7 @@
         <div class="col-12 q-gutter-sm">
           <div class="text-h6">Support</div>
           <q-btn label="Product announcement email" color="primary" @click="openAnnouncementEmailDialog"/>
+          <q-btn label="Update user connections" color="primary" @click="updateUserConnections"/>
         </div>
         <div class="col-12 q-gutter-sm">
           <div class="text-h6">Testing</div>
@@ -105,6 +106,9 @@ export default {
     },
     updateAtsJobs () {
       this.$api.post('admin/ats-jobs/')
+    },
+    updateUserConnections () {
+      this.$api.post('admin/user-connections/')
     }
   },
   async mounted () {

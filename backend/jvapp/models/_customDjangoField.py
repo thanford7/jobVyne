@@ -38,7 +38,7 @@ class SeparatedValueField(models.CharField):
 
         # Use sorted to ensure value comparisons are correct
         # e.g. [a, b] == [b, a]
-        return self.separator.join([str(val) for val in sorted(value)])
+        return self.separator.join([str(val) for val in sorted(value.split(self.separator))])
     
     
 class LowercaseCharField(models.CharField):

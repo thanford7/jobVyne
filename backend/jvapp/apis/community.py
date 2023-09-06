@@ -1,15 +1,23 @@
+import csv
 import logging
+import re
+from collections import defaultdict
+from io import StringIO
 
 from django.db.models import Prefetch, Q
+from django.utils import timezone
+from rapidfuzz import fuzz, process
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, get_error_response
+from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response
+from jvapp.apis.admin import AdminUserConnectionsView
 from jvapp.models import JobVyneUser
-from jvapp.models.employer import ConnectionTypeBit, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
+from jvapp.models.employer import ConnectionTypeBit, Employer, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
 from jvapp.models.user import UserConnection
-from jvapp.utils.data import coerce_int
+from jvapp.utils.data import coerce_int, get_text_without_emojis
+from jvapp.utils.taxonomy import get_standardized_job_taxonomy
 
 logger = logging.getLogger(__name__)
 
@@ -141,49 +149,114 @@ class JobConnectionsView(JobVyneAPIView):
     
     def get(self, request):
         job_id = coerce_int(self.query_params.get('job_id'))
-        if not job_id:
-            return get_error_response('A job ID is required')
+        user_id = coerce_int(self.query_params.get('user_id'))
+        if not any((job_id, user_id)):
+            return get_error_response('A job ID or user ID is required')
         
-        employer_connections_prefetch = Prefetch(
-            'employer__user_connection',
-            queryset=(
-                EmployerConnection.objects
-                .select_related('user', 'user__profession')
-                .prefetch_related('hiring_jobs')
-                .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value) & ~Q(user_id=self.user.id))
-            ),
-            to_attr='employer_connections'
-        )
-        user_connections_prefetch = Prefetch(
-            'employer__connection',
-            queryset=(
-                UserConnection.objects.select_related('profession').filter(~Q(owner_id=self.user.id))
-            ),
-            to_attr='user_connections'
-        )
-        job_profession_prefetch = Prefetch(
-            'taxonomy',
-            queryset=JobTaxonomy.objects.select_related('taxonomy').filter(taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION),
-            to_attr='profession'
-        )
+        if job_id:
+            employer_connections_prefetch = Prefetch(
+                'employer__user_connection',
+                queryset=(
+                    EmployerConnection.objects
+                    .select_related('user', 'user__profession')
+                    .prefetch_related('hiring_jobs')
+                    .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value) & ~Q(user_id=self.user.id))
+                ),
+                to_attr='employer_connections'
+            )
+            user_connections_prefetch = Prefetch(
+                'employer__connection',
+                queryset=(
+                    UserConnection.objects
+                    .select_related('profession', 'employer', 'connection_user')
+                    .filter(~Q(owner_id=self.user.id))
+                ),
+                to_attr='user_connections'
+            )
+            job_profession_prefetch = Prefetch(
+                'taxonomy',
+                queryset=JobTaxonomy.objects.select_related('taxonomy').filter(taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION),
+                to_attr='profession'
+            )
+            
+            job = (
+                EmployerJob.objects
+                .prefetch_related(employer_connections_prefetch, user_connections_prefetch, job_profession_prefetch)
+                .get(id=job_id)
+            )
+            job_profession = next((p.taxonomy for p in job.profession), None)
+            employer_connections = [
+                JobConnectionsView.get_serialized_employer_connection(ec, job, job_profession) for ec in job.employer.employer_connections
+            ]
+            user_connections = [
+                JobConnectionsView.get_serialized_user_connection(uc, job_profession=job_profession) for uc in job.employer.user_connections
+            ]
+            
+            all_connections = employer_connections + user_connections
+            all_connections.sort(key=lambda x: (-x['is_same_profession'], x['connection_type']))
         
-        job = (
-            EmployerJob.objects
-            .prefetch_related(employer_connections_prefetch, user_connections_prefetch, job_profession_prefetch)
-            .get(id=job_id)
-        )
-        job_profession = next((p.taxonomy for p in job.profession), None)
-        employer_connections = [
-            JobConnectionsView.get_serialized_employer_connection(ec, job, job_profession) for ec in job.employer.employer_connections
-        ]
-        user_connections = [
-            JobConnectionsView.get_serialized_user_connection(uc, job_profession) for uc in job.employer.user_connections
-        ]
-        
-        all_connections = employer_connections + user_connections
-        all_connections.sort(key=lambda x: (-x['is_same_profession'], x['connection_type']))
-        
-        return Response(status=status.HTTP_200_OK, data=all_connections)
+            return Response(status=status.HTTP_200_OK, data=all_connections)
+        if user_id:
+            user_connections = [
+                JobConnectionsView.get_serialized_user_connection(uc) for uc in
+                UserConnection.objects.select_related('profession', 'employer').filter(owner_id=user_id)
+            ]
+            return Response(status=status.HTTP_200_OK, data=user_connections)
+    
+    def post(self, request):
+        raw_file = self.files['connections_file'][0]
+        csv_text = raw_file.read().decode('utf-8')
+        employer_map = AdminUserConnectionsView.get_employer_map()
+        current_connections = {
+            (conn.linkedin_handle, conn.employer_raw): conn for conn in UserConnection.objects.filter(owner=self.user)
+        }
+        with StringIO(csv_text) as csv_file:
+            dialect = csv.Sniffer().sniff(csv_file.read())
+            csv_file.seek(0)
+            reader = csv.reader(csv_file, dialect=dialect)
+            headers = []
+            # Find the header row and get the values
+            for row in reader:
+                if (not row) or (row[0].lower() != 'first name'):
+                    continue
+                for cell in row:
+                    headers.append('_'.join([x.lower() for x in cell.split(' ')]))
+                break
+            
+            new_user_connections = []
+            for row in reader:
+                value_map = {header: val for (header, val) in zip(headers, row)}
+                if not all((value_map['company'], value_map['first_name'])):
+                    continue
+                linkedin_url_match = re.match('^.*?linkedin.com/in/(?P<handle>.+?)$', value_map['url'])
+                linkedin_handle = linkedin_url_match.group('handle')
+                employer_raw = value_map['company']
+                if existing_connection := current_connections.get((linkedin_handle, employer_raw)):
+                    continue
+                
+                connection_user = None
+                if email := value_map.get('email'):
+                    try:
+                        connection_user = JobVyneUser.objects.get(Q(email=email) | Q(business_email=email))
+                    except JobVyneUser.DoesNotExist:
+                        pass
+                    
+                new_user_connections.append(UserConnection(
+                    owner=self.user,
+                    connection_user=connection_user,
+                    first_name=get_text_without_emojis(value_map['first_name']),
+                    last_name=get_text_without_emojis(value_map['last_name']),
+                    email=email,
+                    linkedin_handle=linkedin_url_match.group('handle'),
+                    employer_raw=employer_raw,
+                    employer_id=employer_map.get(employer_raw.lower()),
+                    job_title=value_map['position'],
+                    profession=get_standardized_job_taxonomy(value_map['position']),
+                    created_dt=timezone.now(),
+                    modified_dt=timezone.now()
+                ))
+            UserConnection.objects.bulk_create(new_user_connections)
+        return get_success_response('Imported LinkedIn contacts')
     
     @staticmethod
     def get_serialized_employer_connection(employer_connection, job, job_profession):
@@ -209,22 +282,32 @@ class JobConnectionsView(JobVyneAPIView):
         }
     
     @staticmethod
-    def get_serialized_user_connection(user_connection, job_profession):
-        is_same_profession = False
-        if job_profession and user_connection.profession:
-            is_same_profession = job_profession.id == user_connection.profession.id
-        return {
+    def get_serialized_user_connection(user_connection, job_profession=None):
+        user_connection_data = {
             'connection_type': ConnectionTypeBit.CURRENT_EMPLOYEE.value,
             'full_name': user_connection.full_name,
+            'connection_user_key': user_connection.connection_user.user_key if user_connection.connection_user else None,
             'owner': {
                 'user_key': user_connection.owner.user_key,
                 'full_name': user_connection.owner.full_name
             },
             'linkedin_url': f'https://www.linkedin.com/in/{user_connection.linkedin_handle}',
             'job_title': user_connection.job_title,
-            'is_same_profession': is_same_profession,
             'profession': {
                 'name': user_connection.profession.name,
                 'key': user_connection.profession.key,
-            } if user_connection.profession else None
+            } if user_connection.profession else None,
+            'employer_raw': user_connection.employer_raw,
+            'employer': {
+                'name': user_connection.employer.employer_name,
+                'key': user_connection.employer.employer_key
+            } if user_connection.employer else None
         }
+        
+        if job_profession:
+            is_same_profession = False
+            if job_profession and user_connection.profession:
+                is_same_profession = job_profession.id == user_connection.profession.id
+            user_connection_data['is_same_profession'] = is_same_profession
+            
+        return user_connection_data
