@@ -19,6 +19,9 @@
             <template v-if="col.name === 'connectionName'">
               <a v-if="props.row.user_key" :href="`/jv/${props.row.user_key}`" target="_blank">{{ col.value }}</a>
               <span v-else>{{ col.value }}</span>
+              <div v-if="props.row.linkedin_url" class="text-small">
+                <a :href="props.row.linkedin_url" target="_blank">LinkedIn</a>
+              </div>
             </template>
             <template v-else-if="col.name === 'connectionType'">
               {{ CONNECTION_TYPES[col.value].name }}
@@ -78,6 +81,13 @@ export default {
           field: (conn) => conn.profession?.name || 'Unknown',
           align: 'left',
           label: 'Profession',
+          sortable: true
+        },
+        {
+          name: 'jobTitle',
+          field: 'job_title',
+          align: 'left',
+          label: 'Job Title',
           sortable: true
         }
       ]

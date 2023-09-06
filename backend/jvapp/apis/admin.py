@@ -1,12 +1,10 @@
 import json
 import logging
-from collections import defaultdict
 
 from django.core.paginator import Paginator
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from django.utils import timezone
-from rapidfuzz import fuzz, process
 from rest_framework import status
 from rest_framework.response import Response
 

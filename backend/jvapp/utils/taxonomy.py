@@ -793,10 +793,11 @@ JOB_TAXONOMY_TESTS = [
     TaxonomyTest(
         f'{start_or_word_and_space_re}sales{space_and_word_or_end_re}',
         [
-            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_SALES, CONFIDENCE_WEIGHT_WEAK),
-            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_SDR, CONFIDENCE_WEIGHT_WEAK),
-            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CLIENT_SOLUTIONS, CONFIDENCE_WEIGHT_WEAK),
-        ]
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_SALES, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_SDR, CONFIDENCE_WEIGHT_STRONG),
+            TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_CLIENT_SOLUTIONS, CONFIDENCE_WEIGHT_STRONG),
+        ],
+        test_negate_pattern=f'^.*?{hr_words}{space_and_word_or_end_re}$'
     ),
     TaxonomyTest(
         f'{start_or_word_and_space_re}(business|corporate) dev.+?$',

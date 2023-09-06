@@ -349,11 +349,11 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         return False
     
     @property
-    def job_department_standardized(self):
+    def profession(self):
         for tax in self.taxonomy.all():
             if tax.taxonomy.tax_type == Taxonomy.TAX_TYPE_PROFESSION:
-                return tax.taxonomy.name
-        return 'Unknown'
+                return tax.taxonomy
+        return None
     
     @property
     def is_user_created(self):

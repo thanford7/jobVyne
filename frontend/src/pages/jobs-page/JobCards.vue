@@ -156,46 +156,45 @@
                 </template>
               </template>
             </div>
-            <div v-if="job.general_connections?.length || job.own_connection"
-                 class="col-12 border-top-1-gray-100 q-py-sm q-px-sm">
-              <div class="text-bold q-mb-sm">
+            <div v-if="job.general_connections?.length || job.user_connections?.length|| job.own_connection"
+                 class="col-12 border-top-1-gray-100 q-py-sm q-px-md">
+              <div class="text-bold q-mb-sm flex">
                 <CustomTooltip :is_include_icon="false">
                   <template v-slot:content>Job Connections</template>
                   You are 700% more likely to land a job interview if you are referred by an employee. Use your
                   connections
                   to get a warm intro! 🔥
                 </CustomTooltip>
+                <q-space/>
+                <q-btn @click="openConnectionsDialog(job)" size="sm" color="grey-8">
+                  <CustomTooltip v-if="!isLoggedIn" :is_include_icon="false">
+                    <template v-slot:content>
+                      <q-icon name="lock"/>
+                    </template>
+                    You must login or create an account to view connections
+                  </CustomTooltip>
+                  &nbsp;&nbsp;View
+                </q-btn>
               </div>
-              <div v-if="job.own_connection" class="text-small">
-                <q-icon name="info"/>
-                <span v-if="communityUtil.isConnectionHiringMember(job.own_connection)">
-                  You are part of the hiring team for this job
-                </span>
-                <span v-else-if="communityUtil.isConnectionCurrentEmployee(job.own_connection)">
-                  You work at this company
-                </span>
-                <span v-else-if="communityUtil.isConnectionFormerEmployee(job.own_connection)">
-                  You previously worked at this company
-                </span>
-              </div>
-              <q-list v-if="job.general_connections" class="text-small" dense separator>
-                <q-item v-for="connection in job.general_connections">
-                  <q-item-section>
-                    {{ getGeneralConnectionLabel(connection) }}
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-btn @click="openConnectionsDialog(job)" size="sm" color="grey-8">
-                      <CustomTooltip v-if="!isLoggedIn" :is_include_icon="false">
-                        <template v-slot:content>
-                          <q-icon name="lock"/>
-                        </template>
-                        You must login or create an account to view connections
-                      </CustomTooltip>
-                      &nbsp;&nbsp;View
-                    </q-btn>
-                  </q-item-section>
-                </q-item>
-              </q-list>
+              <ul class="text-small">
+                <template v-if="job.own_connection">
+                  <li v-if="communityUtil.isConnectionHiringMember(job.own_connection)">
+                    You are part of the hiring team for this job
+                  </li>
+                  <li v-else-if="communityUtil.isConnectionCurrentEmployee(job.own_connection)">
+                    You work at this company
+                  </li>
+                  <li v-else-if="communityUtil.isConnectionFormerEmployee(job.own_connection)">
+                    You previously worked at this company
+                  </li>
+                </template>
+                <li v-for="connection in job.user_connections">
+                  {{ getUserConnectionLabel(connection) }}
+                </li>
+                <li v-for="connection in job.general_connections">
+                  {{ getGeneralConnectionLabel(connection) }}
+                </li>
+              </ul>
             </div>
           </div>
         </q-card>
@@ -254,6 +253,18 @@ export default {
     }
   },
   methods: {
+    getUserConnectionLabel (connection) {
+      let connectionLabel = dataUtil.pluralize('connection', connection.count)
+      const workLabel = (connection.count === 1) ? 'works' : 'work'
+      if (connection.type === 'same_profession') {
+        connectionLabel += ` who ${workLabel} in this department`
+      } else if (connection.type === 'ta_profession') {
+        connectionLabel += ` who ${workLabel} in the hiring department`
+      } else {
+        connectionLabel += ` who ${workLabel} in a different department`
+      }
+      return connectionLabel
+    },
     getGeneralConnectionLabel (connection) {
       let connectionLabel = dataUtil.pluralize('connection', connection.connection_count)
       if (communityUtil.isConnectionHiringMember(connection.connection_type)) {

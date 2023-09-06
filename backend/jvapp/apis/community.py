@@ -1,12 +1,10 @@
 import csv
 import logging
 import re
-from collections import defaultdict
 from io import StringIO
 
 from django.db.models import Prefetch, Q
 from django.utils import timezone
-from rapidfuzz import fuzz, process
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -14,10 +12,10 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response
 from jvapp.apis.admin import AdminUserConnectionsView
 from jvapp.models import JobVyneUser
-from jvapp.models.employer import ConnectionTypeBit, Employer, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
+from jvapp.models.employer import ConnectionTypeBit, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
 from jvapp.models.user import UserConnection
 from jvapp.utils.data import coerce_int, get_text_without_emojis
-from jvapp.utils.taxonomy import get_standardized_job_taxonomy
+from jvapp.utils.taxonomy import TAXONOMY_PROFESSION_TA, get_standardized_job_taxonomy
 
 logger = logging.getLogger(__name__)
 
@@ -169,27 +167,21 @@ class JobConnectionsView(JobVyneAPIView):
                 queryset=(
                     UserConnection.objects
                     .select_related('profession', 'employer', 'connection_user')
-                    .filter(~Q(owner_id=self.user.id))
+                    .all()
                 ),
                 to_attr='user_connections'
-            )
-            job_profession_prefetch = Prefetch(
-                'taxonomy',
-                queryset=JobTaxonomy.objects.select_related('taxonomy').filter(taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION),
-                to_attr='profession'
             )
             
             job = (
                 EmployerJob.objects
-                .prefetch_related(employer_connections_prefetch, user_connections_prefetch, job_profession_prefetch)
+                .prefetch_related(employer_connections_prefetch, user_connections_prefetch, 'taxonomy')
                 .get(id=job_id)
             )
-            job_profession = next((p.taxonomy for p in job.profession), None)
             employer_connections = [
-                JobConnectionsView.get_serialized_employer_connection(ec, job, job_profession) for ec in job.employer.employer_connections
+                JobConnectionsView.get_serialized_employer_connection(ec, job, job.profession) for ec in job.employer.employer_connections
             ]
             user_connections = [
-                JobConnectionsView.get_serialized_user_connection(uc, job_profession=job_profession) for uc in job.employer.user_connections
+                JobConnectionsView.get_serialized_user_connection(uc, job_profession=job.profession) for uc in job.employer.user_connections
             ]
             
             all_connections = employer_connections + user_connections
@@ -297,6 +289,7 @@ class JobConnectionsView(JobVyneAPIView):
                 'name': user_connection.profession.name,
                 'key': user_connection.profession.key,
             } if user_connection.profession else None,
+            'is_ta': user_connection.profession.key == TAXONOMY_PROFESSION_TA if user_connection.profession else False,
             'employer_raw': user_connection.employer_raw,
             'employer': {
                 'name': user_connection.employer.employer_name,

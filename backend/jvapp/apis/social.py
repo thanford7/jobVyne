@@ -485,26 +485,30 @@ class SocialLinkJobsView(JobVyneAPIView):
         paginated_jobs = Paginator(jobs, per_page=36)
         page_count = min(page_count, paginated_jobs.num_pages)
         jobs = paginated_jobs.get_page(page_count)
-        employer_ids = set([j.employer_id for j in jobs])
-        employer_connections = (
-            EmployerConnection.objects
-            .select_related('user')
-            .prefetch_related('hiring_jobs')
-            .filter(employer_id__in=employer_ids)
-            .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value))
-        )
-        employer_connections_map = defaultdict(list)
-        for conn in employer_connections:
-            employer_connections_map[conn.employer_id].append(conn)
         
-        user_connections = (
-            UserConnection.objects
-            .select_related('owner', 'profession')
-            .filter(employer_id__in=employer_ids)
-        )
-        user_connections_map = defaultdict(list)
-        for conn in user_connections:
-            user_connections_map[conn.employer_id].append(conn)
+        employer_connections_map = {}
+        user_connections_map = {}
+        if user_key:
+            employer_ids = set([j.employer_id for j in jobs])
+            employer_connections = (
+                EmployerConnection.objects
+                .select_related('user')
+                .prefetch_related('hiring_jobs')
+                .filter(employer_id__in=employer_ids)
+                .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value))
+            )
+            employer_connections_map = defaultdict(list)
+            for conn in employer_connections:
+                employer_connections_map[conn.employer_id].append(conn)
+            
+            user_connections = (
+                UserConnection.objects
+                .select_related('owner', 'profession')
+                .filter(employer_id__in=employer_ids)
+            )
+            user_connections_map = defaultdict(list)
+            for conn in user_connections:
+                user_connections_map[conn.employer_id].append(conn)
         
         data = {
             'total_page_count': paginated_jobs.num_pages,
@@ -520,6 +524,7 @@ class SocialLinkJobsView(JobVyneAPIView):
     
     @staticmethod
     def get_serialized_job(job, employer_connections, user_connections, user):
+        from jvapp.apis.community import JobConnectionsView
         job_data = {
             'employer': {
                 'id': job.employer_id,
@@ -556,7 +561,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             'employment_type': job.employment_type,
             'locations': [get_serialized_location(l) for l in job.locations.all()],
             'locations_text': job.locations_text,
-            'job_department_standardized': job.job_department_standardized,
+            'profession': job.profession.name if job.profession else 'Unknown',
             'own_connection': 0
         }
         
@@ -580,6 +585,33 @@ class SocialLinkJobsView(JobVyneAPIView):
             job_data['general_connections'].append({'connection_type': connection_type, 'connection_count': connection_count})
         
         job_data['general_connections'].sort(key=lambda x: x['connection_type'])
+        
+        user_employer_connections = user_connections.get(job.employer_id)
+        if not user_employer_connections:
+            job_data['user_connections'] = []
+        else:
+            same_profession_key = 'same_profession'
+            ta_profession_key = 'ta_profession'
+            other_profession_key = 'other_profession'
+            user_connections_count = {
+                same_profession_key: 0,
+                ta_profession_key: 0,
+                other_profession_key: 0
+            }
+            for conn in user_employer_connections:
+                serialized_connection = JobConnectionsView.get_serialized_user_connection(conn, job.profession)
+                if serialized_connection.get('is_same_profession'):
+                    user_connections_count[same_profession_key] += 1
+                elif serialized_connection['is_ta']:
+                    user_connections_count[ta_profession_key] += 1
+                else:
+                    user_connections_count[other_profession_key] += 1
+            
+            job_data['user_connections'] = [
+                {'type': key, 'count': count, 'sort_idx': 1 if key == same_profession_key else (2 if key == ta_profession_key else 3)}
+                for (key, count) in user_connections_count.items() if count
+            ]
+            job_data['user_connections'].sort(key=lambda x: x['sort_idx'])
         
         if hasattr(job, 'user_job_applications'):
             if job_application := next((app for app in job.user_job_applications), None):

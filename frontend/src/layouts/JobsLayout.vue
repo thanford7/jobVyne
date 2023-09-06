@@ -88,7 +88,7 @@
       @logout="loadUserData()"
     >
       <template v-slot:menuItems>
-        <template v-if="user?.id">
+        <template v-if="user?.id && userTypeUtil.isCandidate(user.userTypeBits)">
           <SidebarMenuItem
             menu-label="Job Applications" icon-name="contact_page"
             @click="openNewCandidatePage('candidate-dashboard')"
@@ -96,6 +96,10 @@
           <SidebarMenuItem
             menu-label="Favorites" icon-name="star"
             @click="openNewCandidatePage('candidate-favorites')"
+          />
+          <SidebarMenuItem
+            menu-label="Connections" icon-name="hub"
+            @click="openNewCandidatePage('candidate-connections')"
           />
         </template>
       </template>
@@ -173,7 +177,7 @@ import employerStyleUtil from 'src/utils/employer-styles.js'
 import employerTypeUtil from 'src/utils/employer-types.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
 import scrollUtil from 'src/utils/scroll.js'
-import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
+import userTypeUtil, { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
 import { useSocialStore } from 'stores/social-store.js'
@@ -212,6 +216,7 @@ export default {
       pagePermissionsUtil,
       scrollUtil,
       userUtil,
+      userTypeUtil,
       authStore: useAuthStore(),
       employerStore: useEmployerStore(),
       socialStore: useSocialStore(),

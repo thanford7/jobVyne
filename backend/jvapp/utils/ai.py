@@ -10,6 +10,7 @@ import openai
 import logging
 
 from asgiref.sync import sync_to_async
+from django.utils import timezone
 from openai import InvalidRequestError
 
 from jvapp.models.tracking import AIRequest
@@ -96,6 +97,7 @@ async def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     # Check to see if we've made this prompt before
     prompt_hash = hashlib.md5(bytes(json.dumps(prompt) + model, 'UTF-8')).hexdigest()
     if existing := await sync_to_async(AIRequest.objects.filter(prompt_hash=prompt_hash).first)():
+        existing.save()  # Bump up modified_dt so we can prune prompts that are no longer used after certain time period
         if existing.result_status == AIRequest.RESULT_STATUS_SUCCESS:
             resp = await parse_response(json.loads(existing.response))
             return resp, existing
