@@ -88,7 +88,7 @@
       @logout="loadUserData()"
     >
       <template v-slot:menuItems>
-        <template v-if="user?.id && userTypeUtil.isCandidate(user.userTypeBits)">
+        <template v-if="user?.id && userTypeUtil.isCandidate(user.user_type_bits)">
           <SidebarMenuItem
             menu-label="Job Applications" icon-name="contact_page"
             @click="openNewCandidatePage('candidate-dashboard')"
