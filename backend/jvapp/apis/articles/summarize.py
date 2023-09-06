@@ -149,8 +149,9 @@ class TheRegister(ListArticleSource):
     source = 'The Register'
 
     def __init__(self, *args, **kwargs):
-        BASE_URL = 'https://www.theregister.com'
         super().__init__(*args, **kwargs)
+
+        BASE_URL = 'https://www.theregister.com'
         index_page_bs = self.web_reader.read_sync(BASE_URL)
 
         for article in index_page_bs.find_all('article'):
@@ -163,4 +164,35 @@ class TheRegister(ListArticleSource):
             title = article.find('h4').text
             self.queue.append((url, title))
 
-article_source_classes = [HN, TheRegister]
+class TechCrunch(ListArticleSource):
+    source = 'TechCrunch'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        BASE_URL = 'https://techcrunch.com/'
+        index_page_bs = self.web_reader.read_sync(BASE_URL)
+
+        articles = index_page_bs.find_all('article')
+        for article in articles:
+            a = article.find('a')
+            if a is None:
+                continue
+            url = a.get('href')
+            if url == BASE_URL:
+                continue
+            if Article.objects.filter(url=url).exists():
+                continue
+            title = a.text.strip()
+            self.queue.append((url, title))
+
+        for a in index_page_bs.find_all('a', class_='post-block__title__link'):
+            url = a.get('href')
+            if url == BASE_URL:
+                continue
+            if Article.objects.filter(url=url).exists():
+                continue
+            title = a.text.strip()
+            self.queue.append((url, title))
+
+article_source_classes = [HN, TheRegister, TechCrunch]
