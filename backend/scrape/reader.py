@@ -24,12 +24,15 @@ class WebReader:
 
     async def _read_async(self, url, cb):
         async with self.conn_sem:
-            async with self.session.get(url) as resp:
-                try:
-                    html = await resp.text()
-                except Exception as ex:
-                    html = 'UNPARSEABLE'
-                await cb(BeautifulSoup(html, 'html.parser'))
+            try:
+                async with self.session.get(url) as resp:
+                    try:
+                        html = await resp.text()
+                    except Exception as ex:
+                        html = 'UNPARSEABLE'
+                    await cb(BeautifulSoup(html, 'html.parser'))
+            except:
+                logger.info(f'Could not read URL {url}')
 
     def read_async(self, url, cb):
         """Read a URL and call cb when the data returns"""
