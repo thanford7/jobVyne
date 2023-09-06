@@ -22,9 +22,14 @@ test_scrapers = {
     # YelpScraper.employer_name: YelpScraper,
     # ThermoFisherScraper.employer_name: ThermoFisherScraper,
     # UnitedAirlinesScraper.employer_name: UnitedAirlinesScraper,
+    # CognizantScraper.employer_name: CognizantScraper,
 }
 
 all_scrapers = {
+    SymblAiScraper.employer_name: SymblAiScraper,
+    GatheroundScraper.employer_name: GatheroundScraper,
+    Beyond20Scraper.employer_name: Beyond20Scraper,
+    EngrainScraper.employer_name: EngrainScraper,
     LivelyScraper.employer_name: LivelyScraper,
     DisneyScraper.employer_name: DisneyScraper,
     BlueBeamScraper.employer_name: BlueBeamScraper,

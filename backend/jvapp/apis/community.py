@@ -232,8 +232,8 @@ class JobConnectionsView(JobVyneAPIView):
                         connection_user = JobVyneUser.objects.get(Q(email=email) | Q(business_email=email))
                     except JobVyneUser.DoesNotExist:
                         pass
-                    
-                new_user_connections.append(UserConnection(
+                
+                user_connection = UserConnection(
                     owner=self.user,
                     connection_user=connection_user,
                     first_name=get_text_without_emojis(value_map['first_name']),
@@ -246,8 +246,10 @@ class JobConnectionsView(JobVyneAPIView):
                     profession=get_standardized_job_taxonomy(value_map['position']),
                     created_dt=timezone.now(),
                     modified_dt=timezone.now()
-                ))
-            UserConnection.objects.bulk_create(new_user_connections)
+                )
+                new_user_connections.append(user_connection)
+                current_connections[(user_connection.linkedin_handle, user_connection.employer_raw)] = user_connection
+            UserConnection.objects.bulk_create(new_user_connections, ignore_conflicts=True)
         return get_success_response('Imported LinkedIn contacts')
     
     @staticmethod

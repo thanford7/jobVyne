@@ -237,3 +237,28 @@ class DisneyScraper(WorkdayApiScraper):
     JOBS_BASE_API_URL = 'https://disney.wd5.myworkdayjobs.com/wday/cxs/disney/disneycareer'
     start_url = 'https://disney.wd5.myworkdayjobs.com/en-US/disneycareer'
     has_job_departments = False
+    
+    
+class CognizantScraper(PhenomPeopleScraper):
+    employer_name = 'Cognizant'
+    start_url = 'https://careers.cognizant.com/us/en/search-results'
+
+
+class SymblAiScraper(GreenhouseApiScraper):
+    employer_name = 'Symbl.ai'
+    EMPLOYER_KEY = 'symblai47'
+    
+    
+class GatheroundScraper(LeverScraper):
+    employer_name = 'Gatheround'
+    EMPLOYER_KEY = 'gatheround'
+    
+    
+class Beyond20Scraper(BambooHrScraper):
+    employer_name = 'Beyond20'
+    EMPLOYER_KEY = 'beyond20'
+    
+    
+class EngrainScraper(PaylocityScraper):
+    employer_name = 'Engrain'
+    start_url = 'https://recruiting.paylocity.com/recruiting/jobs/All/c2c0ff61-5736-4aa6-83c5-24823d01d605/Engrain-Inc'
