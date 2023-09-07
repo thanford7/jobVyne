@@ -4,12 +4,29 @@
       <PageHeader title="Connections"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12">
+          <a :href="`/jv/${user?.user_key}`" target="_blank">
+            View your job connections
+          </a>
+          <CustomTooltip :is_include_icon="false">
+            <template v-slot:content>
+              <q-btn
+                icon="content_copy"
+                flat round size="sm"
+                @click="dataUtil.copyText(jobConnectionsUrl)"
+              />
+            </template>
+            Copy job connections URL
+          </CustomTooltip>
+        </div>
+        <div class="col-12">
           <q-toggle :model-value="isShareConnections" @update:model-value="updateShareConnections">
             Share connections
             <CustomTooltip>
               <div>
-                The purpose of JobVyne is to come together as a community and help each other find jobs and make new connections.
-                When you share your connections, other JobVyne users can see information that would already be publicly available
+                The purpose of JobVyne is to come together as a community and help each other find jobs and make new
+                connections.
+                When you share your connections, other JobVyne users can see information that would already be publicly
+                available
                 on LinkedIn:
               </div>
               <ul>
@@ -38,7 +55,7 @@
                 @click="openDialogBulkUploadLinkedInContacts()"
               />
               <q-btn
-                      v-if="connections?.length"
+                v-if="connections?.length"
                 ripple color="negative" label="Delete All Contacts"
                 @click="deleteContacts()"
               />
@@ -51,14 +68,16 @@
                   :props="props"
                 >
                   <template v-if="col.name === 'fullName'">
-                    <a v-if="props.row.connection_user_key" :href="`/jv/${props.row.connection_user_key}/`" target="_blank">{{ col.value }}</a>
+                    <a v-if="props.row.connection_user_key" :href="`/jv/${props.row.connection_user_key}/`"
+                       target="_blank">{{ col.value }}</a>
                     <span v-else>{{ col.value }}</span>
                   </template>
                   <template v-else-if="col.name === 'linkedin'">
                     <a :href="col.value" target="_blank">LinkedIn</a>
                   </template>
                   <template v-else-if="col.name === 'employer'">
-                    <a v-if="props.row.employer" :href="`/co/${props.row.employer.key}`" target="_blank">{{ props.row.employer.name }}</a>
+                    <a v-if="props.row.employer" :href="`/co/${props.row.employer.key}`"
+                       target="_blank">{{ props.row.employer.name }}</a>
                     <span v-else>{{ props.row.employer_raw }}</span>
                   </template>
                   <template v-else-if="col.name === 'profession'">
@@ -81,6 +100,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBulkUploadLinkedInContacts from 'components/dialogs/DialogBulkUploadLinkedInContacts.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { useMeta, useQuasar } from 'quasar'
+import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useCommunityStore } from 'stores/community-store.js'
@@ -103,9 +123,15 @@ export default {
       isShareConnections: null,
       connections: [],
       connectionColumns,
+      dataUtil,
       authStore: useAuthStore(),
       communityStore: useCommunityStore(),
       q: useQuasar()
+    }
+  },
+  computed: {
+    jobConnectionsUrl () {
+      return `${window.location.origin}/jv/${this.user?.user_key}`
     }
   },
   methods: {

@@ -77,6 +77,7 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
 def get_serialized_user_profile(user: JobVyneUser, is_get_profile=False):
     data = {
         'id': user.id,
+        'user_key': user.user_key,
         'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
         'first_name': user.first_name,
         'last_name': user.last_name,
