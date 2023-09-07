@@ -221,7 +221,6 @@ def create_employer_key(sender, instance, created, *args, **kwargs):
 @receiver(post_save, sender=Employer)
 def create_employer_info(sender, instance, created, *args, **kwargs):
     if instance.email_domains and not instance.description:
-        EmployerInfoView.fill_employer_info(employer_filter=Q(id=instance.id))
         EmployerInfoView.fill_employer_description(employer_filter=Q(id=instance.id))
         
         

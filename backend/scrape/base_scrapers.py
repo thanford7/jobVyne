@@ -132,11 +132,13 @@ class Scraper:
             
         return ClientSession(headers=headers)
     
-    async def get_new_page(self):
+    async def update_browser_context(self):
         await self.browser.set_extra_http_headers({
             'Referer': self.base_url,
             'Origin': self.base_url,
         })
+    
+    async def get_new_page(self):
         page = await self.browser.new_page()
         page.on('dialog', lambda dialog: dialog.accept())
         return page
@@ -449,6 +451,7 @@ class BambooHrScraper(Scraper):
     job_item_page_wait_sel = '.fab-Card'
     
     async def scrape_jobs(self):
+        await self.update_browser_context()
         jobs = self.get_jobs()
         for job in jobs:
             await self.add_job_links_to_queue(self.get_job_url(job), meta_data={'job_id': job['id']})
@@ -511,6 +514,7 @@ class BambooHrScraper2(Scraper):
     job_item_page_wait_sel = '.ResAts__card'
     
     async def scrape_jobs(self):
+        await self.update_browser_context()
         page = await self.get_starting_page()
         
         # Make sure page data has loaded
@@ -753,6 +757,7 @@ class WorkdayScraper(Scraper):
     MAX_PAGE_LOAD_WAIT_SECONDS = 5
     
     async def scrape_jobs(self):
+        await self.update_browser_context()
         page = await self.get_starting_page()
         # Make sure page data has loaded
         page_container_sel = 'section[data-automation-id="jobResults"] [data-automation-id="jobFoundText"]'
@@ -1225,6 +1230,7 @@ class AshbyHQScraper(Scraper):
     job_item_page_wait_sel = '[class*="_descriptionText"]'
     
     async def scrape_jobs(self):
+        await self.update_browser_context()
         page = await self.get_starting_page()
         
         # Make sure page data has loaded
@@ -1442,6 +1448,7 @@ class UltiProScraper(Scraper):
     job_item_page_wait_sel = '[data-automation="job-description"]'
     
     async def scrape_jobs(self):
+        await self.update_browser_context()
         page = await self.get_starting_page()
         
         # Make sure page data has loaded
@@ -1627,6 +1634,7 @@ class PaylocityScraper(Scraper):
     job_item_page_wait_sel = '.job-preview-header'
     
     async def scrape_jobs(self):
+        await self.update_browser_context()
         page = await self.get_starting_page()
         
         # Make sure page data has loaded
@@ -1739,10 +1747,8 @@ class EightfoldScraper(Scraper):
             'num': self.JOBS_PER_PAGE,
             'start': next_page_start
         }
-        jobs_resp = requests.get(
-            f'https://careers.{self.EMPLOYER_KEY}.com/api/apply/v2/jobs',
-            params=request_data
-        )
+        request_url = f'https://careers.{self.EMPLOYER_KEY}.com/api/apply/v2/jobs'
+        jobs_resp = requests.get(request_url, params=request_data)
         jobs_data = json.loads(jobs_resp.content)
         return jobs_data['positions'], jobs_data['count']
     
@@ -1960,6 +1966,7 @@ class PhenomPeopleScraper(Scraper):
     job_item_page_wait_sel = '.job-info'
     
     async def scrape_jobs(self):
+        await self.update_browser_context()
         page = await self.get_starting_page()
         await self.save_page_info(page)
         await self.wait_for_el(page, '[data-ph-at-id="jobs-list"]')
@@ -2071,6 +2078,7 @@ class StandardJsScraper(StandardScraper):
     job_item_page_wait_sel = None  # Per employer scraper
     
     async def get_html(self):
+        await self.update_browser_context()
         page = await self.get_starting_page()
         
         # Make sure page data has loaded

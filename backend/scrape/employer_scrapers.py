@@ -23,9 +23,21 @@ test_scrapers = {
     # ThermoFisherScraper.employer_name: ThermoFisherScraper,
     # UnitedAirlinesScraper.employer_name: UnitedAirlinesScraper,
     # CognizantScraper.employer_name: CognizantScraper,
+    ### NOT WORKING
+    # CenteneCorporationScraper.employer_name: CenteneCorporationScraper,
 }
 
 all_scrapers = {
+    ZebraScraper.employer_name: ZebraScraper,
+    AthenaHealthScraper.employer_name: AthenaHealthScraper,
+    StepStoneScraper.employer_name: StepStoneScraper,
+    TheNewYorkTimesScraper.employer_name: TheNewYorkTimesScraper,
+    MaterialScraper.employer_name: MaterialScraper,
+    FluenceScraper.employer_name: FluenceScraper,
+    AtheneScraper.employer_name: AtheneScraper,
+    RyanScraper.employer_name: RyanScraper,
+    PendoScraper.employer_name: PendoScraper,
+    UndertoneScraper.employer_name: UndertoneScraper,
     MechanismVenturesScraper.employer_name: MechanismVenturesScraper,
     XplorScraper.employer_name: XplorScraper,
     RooScraper.employer_name: RooScraper,
@@ -56,7 +68,6 @@ all_scrapers = {
     GreifScraper.employer_name: GreifScraper,
     CircanaScraper.employer_name: CircanaScraper,
     ScribeScraper.employer_name: ScribeScraper,
-    CenteneCorporationScraper.employer_name: CenteneCorporationScraper,
     SnapIncScraper.employer_name: SnapIncScraper,
     CohereHealthScraper.employer_name: CohereHealthScraper,
     BloomerangScraper.employer_name: BloomerangScraper,

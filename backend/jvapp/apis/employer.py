@@ -16,7 +16,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from slack_sdk import WebClient
 
-from jobVyne import settings
 from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
     get_success_response
 from jvapp.apis.geocoding import LocationParser, get_raw_location
@@ -28,12 +27,10 @@ from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import ConnectionTypeBit, Employer, EmployerAuthGroup, EmployerConnection, \
-    EmployerJobConnection, \
     EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
-    EmployerFileTag, JobTaxonomy, Taxonomy
-from jvapp.models.external import ExternalCompanyData
+    EmployerFileTag
 from jvapp.models.job_seeker import JobApplication
 from jvapp.models.location import Location
 from jvapp.models.social import SocialLink
@@ -1733,46 +1730,6 @@ class EmployerInfoView(JobVyneAPIView):
         '{"name": "(name of company)", "description": "(description)", "description_long": "(description_long)"}'
     )
 
-    @staticmethod
-    def fill_employer_info(limit=None, employer_filter=None):
-        employer_filter = employer_filter or (
-            Q(linkedin_handle__isnull=True) & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
-        )
-        unfilled_employers = Employer.objects.filter(employer_filter)
-        if limit:
-            unfilled_employers = unfilled_employers[:limit]
-            
-        employers_to_save = []
-        for employer in unfilled_employers:
-            company_filter = Q(company_name__iexact=employer.employer_name) | Q(website__iexact=employer.email_domains)
-            company_matches = ExternalCompanyData.objects.filter(company_filter)
-            if not company_matches:
-                logging.info(f'Could not find company info for {employer.employer_name}')
-                continue
-            company = company_matches[0]
-            
-            # Sometimes there can be multiple matches on company name
-            # Company website is more definitive
-            if len(company_matches) > 1:
-                for co in company_matches:
-                    if co.website == employer.email_domains:
-                        company = co
-            
-            employer.linkedin_handle = company.linkedin_handle
-            employer.year_founded = company.founded_year or None
-            employer.industry = company.industry
-            employer.size_min = company.size_min
-            employer.size_max = company.size_max
-            employer.website = company.website
-            employer.ownership_type = company.company_type
-            employers_to_save.append(employer)
-        
-        if employers_to_save:
-            Employer.objects.bulk_update(employers_to_save, [
-                'linkedin_handle', 'year_founded', 'industry', 'size_min', 'size_max',
-                'website', 'ownership_type'
-            ])
-        
     @staticmethod
     def fill_employer_description(limit=None, employer_filter=None):
         employer_filter = employer_filter or (

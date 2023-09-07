@@ -1,4 +1,5 @@
-from scrape.base_scrapers import BambooHrScraper, GreenhouseApiScraper, GreenhouseIframeScraper, GreenhouseScraper, \
+from scrape.base_scrapers import BambooHrScraper, EightfoldScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
+    GreenhouseScraper, \
     JobviteScraper, LeverScraper, \
     PaylocityScraper, \
     PhenomPeopleScraper, SmartRecruitersScraper, UltiProScraper, WorkdayApiScraper, WorkdayScraper
@@ -277,3 +278,59 @@ class XplorScraper(SmartRecruitersScraper):
 class RooScraper(LeverScraper):
     employer_name = 'Roo'
     EMPLOYER_KEY = 'roo'
+
+
+class AthenaHealthScraper(WorkdayScraper):
+    employer_name = 'athenahealth'
+    start_url = 'https://athenahealth.wd1.myworkdayjobs.com/External'
+    
+    
+class StepStoneScraper(SmartRecruitersScraper):
+    # Includes AppCast
+    employer_name = 'StepStone'
+    EMPLOYER_KEY = 'StepStoneGroup'
+    
+    
+class TheNewYorkTimesScraper(GreenhouseScraper):
+    employer_name = 'The New York Times'
+    EMPLOYER_KEY = 'thenewyorktimes'
+    
+    
+class MaterialScraper(WorkdayScraper):
+    employer_name = 'Material'
+    start_url = 'https://material.wd1.myworkdayjobs.com/Material_External_Career_Site'
+    
+    
+class FluenceScraper(LeverScraper):
+    employer_name = 'Fluence'
+    EMPLOYER_KEY = 'fluence'
+    
+    
+class AtheneScraper(WorkdayScraper):
+    employer_name = 'Athene'
+    start_url = 'https://athene.wd5.myworkdayjobs.com/athene_careers'
+    
+    
+class RyanScraper(WorkdayScraper):
+    employer_name = 'Ryan'
+    start_url = 'https://ryan.wd1.myworkdayjobs.com/RyanCareers'
+    
+    
+class RevanceScraper(GreenhouseApiScraper):
+    employer_name = 'Revance'
+    EMPLOYER_KEY = 'revance'
+    
+    
+class PendoScraper(GreenhouseScraper):
+    employer_name = 'Pendo'
+    EMPLOYER_KEY = 'pendo'
+    
+    
+class UndertoneScraper(GreenhouseApiScraper):
+    employer_name = 'Undertone'
+    EMPLOYER_KEY = 'undertone'
+    
+    
+class ZebraScraper(EightfoldScraper):
+    employer_name = 'Zebra'
+    EMPLOYER_KEY = 'zebra'

@@ -24,14 +24,14 @@
                   :props="props"
                 >
                   <template v-if="col.name === 'fullName'">
-                    <a v-if="props.row.connection_user_key" :href="`/jv/${props.row.connection_user_key}/`">{{ col.value }}</a>
+                    <a v-if="props.row.connection_user_key" :href="`/jv/${props.row.connection_user_key}/`" target="_blank">{{ col.value }}</a>
                     <span v-else>{{ col.value }}</span>
                   </template>
                   <template v-else-if="col.name === 'linkedin'">
-                    <a :href="col.value">LinkedIn</a>
+                    <a :href="col.value" target="_blank">LinkedIn</a>
                   </template>
                   <template v-else-if="col.name === 'employer'">
-                    <a v-if="props.row.employer" :href="`/co/${props.row.employer.key}`">{{ props.row.employer.name }}</a>
+                    <a v-if="props.row.employer" :href="`/co/${props.row.employer.key}`" target="_blank">{{ props.row.employer.name }}</a>
                     <span v-else>{{ props.row.employer_raw }}</span>
                   </template>
                   <template v-else-if="col.name === 'profession'">
