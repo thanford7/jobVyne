@@ -111,24 +111,32 @@ class Scraper:
         self.queue = asyncio.Queue()
         self.playwright = playwright
         self.browser = browser
+        self.base_url = get_base_url(self.get_start_url())
+        self.session = self.get_client_session()
+        self.skip_urls = [] if settings.IS_LOCAL else skip_urls
+        logger.info(f'scraper {self.session} created')
+        self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
+                               range(self.MAX_CONCURRENT_PAGES)]
+        
+    def get_client_session(self):
         headers = {
             'User-Agent': get_random_user_agent(),
-            'Referer': 'https://www.google.com',
-            'Origin': 'https://www.google.com',
+            'Referer': self.base_url,
+            'Origin': self.base_url,
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'Accept': '*/*'
         }
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
-        self.session = ClientSession(headers=headers)
-        self.skip_urls = [] if settings.IS_LOCAL else skip_urls
-        logger.info(f'scraper {self.session} created')
-        self.base_url = get_base_url(self.get_start_url())
-        self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
-                               range(self.MAX_CONCURRENT_PAGES)]
+            
+        return ClientSession(headers=headers)
     
     async def get_new_page(self):
+        await self.browser.set_extra_http_headers({
+            'Referer': self.base_url,
+            'Origin': self.base_url,
+        })
         page = await self.browser.new_page()
         page.on('dialog', lambda dialog: dialog.accept())
         return page
@@ -159,9 +167,11 @@ class Scraper:
             return
         logger.info(f'REQUEST FAILED: {request.url} {request.failure}')
     
-    def response_failure_logger(self, response):
+    async def response_failure_logger(self, response):
         if response.status >= 400 and 'reddit' not in response.request.url:
             logger.info(f'RESPONSE ERROR: {response.status} {response.status_text} for {response.request.url}')
+            request_headers = await response.request.all_headers()
+            logger.info(f'RESPONSE ERROR: Request headers - {request_headers}')
     
     async def visit_page_with_retry(self, url, max_retries=4):
         # Some browser IPs may not work. If they don't we'll remove the browser and try another
@@ -178,8 +188,8 @@ class Scraper:
             resp = None
             try:
                 page.on('requestfailed', self.request_failure_logger)
-                page.on('response', self.response_failure_logger)
-                resp = await page.goto(url, referer=self.get_start_url(), wait_until=self.PAGE_LOAD_WAIT_EVENT)
+                resp = await page.goto(url, wait_until=self.PAGE_LOAD_WAIT_EVENT)
+                await self.response_failure_logger(resp)
                 if self.TEST_REDIRECT and (normalize_url(page.url) != normalize_url(url)):
                     logger.info('Page was redirected. Trying to reload page')
                     error_pages.append(page)
@@ -257,6 +267,7 @@ class Scraper:
             resp = await self.get_html_from_url(url)
             return resp
         except ServerDisconnectedError:
+            self.session = self.get_client_session()
             resp = await self.get_html_from_url(url)
             return resp
     

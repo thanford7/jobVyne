@@ -26,6 +26,9 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    MechanismVenturesScraper.employer_name: MechanismVenturesScraper,
+    XplorScraper.employer_name: XplorScraper,
+    RooScraper.employer_name: RooScraper,
     SymblAiScraper.employer_name: SymblAiScraper,
     GatheroundScraper.employer_name: GatheroundScraper,
     Beyond20Scraper.employer_name: Beyond20Scraper,

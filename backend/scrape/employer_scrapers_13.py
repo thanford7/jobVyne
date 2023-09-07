@@ -262,3 +262,18 @@ class Beyond20Scraper(BambooHrScraper):
 class EngrainScraper(PaylocityScraper):
     employer_name = 'Engrain'
     start_url = 'https://recruiting.paylocity.com/recruiting/jobs/All/c2c0ff61-5736-4aa6-83c5-24823d01d605/Engrain-Inc'
+    
+    
+class MechanismVenturesScraper(LeverScraper):
+    employer_name = 'Mechanism Ventures'
+    EMPLOYER_KEY = 'mechanism-2'
+    
+    
+class XplorScraper(SmartRecruitersScraper):
+    employer_name = 'Xplor'
+    EMPLOYER_KEY = 'Xplor'
+
+
+class RooScraper(LeverScraper):
+    employer_name = 'Roo'
+    EMPLOYER_KEY = 'roo'
