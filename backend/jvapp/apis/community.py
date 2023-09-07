@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response
 from jvapp.apis.admin import AdminUserConnectionsView
 from jvapp.models import JobVyneUser
+from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import ConnectionTypeBit, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
 from jvapp.models.user import UserConnection
 from jvapp.utils.data import coerce_int, get_text_without_emojis
@@ -152,22 +153,33 @@ class JobConnectionsView(JobVyneAPIView):
             return get_error_response('A job ID or user ID is required')
         
         if job_id:
+            # We limit sharing connections with users based on whether they are sharing their own connections
+            employer_connections_filter = ~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value) & ~Q(user_id=self.user.id)
+            if self.user.is_share_connections:
+                employer_connections_filter &= Q(user__is_share_connections=True)
+            else:
+                employer_connections_filter &= Q(id=0)
             employer_connections_prefetch = Prefetch(
                 'employer__user_connection',
                 queryset=(
                     EmployerConnection.objects
                     .select_related('user', 'user__profession')
                     .prefetch_related('hiring_jobs')
-                    .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value) & ~Q(user_id=self.user.id))
+                    .filter(employer_connections_filter)
                 ),
                 to_attr='employer_connections'
             )
+            
+            if self.user.is_share_connections:
+                user_connections_filter = Q(owner__is_share_connections=True) | Q(owner_id=self.user.id)
+            else:
+                user_connections_filter = Q(owner_id=self.user.id)
             user_connections_prefetch = Prefetch(
                 'employer__connection',
                 queryset=(
                     UserConnection.objects
-                    .select_related('profession', 'employer', 'connection_user')
-                    .all()
+                    .select_related('profession', 'employer', 'connection_user', 'owner')
+                    .filter(user_connections_filter)
                 ),
                 to_attr='user_connections'
             )
@@ -191,7 +203,7 @@ class JobConnectionsView(JobVyneAPIView):
         if user_id:
             user_connections = [
                 JobConnectionsView.get_serialized_user_connection(uc) for uc in
-                UserConnection.objects.select_related('profession', 'employer').filter(owner_id=user_id)
+                UserConnection.objects.select_related('profession', 'employer', 'owner', 'connection_user').filter(owner_id=user_id)
             ]
             return Response(status=status.HTTP_200_OK, data=user_connections)
     
@@ -249,8 +261,20 @@ class JobConnectionsView(JobVyneAPIView):
                 )
                 new_user_connections.append(user_connection)
                 current_connections[(user_connection.linkedin_handle, user_connection.employer_raw)] = user_connection
-            UserConnection.objects.bulk_create(new_user_connections, ignore_conflicts=True)
+            UserConnection.objects.bulk_create(new_user_connections)
         return get_success_response('Imported LinkedIn contacts')
+    
+    def delete(self, request):
+        user_id = self.data['userId']
+        job_connections = UserConnection.objects.filter(owner_id=user_id)
+        if not job_connections:
+            return get_success_response('No connections were found for deletion')
+        has_permission = job_connections[0].jv_check_permission(PermissionTypes.DELETE.value, self.user, is_raise_error=False)
+        if not has_permission:
+            return get_error_response('You do not have permission to delete these connections')
+        job_connection_count = len(job_connections)
+        job_connections.delete()
+        return get_success_response(f'Deleted {job_connection_count} connections')
     
     @staticmethod
     def get_serialized_employer_connection(employer_connection, job, job_profession):
@@ -306,3 +330,20 @@ class JobConnectionsView(JobVyneAPIView):
             user_connection_data['is_same_profession'] = is_same_profession
             
         return user_connection_data
+    
+    
+class JobConnectionsShareView(JobVyneAPIView):
+    
+    def put(self, request):
+        user_id = self.data['user_id']
+        if self.user.id != user_id:
+            return get_error_response('You do not have permission to edit this user')
+        
+        try:
+            user = JobVyneUser.objects.get(id=user_id)
+        except JobVyneUser.DoesNotExist:
+            return get_error_response('A user with this ID does not exist')
+        
+        user.is_share_connections = self.data['is_share_connections']
+        user.save()
+        return get_success_response('Updated your preference to share your connections')

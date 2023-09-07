@@ -170,7 +170,8 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     job_title = models.CharField(max_length=100, null=True, blank=True)
     profession = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL)
     employment_start_date = models.DateField(null=True, blank=True)
-
+    
+    is_share_connections = models.BooleanField(default=True)
     home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
     work_remote_type_bit = models.SmallIntegerField(default=REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value)
     job_search_type_bit = models.SmallIntegerField(default=0)
@@ -506,7 +507,7 @@ class UserSocialSubscription(AuditFields):
         unique_together = ('user', 'provider', 'subscription_type')
         
         
-class UserConnection(AuditFields):
+class UserConnection(AuditFields, JobVynePermissionsMixin):
     owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='owner_connection')
     connection_user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.CASCADE, related_name='other_connection')
     first_name = models.CharField(max_length=150)
@@ -517,6 +518,9 @@ class UserConnection(AuditFields):
     employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='connection')
     job_title = models.CharField(max_length=100, null=True, blank=True)
     profession = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL)
+    
+    def _jv_can_create(self, user):
+        return user.id == self.owner_id
     
     class Meta:
         constraints = [

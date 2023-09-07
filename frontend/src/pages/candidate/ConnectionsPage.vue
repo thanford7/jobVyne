@@ -4,6 +4,28 @@
       <PageHeader title="Connections"/>
       <div class="row q-mt-md q-gutter-y-md">
         <div class="col-12">
+          <q-toggle :model-value="isShareConnections" @update:model-value="updateShareConnections">
+            Share connections
+            <CustomTooltip>
+              <div>
+                The purpose of JobVyne is to come together as a community and help each other find jobs and make new connections.
+                When you share your connections, other JobVyne users can see information that would already be publicly available
+                on LinkedIn:
+              </div>
+              <ul>
+                <li>Name</li>
+                <li>LinkedIn</li>
+                <li>Employer</li>
+                <li>Job Title</li>
+                <li>Profession</li>
+              </ul>
+              <div>
+                We DO NOT share any contact information for your connections.
+              </div>
+            </CustomTooltip>
+          </q-toggle>
+        </div>
+        <div class="col-12">
           <q-table
             :loading="isLoading"
             :rows="connections"
@@ -12,8 +34,13 @@
           >
             <template v-slot:top>
               <q-btn
-                ripple color="primary" label="Upload LinkedIn Contacts"
+                ripple color="primary" label="Upload LinkedIn Contacts" class="q-mr-sm"
                 @click="openDialogBulkUploadLinkedInContacts()"
+              />
+              <q-btn
+                      v-if="connections?.length"
+                ripple color="negative" label="Delete All Contacts"
+                @click="deleteContacts()"
               />
             </template>
             <template v-slot:body="props">
@@ -50,9 +77,11 @@
   </q-page>
 </template>
 <script>
+import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBulkUploadLinkedInContacts from 'components/dialogs/DialogBulkUploadLinkedInContacts.vue'
 import PageHeader from 'components/PageHeader.vue'
 import { useMeta, useQuasar } from 'quasar'
+import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useCommunityStore } from 'stores/community-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
@@ -67,10 +96,11 @@ const connectionColumns = [
 
 export default {
   name: 'ConnectionsPage',
-  components: { PageHeader },
+  components: { CustomTooltip, PageHeader },
   data () {
     return {
       isLoading: true,
+      isShareConnections: null,
       connections: [],
       connectionColumns,
       authStore: useAuthStore(),
@@ -79,6 +109,25 @@ export default {
     }
   },
   methods: {
+    async updateShareConnections (isShareConnections) {
+      await this.$api.put('community/job-connections/share/', getAjaxFormData({
+        user_id: this.user.id,
+        is_share_connections: isShareConnections
+      }))
+      await this.authStore.setUser(true)
+      this.user = this.authStore.propUser
+      this.isShareConnections = this.user.is_share_connections
+    },
+    async deleteContacts () {
+      openConfirmDialog(this.q, 'Are you sure you want to delete all of your contacts? This is irreversible.', {
+        okFn: async () => {
+          await this.$api.delete('community/job-connections/', {
+            data: getAjaxFormData({ userId: this.user.id })
+          })
+          await this.updateConnections(true)
+        }
+      })
+    },
     async updateConnections (isForceRefresh) {
       this.isLoading = true
       await this.communityStore.setJobConnections({ userId: this.user.id, isForceRefresh })
@@ -96,6 +145,7 @@ export default {
   async mounted () {
     await this.authStore.setUser().then(() => {
       this.user = this.authStore.propUser
+      this.isShareConnections = this.user.is_share_connections
       return Promise.all([
         this.updateConnections(false)
       ])

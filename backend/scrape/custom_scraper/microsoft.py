@@ -13,6 +13,7 @@ class MicrosoftScraper(Scraper):
     employer_name = 'Microsoft'
     IS_REMOVE_QUERY_PARAMS = False
     JOBS_PER_PAGE = 20
+    start_url = 'https://jobs.careers.microsoft.com/global/en/search'
     
     async def scrape_jobs(self):
         total_jobs = None

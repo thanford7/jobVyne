@@ -25,6 +25,7 @@ test_scrapers = {
     # CognizantScraper.employer_name: CognizantScraper,
     ### NOT WORKING
     # CenteneCorporationScraper.employer_name: CenteneCorporationScraper,
+    MicrosoftScraper.employer_name: MicrosoftScraper
 }
 
 all_scrapers = {

@@ -112,9 +112,7 @@ class Scraper:
         self.playwright = playwright
         self.browser = browser
         self.base_url = get_base_url(self.get_start_url())
-        self.session = self.get_client_session()
         self.skip_urls = [] if settings.IS_LOCAL else skip_urls
-        logger.info(f'scraper {self.session} created')
         self.job_processors = [asyncio.create_task(self.get_job_item_from_url()) for _ in
                                range(self.MAX_CONCURRENT_PAGES)]
         
@@ -269,7 +267,6 @@ class Scraper:
             resp = await self.get_html_from_url(url)
             return resp
         except ServerDisconnectedError:
-            self.session = self.get_client_session()
             resp = await self.get_html_from_url(url)
             return resp
     
@@ -277,12 +274,13 @@ class Scraper:
         """Return an HTML selector. If no JavaScript interaction is needed, this method should
         be used since it is more lightweight than get_page_html
         """
-        async with self.session.get(url) as resp:
-            if not resp.ok:
-                logger.warning(f'Failed to load page: {url}\n({resp.status}) {resp.reason}')
-            # resp.raise_for_status()
-            html = await resp.text()
-            return Selector(text=html)
+        async with self.get_client_session() as client:
+            async with client.get(url) as resp:
+                if not resp.ok:
+                    logger.warning(f'Failed to load page: {url}\n({resp.status}) {resp.reason}')
+                # resp.raise_for_status()
+                html = await resp.text()
+                return Selector(text=html)
     
     async def wait_for_el(self, page, selector, max_retries=0, state='visible', timeout=30000):
         retries = 0
@@ -314,8 +312,6 @@ class Scraper:
             await self.queue.put((job_url, meta_data))
     
     async def close_connections(self, page=None):
-        logger.info(f'close connections, page is {page}, session is {self.session}')
-        await self.session.close()
         if page:
             await page.close()
         logger.info('Cancelling job processors')

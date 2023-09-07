@@ -3,6 +3,10 @@
     :base-title-text="titleText"
     :is-include-buttons="false"
   >
+    <q-banner rounded v-if="!authStore.propUser.is_share_connections" class="text-small border-1-warning">
+      <q-icon name="warning" color="orange-7"/> Other users' connections are hidden because you are not sharing your connections.
+      You can update <a href="/candidate/connections" target="_blank">your sharing preferences here</a>.
+    </q-banner>
     <q-table
       flat
       :columns="connectionColumns"
@@ -45,6 +49,7 @@
 <script>
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import { CONNECTION_TYPES } from 'src/utils/community.js'
+import { useAuthStore } from 'stores/auth-store.js'
 import { useCommunityStore } from 'stores/community-store.js'
 
 export default {
@@ -55,7 +60,8 @@ export default {
   data () {
     return {
       jobConnections: [],
-      CONNECTION_TYPES
+      CONNECTION_TYPES,
+      authStore: useAuthStore()
     }
   },
   props: {

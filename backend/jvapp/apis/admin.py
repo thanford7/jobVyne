@@ -221,7 +221,7 @@ class AdminEmployerView(JobVyneAPIView):
         return {
             'id': employer.id,
             'name': employer.employer_name,
-            'name_aliases': employer.employer_name_aliases,
+            'name_aliases': '|'.join(employer.employer_name_aliases) if employer.employer_name_aliases else None,
             'organization_type': employer.organization_type,
             'job_board_url': employer.main_job_board_link,
             'logo_url': employer.logo_square_88.url if employer.logo_square_88 else None,

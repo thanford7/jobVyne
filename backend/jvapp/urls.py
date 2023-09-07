@@ -20,6 +20,7 @@ urlpatterns = [
     path('admin/user-created-job/approval/', admin.AdminUserCreatedJobApprovalView.as_view()),
     path('community/members/', community.CommunityMemberView.as_view()),
     path('community/job-connections/', community.JobConnectionsView.as_view()),
+    path('community/job-connections/share/', community.JobConnectionsShareView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
     path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
