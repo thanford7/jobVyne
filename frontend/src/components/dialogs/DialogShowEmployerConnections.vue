@@ -8,6 +8,7 @@
       You can update <a href="/candidate/connections" target="_blank">your sharing preferences here</a>.
     </q-banner>
     <q-table
+      :loading="isLoading"
       flat
       :columns="connectionColumns"
       :rows="jobConnections"
@@ -59,6 +60,7 @@ export default {
   components: { DialogBase },
   data () {
     return {
+      isLoading: false,
       jobConnections: [],
       CONNECTION_TYPES,
       authStore: useAuthStore()
@@ -101,9 +103,11 @@ export default {
   },
   methods: {},
   async mounted () {
+    this.isLoading = true
     const communityStore = useCommunityStore()
     await communityStore.setJobConnections({ jobId: this.job.id })
     this.jobConnections = communityStore.getJobConnections({ jobId: this.job.id })
+    this.isLoading = false
   }
 }
 </script>

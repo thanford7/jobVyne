@@ -377,7 +377,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         if not any((link_id, profession_key, employer_key, user_key, job_key, job_subscription_ids)):
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user,
-                lookback_days=self.LOOKBACK_DAYS
+                lookback_days=self.LOOKBACK_DAYS, is_allow_unapproved=True
             )
             
         user = None
@@ -391,11 +391,10 @@ class SocialLinkJobsView(JobVyneAPIView):
             # They might not yet be approved, but we still want users to have access to the job
             # As long as this is a direct link to the job, we will display it
             is_single_job = len(job_subscriptions) == 1 and job_subscriptions[0].is_single_job_subscription
-            is_allow_unapproved = is_single_job
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter,
                 is_include_fetch=True,
-                is_allow_unapproved=is_allow_unapproved,
+                is_allow_unapproved=True,
                 applicant_user=self.user
             )
             if not jobs and all((j.is_job_subscription for j in job_subscriptions)):
@@ -411,7 +410,7 @@ class SocialLinkJobsView(JobVyneAPIView):
             jobs_filter &= Q(taxonomy__taxonomy_id__in=profession_ids)
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user,
-                lookback_days=self.LOOKBACK_DAYS
+                lookback_days=self.LOOKBACK_DAYS, is_allow_unapproved=True
             )
         elif employer_key:
             try:
@@ -425,7 +424,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_subscription_filter = JobSubscriptionView.get_combined_job_subscription_filter(job_subscriptions)
                 jobs_filter &= job_subscription_filter
             jobs = EmployerJobView.get_employer_jobs(
-                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user
+                employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user, is_allow_unapproved=True
             )
         elif user_key:
             try:
@@ -469,7 +468,7 @@ class SocialLinkJobsView(JobVyneAPIView):
                 
                 jobs = EmployerJobView.get_employer_jobs(
                     employer_job_filter=jobs_filter, is_include_fetch=True, applicant_user=self.user,
-                    lookback_days=self.LOOKBACK_DAYS
+                    lookback_days=self.LOOKBACK_DAYS, is_allow_unapproved=True
                 )
             except JobVyneUser.DoesNotExist:
                 return Response(status=status.HTTP_200_OK, data=no_results_data)
@@ -481,7 +480,7 @@ class SocialLinkJobsView(JobVyneAPIView):
         elif job_key:
             jobs = EmployerJobView.get_employer_jobs(
                 employer_job_filter=Q(job_key=job_key), is_include_fetch=True, applicant_user=self.user,
-                lookback_days=self.LOOKBACK_DAYS
+                lookback_days=self.LOOKBACK_DAYS, is_allow_unapproved=True
             )
         
         paginated_jobs = Paginator(jobs, per_page=36)
