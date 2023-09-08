@@ -31,6 +31,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', default=get_random_secret_key())
 
 DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
+IS_SCRAPER_TEST = env('IS_SCRAPER_TEST', cast=bool, default=False)
 
 PREPEND_WWW = False
 ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,768c-75-166-124-123.ngrok-free.app').split(',')

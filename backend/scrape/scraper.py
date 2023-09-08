@@ -100,8 +100,8 @@ def run_job_scrapers(employer_names=None):
                 
             if employer and employer.last_job_scrape_success_dt:
                 last_run_diff_minutes = (timezone.now() - employer.last_job_scrape_success_dt).total_seconds() / 60
-                if (not settings.DEBUG) and last_run_diff_minutes < 180:
-                    logger.info(f'Scraper successfully run in last 3 hours for {scraper_class.employer_name}. Skipping')
+                if (not settings.IS_SCRAPER_TEST) and last_run_diff_minutes < (24 * 60):
+                    logger.info(f'Scraper successfully run in last 24 hours for {scraper_class.employer_name}. Skipping')
                     continue
             
             skip_urls = []

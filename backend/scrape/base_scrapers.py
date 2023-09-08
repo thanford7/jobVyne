@@ -89,6 +89,7 @@ def get_recent_scraped_job_urls(employer_name):
 
 
 class Scraper:
+    USE_HEADERS = True
     USE_ADVANCED_HEADERS = False
     MAX_CONCURRENT_PAGES = 10
     IS_JS_REQUIRED = False
@@ -124,7 +125,7 @@ class Scraper:
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'Accept': '*/*'
-        }
+        } if self.USE_HEADERS else {}
         if self.USE_ADVANCED_HEADERS:
             headers = {**headers, **ADVANCED_REQUEST_HEADERS}
             
@@ -1450,10 +1451,10 @@ class UltiProScraper(Scraper):
         # Make sure page data has loaded
         # Issue: REQUEST FAILED: https://www.linkedin.com/li/track net::ERR_ABORTED
         try:
-            await self.wait_for_el(page, '#Opportunities')
+            await self.wait_for_el(page, '#OpportunitiesContainer')
         except PlaywrightTimeoutError:
             page = await self.get_starting_page()
-            await self.wait_for_el(page, '#Opportunities')
+            await self.wait_for_el(page, '#OpportunitiesContainer')
         
         # Load all jobs
         is_more = await page.locator('css=#LoadMoreJobs').is_visible()
@@ -1964,7 +1965,6 @@ class PhenomPeopleScraper(Scraper):
     async def scrape_jobs(self):
         await self.update_browser_context()
         page = await self.get_starting_page()
-        await self.save_page_info(page)
         await self.wait_for_el(page, '[data-ph-at-id="jobs-list"]')
         html_dom = await self.get_page_html(page)
         jobs_count = int(html_dom.xpath('//div[contains(@class, "phs-jobs-list-count")]/@data-ph-at-count').get())

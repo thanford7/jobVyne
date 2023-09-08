@@ -10,6 +10,7 @@ from scrape.job_processor import JobItem
 
 class PacksizeScraper(Scraper):
     ATS_NAME = 'Custom'
+    start_url = 'https://www.packsize.com/browse-jobs/'
     employer_name = 'Packsize'
     IS_REMOVE_QUERY_PARAMS = False
     
@@ -21,7 +22,7 @@ class PacksizeScraper(Scraper):
         await self.close()
     
     def get_job_link(self, job_data):
-        return f'https://www.packsize.com/browse-jobs/?jobId={job_data["id"]}/'
+        return f'{self.start_url}?jobId={job_data["id"]}/'
     
     def get_jobs(self):
         jobs_resp = requests.get(

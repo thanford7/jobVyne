@@ -169,6 +169,7 @@ class AnyscaleScraper(LeverScraper):
 class HearthScraper(RipplingScraper):
     employer_name = 'Hearth'
     EMPLOYER_KEY = 'hearth-careers'
+    start_url = 'https://www.gethearth.com/jobs/'
 
 
 class FlatironSchoolScraper(GreenhouseScraper):
