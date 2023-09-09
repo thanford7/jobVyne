@@ -162,6 +162,7 @@ def calculate_bonus_amount(employer_job, bonus_rule=None):
 def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=False, rules=None):
     data = {
         'id': employer_job.id,
+        'employer_name': employer_job.employer.employer_name,
         'ats_job_key': employer_job.ats_job_key,
         'is_use_job_url': employer_job.employer.is_use_job_url,
         'application_url': employer_job.application_url,

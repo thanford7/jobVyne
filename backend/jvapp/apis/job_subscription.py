@@ -29,8 +29,7 @@ class JobSubscriptionView(JobVyneAPIView):
             job_subscriptions = self.get_job_subscriptions(user_id=user_id)
         else:
             job_subscriptions = self.get_job_subscriptions(employer_id=employer_id)
-        jobs_by_subscription = self.get_jobs_from_subscriptions(job_subscriptions)
-        job_counts_by_subscription = [j.count() for j in jobs_by_subscription]
+        job_counts_by_subscription = self.get_jobs_count_from_subscriptions(job_subscriptions)
         serialized_subscriptions = [get_serialized_job_subscription(js) for js in job_subscriptions]
         for sub, job_count in zip(serialized_subscriptions, job_counts_by_subscription):
             sub['job_count'] = job_count
@@ -173,13 +172,14 @@ class JobSubscriptionView(JobVyneAPIView):
                 filter_model.objects.bulk_create(filter_employers)
 
     @staticmethod
-    def get_jobs_from_subscriptions(job_subscriptions: iter):
+    def get_jobs_count_from_subscriptions(job_subscriptions: iter):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         job_filters = [JobSubscriptionView.get_job_filter(js) for js in job_subscriptions]
-        return [
-            EmployerJobView.get_employer_jobs(employer_job_filter=jf, is_include_fetch=False)
-            for jf in job_filters
-        ]
+        jobs_count_by_subscription = []
+        for jf in job_filters:
+            jobs, paginated_jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jf, is_include_fetch=False)
+            jobs_count_by_subscription.append(paginated_jobs.count)
+        return jobs_count_by_subscription
     
     @staticmethod
     def get_combined_job_professions_from_subscriptions(job_subscriptions):

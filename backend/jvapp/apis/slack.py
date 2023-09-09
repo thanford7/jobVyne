@@ -838,7 +838,7 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                 button_data = json.loads(self.base_data['selected_option']['value'])
             elif action_type in [Button.TYPE]:
                 button_data = {
-                    'button_value': self.base_data['value'],
+                    'button_value': json.loads(self.base_data['value']) if isinstance(self.base_data['value'], str) else self.base_data['value'],
                     'post_channel_name': self.data['channel']['name']
                 }
             else:
@@ -868,7 +868,8 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                 self.slack_cfg,
                 employer_id=self.slack_cfg.employer_id
             )
-            job = EmployerJobView.get_employer_jobs(employer_job_id=button_data['job_id'])
+            job_id = button_data['button_value']['job_id']
+            job = EmployerJobView.get_employer_jobs(employer_job_id=job_id)
             job_referral_link = SocialLink()
             job_referral_link = SocialLinkView.create_or_update_link(job_referral_link, {
                 'owner_id': user.id,
@@ -896,7 +897,7 @@ class SlackWebhookInboundView(SlackExternalBaseView):
                             'type': 'section',
                             'text': {
                                 'type': 'mrkdwn',
-                                'text': f'{job_referral_link.get_link_url(platform_name="slack")}'
+                                'text': f'{job_referral_link.get_link_url()}'
                             }
                         },
                         {'type': 'divider'},

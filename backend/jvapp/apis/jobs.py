@@ -30,18 +30,18 @@ class JobsView(JobVyneAPIView):
         filter_params = json.loads(self.query_params['filterParams'])
         
         # Only grab employers (not professional organizations or agencies)
-        employer_filter = Q(employer__organization_type=1 * F('employer__organization_type').bitand(Employer.ORG_TYPE_EMPLOYER))
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=employer_filter)
+        employer_filter = Q(organization_type=1 * F('organization_type').bitand(Employer.ORG_TYPE_EMPLOYER))
+        employers = Employer.objects.filter(employer_filter)
         
-        # Get filter values before filtering out jobs
-        employers = set()
-        employment_types = set()
-        locations = set()
-        for job in jobs:
-            employers.add(job.employer)
-            employment_types.add(job.employment_type)
-            for location in job.locations.all():
-                locations.add(location)
+        raw_sort_order = pagination['sortBy']
+        if not raw_sort_order:
+            sort_order = self.DEFAULT_SORT_ORDER
+        else:
+            sort_keys = self.SORT_MAP[raw_sort_order]
+            is_descending = coerce_bool(pagination['descending'])
+            sort_order = []
+            for key in sort_keys:
+                sort_order.append(f'{"-" if is_descending else ""}{key}')
         
         # Filter jobs
         job_filter = Q()
@@ -55,31 +55,17 @@ class JobsView(JobVyneAPIView):
             job_filter &= Q(locations_id__in=location_ids)
         if employment_types_filter := filter_params.get('employment_types'):
             job_filter &= Q(employment_type__in=employment_types_filter)
-        jobs = jobs.filter(job_filter)
+        jobs, paginated_jobs = EmployerJobView.get_employer_jobs(
+            job_filter, order_by=sort_order, jobs_per_page=pagination['rowsPerPage'], page_count=pagination['page'],
+        )
 
-        raw_sort_order = pagination['sortBy']
-        if not raw_sort_order:
-            sort_order = self.DEFAULT_SORT_ORDER
-        else:
-            sort_keys = self.SORT_MAP[raw_sort_order]
-            is_descending = coerce_bool(pagination['descending'])
-            sort_order = []
-            for key in sort_keys:
-                sort_order.append(f'{"-" if is_descending else ""}{key}')
-
-        jobs = jobs.order_by(*sort_order)
-
-        paged_jobs = Paginator(jobs, per_page=pagination['rowsPerPage'])
-        
         return Response(status=status.HTTP_200_OK, data={
-            'total_page_count': paged_jobs.num_pages,
-            'total_job_count': paged_jobs.count,
-            'jobs': [get_serialized_employer_job(job) for job in paged_jobs.get_page(pagination['page'])],
+            'total_page_count': paginated_jobs.num_pages,
+            'total_job_count': paginated_jobs.count,
+            'jobs': [get_serialized_employer_job(job) for job in jobs],
             'employers': sorted([{
                 'id': e.id,
                 'name': e.employer_name
-            } for e in employers], key=lambda x: x['name']),
-            'locations': [get_serialized_location(l) for l in locations],
-            'employment_types': sorted(employment_types)
+            } for e in employers], key=lambda x: x['name'])
         })
     

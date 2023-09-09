@@ -417,7 +417,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
             
             # Jobs are the same regardless of recipient so we only need to fetch them once
             if idx == 0:
-                jobs = SocialLinkJobsView.get_jobs_from_social_link(referral_link)
+                jobs, _ = SocialLinkJobsView.get_jobs_from_social_link(referral_link)
                 if not jobs:
                     return 'No jobs were provided'
                 job_titles = list({j.job_title for j in jobs})
@@ -687,7 +687,7 @@ class EmployerJobView(JobVyneAPIView):
     def get_employer_jobs(
             employer_job_id=None, employer_job_filter=None, order_by=None, applicant_user=None,
             is_include_fetch=True, is_only_closed=False, is_include_closed=False, is_include_future=False,
-            is_allow_unapproved=False, lookback_days=None
+            is_allow_unapproved=False, lookback_days=None, jobs_per_page=25, page_count=1
     ):
         # NOTE: Be careful adding the order_by argument since it may cause a full table scan if not on an index
         standard_job_filter = EmployerJobView.get_employer_job_filter(
@@ -699,13 +699,25 @@ class EmployerJobView(JobVyneAPIView):
         if employer_job_filter:
             jobs = jobs.filter(employer_job_filter)
         
+        # Jobs can be duplicated when we filter based on location
+        # Calling "distinct" on the entire data set is extremely inefficient
+        # Instead we get unique job ids and then re-query the database with a much smaller paginated subset
+        jobs = jobs.values('id')
+        if order_by:
+            jobs = jobs.order_by(*order_by)
+        paginated_jobs = Paginator(jobs, per_page=jobs_per_page)
+        page_count = min(page_count, paginated_jobs.num_pages)
+        jobs = paginated_jobs.get_page(page_count)
+        job_ids = {job['id'] for job in jobs}
+        
         if is_include_fetch:
             locations_prefetch = Prefetch(
                 'locations', queryset=Location.objects.select_related('city', 'state', 'country')
             )
             
             jobs = (
-                jobs.select_related(
+                EmployerJob.objects
+                .select_related(
                     'job_department',
                     'employer',
                     'employer__applicant_tracking_system',
@@ -717,6 +729,7 @@ class EmployerJobView(JobVyneAPIView):
                     'taxonomy',
                     'taxonomy__taxonomy'
                 )
+                .filter(id__in=job_ids)
             )
             if applicant_user:
                 user_application_prefetch = Prefetch(
@@ -726,16 +739,12 @@ class EmployerJobView(JobVyneAPIView):
                 )
                 jobs = jobs.prefetch_related(user_application_prefetch)
             
-        jobs = jobs.distinct()
-        if order_by:
-            jobs.order_by(*order_by)
-        
         if employer_job_id:
             if not jobs:
                 raise EmployerJob.DoesNotExist
             return jobs[0]
         
-        return jobs
+        return jobs, paginated_jobs
     
     
 class EmployerConnectionView(JobVyneAPIView):
@@ -1709,8 +1718,12 @@ class EmployerJobLocationView(JobVyneAPIView):
             job_subscription_filter |= Q(employer_id=employer_id)
         else:
             job_subscription_filter = Q(employer_id=employer_id)
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_subscription_filter,
-                                                 is_include_closed=True).distinct()
+        jobs = (
+            EmployerJob.objects
+            .prefetch_related('locations', 'locations__city', 'locations__state', 'locations__country')
+            .filter(job_subscription_filter)
+            .only('id')
+        )
         locations = []
         for job in jobs:
             for location in job.locations.all():

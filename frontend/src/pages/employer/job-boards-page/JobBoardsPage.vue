@@ -13,8 +13,7 @@
       >
         <q-tab v-if="!isEmployerOrgType" name="subscription" label="Job Subscriptions"/>
         <q-tab name="jobBoard" label="Job Boards"/>
-<!--        TODO Add employer tab back once we've converted to pagination-->
-<!--        <q-tab v-if="!isEmployerOrgType" name="employer" label="Employers"/>-->
+        <q-tab v-if="!isEmployerOrgType" name="employer" label="Employers"/>
       </q-tabs>
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel v-if="!isEmployerOrgType" name="subscription">

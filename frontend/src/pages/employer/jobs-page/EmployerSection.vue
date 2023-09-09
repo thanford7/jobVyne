@@ -48,31 +48,6 @@
                   <q-input v-model="jobsFilter.job_title" filled label="Job title"/>
                 </TableFilter>
               </template>
-              <template v-if="col.name === 'locations'">
-                {{ col.label }}
-                <TableFilter
-                  filter-name="Location"
-                  :has-filter="dataUtil.getBoolean(jobsFilter.locations && jobsFilter.locations.length)"
-                >
-                  <SelectLocation v-model="jobsFilter.locations" :is-multi="true" :locations="locations"/>
-                </TableFilter>
-              </template>
-              <template v-if="col.name === 'employment_type'">
-                {{ col.label }}
-                <TableFilter
-                  filter-name="Employment type"
-                  :has-filter="dataUtil.getBoolean(jobsFilter.employment_types && jobsFilter.employment_types.length)"
-                >
-                  <q-select
-                    v-model="jobsFilter.employment_types"
-                    filled label="Employment type"
-                    :options="employmentTypes.map((et) => ({ val: et }))"
-                    option-value="val"
-                    option-label="val"
-                    multiple map-options emit-value use-chips
-                  />
-                </TableFilter>
-              </template>
             </q-th>
           </q-tr>
         </template>
@@ -101,7 +76,6 @@
 <script>
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
 import SelectJobDepartment from 'components/inputs/SelectJobDepartment.vue'
-import SelectLocation from 'components/inputs/SelectLocation.vue'
 import TableFilter from 'components/tables/TableFilter.vue'
 import dataUtil from 'src/utils/data.js'
 import LocationsCell from 'pages/employer/jobs-page/jobs-table/LocationsCell.vue'
@@ -133,15 +107,13 @@ const pagination = {
 
 export default {
   name: 'EmployerSection',
-  components: { SelectLocation, SelectJobDepartment, SelectEmployer, LocationsCell, TableFilter },
+  components: { SelectJobDepartment, SelectEmployer, LocationsCell, TableFilter },
   data () {
     return {
       isLoading: false,
       jobColumns,
       jobs: [],
       employers: null,
-      locations: null,
-      employmentTypes: null,
       pagination,
       jobsFilter: { ...jobsFilterTemplate },
       jobsStore: useJobsStore(),
@@ -161,11 +133,9 @@ export default {
       this.isLoading = true
       await this.jobsStore.setJobs(pagination, { filterParams: filter })
       const data = this.jobsStore.getJobs(pagination, filter)
-      const { jobs, employers, locations, employment_types: employmentTypes, total_job_count: totalJobCount } = data
+      const { jobs, employers, total_job_count: totalJobCount } = data
       this.jobs = jobs
       this.employers = employers
-      this.locations = locations
-      this.employmentTypes = employmentTypes
       Object.assign(this.pagination, pagination)
       this.pagination.rowsNumber = totalJobCount
       this.isLoading = false
