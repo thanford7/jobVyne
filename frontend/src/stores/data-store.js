@@ -23,7 +23,8 @@ export const useDataStore = defineStore('data', {
       const resp = await this.$api.get(url, {
         params: Object.assign({
           start_dt: startDate,
-          end_dt: endDate
+          end_dt: endDate,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
         }, extraParams)
       })
       this[dataAttr][apiKey] = resp.data

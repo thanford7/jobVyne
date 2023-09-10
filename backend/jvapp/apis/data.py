@@ -1,4 +1,5 @@
 import json
+import zoneinfo
 from collections import defaultdict
 
 from django.core.paginator import Paginator
@@ -26,7 +27,9 @@ class BaseDataView(JobVyneAPIView):
         super().initial(request, *args, **kwargs)
         self.start_dt = get_datetime_or_none(self.query_params.get('start_dt'))
         self.end_dt = get_datetime_or_none(self.query_params.get('end_dt'))
-        self.timezone = self.end_dt.tzinfo if self.end_dt else timezone.utc
+        self.timezone = None
+        if tzname := self.query_params.get('timezone'):
+            self.timezone = zoneinfo.ZoneInfo(tzname)
         self.owner_id = self.query_params.get('owner_id')
         if self.owner_id:
             self.owner_id = int(self.owner_id)

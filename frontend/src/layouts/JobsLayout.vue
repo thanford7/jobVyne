@@ -20,7 +20,7 @@
             {{ employer.name }}
           </div>
           <div
-            v-if="employer.description"
+            v-if="employer.description && !utilStore.isUnderBreakPoint('sm')"
             class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center text-center"
           >
             {{ employer.description }}

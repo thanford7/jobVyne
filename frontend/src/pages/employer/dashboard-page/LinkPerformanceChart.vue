@@ -5,6 +5,7 @@
       v-model:date-group="dateGroup"
       chart-type="bar"
       chart-title="Submitted Applications and Page Views"
+      :labels="chartLabels"
       :series-cfgs="seriesCfgs"
       :chart-options="chartOptions"
       :is-loading="isLoading"
@@ -20,7 +21,7 @@
 </template>
 
 <script>
-import { chartColors } from 'components/charts/chartProps.js'
+import chartUtil, { chartColors } from 'components/charts/chartUtil.js'
 import ChartSkeleton from 'components/charts/ChartSkeleton.vue'
 import TimeSeriesChart from 'components/charts/TimeSeriesChart.vue'
 import CustomTooltip from 'components/CustomTooltip.vue'
@@ -42,13 +43,13 @@ export default {
     return {
       isInitLoaded: false,
       isLoading: false,
+      chartLabels: [],
+      seriesCfgs: [],
       dateRange: this.defaultDateRange || {
         from: dateTimeUtil.addDays(new Date(), -6, true),
         to: new Date()
       },
-      dateGroup: GROUPINGS.DATE.key,
-      applicationsByDate: null,
-      pageViewsByDate: null
+      dateGroup: GROUPINGS.DATE.key
     }
   },
   computed: {
@@ -61,21 +62,6 @@ export default {
           }
         }
       }
-    },
-    seriesCfgs () {
-      return [
-        {
-          label: 'Applications',
-          data: this.applicationsByDate,
-          backgroundColor: chartColors.colors[0]
-        },
-        {
-          label: 'Views',
-          data: this.pageViewsByDate,
-          backgroundColor: chartColors.colors[1],
-          hidden: true
-        }
-      ]
     }
   },
   watch: {
@@ -106,8 +92,20 @@ export default {
           params
         )
       ])
-      this.applicationsByDate = applicationsByDate
-      this.pageViewsByDate = pageViewsByDate
+      this.chartLabels = chartUtil.getDateLabels(this.dateGroup, this.dateRange)
+      this.seriesCfgs = [
+        {
+          label: 'Applications',
+          data: chartUtil.getDateSeries(applicationsByDate, this.chartLabels, this.dateGroup, this.chartOptions.options.parsing),
+          backgroundColor: chartColors.colors[0]
+        },
+        {
+          label: 'Views',
+          data: chartUtil.getDateSeries(pageViewsByDate, this.chartLabels, this.dateGroup, this.chartOptions.options.parsing),
+          backgroundColor: chartColors.colors[1],
+          hidden: true
+        }
+      ]
       this.isLoading = false
     }
   },
