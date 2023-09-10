@@ -65,6 +65,7 @@ class SlackBasePoster:
         self.client = SlackBaseView.get_slack_client(self.slack_cfg)
         self.message_data = message_data or {}
         self.slack_user_id = slack_user_id
+        self.slack_post_responses = []
     
     @atomic
     def send_slack_job_post(self, *args, **kwargs) -> Union[str, None]:
@@ -126,11 +127,22 @@ class SlackBasePoster:
         return None
     
     def send_slack_post(self, message):
-        return self.client.chat_postMessage(
+        post_resp = self.client.chat_postMessage(
             channel=getattr(self.slack_cfg, self.POST_CHANNEL),
             blocks=json.dumps(message),
             unfurl_links=False
         )
+        self.slack_post_responses.append(post_resp)
+        return post_resp
+    
+    def send_slack_reply(self, message, parent_message_ts):
+        post_resp = self.client.chat_postMessage(
+            channel=getattr(self.slack_cfg, self.POST_CHANNEL),
+            blocks=json.dumps(message),
+            thread_ts=parent_message_ts,
+            unfurl_links=False
+        )
+        return post_resp
     
     @staticmethod
     def get_job_details_block_id(job_id):
@@ -191,17 +203,18 @@ class SlackBasePoster:
                 blocks.append(employer_connections_block)
             
             #### Actions - need to edit post for some of these actions
-            actions = [SaveJobModalViews.get_trigger_button({'job': job})]
-            if not is_followed_employer:
-                actions.append(FollowEmployerModalViews.get_trigger_button({'job': job}))
-            actions.append(
-                ShareJobModalViews.get_trigger_button(
-                    {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
-                )
-            )
-            
-            job_actions = SectionActions(actions).get_slack_object()
-            blocks.append(job_actions)
+            #### Users asked for more simplicity so we are hiding actions for now
+            # actions = [SaveJobModalViews.get_trigger_button({'job': job})]
+            # if not is_followed_employer:
+            #     actions.append(FollowEmployerModalViews.get_trigger_button({'job': job}))
+            # actions.append(
+            #     ShareJobModalViews.get_trigger_button(
+            #         {'job': job, 'group_name': self.slack_cfg.employer.employer_name}
+            #     )
+            # )
+            #
+            # job_actions = SectionActions(actions).get_slack_object()
+            # blocks.append(job_actions)
             
             # Job connection
             # blocks.append(JobConnectionModalViews.get_trigger_button(
@@ -232,20 +245,19 @@ class SlackJobPoster(SlackBasePoster):
         return False
     
     def build_message(self, jobs, **kwargs):
+        return self._get_slack_message_jobs_list(jobs)
+    
+    def add_follow_up_message(self):
         button_data = {
             'employer_name': self.slack_cfg.employer.employer_name,
             'group_community_url': f'{self.slack_cfg.employer.main_job_board_link}?tab=community'
         }
         blocks = [
-            SectionText(
-                ':grapes: JobVyne has a fresh batch of jobs ready to be plucked and enjoyed with a fresh glass of "get hired".\n'
-            ).get_slack_object(),
             JobModalViews.get_trigger_button(button_data).get_slack_object(),
-            JobSeekerModalViews.get_trigger_button(button_data).get_slack_object(),
-            Divider().get_slack_object(),
-            *self._get_slack_message_jobs_list(jobs)
+            JobSeekerModalViews.get_trigger_button(button_data).get_slack_object()
         ]
-        return blocks
+        jobs_message = self.slack_post_responses[0]
+        self.send_slack_reply(blocks, jobs_message['ts'])
 
 
 class SlackUserGeneratedJobPoster(SlackBasePoster):
@@ -593,6 +605,7 @@ class SlackJobsMessageView(SlackBaseView):
         error_msg = slack_poster.send_slack_job_post()
         if error_msg:
             return get_error_response(error_msg)
+        slack_poster.add_follow_up_message()
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Slack message posted'
         })

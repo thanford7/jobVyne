@@ -34,7 +34,7 @@ DEPLOY_TS = datetime.datetime.now()
 IS_SCRAPER_TEST = env('IS_SCRAPER_TEST', cast=bool, default=False)
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,768c-75-166-124-123.ngrok-free.app').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,0949-75-166-124-123.ngrok-free.app').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_SEND_EMAILS = env('IS_SEND_EMAILS', cast=bool, default=True)
