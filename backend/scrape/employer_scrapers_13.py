@@ -1,8 +1,9 @@
-from scrape.base_scrapers import BambooHrScraper, EightfoldScraper, GreenhouseApiScraper, GreenhouseIframeScraper, \
+from scrape.base_scrapers import AshbyHQApiV2Scraper, BambooHrScraper, EightfoldScraper, GreenhouseApiScraper, \
+    GreenhouseIframeScraper, \
     GreenhouseScraper, \
     JobviteScraper, LeverScraper, \
     PaylocityScraper, \
-    PhenomPeopleScraper, SmartRecruitersScraper, UltiProScraper, WorkdayApiScraper, WorkdayScraper
+    PhenomPeopleScraper, RipplingScraper, SmartRecruitersScraper, UltiProScraper, WorkdayApiScraper, WorkdayScraper
 
 
 class MapleScraper(LeverScraper):
@@ -334,3 +335,54 @@ class UndertoneScraper(GreenhouseApiScraper):
 class ZebraScraper(EightfoldScraper):
     employer_name = 'Zebra'
     EMPLOYER_KEY = 'zebra'
+    
+    
+class SeamlessAiScraper(GreenhouseScraper):
+    employer_name = 'Seamless.AI'
+    EMPLOYER_KEY = 'seamlessai'
+
+
+class WistiaScraper(GreenhouseApiScraper):
+    employer_name = 'Wistia'
+    EMPLOYER_KEY = 'wistia'
+    
+    
+class ScratchPadScraper(AshbyHQApiV2Scraper):
+    employer_name = 'Scratchpad'
+    EMPLOYER_KEY = 'scratchpad'
+    
+    
+class StackAdaptScraper(LeverScraper):
+    employer_name = 'StackAdapt'
+    EMPLOYER_KEY = 'stackadapt'
+    
+    
+class PreziScraper(BambooHrScraper):
+    employer_name = 'Prezi'
+    EMPLOYER_KEY = 'prezi'
+    
+    
+class DockerScraper(AshbyHQApiV2Scraper):
+    employer_name = 'Docker'
+    EMPLOYER_KEY = 'docker'
+    
+    
+class DataBricksScraper(GreenhouseApiScraper):
+    employer_name = 'Databricks'
+    EMPLOYER_KEY = 'databricks'
+    
+    
+class ClioScraper(WorkdayScraper):
+    employer_name = 'Clio'
+    start_url = 'https://clio.wd3.myworkdayjobs.com/ClioCareerSite'
+    
+    
+class SecureCodeWarriorScraper(LeverScraper):
+    employer_name = 'Secure Code Warrior'
+    EMPLOYER_KEY = 'securecodewarrior'
+    
+    
+class HeadspinScraper(BambooHrScraper):
+    employer_name = 'HeadSpin'
+    EMPLOYER_KEY = 'headspin'
+    

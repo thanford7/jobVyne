@@ -25,10 +25,19 @@ test_scrapers = {
     # CognizantScraper.employer_name: CognizantScraper,
     ### NOT WORKING
     # CenteneCorporationScraper.employer_name: CenteneCorporationScraper,
-    AncestryScraper.employer_name: AncestryScraper,
 }
 
 all_scrapers = {
+    WistiaScraper.employer_name: WistiaScraper,
+    DataBricksScraper.employer_name: DataBricksScraper,
+    ClioScraper.employer_name: ClioScraper,
+    SecureCodeWarriorScraper.employer_name: SecureCodeWarriorScraper,
+    HeadspinScraper.employer_name: HeadspinScraper,
+    ScratchPadScraper.employer_name: ScratchPadScraper,
+    StackAdaptScraper.employer_name: StackAdaptScraper,
+    PreziScraper.employer_name: PreziScraper,
+    DockerScraper.employer_name: DockerScraper,
+    SeamlessAiScraper.employer_name: SeamlessAiScraper,
     ZebraScraper.employer_name: ZebraScraper,
     AthenaHealthScraper.employer_name: AthenaHealthScraper,
     StepStoneScraper.employer_name: StepStoneScraper,

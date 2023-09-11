@@ -219,5 +219,6 @@ company_whitelist = {
     'Leena AI': None,
     'Screencastify': None,
     'Wowza Media Systems': None,
-    'Fleetio': None
+    'Fleetio': None,
+    'Cognism': None,
 }

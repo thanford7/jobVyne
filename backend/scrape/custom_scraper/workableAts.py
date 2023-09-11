@@ -1016,6 +1016,11 @@ class WowzaScraper(WorkableScraper):
 class FleetioScraper(WorkableScraper):
     employer_name = 'Fleetio'
     EMPLOYER_KEY = 'fleetio'
+    
+    
+class CognismScraper(WorkableScraper):
+    employer_name = 'Cognism'
+    EMPLOYER_KEY = 'cognism'
 
 
 workable_scrapers = {
