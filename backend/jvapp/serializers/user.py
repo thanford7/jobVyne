@@ -3,7 +3,6 @@ from string import Template
 
 from jvapp.models.user import JobVyneUser, UserFile
 from jvapp.serializers.job_seeker import base_application_serializer
-from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.oauth import OauthProviders
 
@@ -82,6 +81,8 @@ def get_serialized_user_profile(user: JobVyneUser, is_get_profile=False):
         'first_name': user.first_name,
         'last_name': user.last_name,
         'job_title': user.job_title,
+        'linkedin_url': user.linkedin_url,
+        'professional_site_url': user.professional_site_url,
         'employer_name': user.employer.employer_name if user.employer else None,
         'profession_id': user.profession.id if user.profession else None,
         'profession_name': user.profession.name if user.profession else None,

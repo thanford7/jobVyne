@@ -2,7 +2,11 @@
   <q-select
     ref="select"
     filled clearable emit-value map-options
-    :options="[{val: locationUtil.REMOTE_TYPE_TRUE, label: 'Yes'}, {val: locationUtil.REMOTE_TYPE_FALSE, label: 'No'}]"
+    :options="[
+      {val: locationUtil.REMOTE_TYPE_TRUE, label: 'Yes'},
+      {val: locationUtil.REMOTE_TYPE_FALSE, label: 'No'},
+      {val: locationUtil.REMOTE_TYPE_FALSE | locationUtil.REMOTE_TYPE_TRUE, label: 'Any'}
+    ]"
     option-value="val"
     option-label="label"
     label="Remote"

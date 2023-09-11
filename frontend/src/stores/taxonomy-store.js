@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 
 export const useTaxonomyStore = defineStore('taxonomy', {
   state: () => ({
-    jobProfessions: null
+    jobProfessions: null,
+    jobLevels: null
   }),
 
   actions: {
@@ -12,8 +13,17 @@ export const useTaxonomyStore = defineStore('taxonomy', {
         this.jobProfessions = resp.data
       }
     },
+    async setJobLevels (isForceRefresh = false) {
+      if (!this.jobLevels || isForceRefresh) {
+        const resp = await this.$api.get('taxonomy/job-level/')
+        this.jobLevels = resp.data
+      }
+    },
     getJobProfessions () {
       return this.jobProfessions
+    },
+    getJobLevels () {
+      return this.jobLevels
     }
   }
 })

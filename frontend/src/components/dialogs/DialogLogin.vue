@@ -1,6 +1,6 @@
 <template>
   <DialogBase
-    :base-title-text="(isCreate) ? 'Create account' : 'Login'"
+    :base-title-text="(isCreate) ? 'Join JobVyne' : 'Login'"
     :is-include-buttons="false"
   >
     <div v-if="isShowLoginToggle" class="q-mb-md">

@@ -6,6 +6,7 @@
       :user-type-bit="userTypeBit"
       :user-props="userProps"
       :redirect-page-url="redirectPageUrl"
+      :redirect-params="redirectParams"
       :style-override="styleOverride"
     />
     <SeparatorWithText>or</SeparatorWithText>

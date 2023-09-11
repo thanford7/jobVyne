@@ -77,7 +77,7 @@ class CustomUserManager(BaseUserManager):
             try:
                 matched_employers = EmployerFromDomainView.get_employers_from_email(email)
                 if len(matched_employers) == 1:
-                    extra_fields['employer_id'] = matched_employers[0].id
+                    extra_fields['employer_id'] = matched_employers[0]['id']
             except ValueError:
                 pass
         

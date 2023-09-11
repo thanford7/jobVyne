@@ -65,6 +65,7 @@ urlpatterns = [
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
+    path('taxonomy/job-level/', taxonomy.TaxonomyJobLevelView.as_view()),
     path('taxonomy/job-profession/', taxonomy.TaxonomyJobProfessionView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
     path('user/created-jobs/', user.UserCreatedJobView.as_view()),

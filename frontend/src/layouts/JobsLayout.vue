@@ -25,7 +25,8 @@
           >
             {{ employer.description }}
           </div>
-          <div class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center items-center text-center text-small">
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center items-center text-center text-small">
             <a v-if="employer.website" :href="`https://www.${employer.website}`" target="_blank">Website</a>
             <template v-if="employer.ats_name">
               &nbsp;
@@ -158,6 +159,19 @@
         <q-page-scroller position="bottom-right" :scroll-offset="100" :offset="[40, 40]">
           <q-btn round color="primary" icon="arrow_upward"/>
         </q-page-scroller>
+        <q-page-sticky v-if="!user?.id" expand position="top">
+          <q-toolbar class="items-center text-center border-y-1-primary bg-white">
+            <div class="w-100 q-py-sm">
+              🍇 Join The JobVyne Community | We Help Each Other Find Jobs 🍇
+              <q-btn
+                filled rounded color="accent" style="min-width: 100px;"
+                @click="openSignUpDialog()"
+              >
+                Join
+              </q-btn>
+            </div>
+          </q-toolbar>
+        </q-page-sticky>
       </q-page>
     </q-page-container>
 
@@ -167,12 +181,15 @@
 
 <script>
 import CustomTooltip from 'components/CustomTooltip.vue'
+import dialogLogin from 'components/dialogs/DialogLogin.vue'
+import DialogUserProfile from 'components/dialogs/DialogUserProfile.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import LocationChip from 'components/LocationChip.vue'
 import BaseSidebar from 'components/sidebar/BaseSidebar.vue'
 import SidebarMenuItem from 'components/sidebar/SidebarMenuItem.vue'
 import CommunitySection from 'pages/jobs-page/CommunitySection.vue'
 import JobsSection from 'pages/jobs-page/JobsSection.vue'
+import colorUtil from 'src/utils/color.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
 import employerTypeUtil from 'src/utils/employer-types.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
@@ -208,6 +225,7 @@ export default {
       jobApplication: null,
       headerHeight: 0,
       anchorPositions: {},
+      colorUtil,
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
@@ -296,6 +314,17 @@ export default {
       this.isLoaded = true
       Loading.hide()
     },
+    openSignUpDialog () {
+      this.q.dialog({
+        component: dialogLogin,
+        componentProps: {
+          isCreateDefault: true,
+          redirectPageUrl: window.location.pathname,
+          redirectParams: Object.assign(dataUtil.getQueryParams(), { isSignUp: true }),
+          userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE]
+        }
+      })
+    },
     openNewCandidatePage (pageKey) {
       const newPage = this.$router.resolve(
         this.pagePermissionsUtil.getRouterPageCfg(pageKey, USER_TYPES[USER_TYPE_CANDIDATE])
@@ -309,7 +338,21 @@ export default {
     async closeJobApplication () {
       this.jobApplication = null
       await this.$refs.jobs.closeApplication()
+    },
+    openUserProfile () {
+      if (this.$route.query?.isSignUp) {
+        if (this.user?.id) {
+          this.q.dialog({
+            component: DialogUserProfile
+          })
+        }
+        const fullPath = dataUtil.getUrlWithParams({ deleteParams: ['isSignUp'] })
+        window.history.replaceState({ path: fullPath }, '', fullPath)
+      }
     }
+  },
+  updated () {
+    this.openUserProfile()
   },
   async mounted () {
     Loading.show()
@@ -326,6 +369,7 @@ export default {
     if (tab) {
       this.tab = tab
     }
+    this.openUserProfile()
     this.isLoaded = true
   },
   setup () {
@@ -338,9 +382,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.application-date {
-  padding: 8px;
-}
-</style>

@@ -6,10 +6,11 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, get_success_response, get_warning_response
 from jvapp.models.employer import JobTaxonomy, Taxonomy
+from jvapp.permissions.general import IsAdminOrRead
 
 
 class TaxonomyJobProfessionView(JobVyneAPIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrRead]
     
     def get(self, request):
         return Response(status=status.HTTP_200_OK, data=self.get_job_profession_taxonomy(is_include_subs=True))
@@ -112,4 +113,21 @@ class TaxonomyJobProfessionView(JobVyneAPIView):
             'name': profession.name,
             'key': profession.key,
             'description': profession.description
+        }
+
+
+class TaxonomyJobLevelView(JobVyneAPIView):
+    permission_classes = [IsAdminOrRead]
+    
+    def get(self, request):
+        return Response(status=status.HTTP_200_OK, data=[
+            self.serialize_job_level(jl)
+            for jl in Taxonomy.objects.filter(tax_type=Taxonomy.TAX_TYPE_JOB_LEVEL).order_by('sort_order')
+        ])
+    
+    @staticmethod
+    def serialize_job_level(job_level):
+        return {
+            'id': job_level.id,
+            'name': job_level.name
         }

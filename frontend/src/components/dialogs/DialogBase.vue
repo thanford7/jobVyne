@@ -23,14 +23,6 @@
         <div v-if="baseTitleText" class="text-h6">
           {{ baseTitleText }}
         </div>
-        <q-btn
-          flat unelevated ripple
-          icon="close"
-          text-color="grey-5"
-          @click="onDialogCancel"
-          class="q-pr-sm"
-          style="position: absolute; top: 0; right: 0"
-        />
         <p class="text-gray-500 q-mt-none">
           <slot name="subTitle"/>
         </p>

@@ -272,6 +272,43 @@ class UserProfileView(JobVyneAPIView):
         user = UserView.get_user(self.user, user_id=user_id, user_key=user_key, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data=get_serialized_user_profile(user))
     
+    def put(self, request):
+        user_id = self.data['user_id']
+        if user_id != self.user.id:
+            return get_error_response('You do not have permission to edit this user')
+        
+        try:
+            user = JobVyneUser.objects.get(id=user_id)
+        except JobVyneUser.DoesNotExist:
+            return get_error_response('This user does not exist')
+            
+        set_object_attributes(user, self.data, {
+            'first_name':  AttributeCfg(is_protect_existing=True),
+            'last_name': AttributeCfg(is_protect_existing=True),
+            'linkedin_url': AttributeCfg(is_ignore_excluded=True),
+            'professional_site_url': AttributeCfg(is_ignore_excluded=True),
+            'job_title': AttributeCfg(is_ignore_excluded=True),
+            'profession_id': AttributeCfg(is_ignore_excluded=True),
+            'work_remote_type_bit': AttributeCfg(is_ignore_excluded=True),
+        })
+        
+        if job_search_levels := self.data.get('job_search_levels'):
+            user.job_search_levels.set(job_search_levels)
+        if job_search_professions := self.data.get('job_search_professions'):
+            user.job_search_professions.set(job_search_professions)
+        
+        if 'home_postal_code' in self.data:
+            home_postal_code = self.data['home_postal_code']
+            if not home_postal_code:
+                user.home_location = None
+            else:
+                location_parser = LocationParser(is_use_location_caching=False)
+                home_location = location_parser.get_location(home_postal_code, is_zip_code=True)
+                user.home_location_id = home_location.id if home_location else None
+            
+        user.save()
+        return get_success_response('Updated user profile')
+    
     
 class UserCreatedJobView(JobVyneAPIView):
     
