@@ -42,6 +42,7 @@
             </template>
             <template v-else>
               <JobCards
+                ref="jobCards"
                 class="col-12 col-md-9 q-mt-md"
                 :user="user"
                 :employer="employer"
@@ -54,6 +55,7 @@
                 @openApplication="openApplication($event)"
                 @updateApplications="loadJobs(true)"
                 @updateUserFavorites="$emit('updateUserFavorites')"
+                @userSignup="$emit('userSignup', $event)"
               />
               <!--                TODO: Add recommendations button for mobile view-->
               <div

@@ -318,6 +318,10 @@ export default {
       this.$emit('updateUserFavorites')
     },
     async saveExternalApplication (job) {
+      if (!this.user?.id) {
+        this.$emit('userSignup', { id: job.id, application_url: job.application_url })
+        return
+      }
       const jobUrl = dataUtil.getUrlWithParams({
         isExcludeExistingParams: false,
         addParams: [{ key: 'utm_source', val: 'jobvyne' }, { key: 'ref', val: 'jobvyne' }],
@@ -365,6 +369,18 @@ export default {
       } else {
         return 'positive'
       }
+    }
+  },
+  async mounted () {
+    if (this.user?.id && this.$route.query?.application_url) {
+      await this.saveExternalApplication({
+        application_url: this.$route.query?.application_url,
+        id: this.$route.query?.id
+      })
+      const query = dataUtil.omit(this.$route.query, ['application_url', 'id'])
+      await this.$router.replace({ query })
+      const fullPath = dataUtil.getUrlWithParams({ deleteParams: ['application_url', 'id'] })
+      window.history.replaceState({ path: fullPath }, '', fullPath)
     }
   }
 }

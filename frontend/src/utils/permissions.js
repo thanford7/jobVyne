@@ -338,7 +338,7 @@ class PagePermissionsUtil {
         }
       }
     }
-    return this.getRouterPageCfg('account-settings')
+    return this.getRouterPageCfg('settings')
   }
 
   getRouterPageCfg (pageKey, userTypeBit = null) {

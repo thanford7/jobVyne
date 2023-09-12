@@ -19,14 +19,17 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <q-card-section v-if="isIncludeHeader && !isFullScreen" class="border-bottom-1-gray-300 q-pb-none q-mb-md">
-        <div v-if="baseTitleText" class="text-h6">
-          {{ baseTitleText }}
-        </div>
-        <p class="text-gray-500 q-mt-none">
+      <div v-if="isIncludeHeader && !isFullScreen" class="border-bottom-1-gray-300 q-pb-none q-mb-md">
+        <q-toolbar>
+          <q-toolbar-title v-if="baseTitleText" class="text-h6">
+            {{ baseTitleText }}
+          </q-toolbar-title>
+          <q-btn v-if="isIncludeCloseButton" flat round dense icon="close" v-close-popup/>
+        </q-toolbar>
+        <p class="text-gray-500 q-mt-none q-mb-sm q-px-md">
           <slot name="subTitle"/>
         </p>
-      </q-card-section>
+      </div>
 
       <slot name="fullWidthBody"/>
 
@@ -93,6 +96,10 @@ export default {
       default: false
     },
     isIncludeButtons: {
+      type: Boolean,
+      default: true
+    },
+    isIncludeCloseButton: {
       type: Boolean,
       default: true
     },

@@ -134,7 +134,7 @@
 
     <q-page-container class="q-pt-none">
       <q-page v-if="isLoaded">
-        <q-tab-panels v-model="tab" animated keep-alive class="no-overflow">
+        <q-tab-panels v-model="tab" animated keep-alive class="no-overflow" :style="`marginTop: ${bannerHeight}px`">
           <q-tab-panel name="jobs" style="position: relative;">
             <JobsSection
               v-if="tab === 'jobs'"
@@ -142,10 +142,10 @@
               :user="user"
               :employer="employer"
               :user-favorites="userFavorites"
-              :headerHeight="headerHeight"
               @openAppSideBar="openJobApplication"
               @closeAppSideBar="isRightDrawerOpen = false"
               @updateUserFavorites="loadUserFavorites(true)"
+              @userSignup="openSignUpDialog($event)"
             />
           </q-tab-panel>
           <q-tab-panel name="community">
@@ -159,11 +159,12 @@
         <q-page-scroller position="bottom-right" :scroll-offset="100" :offset="[40, 40]">
           <q-btn round color="primary" icon="arrow_upward"/>
         </q-page-scroller>
-        <q-page-sticky v-if="!user?.id" expand position="top">
+        <q-page-sticky ref="signUpBanner" v-if="!user?.id" expand position="top">
           <q-toolbar class="items-center text-center border-y-1-primary bg-white">
             <div class="w-100 q-py-sm">
               🍇 Join The JobVyne Community | We Help Each Other Find Jobs 🍇
               <q-btn
+                :class="utilStore.isUnderBreakPoint('sm') ? 'w-100 q-mt-sm' : ''"
                 filled rounded color="accent" style="min-width: 100px;"
                 @click="openSignUpDialog()"
               >
@@ -223,8 +224,7 @@ export default {
       profile: null,
       isLoaded: false,
       jobApplication: null,
-      headerHeight: 0,
-      anchorPositions: {},
+      bannerHeight: 0,
       colorUtil,
       dataUtil,
       dateTimeUtil,
@@ -271,6 +271,9 @@ export default {
         params: this.$route.params,
         query: { ...this.$route.query, tab: this.tab }
       })
+    },
+    user () {
+      this.setBannerHeight()
     }
   },
   methods: {
@@ -314,13 +317,13 @@ export default {
       this.isLoaded = true
       Loading.hide()
     },
-    openSignUpDialog () {
+    openSignUpDialog (additionalParams) {
       this.q.dialog({
         component: dialogLogin,
         componentProps: {
           isCreateDefault: true,
           redirectPageUrl: window.location.pathname,
-          redirectParams: Object.assign(dataUtil.getQueryParams(), { isSignUp: true }),
+          redirectParams: Object.assign(dataUtil.getQueryParams(), { isSignUp: true }, additionalParams || {}),
           userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE]
         }
       })
@@ -346,8 +349,17 @@ export default {
             component: DialogUserProfile
           })
         }
+        const query = dataUtil.omit(this.$route.query, ['isSignUp'])
+        this.$router.replace({ query })
         const fullPath = dataUtil.getUrlWithParams({ deleteParams: ['isSignUp'] })
         window.history.replaceState({ path: fullPath }, '', fullPath)
+      }
+    },
+    setBannerHeight () {
+      if (this.$refs.signUpBanner) {
+        this.bannerHeight = this.$refs.signUpBanner.$el.getBoundingClientRect().height
+      } else {
+        this.bannerHeight = 0
       }
     }
   },
@@ -364,13 +376,13 @@ export default {
       this.loadData(),
       this.loadUserFavorites(false)
     ])
-    this.headerHeight = this.$refs.header.$el.clientHeight
     const { tab } = this.$route.query
     if (tab) {
       this.tab = tab
     }
-    this.openUserProfile()
+    this.setBannerHeight()
     this.isLoaded = true
+    this.openUserProfile()
   },
   setup () {
     const globalStore = useGlobalStore()

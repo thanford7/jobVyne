@@ -110,6 +110,9 @@ export default {
       this.$emit('logout')
     }
   },
+  updated () {
+    this.user = this.authStore.propUser
+  },
   async mounted () {
     await this.authStore.setUser()
     this.user = this.authStore.propUser

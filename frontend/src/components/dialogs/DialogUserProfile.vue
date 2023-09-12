@@ -1,7 +1,9 @@
 <template>
   <DialogBase
     ref="dialogRef"
+    persistent
     base-title-text="Welcome to JobVyne!"
+    :is-include-close-button="false"
   >
     <template v-slot:subTitle>Let's get to know each other a bit better</template>
     <div v-if="stepCount === 1">
