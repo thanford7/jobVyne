@@ -32,16 +32,17 @@ SUMMARIZE_PROMPT = (
     f'The allowed professions are: {", ".join(PROFESSIONS)}\n'
     'Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.:\n'
     '{'
-        '"summary": (summary of article),'
-        '"companies": [{"company_name": company, "company_url": URL of the company if available}, ...],'
-        '"industries": [(list of industries)]'
-        '"professions": [(list of professions)]'
+    '"summary": (summary of article),'
+    '"companies": [{"company_name": company, "company_url": URL of the company if available}, ...],'
+    '"industries": [(list of industries)]'
+    '"professions": [(list of professions)]'
     '}'
 )
 
+
 def pull_articles(limit):
     num_articles_pulled = 0
-
+    
     web_reader = WebReader()
     articles = []
     try:
@@ -53,7 +54,7 @@ def pull_articles(limit):
     finally:
         # TODO: Make this a 'with' structure
         web_reader.complete()
-
+    
     for article in articles:
         article.save()
         tax_list = getattr(article, 'tax_list', [])
@@ -67,16 +68,17 @@ def pull_articles(limit):
             m2m.add(taxonomy)
         article.save()
 
+
 class ArticleSource(abc.ABC):
     source = None
-
-    def __init__(self, web_reader:WebReader, articles:list):
+    
+    def __init__(self, web_reader: WebReader, articles: list):
         self.web_reader = web_reader
         self.articles = articles
-
+    
     async def get_article(self, url, title, bs):
         logger.info(f'Calling for batched summary of {url}')
-
+        
         text = trafilatura.extract(str(bs))
         logging.info(f'Summarizing text:\n{text}')
         words = text.split(' ')
@@ -98,16 +100,17 @@ class ArticleSource(abc.ABC):
             companies=resp.get('companies'),
         )
         article.tax_list = []
-        for prop_name, tax_type in [('industries', Taxonomy.TAX_TYPE_INDUSTRY), ('professions', Taxonomy.TAX_TYPE_PROFESSION)]:
+        for prop_name, tax_type in [('industries', Taxonomy.TAX_TYPE_INDUSTRY),
+                                    ('professions', Taxonomy.TAX_TYPE_PROFESSION)]:
             for name in resp.get(prop_name, []):
                 article.tax_list.append((prop_name, tax_type, name))
-
+        
         self.articles.append(article)
-
+    
     @abc.abstractmethod
     def has_more(self):
         raise NotImplemented()
-
+    
     @abc.abstractmethod
     def get_next(self):
         raise NotImplemented()
@@ -117,24 +120,26 @@ class ListArticleSource(ArticleSource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queue = deque()
-
+    
     def get_next(self):
         url, title = self.queue.popleft()
+        
         async def cb(article_bs):
             await self.get_article(url, title, article_bs)
+        
         return self.web_reader.read_async(url, cb)
-
+    
     def has_more(self):
         return len(self.queue) > 0
 
 
 class HN(ListArticleSource):
     source = 'Hacker News'
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         index_page_bs = self.web_reader.read_sync('https://news.ycombinator.com/')
-
+        
         # Only look at articles on the first page
         for athing_bs in index_page_bs.find_all('tr', class_='athing'):
             # Skip articles that we've already captured
@@ -145,15 +150,16 @@ class HN(ListArticleSource):
             title = a_bs.text
             self.queue.append((url, title))
 
+
 class TheRegister(ListArticleSource):
     source = 'The Register'
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        
         BASE_URL = 'https://www.theregister.com'
         index_page_bs = self.web_reader.read_sync(BASE_URL)
-
+        
         for article in index_page_bs.find_all('article'):
             sl = article.find('a', class_='story_link')
             if sl is None:
@@ -164,15 +170,16 @@ class TheRegister(ListArticleSource):
             title = article.find('h4').text
             self.queue.append((url, title))
 
+
 class TechCrunch(ListArticleSource):
     source = 'TechCrunch'
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        
         BASE_URL = 'https://techcrunch.com/'
         index_page_bs = self.web_reader.read_sync(BASE_URL)
-
+        
         articles = index_page_bs.find_all('article')
         for article in articles:
             a = article.find('a')
@@ -185,7 +192,7 @@ class TechCrunch(ListArticleSource):
                 continue
             title = a.text.strip()
             self.queue.append((url, title))
-
+        
         for a in index_page_bs.find_all('a', class_='post-block__title__link'):
             url = a.get('href')
             if url == BASE_URL:
@@ -194,5 +201,6 @@ class TechCrunch(ListArticleSource):
                 continue
             title = a.text.strip()
             self.queue.append((url, title))
+
 
 article_source_classes = [HN, TheRegister, TechCrunch]

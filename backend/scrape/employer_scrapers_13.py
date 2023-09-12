@@ -386,3 +386,8 @@ class HeadspinScraper(BambooHrScraper):
     employer_name = 'HeadSpin'
     EMPLOYER_KEY = 'headspin'
     
+    
+class WonderschoolScraper(GreenhouseScraper):
+    employer_name = 'Wonderschool'
+    EMPLOYER_KEY = 'wonderschool'
+    

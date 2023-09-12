@@ -161,6 +161,7 @@ class JobPost(AuditFields):
             ),
         ]
 
+
 class Article(AuditFields):
     source = models.CharField(max_length=40)
     url = models.URLField()

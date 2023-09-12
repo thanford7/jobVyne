@@ -28,6 +28,7 @@ test_scrapers = {
 }
 
 all_scrapers = {
+    WonderschoolScraper.employer_name: WonderschoolScraper,
     WistiaScraper.employer_name: WistiaScraper,
     DataBricksScraper.employer_name: DataBricksScraper,
     ClioScraper.employer_name: ClioScraper,
