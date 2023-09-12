@@ -18,8 +18,9 @@ from jvapp.models.tracking import AIRequest
 logger = logging.getLogger(__name__)
 openai.api_key = os.getenv('OPEN_AI_API_KEY')
 
-DEFAULT_MODEL = 'gpt-3.5-turbo'  # 4k token limit
-LARGE_TEXT_MODEL = 'gpt-3.5-turbo-16k'  # 16k token limit
+M4K = 'gpt-3.5-turbo'
+M16K = 'gpt-3.5-turbo-16k'
+DEFAULT_MODEL = M4K
 
 
 class PromptError(Exception):
@@ -50,6 +51,7 @@ async def parse_response(openai_response, request_tracker=None):
                 request_tracker.result_status = request_tracker.RESULT_STATUS_UNPARSEABLE
                 await sync_to_async(request_tracker.save)()
             logger.info('Error occurred when parsing model response')
+            logger.info(f'Response was: {content}')
             raise PromptParseError from ex
     
     if request_tracker:
@@ -110,9 +112,9 @@ async def ask(prompt, model=DEFAULT_MODEL, is_test=False):
     try:
         resp = await send_request(model, prompt)
     except InvalidRequestError as e:
-        if model == LARGE_TEXT_MODEL:
+        if model == M16K:
             raise e
-        resp = await send_request(LARGE_TEXT_MODEL, prompt)
+        resp = await send_request(M16K, prompt)
     end_time = datetime.datetime.now()
     model_request_duration = math.ceil((end_time - start_time).total_seconds())
     if is_test:
