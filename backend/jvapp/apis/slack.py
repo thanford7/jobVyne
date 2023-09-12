@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import logging
+from json import JSONDecodeError
 from typing import Union
 
 from django.conf import settings
@@ -850,8 +851,13 @@ class SlackWebhookInboundView(SlackExternalBaseView):
             if action_type in [Select.TYPE, SelectExternal.TYPE]:
                 button_data = json.loads(self.base_data['selected_option']['value'])
             elif action_type in [Button.TYPE]:
+                button_value = self.base_data['value']
+                try:
+                    button_value = json.loads(button_value)
+                except JSONDecodeError:
+                    pass
                 button_data = {
-                    'button_value': json.loads(self.base_data['value']) if isinstance(self.base_data['value'], str) else self.base_data['value'],
+                    'button_value': button_value,
                     'post_channel_name': self.data['channel']['name']
                 }
             else:
