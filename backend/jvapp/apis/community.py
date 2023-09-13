@@ -11,11 +11,14 @@ from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response
 from jvapp.apis.admin import AdminUserConnectionsView
+from jvapp.apis.tracking import UnsubscribeView
 from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import ConnectionTypeBit, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
+from jvapp.models.tracking import EmailUnsubscribe, UserEmailInvite
 from jvapp.models.user import UserConnection
 from jvapp.utils.data import coerce_int, get_text_without_emojis
+from jvapp.utils.email import send_django_email
 from jvapp.utils.taxonomy import TAXONOMY_PROFESSION_TA, get_standardized_job_taxonomy
 
 logger = logging.getLogger(__name__)
@@ -347,3 +350,51 @@ class JobConnectionsShareView(JobVyneAPIView):
         user.is_share_connections = self.data['is_share_connections']
         user.save()
         return get_success_response('Updated your preference to share your connections')
+    
+    
+class ConnectionInviteView(JobVyneAPIView):
+    USER_DAILY_INVITE_LIMIT = 30
+    
+    def post(self, request):
+        to_email = self.data['to_email']
+        try:
+            user_filter = Q(email=to_email) | Q(business_email=to_email)
+            JobVyneUser.objects.get(user_filter)
+            return get_success_response('Thanks for sending an invite! This person already has an account.')
+        except JobVyneUser.DoesNotExist:
+            pass
+        
+        try:
+            UserEmailInvite.objects.get(invite_email=to_email, inviter=self.user)
+            return get_success_response('Thanks for sending an invite! You already invited this person.')
+        except UserEmailInvite.DoesNotExist:
+            pass
+        
+        user_invite_filter = Q(inviter=self.user) & Q(sent_dt__date=timezone.now().date())
+        user_invite_count = UserEmailInvite.objects.filter(user_invite_filter).count()
+        if user_invite_count >= self.USER_DAILY_INVITE_LIMIT:
+            return get_success_response(f'Thanks for sending an invite! We limit invites to {self.USER_DAILY_INVITE_LIMIT} per day. Please check back tomorrow.')
+        
+        try:
+            EmailUnsubscribe.objects.get(email=to_email)
+            return get_success_response('Thanks for sending an invite!')
+        except EmailUnsubscribe.DoesNotExist:
+            pass
+        
+        subject_text = 'You\'re Invited! Join JobVyne Where Professionals Come Together'
+        if self.user.full_name:
+            subject_text = f'{self.user.full_name} is inviting you to join JobVyne!'
+        send_django_email(
+            subject_text,
+            'emails/user_connection_invite.html',
+            to_email=to_email,
+            django_context={
+                'user': self.user,
+                'user_job_url': self.data['user_job_url'],
+                'unsubscribe_url': UnsubscribeView.get_unsubscribe_url(to_email)
+            },
+            is_tracked=False
+        )
+        
+        UserEmailInvite(inviter=self.user, invite_email=to_email, sent_dt=timezone.now()).save()
+        return get_success_response(f'Invite sent to {to_email}. Thanks for contributing to the JobVyne community!')

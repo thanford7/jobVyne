@@ -69,6 +69,8 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
             (cred.provider == OauthProviders.google.value) and cred.refresh_token
         ]
         data['is_share_connections'] = user.is_share_connections
+        data['has_connections'] = user.has_connections
+        data['can_view_other_connections'] = user.can_view_other_connections
     
     return data
 

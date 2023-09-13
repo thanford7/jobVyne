@@ -568,7 +568,7 @@ JOB_TAXONOMY_TESTS = [
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_TA, CONFIDENCE_WEIGHT_VERY_STRONG)]
     ),
     TaxonomyTest(
-        f'{start_or_word_and_space_re}(recruiter|recruitment|recruiting){space_and_word_or_end_re}',
+        f'{start_or_word_and_space_re}(recruiter|recruitment|recruiting|sourcer){space_and_word_or_end_re}',
         [TaxonomyConfidenceWeight(TAXONOMY_PROFESSION_TA, CONFIDENCE_WEIGHT_VERY_STRONG)]
     ),
     TaxonomyTest(

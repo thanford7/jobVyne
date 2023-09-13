@@ -344,6 +344,13 @@ const routes = [
   },
 
   {
+    path: '/unsubscribe',
+    name: 'unsubscribe',
+    meta: { isNoAuth: true },
+    component: () => import('pages/UnsubscribePage.vue')
+  },
+
+  {
     path: '/error',
     name: 'error',
     meta: { isNoAuth: true },

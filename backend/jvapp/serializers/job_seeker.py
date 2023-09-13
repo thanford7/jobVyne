@@ -36,7 +36,7 @@ def get_serialized_job_application(job_application: JobApplication):
             'employer_key': job_application.employer_job.employer.employer_key,
             'title': job_application.employer_job.job_title,
             'locations': [get_serialized_location(l) for l in job_application.employer_job.locations.all()],
-            'is_open': (not job_application.employer_job.close_date) or (job_application.employer_job.close_date < timezone.now().date())
+            'is_open': (not job_application.employer_job.close_date) or (job_application.employer_job.close_date > timezone.now().date())
         }
     }
     return data

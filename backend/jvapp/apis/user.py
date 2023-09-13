@@ -1,7 +1,6 @@
 from collections import defaultdict
 from string import Template
 
-from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -13,13 +12,12 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response, \
     get_success_response, get_warning_response
 from jvapp.apis.geocoding import LocationParser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import SocialPost
 from jvapp.models.employer import Employer, EmployerJob
-from jvapp.models.social import SocialLink
 from jvapp.models.user import JobVyneUser, UserApplicationReview, UserEmployeeProfileQuestion, \
     UserEmployeeProfileResponse, UserEmployerPermissionGroup, UserFile, \
     UserSocialCredential, \

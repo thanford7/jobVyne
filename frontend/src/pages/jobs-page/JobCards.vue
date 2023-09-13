@@ -15,7 +15,8 @@
     <div class="row q-gutter-y-lg">
       <div v-for="job in jobs" class="col-12 col-sm-6 q-px-sm">
         <q-card
-          class="hover-display-parent border-hover-info h-100"
+          :id="`job-${job.id}`"
+          class="hover-display-parent border-hover-info"
           :style="getSelectedCardStyle(job)" bordered
         >
           <div v-if="job.application"
@@ -167,11 +168,11 @@
                 </CustomTooltip>
                 <q-space/>
                 <q-btn @click="openConnectionsDialog(job)" size="sm" color="grey-8">
-                  <CustomTooltip v-if="!isLoggedIn" :is_include_icon="false">
+                  <CustomTooltip v-if="!isLoggedIn || !user.can_view_other_connections" :is_include_icon="false">
                     <template v-slot:content>
                       <q-icon name="lock"/>
                     </template>
-                    You must login or create an account to view connections
+                    You must login or create an account  and share your connections to view others' connections
                   </CustomTooltip>
                   &nbsp;&nbsp;View
                 </q-btn>

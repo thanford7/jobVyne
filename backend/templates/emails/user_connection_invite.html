@@ -1,0 +1,18 @@
+{% extends 'emails/base_general_email.html' %}
+
+{% block body %}
+    <p style="text-align:left">{{ user.full_name }} is inviting you to join the JobVyne community!</p>
+    <p style="text-align:left">
+        JobVyne is a job search platform where everyone helps each other find jobs and get warm introductions to companies.
+        You can start searching for <a href="{{ base_url }}/jobs/">any jobs here</a> or
+        <a href="{{ user_job_url }}">start where {{ user.first_name }} was viewing jobs</a>
+    </p>
+{% endblock body %}
+{% block final_message %}
+    <p style="text-align:left">
+        We hope that you join the thousands of other JobVyne professionals in making the job search process a bit less
+        lonely and a lot more collaborative.
+    </p>
+    <p style="text-align:left">Sincerely,</p>
+    <p style="text-align:left">The JobVyne Team</p>
+{% endblock final_message %}

@@ -1,6 +1,6 @@
 <template>
   <div class="row justify-center">
-    <ResponsiveWidth>
+    <div class="col-12 col-lg-10">
       <div class="row">
         <div class="col-12 q-mb-md">
           <q-btn
@@ -10,7 +10,8 @@
           >
             <q-badge color="info" floating>{{ filterCount }}</q-badge>
           </q-btn>
-          <q-btn v-if="hasBaseJobsPage() || (filterCount && !isSingleJob)" label="Show all jobs" color="grey-8" @click="goHome()"/>
+          <q-btn v-if="hasBaseJobsPage() || (filterCount && !isSingleJob)" label="Show all jobs" color="grey-8"
+                 @click="goHome()"/>
         </div>
         <div v-if="jobFilters?.job_ids?.length && totalEmployerJobCount > jobFilters.job_ids.length"
              class="col-12 q-mt-md">
@@ -59,17 +60,45 @@
               />
               <!--                TODO: Add recommendations button for mobile view-->
               <div
-                v-if="false && !utilStore.isUnderBreakPoint('md')"
+                v-if="user?.id && !utilStore.isUnderBreakPoint('md')"
                 class="col-3 q-py-md q-px-sm custom-sticky"
                 style="align-self: start;"
               >
+                <q-card class="q-mb-md" flat bordered>
+                  <q-card-section class="bg-primary text-white text-bold">
+                    🍇 Help build the JobVyne community
+                  </q-card-section>
+                  <q-separator inset/>
+                  <q-card-actions class="q-gutter-y-md" align="stretch" vertical>
+                    <q-btn
+                      v-if="!user.has_connections"
+                      flat class="bg-grey-7" text-color="white" size="md"
+                      @click="openDialogBulkUploadLinkedInContacts()"
+                    >
+                      Add LinkedIn Connections
+                      <ShareConnectionsTooltip iconColor="text-white"/>
+                    </q-btn>
+                    <q-form ref="inviteEmail">
+                      <EmailInput
+                        v-model="inviteFriendEmail"
+                        label="Invite a connection (email)"
+                        hide-bottom-space dense :is-required="false"
+                      >
+                        <template v-slot:after>
+                          <q-btn dense flat icon="send" color="primary" @click="sendInviteEmail()"/>
+                        </template>
+                      </EmailInput>
+                    </q-form>
+                  </q-card-actions>
+                </q-card>
                 <CollapsableCard
+                  v-if="false"
                   title="Recommendations"
                   :is-dense="true"
                 >
                   <template v-slot:body>
                     <q-list class="w-100" dense style="max-height: 70vh; overflow-x: hidden; overflow-y: scroll">
-<!--                      TODO: Add recommendations here - jobs, employers, professions -->
+                      <!--                      TODO: Add recommendations here - jobs, employers, professions -->
                     </q-list>
                   </template>
                 </CollapsableCard>
@@ -86,20 +115,24 @@
           class="q-mt-md"
         />
       </div>
-    </ResponsiveWidth>
+    </div>
   </div>
 </template>
 
 <script>
 import CollapsableCard from 'components/CollapsableCard.vue'
+import DialogBulkUploadLinkedInContacts from 'components/dialogs/DialogBulkUploadLinkedInContacts.vue'
 import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
 import DialogJobFilter from 'components/dialogs/DialogJobFilter.vue'
 import DialogLogin from 'components/dialogs/DialogLogin.vue'
-import ResponsiveWidth from 'components/ResponsiveWidth.vue'
+import DialogShowText from 'components/dialogs/DialogShowText.vue'
+import EmailInput from 'components/inputs/EmailInput.vue'
+import ShareConnectionsTooltip from 'pages/candidate/ShareConnectionsTooltip.vue'
 import JobCards from 'pages/jobs-page/JobCards.vue'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
+import { getAjaxFormData } from 'src/utils/requests.js'
 import scrollUtil from 'src/utils/scroll.js'
 import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import { useAuthStore } from 'stores/auth-store.js'
@@ -127,7 +160,10 @@ export default {
     userFavorites: Object
   },
   components: {
-    ResponsiveWidth, CollapsableCard, JobCards
+    EmailInput,
+    ShareConnectionsTooltip,
+    CollapsableCard,
+    JobCards
   },
   data () {
     return {
@@ -140,6 +176,7 @@ export default {
       isSingleJob: false,
       totalPageCount: null,
       job: null,
+      inviteFriendEmail: null,
       dataUtil,
       employerStyleUtil,
       scrollUtil,
@@ -370,6 +407,31 @@ export default {
       this.updateJobFilterQueryParams()
       this.isLoaded = true
       scrollUtil.scrollTo(0)
+    },
+    openDialogBulkUploadLinkedInContacts () {
+      this.q.dialog({
+        component: DialogBulkUploadLinkedInContacts
+      }).onOk(async () => {
+        await this.loadJobs(true)
+        this.q.dialog({
+          component: DialogShowText,
+          componentProps: {
+            title: 'You\'re now connected!',
+            text: 'Now that you have shared your connections, you can view everyone else\'s connections and ask for introductions to jobs you are applying to! If you want to manage your connections, you can click on the "Connections" link from the menu options.'
+          }
+        })
+      })
+    },
+    async sendInviteEmail () {
+      const isGoodEmail = await this.$refs.inviteEmail.validate()
+      if (!isGoodEmail) {
+        return
+      }
+      await this.$api.post('community/connection-invite/', getAjaxFormData({
+        to_email: this.inviteFriendEmail,
+        user_job_url: `${window.location.origin}${window.location.pathname}`
+      }))
+      this.inviteFriendEmail = null
     }
   },
   async mounted () {

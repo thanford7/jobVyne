@@ -56,8 +56,8 @@ export const openDialog = ($q, title, message, { isCancel = false, okFn, cancelF
   })
 }
 
-export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) => {
-  return openDialog($q, 'Confirm', message,
+export const openConfirmDialog = ($q, message, { title = 'Confirm', okFn, cancelFn, dismissFn }) => {
+  return openDialog($q, title, message,
     { isCancel: true, okFn, cancelFn, dismissFn }
   )
 }

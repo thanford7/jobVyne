@@ -1,7 +1,9 @@
 __all__ = ('PageTrackView',)
 import logging
 from datetime import timedelta
+from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis.geoip2 import GeoIP2
 from django.db import DataError
@@ -14,9 +16,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from user_agents import parse
 
+from jvapp.apis._apiBase import get_error_response, get_success_response
 from jvapp.models.employer import Employer
 from jvapp.models.social import SocialPlatform
-from jvapp.models.tracking import PageView
+from jvapp.models.tracking import EmailUnsubscribe, PageView
+from jvapp.utils.security import get_hash_string, get_reversible_hash, reverse_hash
 
 geo_locator = GeoIP2()
 logger = logging.getLogger(__name__)
@@ -97,6 +101,37 @@ class PageTrackView(APIView):
             # 'location': location_data
             'location': {'country_name': 'US'}
         })
+    
+    
+class UnsubscribeView(APIView):
+    """Allow email recipients to unsubscribe, even though they don't have an account
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        if not (key := request.data.get('key')):
+            return get_error_response('This unsubscribe URL is incorrect. Please contact support@jobvyne.com')
+        email = self.get_email_from_hash(key)
+        try:
+            unsubscribe = EmailUnsubscribe.objects.get(email=email)
+        except EmailUnsubscribe.DoesNotExist:
+            unsubscribe = EmailUnsubscribe(email=email)
+        unsubscribe.unsubscribe_dt = timezone.now()
+        unsubscribe.save()
+        return get_success_response('You have been unsubscribed from email communications')
+    
+    @staticmethod
+    def generate_email_hash(email):
+        return get_reversible_hash(email)
+    
+    @staticmethod
+    def get_email_from_hash(email):
+        return reverse_hash(email)
+    
+    @staticmethod
+    def get_unsubscribe_url(email):
+        params = {'key': UnsubscribeView.generate_email_hash(email)}
+        return f'{settings.BASE_URL}/unsubscribe?{urlencode(params)}'
 
 
 def set_user_agent_data(page_view, user_agent_str):

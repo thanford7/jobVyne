@@ -358,6 +358,14 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     def contact_email(self):
         return self.business_email or self.email
     
+    @property
+    def has_connections(self):
+        return self.owner_connection.exists()
+    
+    @property
+    def can_view_other_connections(self):
+        return bool(self.is_share_connections and self.has_connections)
+    
     
 class UserSlackProfile(models.Model):
     user = models.ForeignKey('JobVyneUser', null=False, blank=False, related_name='slack_profile', on_delete=models.CASCADE)

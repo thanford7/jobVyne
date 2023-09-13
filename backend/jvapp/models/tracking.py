@@ -166,3 +166,19 @@ class AIRequest(AuditFields):
     prompt_hash = models.CharField(max_length=40)
     result_status = models.CharField(max_length=20)
     response = models.JSONField(null=True)
+    
+    
+class UserEmailInvite(models.Model):
+    invite_email = models.EmailField()
+    inviter = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
+    sent_dt = models.DateTimeField()
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['invite_email', 'inviter_id'], name='unique_invite')
+        ]
+    
+    
+class EmailUnsubscribe(models.Model):
+    email = models.EmailField(unique=True)
+    unsubscribe_dt = models.DateTimeField()

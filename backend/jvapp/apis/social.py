@@ -483,29 +483,26 @@ class SocialLinkJobsView(JobVyneAPIView):
                 employer_job_filter=Q(job_key=job_key), lookback_days=self.LOOKBACK_DAYS, **common_job_getter_kwargs
             )
         
-        employer_connections_map = {}
-        user_connections_map = {}
-        if user_key:
-            employer_ids = set([j.employer_id for j in jobs])
-            employer_connections = (
-                EmployerConnection.objects
-                .select_related('user')
-                .prefetch_related('hiring_jobs')
-                .filter(employer_id__in=employer_ids, user__is_share_connections=True)
-                .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value))
-            )
-            employer_connections_map = defaultdict(list)
-            for conn in employer_connections:
-                employer_connections_map[conn.employer_id].append(conn)
-            
-            user_connections = (
-                UserConnection.objects
-                .select_related('owner', 'profession', 'employer', 'connection_user')
-                .filter(employer_id__in=employer_ids, owner__is_share_connections=True)
-            )
-            user_connections_map = defaultdict(list)
-            for conn in user_connections:
-                user_connections_map[conn.employer_id].append(conn)
+        employer_ids = set([j.employer_id for j in jobs])
+        employer_connections = (
+            EmployerConnection.objects
+            .select_related('user')
+            .prefetch_related('hiring_jobs')
+            .filter(employer_id__in=employer_ids, user__is_share_connections=True)
+            .filter(~Q(connection_type=ConnectionTypeBit.NO_CONNECTION.value))
+        )
+        employer_connections_map = defaultdict(list)
+        for conn in employer_connections:
+            employer_connections_map[conn.employer_id].append(conn)
+        
+        user_connections = (
+            UserConnection.objects
+            .select_related('owner', 'profession', 'employer', 'connection_user')
+            .filter(employer_id__in=employer_ids, owner__is_share_connections=True)
+        )
+        user_connections_map = defaultdict(list)
+        for conn in user_connections:
+            user_connections_map[conn.employer_id].append(conn)
         
         data = {
             'total_page_count': paginated_jobs.num_pages,

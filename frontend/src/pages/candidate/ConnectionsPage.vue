@@ -21,25 +21,7 @@
         <div class="col-12">
           <q-toggle :model-value="isShareConnections" @update:model-value="updateShareConnections">
             Share connections
-            <CustomTooltip>
-              <div>
-                The purpose of JobVyne is to come together as a community and help each other find jobs and make new
-                connections.
-                When you share your connections, other JobVyne users can see information that would already be publicly
-                available
-                on LinkedIn:
-              </div>
-              <ul>
-                <li>Name</li>
-                <li>LinkedIn</li>
-                <li>Employer</li>
-                <li>Job Title</li>
-                <li>Profession</li>
-              </ul>
-              <div>
-                We DO NOT share any contact information for your connections.
-              </div>
-            </CustomTooltip>
+            <ShareConnectionsTooltip/>
           </q-toggle>
         </div>
         <div class="col-12">
@@ -99,6 +81,7 @@
 import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBulkUploadLinkedInContacts from 'components/dialogs/DialogBulkUploadLinkedInContacts.vue'
 import PageHeader from 'components/PageHeader.vue'
+import ShareConnectionsTooltip from 'pages/candidate/ShareConnectionsTooltip.vue'
 import { useMeta, useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
@@ -116,7 +99,7 @@ const connectionColumns = [
 
 export default {
   name: 'ConnectionsPage',
-  components: { CustomTooltip, PageHeader },
+  components: { ShareConnectionsTooltip, CustomTooltip, PageHeader },
   data () {
     return {
       isLoading: true,
