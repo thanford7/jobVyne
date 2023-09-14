@@ -612,7 +612,8 @@ class SocialLinkJobsView(JobVyneAPIView):
                 job_data['application'] = {
                     'id': job_application.id,
                     'created_dt': job_application.created_dt,
-                    'is_external': job_application.is_external_application
+                    'is_external': job_application.is_external_application,
+                    'status': job_application.application_status,
                 }
         
         return job_data

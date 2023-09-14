@@ -20,15 +20,20 @@
           :style="getSelectedCardStyle(job)" bordered
         >
           <div v-if="job.application"
-               class="application-date q-pa-sm border-top-rounded bg-blue-1 text-grey-8 text-small">
-            <q-icon name="info" color="grey-7" size="16px"/>
-            <span v-if="job.application.is_external">
+               class="application-date q-pa-sm border-top-rounded bg-blue-1 text-grey-8 text-small flex items-center">
+            <span v-if="job.application.status === applicationUtil.INTERESTED">
               You viewed this job on
             </span>
             <span v-else>
               Applied on
             </span>
-            {{ dateTimeUtil.getShortDate(job.application.created_dt) }}
+            &nbsp;{{ dateTimeUtil.getShortDate(job.application.created_dt) }}
+            <q-space/>
+            <q-btn
+              v-if="job.application.status === applicationUtil.INTERESTED"
+              size="sm" outline
+              @click="updateAppliedStatus(job.application)"
+            >I Applied</q-btn>
           </div>
           <template v-if="!isSingleEmployer">
             <q-item>
@@ -211,6 +216,7 @@ import DialogLogin from 'components/dialogs/DialogLogin.vue'
 import DialogShowEmployerConnections from 'components/dialogs/DialogShowEmployerConnections.vue'
 import LocationChip from 'components/LocationChip.vue'
 import { useQuasar } from 'quasar'
+import applicationUtil from 'src/utils/application.js'
 import colorUtil from 'src/utils/color.js'
 import communityUtil from 'src/utils/community.js'
 import dataUtil from 'src/utils/data.js'
@@ -245,7 +251,8 @@ export default {
       employerStyleUtil,
       formUtil,
       q: useQuasar(),
-      openUrlInNewTab
+      openUrlInNewTab,
+      applicationUtil
     }
   },
   computed: {
@@ -336,6 +343,13 @@ export default {
         referrer_employer_key: this.$route?.params?.employerKey,
         professionKey: this.$route.params.professionKey,
         platform_name: this.$route?.query?.platform
+      }))
+      this.$emit('updateApplications')
+    },
+    async updateAppliedStatus (application) {
+      await this.$api.post('job-application/status/', getAjaxFormData({
+        application_id: application.id,
+        application_status: applicationUtil.APPLIED
       }))
       this.$emit('updateApplications')
     },

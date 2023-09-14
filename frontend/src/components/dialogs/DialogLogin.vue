@@ -4,7 +4,6 @@
     :is-include-buttons="false"
     width="700px"
   >
-      <template v-slot:subTitle>This is a test subtitle</template>
     <div v-if="isShowLoginToggle" class="q-mb-md">
       <q-btn-toggle
         v-model="isCreate"
@@ -32,7 +31,7 @@
     <AuthAll
       :is-create="isCreate"
       :redirect-page-url="redirectPageUrl"
-      :redirect-params="redirectParams"
+      :redirect-params="signUpParams"
       :user-type-bit="userTypeBit"
       :style-override="styleOverride"
     />
@@ -43,6 +42,7 @@
 import AuthAll from 'components/AuthAll.vue'
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import ListIcon from 'components/ListIcon.vue'
+import dataUtil from 'src/utils/data.js'
 
 export default {
   name: 'DialogLogin',
@@ -74,6 +74,15 @@ export default {
   data () {
     return {
       isCreate: this.isCreateDefault
+    }
+  },
+  computed: {
+    signUpParams () {
+      if (this.isCreate) {
+        return this.redirectParams
+      } else {
+        return dataUtil.omit(this.redirectParams, ['isSignUp'])
+      }
     }
   },
   methods: {
