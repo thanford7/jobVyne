@@ -81,12 +81,8 @@ class JobProcessor:
                 is_use_request=True
             )
             is_save_employer = True
-        if job_item.website_domain and (
-                not self.employer.email_domains or job_item.website_domain not in self.employer.email_domains):
-            if not self.employer.email_domains:
-                self.employer.email_domains = job_item.website_domain
-            else:
-                self.employer.email_domains += f',{job_item.website_domain}'
+        if job_item.website_domain and (not self.employer.email_domains):
+            self.employer.email_domains = job_item.website_domain
             is_save_employer = True
         
         if is_save_employer:

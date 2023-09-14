@@ -1,23 +1,26 @@
 import csv
+import json
 import logging
 import re
 from io import StringIO
 
-from django.db.models import Prefetch, Q
+from django.core.paginator import Paginator
+from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response
+from jvapp.apis._apiBase import JobVyneAPIView, get_error_response, get_success_response, get_warning_response
 from jvapp.apis.admin import AdminUserConnectionsView
+from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.tracking import UnsubscribeView
 from jvapp.models import JobVyneUser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.employer import ConnectionTypeBit, EmployerConnection, EmployerJob, JobTaxonomy, Taxonomy
 from jvapp.models.tracking import EmailUnsubscribe, UserEmailInvite
 from jvapp.models.user import UserConnection
-from jvapp.utils.data import coerce_int, get_text_without_emojis
+from jvapp.utils.data import coerce_bool, coerce_int, get_text_without_emojis
 from jvapp.utils.email import send_django_email
 from jvapp.utils.taxonomy import TAXONOMY_PROFESSION_TA, get_standardized_job_taxonomy
 
@@ -148,8 +151,22 @@ class CommunityMemberView(JobVyneAPIView):
     
     
 class JobConnectionsView(JobVyneAPIView):
+    FILTER_KEY_LOOKUP = {
+        'fullName': 'first_name',
+        'employer': 'employer_raw',
+        'jobTitle': 'job_title',
+        'profession': 'profession__name',
+        'connectionCount': 'count'
+    }
+    
+    GROUP_BY_KEY_LOOKUP = {
+        'employer': ['employer_raw', 'employer__employer_name', 'employer__employer_key'],
+        'profession': ['profession__name', 'profession__key']
+    }
     
     def get(self, request):
+        if not self.user.can_view_other_connections:
+            return get_warning_response('You must share your connections if you want to view other\'s connections. Go to the "Connections" section in the menu options to get started.')
         job_id = coerce_int(self.query_params.get('job_id'))
         user_id = coerce_int(self.query_params.get('user_id'))
         if not any((job_id, user_id)):
@@ -204,11 +221,66 @@ class JobConnectionsView(JobVyneAPIView):
         
             return Response(status=status.HTTP_200_OK, data=all_connections)
         if user_id:
-            user_connections = [
-                JobConnectionsView.get_serialized_user_connection(uc) for uc in
-                UserConnection.objects.select_related('profession', 'employer', 'owner', 'connection_user').filter(owner_id=user_id)
-            ]
-            return Response(status=status.HTTP_200_OK, data=user_connections)
+            page_count = coerce_int(self.query_params.get('page_count')) or 1
+            order_by = 'first_name'
+            if sort_order := self.query_params.get('sort_order'):
+                normalized_sort_order = self.FILTER_KEY_LOOKUP.get(sort_order)
+                if normalized_sort_order:
+                    order_by = normalized_sort_order
+            if coerce_bool(self.query_params.get('is_descending')):
+                order_by = f'-{order_by}'
+            
+            connections_filter = Q(owner_id=user_id)
+            if connection_filters := self.query_params.get('filters'):
+                connection_filters = json.loads(connection_filters)
+                if connection_name := connection_filters.get('name'):
+                    connections_filter &= (Q(first_name__iregex=f'^.*{connection_name}.*$') | Q(last_name__iregex=f'^.*{connection_name}.*$'))
+                if employer_name := connection_filters.get('employer_name'):
+                    connections_filter &= Q(employer_raw__iregex=f'^.*{employer_name}.*$')
+                if job_title := connection_filters.get('job_title'):
+                    connections_filter &= Q(job_title__iregex=f'^.*{job_title}.*$')
+                if profession_ids := connection_filters.get('profession_ids'):
+                    job_professions = Taxonomy.objects.prefetch_related('sub_taxonomies').filter(
+                        id__in=profession_ids)
+                    total_professions = JobSubscriptionView.get_parent_and_child_professions(job_professions)
+                    connections_filter &= Q(profession_id__in=[p.id for p in total_professions])
+            user_connections = UserConnection.objects.select_related('profession', 'employer', 'owner', 'connection_user').filter(connections_filter)
+            if group_by := self.query_params.getlist('group_by[]'):
+                group_by_fields = []
+                for key in group_by:
+                    group_by_fields += self.GROUP_BY_KEY_LOOKUP.get(key) or []
+                user_connections = user_connections.values(*group_by_fields).annotate(count=Count('id'))
+            
+            user_connections = user_connections.order_by(order_by)
+            paginated_user_connections = Paginator(user_connections, per_page=coerce_int(self.query_params.get('rows_per_page')) or 25)
+            if group_by:
+                serialized_user_connections = []
+                for user_connection in paginated_user_connections.get_page(page_count):
+                    serialized_user_connection = {
+                        'connection_count': user_connection['count']
+                    }
+                    if 'employer' in group_by:
+                        serialized_user_connection['employer_raw'] = user_connection['employer_raw']
+                        serialized_user_connection['employer'] = {
+                            'name': user_connection['employer__employer_name'],
+                            'key': user_connection['employer__employer_key']
+                        } if user_connection.get('employer__employer_name') else None
+                    if 'profession' in group_by:
+                        serialized_user_connection['profession'] = {
+                            'name': user_connection.get('profession__name'),
+                            'key': user_connection.get('profession__key'),
+                        } if user_connection.get('profession__name') else None
+                    serialized_user_connections.append(serialized_user_connection)
+            else:
+                serialized_user_connections = [
+                    JobConnectionsView.get_serialized_user_connection(uc) for uc in
+                    paginated_user_connections.get_page(page_count)
+                ]
+            return Response(status=status.HTTP_200_OK, data={
+                'total_page_count': paginated_user_connections.num_pages,
+                'total_connection_count': paginated_user_connections.count,
+                'user_connections': serialized_user_connections
+            })
     
     def post(self, request):
         raw_file = self.files['connections_file'][0]

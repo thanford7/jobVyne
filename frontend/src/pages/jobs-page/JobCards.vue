@@ -302,6 +302,7 @@ export default {
         return this.q.dialog({
           component: DialogLogin,
           componentProps: {
+            isCreateDefault: true,
             redirectPageUrl: window.location.pathname,
             redirectParams: dataUtil.getQueryParams(),
             userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE]

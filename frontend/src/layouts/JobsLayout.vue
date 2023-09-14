@@ -75,6 +75,17 @@
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
             <q-tab
+              v-if="isUserPage && profile.has_connections" id="jv-tab-connections" name="connections" :disable="!user?.can_view_other_connections"
+            >
+              <CustomTooltip v-if="!user?.can_view_other_connections" :is_include_icon="false">
+                <template v-slot:content>
+                  Connections <q-icon name="lock"/>
+                </template>
+                You must login or create an account and share your connections to view others' connections
+              </CustomTooltip>
+              <span v-else>Connections</span>
+            </q-tab>
+            <q-tab
               v-if="employerTypeUtil.isTypeGroup(employer?.organization_type)"
               id="jv-tab-community" name="community" label="Community"
             />
@@ -148,6 +159,19 @@
               @userSignup="openSignUpDialog($event)"
             />
           </q-tab-panel>
+          <q-tab-panel name="connections">
+            <div class="row justify-center">
+              <div class="col-12 col-lg-10 q-pa-md-lg">
+                <ConnectionsTable v-if="user.id" :is-owner="false"/>
+                <q-card v-else flat class="border-1-negative">
+                  <q-card-section class="text-h6 text-center">
+                    <q-icon name="dangerous" color="negative"/>
+                    You must login to view this section
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+          </q-tab-panel>
           <q-tab-panel name="community">
             <CommunitySection
               v-if="tab === 'community'"
@@ -188,6 +212,7 @@ import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
 import LocationChip from 'components/LocationChip.vue'
 import BaseSidebar from 'components/sidebar/BaseSidebar.vue'
 import SidebarMenuItem from 'components/sidebar/SidebarMenuItem.vue'
+import ConnectionsTable from 'pages/candidate/connections-page/ConnectionsTable.vue'
 import CommunitySection from 'pages/jobs-page/CommunitySection.vue'
 import JobsSection from 'pages/jobs-page/JobsSection.vue'
 import colorUtil from 'src/utils/color.js'
@@ -246,6 +271,7 @@ export default {
     }
   },
   components: {
+    ConnectionsTable,
     LocationChip,
     CustomTooltip,
     SidebarMenuItem,
@@ -261,7 +287,7 @@ export default {
       return ['company', 'group'].includes(this.$route.name)
     },
     isUserPage () {
-      return this.$route.name === 'profile'
+      return dataUtil.getBoolean(this.$route.params.userKey)
     }
   },
   watch: {

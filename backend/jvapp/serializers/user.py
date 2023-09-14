@@ -94,7 +94,8 @@ def get_serialized_user_profile(user: JobVyneUser, is_get_profile=False):
             'state': user.home_location.state.name if user.home_location.state else None,
             'country': user.home_location.country.name if user.home_location.country else None
         } if user.home_location else None,
-        'is_profile_viewable': user.is_profile_viewable
+        'is_profile_viewable': user.is_profile_viewable,
+        'has_connections': user.has_connections
     }
     
     if (is_get_profile or user.is_profile_viewable) and user.employer:

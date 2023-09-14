@@ -122,7 +122,7 @@ const routes = [
         path: 'connections',
         name: 'candidate-connections',
         meta: { userTypeBits: USER_TYPES.Candidate },
-        component: () => import('pages/candidate/ConnectionsPage.vue')
+        component: () => import('pages/candidate/connections-page/ConnectionsPage.vue')
       }
     ]
   },

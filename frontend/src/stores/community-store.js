@@ -18,13 +18,34 @@ export const useCommunityStore = defineStore('community', {
       })
       this.members[key] = resp.data
     },
-    async setJobConnections ({ jobId = null, userId = null, isForceRefresh = false }) {
-      const key = makeApiRequestKey(jobId, userId)
+    async setJobConnections (
+      {
+        jobId = null,
+        userId = null,
+        rowsPerPage = null,
+        pageCount = null,
+        sortBy = null,
+        isDescending = false,
+        filters = {},
+        groupBy = null,
+        isForceRefresh = false
+      }
+    ) {
+      const key = makeApiRequestKey(jobId, userId, rowsPerPage, pageCount, sortBy, isDescending, filters, groupBy)
       if (this.jobConnections[key] && !isForceRefresh) {
         return
       }
       const resp = await this.$api.get('community/job-connections/', {
-        params: { job_id: jobId, user_id: userId }
+        params: {
+          job_id: jobId,
+          user_id: userId,
+          rows_per_page: rowsPerPage,
+          page_count: pageCount,
+          sort_order: sortBy,
+          is_descending: isDescending,
+          filters,
+          group_by: groupBy
+        }
       })
       this.jobConnections[key] = resp.data
     },
@@ -32,8 +53,19 @@ export const useCommunityStore = defineStore('community', {
       const key = makeApiRequestKey(memberType, employerId, professionKey)
       return this.members[key] || []
     },
-    getJobConnections ({ jobId = null, userId = null }) {
-      const key = makeApiRequestKey(jobId, userId)
+    getJobConnections (
+      {
+        jobId = null,
+        userId = null,
+        rowsPerPage = null,
+        pageCount = null,
+        sortBy = null,
+        isDescending = false,
+        filters = {},
+        groupBy = null
+      }
+    ) {
+      const key = makeApiRequestKey(jobId, userId, rowsPerPage, pageCount, sortBy, isDescending, filters, groupBy)
       return this.jobConnections[key] || []
     }
   }
