@@ -1497,7 +1497,10 @@ class SmartRecruitersScraper(Scraper):
             jobs_html = self.get_page_data(page_idx)
             if not jobs_html:
                 break
-            await self.add_job_links_to_queue(jobs_html.xpath('//a/@href').getall())
+            job_links = jobs_html.xpath('//a/@href').getall()
+            if not job_links:
+                break
+            await self.add_job_links_to_queue(job_links)
             page_idx += 1
         
         await self.close()
