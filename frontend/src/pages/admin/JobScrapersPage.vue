@@ -13,10 +13,18 @@
             :rows-per-page-options="[15, 25, 50]"
           >
             <template v-slot:top>
-              <q-btn ripple color="primary" label="Run all" @click="runJobScrapers(true)" class="q-mr-sm"/>
+              <q-btn
+                class="q-mr-sm"
+                ripple color="primary" label="Run all" @click="runJobScrapers({ isAll: true })"
+              />
+              <q-btn
+                class="q-mr-sm"
+                ripple color="primary" label="Run Workable" @click="runJobScrapers({ isWorkable: true })"
+              />
               <q-btn
                 v-if="selectedScrapers.length"
-                ripple color="primary" :label="`Run selected (${selectedScrapers.length})`" @click="runJobScrapers()"
+                class="q-mr-sm"
+                ripple color="primary" :label="`Run selected (${selectedScrapers.length})`" @click="runJobScrapers({ isAll: false })"
               />
             </template>
           </q-table>
@@ -38,6 +46,7 @@ import { useGlobalStore } from 'stores/global-store.js'
 
 const scraperColumns = [
   { name: 'employerName', field: 'employer_name', align: 'left', label: 'Name', sortable: true },
+  { name: 'ats', field: 'ats', align: 'left', label: 'ATS', sortable: true, format: (val) => val || 'Unknown' },
   {
     name: 'scrapeDate',
     field: 'last_job_scrape_success_dt',
@@ -61,9 +70,10 @@ export default {
     }
   },
   methods: {
-    async runJobScrapers (isAll = false) {
+    async runJobScrapers ({ isAll = false, isWorkable = false }) {
       await this.$api.post('admin/job-scraper/', getAjaxFormData({
         is_run_all: isAll,
+        is_run_workable: isWorkable,
         employer_names: this.selectedScrapers.map((employerScraper) => employerScraper.employer_name)
       }))
       await this.adminStore.setJobScrapers(true)

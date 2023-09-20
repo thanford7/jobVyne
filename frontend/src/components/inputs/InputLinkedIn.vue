@@ -6,7 +6,7 @@
     lazy-rules
     :rules="[
       val => {
-        if (!isRequired && (!val?.length || formUtil.isGoodLinkedInUrl(val))) {
+        if (!isRequired && ((!val?.length) || formUtil.isGoodLinkedInUrl(val))) {
           return true
         } else if (isRequired && val?.length && formUtil.isGoodLinkedInUrl(val)) {
           return true

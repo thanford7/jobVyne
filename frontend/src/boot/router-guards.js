@@ -1,11 +1,11 @@
+import { AJAX_EVENTS } from 'boot/axios.js'
 import { boot } from 'quasar/wrappers'
 import dataUtil from 'src/utils/data'
+import emitter from 'tiny-emitter/instance'
 import messagesUtil from 'src/utils/messages.js'
 import pagePermissionsUtil from 'src/utils/permissions.js'
-import { getAjaxFormData } from 'src/utils/requests'
+import { getAjaxFormData, getCsrfToken } from 'src/utils/requests'
 import { getDataFromMetaString } from 'stores/social-auth-store.js'
-
-const DEPLOY_TS_KEY = 'JV_DEPLOY_TS'
 
 const isMainPageFn = (to) => {
   if (!to) {
@@ -15,9 +15,37 @@ const isMainPageFn = (to) => {
   return to.params.namespace && mainPageNamespaces.includes(to.params.namespace)
 }
 
-export default boot(({ app, router }) => {
+export default boot(({ app, router, ssrContext }) => {
+  router.onError((error, route) => {
+    // Dynamic routes will fail if a user has a page open and a new version of the app is deployer
+    if (error.message.toLowerCase().includes('failed to fetch dynamically imported module') && !route.query.reload) {
+      window.location.assign(dataUtil.getUrlWithParams({
+        path: route.fullPath,
+        addParams: [{ key: 'reload', val: 1 }]
+      }))
+    }
+  })
+
+  router.afterEach((to, from) => {
+    // Remove the reload query param so we can be ready for another dynamic import failure!
+    if (to.query.reload) {
+      const url = dataUtil.getUrlWithParams({
+        path: to.fullPath,
+        deleteParams: ['reload']
+      })
+      window.history.pushState({ path: url }, '', url)
+      emitter.emit(AJAX_EVENTS.SUCCESS, { message: 'Website has been updated. Reloaded page to get the freshest grapes 🍇' })
+    }
+  })
+
   router.beforeEach(async (to, from) => {
     const $api = app.config.globalProperties.$api
+    // Make sure CSRF cookie is set
+    const csrfToken = getCsrfToken(ssrContext)
+    if (!csrfToken) {
+      await $api.get('auth/login-set-cookie/')
+    }
+
     // Handle oauth callback
     if (to.name === 'auth-callback') {
       const provider = to.params.provider
@@ -32,30 +60,24 @@ export default boot(({ app, router }) => {
         return { name: 'error' }
       }
 
-      return { path: redirectPageUrl || '/user/profile', query: redirectParams }
+      return { path: redirectPageUrl || '/account/settings', query: redirectParams }
     }
 
     // Capture page view
     if (to.meta.trackRoute) {
-      $api.post('/page-view/', getAjaxFormData({
+      const resp = await $api.post('/page-view/', getAjaxFormData({
         relative_url: to.path,
         filter_id: to.params.filterId,
+        employer_key: to.params.employerKey,
         query: to.query
       }))
+      to.meta.browserLocation = resp.data?.location
     }
 
     // Redirect if user doesn't have access to a specific page
     try {
       const resp = await $api.get('auth/check-auth/')
-      const { user, deploy_ts: deployTS } = resp.data
-
-      // Dynamically imported modules fail to load when a new code version is deployed
-      // The entire page needs to be refreshed when this occurs
-      const localDeployTS = localStorage.getItem(DEPLOY_TS_KEY)
-      if (deployTS && (localDeployTS !== deployTS)) {
-        localStorage.setItem(DEPLOY_TS_KEY, deployTS)
-        window.location = to.path
-      }
+      const { user } = resp.data
 
       const isAuthenticated = user && !dataUtil.isEmptyOrNil(user)
 
@@ -70,11 +92,15 @@ export default boot(({ app, router }) => {
         return { name: 'login', query: { redirectPageUrl: to.path } }
       }
 
+      if (isAuthenticated && ['home', 'login'].includes(to.name)) {
+        return pagePermissionsUtil.getDefaultLandingPage(user)
+      }
+
       const { canView, canEdit } = pagePermissionsUtil.getUserPagePermissions(user, to.name)
 
       // Redirect user to page where they can verify their email if they haven't already
       if (!canView) {
-        return { name: 'profile', params: { namespace: 'user', key: 'profile' }, query: { tab: 'security' } }
+        return { name: 'settings', params: { namespace: 'account', key: 'settings' }, query: { tab: 'security' } }
       }
 
       // Add meta permission to edit which can be used by the page

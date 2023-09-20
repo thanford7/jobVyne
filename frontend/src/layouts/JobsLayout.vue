@@ -1,46 +1,121 @@
 <template>
-  <q-layout view="hHr lpR fFf">
+  <q-layout view="lHr LpR fFf">
 
-    <q-header v-if="isLoaded" elevated class="bg-white text-primary">
+    <q-header v-if="isLoaded" ref="header" elevated reveal class="bg-white text-primary">
       <div class="justify-center row" style="position: relative">
         <q-toolbar class="col-12 col-md-11 col-lg-8 q-pt-md q-px-none justify-center">
           <q-toolbar-title shrink>
-            <img v-if="employer?.logo_url" :src="employer.logo_url" alt="Logo"
-                 style="max-height: 40px; max-width: 120px; object-fit: scale-down">
+            <img v-if="isUserPage" :src="profile.profile_picture_url" alt="Profile Picture"
+                 style="height: 40px; max-width: 120px; object-fit: scale-down; border-radius: 50px;">
+            <img v-else-if="employer?.logo_url" :src="employer.logo_url" alt="Logo"
+                 style="height: 40px; max-width: 120px; object-fit: scale-down">
             <img v-else src="~assets/jobVyneLogo.png" alt="Logo"
-                 style="max-height: 40px; max-width: 120px; object-fit: scale-down">
+                 style="height: 40px; max-width: 120px; object-fit: scale-down">
           </q-toolbar-title>
         </q-toolbar>
+        <template v-if="isEmployerPage">
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-md-sm flex justify-center text-h6 text-center"
+          >
+            {{ employer.name }}
+          </div>
+          <div
+            v-if="employer.description && !utilStore.isUnderBreakPoint('sm')"
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center text-center"
+          >
+            {{ employer.description }}
+          </div>
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center items-center text-center text-small">
+            <a v-if="employer.website" :href="`https://www.${employer.website}`" target="_blank">Website</a>
+            <template v-if="employer.ats_name">
+              &nbsp;
+              <CustomTooltip :is_include_icon="false">
+                <template v-slot:icon>
+                  <q-chip size="12px" color="gray-8" dense outline>{{ employer.ats_name }}</q-chip>
+                </template>
+                This is the Applicant Tracking System (ATS) that {{ employer.name }} uses. Some ATSs are easier to use
+                compared with others. If you've been job searching for a bit of time, you'll know which ones 😆
+              </CustomTooltip>
+            </template>
+          </div>
+        </template>
+        <template v-else-if="isUserPage">
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-md-sm flex justify-center text-h6 text-center"
+          >
+            {{ profile.first_name }} {{ profile.last_name }}
+          </div>
+          <div
+            class="col-12 col-md-11 col-lg-8 q-px-lg q-mb-sm flex justify-center text-center"
+          >
+            <LocationChip v-if="profile.home_location" :locations="[profile.home_location]" icon="home"/>
+            <q-chip
+              v-if="profile.job_title"
+              color="grey-7" text-color="white" size="md" icon="work"
+            >
+              {{ profile.job_title }}
+            </q-chip>
+            <q-chip
+              v-if="profile.employer_name"
+              color="grey-7" text-color="white" size="md" icon="business"
+            >
+              {{ profile.employer_name }}
+            </q-chip>
+          </div>
+        </template>
         <div class="q-pt-md flex" style="position: absolute; top: 0; right: 10px;">
-          <div class="q-mr-md clickable" :style="employerStyleUtil.getTabStyle(employer)" @click="openFeedbackModal()">
-            <div class="flex flex-center">
-              <q-icon name="feedback" size="24px"/>
-            </div>
-            <div>Get help</div>
-          </div>
-          <div v-if="user && !dataUtil.isEmpty(user)">
-            <div class="row flex-center">
-              <q-avatar v-if="user.profile_picture_url" size="24px">
-                <img :src="user.profile_picture_url">
-              </q-avatar>
-              <q-avatar v-else color="primary" text-color="white" size="24px">
-                {{ userUtil.getUserInitials(user) }}
-              </q-avatar>
-            </div>
-            <div>
-              <a href="#" @click.prevent="logoutUser()" id="jv-logout" style="color: gray">Logout</a>
-            </div>
-          </div>
+          <q-btn
+            unelevated round dense color="grey-8"
+            :icon="(isLeftDrawerOpen) ? 'close' : 'menu'"
+            @click="isLeftDrawerOpen = !isLeftDrawerOpen"
+          />
         </div>
         <ResponsiveWidth class="justify-center">
           <q-tabs align="center" v-model="tab" :style="employerStyleUtil.getTabStyle(employer)">
             <q-tab id="jv-tab-jobs" name="jobs" label="Jobs"/>
-            <q-tab v-if="isShowEmployeeProfile" id="jv-tab-me" name="me"
-                   :label="`About ${profile?.first_name}`"/>
+            <q-tab
+              v-if="isUserPage && profile.has_connections" id="jv-tab-connections" name="connections" :disable="!user?.can_view_other_connections"
+            >
+              <CustomTooltip v-if="!user?.can_view_other_connections" :is_include_icon="false">
+                <template v-slot:content>
+                  Connections <q-icon name="lock"/>
+                </template>
+                You must login or create an account and share your connections to view others' connections
+              </CustomTooltip>
+              <span v-else>Connections</span>
+            </q-tab>
+            <q-tab
+              v-if="employerTypeUtil.isTypeGroup(employer?.organization_type)"
+              id="jv-tab-community" name="community" label="Community"
+            />
           </q-tabs>
         </ResponsiveWidth>
       </div>
     </q-header>
+
+    <BaseSidebar
+      v-model="isLeftDrawerOpen" side="left"
+      @login="loadUserData()"
+      @logout="loadUserData()"
+    >
+      <template v-slot:menuItems>
+        <template v-if="user?.id && userTypeUtil.isCandidate(user.user_type_bits)">
+          <SidebarMenuItem
+            menu-label="Job Applications" icon-name="contact_page"
+            @click="openNewCandidatePage('candidate-dashboard')"
+          />
+          <SidebarMenuItem
+            menu-label="Favorites" icon-name="star"
+            @click="openNewCandidatePage('candidate-favorites')"
+          />
+          <SidebarMenuItem
+            menu-label="Connections" icon-name="hub"
+            @click="openNewCandidatePage('candidate-connections')"
+          />
+        </template>
+      </template>
+    </BaseSidebar>
 
     <q-drawer
       v-if="jobApplication"
@@ -54,149 +129,74 @@
         ref="jobApplicationForm"
         :job-application="jobApplication"
         :employer="employer"
-        @login="loadData()"
-        @closeApplication="closeApplication"
+        @login="loadUserData()"
+        @updateApplications="$refs.jobs.loadJobs(true)"
+        @closeApplication="closeJobApplication()"
       />
       <div v-if="isRightDrawerOpen" class="absolute" style="top: 10px; left: -16px">
         <q-btn
           dense round unelevated
           color="grey-5"
           icon="chevron_right"
-          @click="closeApplication()"
+          @click="closeJobApplication()"
         />
       </div>
     </q-drawer>
 
     <q-page-container class="q-pt-none">
-      <q-page v-if="isLoaded" class="scroll">
-        <q-tab-panels v-model="tab" animated keep-alive>
-          <q-tab-panel name="jobs" style="position: relative">
+      <q-page v-if="isLoaded">
+        <q-tab-panels v-model="tab" animated keep-alive class="no-overflow" :style="`marginTop: ${bannerHeight}px`">
+          <q-tab-panel name="jobs" style="position: relative;">
+            <JobsSection
+              v-if="tab === 'jobs'"
+              ref="jobs"
+              :user="user"
+              :employer="employer"
+              :user-favorites="userFavorites"
+              @openAppSideBar="openJobApplication"
+              @closeAppSideBar="isRightDrawerOpen = false"
+              @updateUserFavorites="loadUserFavorites(true)"
+              @userSignup="openSignUpDialog($event)"
+            />
+          </q-tab-panel>
+          <q-tab-panel name="connections">
             <div class="row justify-center">
-              <ResponsiveWidth>
-                <div class="row">
-                  <div v-if="!user || dataUtil.isEmpty(user)" class="col-12 q-mb-md">
-                    <q-card flat class="border-4-info">
-                      <q-card-section class="text-center text-bold">
-                        Want to track all your job applications?
-                        <a href="#" @click.prevent="openLoginModal(false)">Login</a>
-                        or <a href="#" @click.prevent="openLoginModal(true)">create an account</a>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-                  <div class="col-12 q-mt-md">
-                    <CollapsableCard title="Job filters" :is-dense="true">
-                      <template v-slot:body>
-                        <div class="col-12 q-pa-sm">
-                          <q-form class="row q-gutter-y-sm">
-                            <div class="col-12 col-md-4 q-pr-md-sm">
-                              <q-input
-                                v-model="jobFilters.search_regex"
-                                filled
-                                :label="(isSingleEmployer) ? 'Job title' : 'Job title or Company'"
-                                debounce="500"
-                                @keyup.enter="loadData()"
-                              >
-                                <template v-slot:append>
-                                  <q-icon name="search"/>
-                                </template>
-                              </q-input>
-                            </div>
-                            <div class="col-12 col-md-8 q-pl-md-sm">
-                              <InputLocation
-                                v-model:location="jobFilters.location"
-                                v-model:range_miles="jobFilters.range_miles"
-                                :is-include-range="true"
-                                @update:location="loadData()"
-                                @update:range_miles="loadData()"
-                              />
-                            </div>
-                            <div class="col-12 col-md-4 q-pr-md-sm">
-                              <SelectRemote v-model="jobFilters.remote_type_bit" @update:model-value="loadData()"/>
-                            </div>
-                            <div class="col-12 col-md-4 q-pl-md-sm">
-                              <MoneyInput
-                                v-model:money-value="jobFilters.minimum_salary"
-                                v-model:currency-name="jobFilters.currency"
-                                :is-include-currency-selection="false"
-                                label="Minimum salary"
-                                @submit="loadData()"
-                              />
-                            </div>
-                            <div class="col-12">
-                              <q-btn ref="filterSubmit" color="primary" label="Search" @click="loadData()"/>
-                            </div>
-                          </q-form>
-                        </div>
-                      </template>
-                    </CollapsableCard>
-                  </div>
-                  <div v-if="jobFilters?.job_ids?.length && totalEmployerJobCount > jobFilters.job_ids.length"
-                       class="col-12 q-mt-md">
-                    <q-btn
-                      class="w-100" :label="`View all ${totalEmployerJobCount} jobs`"
-                      icon="visibility" :style="employerStyleUtil.getButtonStyle(employer)"
-                      @click="resetJobFilters"
-                    />
-                  </div>
-                  <q-pagination
-                    v-if="jobPagesCount > 1"
-                    v-model="pageNumber"
-                    :max-pages="5"
-                    :max="jobPagesCount"
-                    input
-                    class="q-mt-md"
-                  />
-                  <JobCards
-                    class="col-12 q-mt-md"
-                    :employer="employer"
-                    :jobs-by-employer="jobsByEmployer"
-                    :applications="applications"
-                    :job-application="jobApplication"
-                    :job-pages-count="jobPagesCount"
-                    @openApplication="openApplication($event)"
-                  />
-                  <q-pagination
-                    v-if="jobPagesCount > 1"
-                    v-model="pageNumber"
-                    :max-pages="5"
-                    :max="jobPagesCount"
-                    input
-                    class="q-mt-md"
-                  />
-                </div>
-              </ResponsiveWidth>
+              <div class="col-12 col-lg-10 q-pa-md-lg">
+                <ConnectionsTable v-if="user.id" :is-owner="false"/>
+                <q-card v-else flat class="border-1-negative">
+                  <q-card-section class="text-h6 text-center">
+                    <q-icon name="dangerous" color="negative"/>
+                    You must login to view this section
+                  </q-card-section>
+                </q-card>
+              </div>
             </div>
           </q-tab-panel>
-          <q-tab-panel name="me" v-if="isShowEmployeeProfile" class="q-pa-none">
-            <div class="row justify-center q-px-xl q-pt-xl bg-grey-3">
-              <div class="col-12 col-md-3 q-pr-md-md q-mb-md q-mb-md-none">
-                <div class="flex items-center">
-                  <img
-                    v-if="profile.profile_picture_url"
-                    :src="profile.profile_picture_url"
-                    alt="Profile picture"
-                    class="q-mr-md"
-                    style="height: 150px; object-fit: scale-down; border-radius: 10px; float: left;"
-                  >
-                  <div class="q-gutter-y-sm">
-                    <div class="text-h6 text-bold">{{ profile.first_name }} {{ profile.last_name }}</div>
-                    <div>{{ profile.job_title }}</div>
-                    <div v-if="profile.home_location">{{ locationUtil.getFullLocation(profile.home_location) }}</div>
-                    <div v-if="profile.employment_start_date">
-                      {{ dataUtil.pluralize('year', employmentYears) }} at {{ employer.name }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-md-4 q-pl-md-md">
-                <div v-for="response in profile.profile_responses">
-                  <div class="text-h6">{{ response.question }}</div>
-                  <div class="q-mt-sm q-mb-md">{{ response.response }}</div>
-                </div>
-              </div>
-            </div>
+          <q-tab-panel name="community">
+            <CommunitySection
+              v-if="tab === 'community'"
+              :user="user"
+              :employer="employer"
+            />
           </q-tab-panel>
         </q-tab-panels>
+        <q-page-scroller position="bottom-right" :scroll-offset="100" :offset="[40, 40]">
+          <q-btn round color="primary" icon="arrow_upward"/>
+        </q-page-scroller>
+        <q-page-sticky ref="signUpBanner" v-if="!user?.id" expand position="top">
+          <q-toolbar class="items-center text-center border-y-1-primary bg-white">
+            <div class="w-100 q-py-sm">
+              🍇 Join The JobVyne Community | We Help Each Other Find Jobs 🍇
+              <q-btn
+                :class="utilStore.isUnderBreakPoint('sm') ? 'w-100 q-mt-sm' : ''"
+                filled rounded color="accent" style="min-width: 100px;"
+                @click="openSignUpDialog()"
+              >
+                Join
+              </q-btn>
+            </div>
+          </q-toolbar>
+        </q-page-sticky>
       </q-page>
     </q-page-container>
 
@@ -205,23 +205,27 @@
 </template>
 
 <script>
-import CollapsableCard from 'components/CollapsableCard.vue'
-import DialogFeedback from 'components/dialogs/DialogFeedback.vue'
-import DialogJobApp from 'components/dialogs/DialogJobApp.vue'
-import DialogLogin from 'components/dialogs/DialogLogin.vue'
-import InputLocation from 'components/inputs/InputLocation.vue'
-import MoneyInput from 'components/inputs/MoneyInput.vue'
-import SelectRemote from 'components/inputs/SelectRemote.vue'
+import CustomTooltip from 'components/CustomTooltip.vue'
+import dialogLogin from 'components/dialogs/DialogLogin.vue'
+import DialogUserProfile from 'components/dialogs/DialogUserProfile.vue'
 import FormJobApplication from 'components/job-app-form/FormJobApplication.vue'
-import JobCards from 'pages/jobs-page/JobCards.vue'
+import LocationChip from 'components/LocationChip.vue'
+import BaseSidebar from 'components/sidebar/BaseSidebar.vue'
+import SidebarMenuItem from 'components/sidebar/SidebarMenuItem.vue'
+import ConnectionsTable from 'pages/candidate/connections-page/ConnectionsTable.vue'
+import CommunitySection from 'pages/jobs-page/CommunitySection.vue'
+import JobsSection from 'pages/jobs-page/JobsSection.vue'
+import colorUtil from 'src/utils/color.js'
 import employerStyleUtil from 'src/utils/employer-styles.js'
+import employerTypeUtil from 'src/utils/employer-types.js'
+import pagePermissionsUtil from 'src/utils/permissions.js'
 import scrollUtil from 'src/utils/scroll.js'
-import { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
+import userTypeUtil, { USER_TYPE_CANDIDATE, USER_TYPES } from 'src/utils/user-types.js'
 import userUtil from 'src/utils/user.js'
 import { useEmployerStore } from 'stores/employer-store.js'
+import { useSocialStore } from 'stores/social-store.js'
 import { useUserStore } from 'stores/user-store.js'
 import { useUtilStore } from 'stores/utility-store.js'
-import { ref } from 'vue'
 import CustomFooter from 'components/CustomFooter.vue'
 import locationUtil from 'src/utils/location'
 import dataUtil from 'src/utils/data'
@@ -232,238 +236,187 @@ import dateTimeUtil from 'src/utils/datetime'
 import { storeToRefs } from 'pinia/dist/pinia'
 import ResponsiveWidth from 'components/ResponsiveWidth.vue'
 
-const jobFiltersTemplate = {
-  job_ids: [],
-  location: null,
-  range_miles: 50,
-  search_regex: '',
-  remote_type_bit: null,
-  minimum_salary: null
-}
-
 export default {
   data () {
     return {
       tab: this.$route?.params?.tab || 'jobs',
       pageNumber: 1,
-      totalEmployerJobCount: null,
-      jobsByEmployer: null,
+      isRightDrawerOpen: false,
+      isLeftDrawerOpen: false,
+      user: null,
+      userFavorites: {},
       employer: null,
       profile: null,
       isLoaded: false,
       jobApplication: null,
-      jobPagesCount: null,
-      jobFilters: {},
+      bannerHeight: 0,
+      colorUtil,
       dataUtil,
       dateTimeUtil,
       employerStyleUtil,
+      employerTypeUtil,
       locationUtil,
-      userUtil
+      pagePermissionsUtil,
+      scrollUtil,
+      userUtil,
+      userTypeUtil,
+      authStore: useAuthStore(),
+      employerStore: useEmployerStore(),
+      socialStore: useSocialStore(),
+      userStore: useUserStore(),
+      utilStore: useUtilStore(),
+      q: useQuasar(),
+      USER_TYPES,
+      USER_TYPE_CANDIDATE
     }
   },
   components: {
-    InputLocation,
-    MoneyInput,
+    ConnectionsTable,
+    LocationChip,
+    CustomTooltip,
+    SidebarMenuItem,
+    BaseSidebar,
+    CommunitySection,
+    JobsSection,
     ResponsiveWidth,
     CustomFooter,
-    FormJobApplication,
-    JobCards,
-    CollapsableCard,
-    SelectRemote
+    FormJobApplication
   },
   computed: {
-    isSingleEmployer () {
-      return this.jobsByEmployer.length === 1
+    isEmployerPage () {
+      return ['company', 'group'].includes(this.$route.name)
     },
-    employmentYears () {
-      if (!this.profile.employment_start_date) {
-        return null
-      }
-      return dateTimeUtil.getDateDifference(this.profile.employment_start_date, dateTimeUtil.now(), 'years')
-    },
-    isShowEmployeeProfile () {
-      return Boolean(this.profile && this.profile.is_profile_viewable && this.profile.profile_responses.length)
+    isUserPage () {
+      return dataUtil.getBoolean(this.$route.params.userKey)
     }
   },
   watch: {
-    pageNumber: {
-      async handler () {
-        await this.loadData({ pageNumber: this.pageNumber })
-      }
+    tab () {
+      this.$router.replace({
+        name: this.$route.name,
+        params: this.$route.params,
+        query: { ...this.$route.query, tab: this.tab }
+      })
+    },
+    user () {
+      this.setBannerHeight()
     }
   },
   methods: {
-    log (x) {
-      console.log(x)
-    },
     getFullLocation: locationUtil.getFullLocation,
-    resetJobFilters () {
-      this.jobFilters = Object.assign({}, jobFiltersTemplate)
-    },
-    async closeApplication () {
-      this.isRightDrawerOpen = false
-      this.jobApplication = null
-      await this.$router.replace({
-        name: this.$route.name,
-        query: dataUtil.omit(this.$route.query || {}, ['jobId'])
-      })
-    },
-    getJobApplicationById (jobId) {
-      for (const employer of this.jobsByEmployer) {
-        for (const jobPositions of Object.values(employer.jobs)) {
-          for (const jobs of Object.values(jobPositions)) {
-            for (const job of jobs) {
-              if (job.id === jobId) {
-                return job
-              }
-            }
-          }
-        }
+    async loadUserData () {
+      if (!this.user.id) {
+        return
       }
+      await Promise.all([
+        this.loadUserFavorites()
+      ])
     },
-    async openApplication (jobId) {
-      this.jobApplication = this.getJobApplicationById(jobId)
-      await this.$router.replace({ name: this.$route.name, query: Object.assign({}, this.$route.query, { jobId }) })
-      if (window.innerWidth < 600) {
-        this.openJobAppModal(this.jobApplication).onDismiss(() => this.closeApplication())
-      } else {
-        this.isRightDrawerOpen = true
+    async loadUserFavorites (isForceRefresh = true) {
+      if (!this.user?.id) {
+        this.userFavorites = {}
+        return
       }
-      scrollUtil.scrollToElement(document.getElementById(`job-${jobId}`))
+      await this.userStore.setUserFavorites(this.user.id, { isForceRefresh })
+      this.userFavorites = this.userStore.getUserFavorites(this.user.id)
     },
-    async logoutUser () {
-      await this.authStore.logout(false)
-      await this.loadData()
+    async setLinkOwnerProfile () {
+      const params = { userKey: this.$route.params.userKey }
+      await this.userStore.setUserProfile(params)
+      this.profile = this.userStore.getUserProfile(params)
     },
-    async loadData ({ isFirstLoad = false, pageNumber = 1 } = {}) {
+    async setEmployer () {
+      const params = {
+        socialLinkId: this.$route.params.filterId,
+        employerKey: this.$route.params.employerKey
+      }
+      await this.socialStore.setSocialLinkEmployer(params)
+      this.employer = this.socialStore.getSocialLinkEmployer(params)
+    },
+    async loadData () {
       this.isLoaded = false
       Loading.show()
-      const isExample = this.$route.meta.isExample
-      let url = 'social-link-jobs/'
-      if (this.$route.params.filterId) {
-        url = `${url}${this.$route.params.filterId}`
-      }
-      const params = {
-        page_count: pageNumber,
-        employer_id: this.$route.params.employerId
-      }
-      // After the first page load, job filters are managed through the UI
-      if (!isFirstLoad || isExample) {
-        Object.assign(params, this.jobFilters)
-      }
-      const resp = await this.$api.get(url, { params })
-      const {
-        jobs_by_employer: jobsByEmployer,
-        employer,
-        total_page_count: totalPageCount,
-        owner_id: ownerId,
-        filter_values: filterValues,
-        total_employer_job_count: totalEmployerJobCount
-      } = resp.data
-
-      if (isFirstLoad) {
-        Object.assign(this.jobFilters, filterValues)
-      }
-      this.totalEmployerJobCount = totalEmployerJobCount
-      if (!isExample) {
-        await Promise.all([
-          this.authStore.setApplications(this.user)
-        ])
-        if (ownerId) {
-          await this.userStore.setUserProfile(ownerId)
-        }
-        this.profile = storeToRefs(this.userStore).userProfile
-      } else {
-        if (this.$route.params.ownerId) {
-          await this.userStore.setUserProfile(this.$route.params.ownerId)
-          this.profile = this.userStore.userProfile
-        } else {
-          this.profile = null
-        }
-      }
-      this.jobsByEmployer = jobsByEmployer || []
-      this.employer = employer
-
-      this.jobPagesCount = totalPageCount
+      await Promise.all([
+        this.setLinkOwnerProfile(),
+        this.setEmployer()
+      ])
       this.isLoaded = true
       Loading.hide()
     },
-    openJobAppModal (jobApplication) {
-      return this.q.dialog({
-        component: DialogJobApp,
-        componentProps: { jobApplication, employer: this.employer },
-        noRouteDismiss: true
-      })
-    },
-    openFeedbackModal () {
-      return this.q.dialog({
-        component: DialogFeedback
-      })
-    },
-    openLoginModal (isCreate) {
-      return this.q.dialog({
-        component: DialogLogin,
+    openSignUpDialog (additionalParams) {
+      this.q.dialog({
+        component: dialogLogin,
         componentProps: {
-          isCreate,
+          isCreateDefault: true,
           redirectPageUrl: window.location.pathname,
-          redirectParams: dataUtil.getQueryParams(),
-          userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE],
-          styleOverride: this.employerStyleUtil.getButtonStyle(this.employer)
+          redirectParams: Object.assign(dataUtil.getQueryParams(), { isSignUp: true }, additionalParams || {}),
+          userTypeBit: USER_TYPES[USER_TYPE_CANDIDATE]
         }
       })
+    },
+    openNewCandidatePage (pageKey) {
+      const newPage = this.$router.resolve(
+        this.pagePermissionsUtil.getRouterPageCfg(pageKey, USER_TYPES[USER_TYPE_CANDIDATE])
+      )
+      window.open(newPage.href, '_blank')
+    },
+    openJobApplication (jobApplication) {
+      this.jobApplication = jobApplication
+      this.isRightDrawerOpen = true
+    },
+    async closeJobApplication () {
+      this.jobApplication = null
+      await this.$refs.jobs.closeApplication()
+    },
+    openUserProfile () {
+      if (this.$route.query?.isSignUp) {
+        if (this.user?.id) {
+          this.q.dialog({
+            component: DialogUserProfile
+          })
+        }
+        const query = dataUtil.omit(this.$route.query, ['isSignUp'])
+        this.$router.replace({ query })
+        const fullPath = dataUtil.getUrlWithParams({ deleteParams: ['isSignUp'] })
+        window.history.replaceState({ path: fullPath }, '', fullPath)
+      }
+    },
+    setBannerHeight () {
+      if (this.$refs.signUpBanner) {
+        this.bannerHeight = this.$refs.signUpBanner.$el.getBoundingClientRect().height
+      } else {
+        this.bannerHeight = 0
+      }
     }
+  },
+  updated () {
+    this.openUserProfile()
   },
   async mounted () {
-    this.resetJobFilters()
-    const params = Object.entries(dataUtil.getQueryParams()).reduce((params, [key, val]) => {
-      params[key] = dataUtil.getForceArray(parseInt(val))
-      return params
-    }, {})
-    Object.assign(this.jobFilters, params)
-    await this.loadData({ isFirstLoad: true })
-
-    const { jobId } = dataUtil.getQueryParams()
-    if (jobId) {
-      this.openApplication(parseInt(jobId))
-    }
-
-    this.isLoaded = true
-  },
-  preFetch () {
-    const authStore = useAuthStore()
     Loading.show()
-
-    return authStore.setUser().finally(() => {
-      Loading.hide()
-    })
+    await this.authStore.setUser()
+    const { user } = storeToRefs(this.authStore)
+    this.user = user
+    Loading.hide()
+    await Promise.all([
+      this.loadData(),
+      this.loadUserFavorites(false)
+    ])
+    const { tab } = this.$route.query
+    if (tab) {
+      this.tab = tab
+    }
+    this.setBannerHeight()
+    this.isLoaded = true
+    this.openUserProfile()
   },
   setup () {
-    const isRightDrawerOpen = ref(false)
     const globalStore = useGlobalStore()
-    const authStore = useAuthStore()
-    const { user, applications } = storeToRefs(authStore)
 
     useMeta(globalStore.getMetaCfg({
       pageTitle: 'Jobs',
       description: 'Apply to jobs on JobVyne'
     }))
-
-    return {
-      user,
-      applications,
-      isRightDrawerOpen,
-      authStore,
-      employerStore: useEmployerStore(),
-      userStore: useUserStore(),
-      utilStore: useUtilStore(),
-      q: useQuasar()
-    }
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.application-date {
-  padding: 8px;
-}
-</style>

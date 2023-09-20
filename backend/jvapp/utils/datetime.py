@@ -1,9 +1,16 @@
 import time
 from datetime import datetime, timezone
 from enum import IntEnum
+from math import ceil
 
 import pytz
 from dateutil.parser import parse
+
+
+TIME_INTERVAL_SECONDS = 'seconds'
+TIME_INTERVAL_MINUTES = 'minutes'
+TIME_INTERVAL_HOURS = 'hours'
+TIME_INTERVAL_DAYS = 'days'
 
 
 # Keep in sync with DAYS_OF_WEEK in datetime.js
@@ -37,10 +44,13 @@ dow_bit_map = {
 }
 
 
-def get_datetime_format_or_none(val):
+def get_datetime_format_or_none(val, format_str: str = None):
     """Serialize a date or datetime value if it exists, otherwise return None"""
     if val:
-        return val.isoformat()
+        if not format_str:
+            return val.isoformat()
+        else:
+            return val.strftime(format_str)
     return None
 
 
@@ -80,3 +90,17 @@ def get_datetime_minutes(target_dt: datetime):
 
 def get_dow_bit(target_dt: datetime):
     return dow_bit_map[target_dt.weekday()]
+
+
+def get_datetime_diff(earlier_time: datetime, later_time: datetime, interval=TIME_INTERVAL_SECONDS, round_to=0):
+    diff_seconds = (later_time - earlier_time).total_seconds()
+    if interval == TIME_INTERVAL_SECONDS:
+        return round(diff_seconds, round_to)
+    if interval == TIME_INTERVAL_MINUTES:
+        return round(diff_seconds / 60, round_to)
+    if interval == TIME_INTERVAL_HOURS:
+        return round(diff_seconds / (60 * 60), round_to)
+    if interval == TIME_INTERVAL_DAYS:
+        return round(diff_seconds / (60 * 60 * 24), round_to)
+    raise ValueError('Unsupported time interval')
+    

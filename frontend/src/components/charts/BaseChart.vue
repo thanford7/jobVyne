@@ -28,7 +28,6 @@
 </template>
 
 <script>
-import { chartProps } from 'components/charts/chartProps.js'
 import DialogShowDataTable from 'components/dialogs/DialogShowDataTable.vue'
 import DateRangeSelector from 'components/inputs/DateRangeSelector.vue'
 import { useQuasar } from 'quasar'
@@ -39,7 +38,24 @@ let chartCount = 0
 export default {
   name: 'BaseChart',
   components: { DateRangeSelector },
-  props: chartProps,
+  props: {
+    chartType: String,
+    chartTitle: [String, null],
+    chartOptions: {
+      type: Object,
+      default: () => ({})
+    },
+    dateRange: {
+      type: Object
+    },
+    isIncludeDateRange: {
+      type: Boolean,
+      default: true
+    },
+    isLoading: Boolean,
+    seriesCfgs: Array,
+    labels: [Array, null]
+  },
   data () {
     return {
       chart: null,

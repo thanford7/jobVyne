@@ -103,10 +103,6 @@ class DataUtil {
     )
   }
 
-  getUrlWithoutQueryParams () {
-    return window.location.origin + window.location.pathname
-  }
-
   getQueryParams () {
     const searchParams = new URLSearchParams(window.location.search)
     const paramDict = {}
@@ -125,6 +121,30 @@ class DataUtil {
     return paramDict
   }
 
+  getParamsFromUrl (url, asString = true) {
+    const pathParts = url.split('?')
+    let paramString = ''
+    if (pathParts.length > 1) {
+      paramString = pathParts[1]
+    }
+    if (asString) {
+      return `?${paramString}`
+    }
+    const params = {}
+    paramString.split('&').forEach((param) => {
+      const [paramKey, paramValue] = param.split('=')
+      if (!paramKey?.length) {
+        return
+      }
+      if (paramKey in params) {
+        params[paramKey].push(paramValue)
+      } else {
+        params[paramKey] = [paramValue]
+      }
+    })
+    return params
+  }
+
   /**
    * Get a modified URL string
    * @param isExcludeExistingParams {Boolean}: If true, remove all existing params
@@ -137,7 +157,17 @@ class DataUtil {
     if (!('URLSearchParams' in window)) {
       return
     }
-    const searchParams = (isExcludeExistingParams) ? new URLSearchParams() : new URLSearchParams(window.location.search)
+
+    let params = window.location.search
+    if (path) {
+      const pathParts = path.split('?')
+      if (pathParts.length > 1) {
+        path = pathParts[0]
+        params = `?${pathParts[1]}`
+      }
+    }
+
+    const searchParams = (isExcludeExistingParams) ? new URLSearchParams() : new URLSearchParams(params)
 
     this.getForceArray(deleteParams).forEach((paramKey) => searchParams.delete(paramKey))
     this.getForceArray(addParams).forEach(({ key, val }) => {
@@ -210,6 +240,10 @@ class DataUtil {
       restOfString = restOfString.toLowerCase()
     }
     return firstLetter + restOfString
+  }
+
+  removeStringSpecialChars (text) {
+    return text.replace(/[^a-zA-Z0-9]/g, '')
   }
 
   concatWithAnd (list) {

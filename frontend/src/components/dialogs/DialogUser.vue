@@ -2,6 +2,7 @@
   <DialogBase
     :base-title-text="titleText"
     :primary-button-text="(!this.user_ids) ? 'Create' : 'Update'"
+    :isValidFormFn="isValidForm"
     @ok="saveUser"
   >
     <q-form ref="form" v-if="isSingle">
@@ -32,6 +33,16 @@
         lazy-rules
         :rules="[ val => val && val.length > 0 && formUtil.isGoodEmail(val) || 'Please enter a valid email']"
       />
+      <SelectJobProfession
+        v-model="formDataSingle.profession_id"
+        label="Job department" class="q-mb-md"
+        :is-required="false" :is-multi="false"
+      />
+      <SelectYesNo
+        v-if="isAdmin"
+        v-model="formDataSingle.is_employer_owner" :is-multi="false" label="Is account owner"
+        class="q-mb-md"
+      />
       <SelectPermissionGroup
         label="Permission groups"
         v-model="formDataSingle.permission_group_ids"
@@ -39,7 +50,7 @@
       <PasswordInput
         v-if="isAdmin"
         v-model="formDataSingle.password"
-        :is-validate="true"
+        :is-validate="true" :is-required="false"
       />
     </q-form>
     <q-form ref="form" v-else>
@@ -61,10 +72,11 @@
 import DialogBase from 'components/dialogs/DialogBase.vue'
 import PasswordInput from 'components/inputs/PasswordInput.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
+import SelectJobProfession from 'components/inputs/SelectJobProfession.vue'
+import SelectYesNo from 'components/inputs/SelectYesNo.vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import dataUtil from 'src/utils/data'
 import formUtil from 'src/utils/form'
-import { useEmployerStore } from 'stores/employer-store'
 import { getAjaxFormData } from 'src/utils/requests'
 import { useAuthStore } from 'stores/auth-store'
 import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
@@ -87,7 +99,7 @@ export default {
   name: 'DialogUser',
   extends: DialogBase,
   inheritAttrs: false,
-  components: { PasswordInput, SelectPermissionGroup, DialogBase, SelectEmployer },
+  components: { SelectYesNo, SelectJobProfession, PasswordInput, SelectPermissionGroup, DialogBase, SelectEmployer },
   data () {
     return {
       user_ids: null,
@@ -126,11 +138,10 @@ export default {
     }
   },
   methods: {
+    async isValidForm () {
+      return await this.$refs.form.validate()
+    },
     async saveUser () {
-      const isValid = await this.$refs.form.validate()
-      if (!isValid) {
-        return
-      }
       const ajaxFn = (this.user_ids) ? this.$api.put : this.$api.post
       const data = {}
       if (this.user_ids) {
@@ -144,20 +155,12 @@ export default {
       this.$emit('ok')
     }
   },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    return employerStore.setEmployerPermissions()
-  },
   setup () {
     const authStore = useAuthStore()
     const { user } = storeToRefs(authStore)
-    return {
-      authStore,
-      employerStore: useEmployerStore(),
-      user
-    }
+    return { authStore, user }
   },
-  mounted () {
+  async mounted () {
     // Clear out the forms
     Object.assign(this.formDataSingle, FORM_DATE_SINGLE_TEMPLATE)
     Object.assign(this.formDataMulti, FORM_DATE_MULTI_TEMPLATE)
@@ -166,7 +169,7 @@ export default {
     if (dataUtil.isObject(this.users) || this?.users?.length === 1) {
       const user = Array.isArray(this.users) ? this.users[0] : this.users
       this.user_ids = [user.id]
-      Object.assign(this.formDataSingle, dataUtil.pick(user, ['first_name', 'last_name', 'email', 'employer_id']))
+      Object.assign(this.formDataSingle, dataUtil.pick(user, ['first_name', 'last_name', 'email', 'employer_id', 'profession_id']))
       this.formDataSingle.permission_group_ids = (user.employer_id) ? user.permission_groups_by_employer[user.employer_id].map((pg) => pg.id) : []
       this.isSingle = true
     } else if (this.users && this.users.length) { // Multiple users

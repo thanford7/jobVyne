@@ -1,3 +1,4 @@
+import { Cookies } from 'quasar'
 import dataUtil from 'src/utils/data'
 
 /**
@@ -55,8 +56,8 @@ export const openDialog = ($q, title, message, { isCancel = false, okFn, cancelF
   })
 }
 
-export const openConfirmDialog = ($q, message, { okFn, cancelFn, dismissFn }) => {
-  return openDialog($q, 'Confirm', message,
+export const openConfirmDialog = ($q, message, { title = 'Confirm', okFn, cancelFn, dismissFn }) => {
+  return openDialog($q, title, message,
     { isCancel: true, okFn, cancelFn, dismissFn }
   )
 }
@@ -72,4 +73,15 @@ export const getAssetsPath = (relativePath) => {
 
 export const makeApiRequestKey = (...args) => {
   return JSON.stringify(args)
+}
+
+export const openUrlInNewTab = (url) => {
+  window.open(url, '_blank')
+}
+
+export const getCsrfToken = (ssrContext) => {
+  const cookies = process.env.SERVER
+    ? Cookies.parseSSR(ssrContext)
+    : Cookies // otherwise we're on client
+  return cookies.get('csrftoken')
 }

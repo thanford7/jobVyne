@@ -422,6 +422,9 @@
                                 {% if is_unsubscribe %}
                                     {% include 'snippets/unsubscribe.html' %}
                                 {% endif %}
+                                {% if unsubscribe_url %}
+                                    {% include 'snippets/unsubscribe_no_user.html' %}
+                                {% endif %}
                                 <p>Questions or need help? Email us at {{ support_email }}</p>
                                 {% block footer %}{% endblock footer %}
                                 {% if is_employer_logo %}

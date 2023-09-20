@@ -1,29 +1,32 @@
 from collections import defaultdict
 from string import Template
 
-from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import IntegrityError
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.db.transaction import atomic
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
-    get_warning_response
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, get_error_response, \
+    get_success_response, get_warning_response
 from jvapp.apis.geocoding import LocationParser
 from jvapp.models.abstract import PermissionTypes
 from jvapp.models.content import SocialPost
-from jvapp.models.employer import Employer
+from jvapp.models.employer import Employer, EmployerJob
 from jvapp.models.user import JobVyneUser, UserApplicationReview, UserEmployeeProfileQuestion, \
-    UserEmployeeProfileResponse, UserFile, \
+    UserEmployeeProfileResponse, UserEmployerPermissionGroup, UserFile, \
     UserSocialCredential, \
     UserUnknownEmployer
 from jvapp.permissions.general import IsAuthenticatedOrPostOrRead
+from jvapp.serializers.employer import get_serialized_currency
+from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.user import get_serialized_user, get_serialized_user_file, get_serialized_user_profile
-from jvapp.utils.data import AttributeCfg, set_object_attributes
+from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, set_object_attributes
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.email import EMAIL_ADDRESS_SUPPORT, send_django_email
 from jvapp.utils.oauth import OAUTH_CFGS, OauthProviders
@@ -100,6 +103,10 @@ class UserView(JobVyneAPIView):
         if new_business_email != user.business_email:
             user.is_business_email_verified = False
         
+        # If the user's employer has changed, update their owner status
+        if ('employer_id' in self.data) and user.employer_id != self.data['employer_id']:
+            user.is_employer_owner = False
+        
         set_object_attributes(user, self.data, {
             'first_name': AttributeCfg(is_ignore_excluded=True),
             'last_name': AttributeCfg(is_ignore_excluded=True),
@@ -108,7 +115,8 @@ class UserView(JobVyneAPIView):
             'employer_id': AttributeCfg(is_ignore_excluded=True),
             'is_profile_viewable': AttributeCfg(is_ignore_excluded=True),
             'job_title': AttributeCfg(is_ignore_excluded=True),
-            'employment_start_date': AttributeCfg(is_ignore_excluded=True)
+            'profession_id': AttributeCfg(is_ignore_excluded=True),
+            'employment_start_date': AttributeCfg(is_ignore_excluded=True),
         })
         
         if 'profile_picture_url' in self.data and not self.data['profile_picture_url']:
@@ -116,7 +124,7 @@ class UserView(JobVyneAPIView):
         
         if profile_picture := self.files.get('profile_picture'):
             user.profile_picture = profile_picture[0]
-        
+            
         if home_location_text := self.data.get('home_location_text'):
             location_parser = LocationParser()
             location = location_parser.get_location(home_location_text)
@@ -148,36 +156,52 @@ class UserView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_user(user, user_id=None, user_email=None, user_filter=None, is_check_permission=True):
+    def get_user(
+            user, user_id=None, user_key=None, employer_id_permissions=None,
+            user_email=None, user_filter=None, is_check_permission=True,
+            is_include_fetch=True
+    ):
         if user_id:
             user_filter = Q(id=user_id)
         elif user_email:
             user_filter = Q(email=user_email) | Q(business_email=user_email)
+        elif user_key:
+            user_filter = Q(user_key=user_key)
+       
+        employer_permissions_filter = Q(employer_id=employer_id_permissions) if employer_id_permissions else Q()
+        employer_permissions = Prefetch(
+            'employer_permission_group',
+            queryset=UserEmployerPermissionGroup.objects.prefetch_related(
+                'employer',
+                'permission_group',
+                'permission_group__permissions'
+            ).filter(employer_permissions_filter)
+        )
         
-        users = JobVyneUser.objects \
-            .select_related('employer') \
-            .prefetch_related(
-                'application_template',
-                'employer_permission_group',
-                'employer_permission_group__employer',
-                'employer_permission_group__permission_group',
-                'employer_permission_group__permission_group__permissions',
-                'profile_response',
-                'profile_response__question',
-                'social_credential'
-            ) \
-            .annotate(is_approval_required=Count(
-                'employer_permission_group',
-                # Note this does not differentiate between different employers
-                # It's possible that a user needs permission from one employer, but not another
-                filter=Q(employer_permission_group__is_employer_approved=False)
-            )) \
-            .filter(user_filter)
+        users = JobVyneUser.objects.filter(user_filter)
         
         if is_check_permission:
             JobVyneUser.jv_filter_perm(user, users)
+            
+        if is_include_fetch:
+            users = (
+                users.select_related('employer', 'profession')
+                .prefetch_related(
+                    'application_template',
+                    'profile_response',
+                    'profile_response__question',
+                    'social_credential',
+                    employer_permissions
+                )
+                .annotate(is_approval_required=Count(
+                    'employer_permission_group',
+                    # Note this does not differentiate between different employers
+                    # It's possible that a user needs permission from one employer, but not another
+                    filter=Q(employer_permission_group__is_employer_approved=False)
+                ))
+            )
         
-        if user_id or user_email:
+        if any((user_id, user_email, user_key)):
             if not users:
                 raise JobVyneUser.DoesNotExist
             return users[0]
@@ -192,26 +216,26 @@ class UserView(JobVyneAPIView):
         try:
             return UserView.get_user(user, user_email=data['email'], is_check_permission=is_check_permission), False
         except JobVyneUser.DoesNotExist:
-            return JobVyneUser.objects.create_user(
-                data['email'],
+            user_data = dict(
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 employer_id=data.get('employer_id'),
+            )
+            if 'is_employer_owner' in data:
+                user_data['is_employer_owner'] = data.get('is_employer_owner')
+            return JobVyneUser.objects.create_user(
+                data['email'], **user_data
             ), True
     
     @staticmethod
     def send_password_reset_email(user, is_new=False):
-        
-        uid = get_uid_from_user(user)
-        token = generate_user_token(user, 'email')
-        reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
         send_django_email(
             'Reset Password',
             'emails/base_reset_password_email.html',
             to_email=user.email,
             django_context={
                 'supportEmail': EMAIL_ADDRESS_SUPPORT,
-                'reset_password_url': reset_password_url,
+                'reset_password_url': user.get_reset_password_link(),
                 'is_new': is_new,
                 'user': user
             },
@@ -239,16 +263,201 @@ class UserView(JobVyneAPIView):
 class UserProfileView(JobVyneAPIView):
     permission_classes = [AllowAny]
     
-    def get(self, request, user_id):
-        user = UserView.get_user(self.user, user_id=user_id, is_check_permission=False)
+    def get(self, request):
+        user_id = self.query_params.get('user_id')
+        user_key = self.query_params.get('user_key')
+        assert any((user_id, user_key))
+        user = UserView.get_user(self.user, user_id=user_id, user_key=user_key, is_check_permission=False)
         return Response(status=status.HTTP_200_OK, data=get_serialized_user_profile(user))
+    
+    def put(self, request):
+        user_id = self.data['user_id']
+        if user_id != self.user.id:
+            return get_error_response('You do not have permission to edit this user')
+        
+        try:
+            user = JobVyneUser.objects.get(id=user_id)
+        except JobVyneUser.DoesNotExist:
+            return get_error_response('This user does not exist')
+            
+        set_object_attributes(user, self.data, {
+            'first_name':  AttributeCfg(is_protect_existing=True),
+            'last_name': AttributeCfg(is_protect_existing=True),
+            'linkedin_url': AttributeCfg(is_ignore_excluded=True),
+            'professional_site_url': AttributeCfg(is_ignore_excluded=True),
+            'job_title': AttributeCfg(is_ignore_excluded=True),
+            'profession_id': AttributeCfg(is_ignore_excluded=True),
+            'work_remote_type_bit': AttributeCfg(is_ignore_excluded=True),
+        })
+        
+        if job_search_levels := self.data.get('job_search_levels'):
+            user.job_search_levels.set(job_search_levels)
+        if job_search_professions := self.data.get('job_search_professions'):
+            user.job_search_professions.set(job_search_professions)
+        
+        if 'home_postal_code' in self.data:
+            home_postal_code = self.data['home_postal_code']
+            if not home_postal_code:
+                user.home_location = None
+            else:
+                location_parser = LocationParser(is_use_location_caching=False)
+                home_location = location_parser.get_location(home_postal_code, is_zip_code=True)
+                user.home_location_id = home_location.id if home_location else None
+            
+        user.save()
+        return get_success_response('Updated user profile')
+    
+    
+class UserCreatedJobView(JobVyneAPIView):
+    
+    def get(self, request):
+        user_id = self.query_params.get('user_id')
+        is_approved = self.query_params.get('is_approved')
+        if is_approved is not None:
+            is_approved = coerce_bool(is_approved)
+        is_closed = self.query_params.get('is_closed')
+        if is_closed is not None:
+            is_closed = coerce_bool(is_closed)
+        page_count = coerce_int(self.query_params.get('page_count', 1))
+        jobs = self.get_user_jobs(self.user, user_id=user_id, is_approved=is_approved, is_closed=is_closed)
+        paged_jobs = Paginator(jobs, per_page=25)
+        
+        return Response(
+            status=status.HTTP_200_OK,
+            data={
+                'total_page_count': paged_jobs.num_pages,
+                'total_job_count': paged_jobs.count,
+                'jobs': [
+                    self.get_serialized_user_job(job, self.user)
+                    for job in paged_jobs.get_page(page_count)
+                ],
+            }
+        )
+    
+    def delete(self, request):
+        job_id = self.data['job_id']
+        try:
+            job = EmployerJob.objects.get(id=job_id)
+        except EmployerJob.DoesNotExist:
+            return get_error_response('This job does not exist')
+        
+        # We allow user created jobs to be deleted because they may have been created by mistake
+        job.jv_check_permission(PermissionTypes.DELETE.value, self.user)
+        if not job.is_user_created:
+            return get_error_response('This job cannot be deleted. Instead you can edit it and set the "close date"')
+        
+        job.delete()
+        
+        return get_success_response('Job was deleted')
+    
+    @staticmethod
+    def get_user_jobs(user, user_id=None, is_approved=None, is_closed=None, job_filter=None):
+        if (not user.is_admin) and (user.id != user_id or user_id is None):
+            raise PermissionError('You do not have permission to access these jobs')
+        
+        if not job_filter:
+            job_filter = Q()
+        if user_id:
+            job_filter &= Q(created_user_id=user_id)
+        else:
+            job_filter &= Q(created_user_id__isnull=False)
+        if is_approved is not None:
+            job_filter &= Q(is_job_approved=is_approved)
+        if is_closed is not None:
+            if is_closed:
+                job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
+            else:
+                job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+            
+        return (
+            EmployerJob.objects
+            .select_related('employer', 'created_user')
+            .prefetch_related(
+                'employer__user_connection',
+                'locations',
+                'locations__city',
+                'locations__state',
+                'locations__country'
+            )
+            .filter(job_filter)
+            .order_by('created_dt', 'id')
+        )
+    
+    @staticmethod
+    def get_serialized_user_job(job: EmployerJob, user: JobVyneUser):
+        user_job = {
+            'id': job.id,
+            'job_title': job.job_title,
+            'open_date': get_datetime_format_or_none(job.open_date),
+            'close_date': get_datetime_format_or_none(job.close_date),
+            'salary_currency': get_serialized_currency(job.salary_currency),
+            'salary_floor': job.salary_floor,
+            'salary_ceiling': job.salary_ceiling,
+            'salary_interval': job.salary_interval,
+            'salary_text': job.salary_text,
+            'locations': [get_serialized_location(l) for l in job.locations.all()],
+            'locations_text': job.locations_text,
+            'employer_id': job.employer_id,
+            'employer_name': job.employer.employer_name,
+            'employer_logo': job.employer.logo.url if job.employer.logo else None,
+            'employment_type': job.employment_type,
+            'is_remote': job.is_remote,
+            'is_approved': job.is_job_approved,
+            'can_edit': job.jv_check_permission(PermissionTypes.EDIT.value, user)
+        }
+        
+        if user.is_admin and job.created_user:
+            user_job['created_by'] = f'{job.created_user.full_name} ({job.created_user.id})'
+            user_job['created_by_email'] = job.created_user.email
+        
+        return user_job
+    
+    
+class UserFavoriteView(JobVyneAPIView):
+    def get(self, request):
+        user_id = coerce_int(self.query_params['user_id'])
+        if user_id != self.user.id:
+            return get_error_response('You do not have permission to view this user')
+        
+        open_job_filter = (
+                Q(employer_job__open_date__lte=timezone.now().date())
+                & (Q(employer_job__close_date__isnull=True) | Q(employer_job__close_date__gt=timezone.now().date()))
+                & Q(employer_job__is_job_approved=True)
+        )
+        employers = Employer.objects.annotate(
+            open_job_count=Count('employer_job', filter=open_job_filter)
+        ).filter(employer_member=self.user)
+        
+        return Response(status=status.HTTP_200_OK, data={
+            'employers': [{
+                'employer_id': employer.id,
+                'employer_key': employer.employer_key,
+                'employer_name': employer.employer_name,
+                'open_job_count': employer.open_job_count
+            } for employer in employers]
+        })
+    
+    def post(self, request):
+        employer_id = self.data['employer_id']
+        employer = Employer.objects.get(id=employer_id)
+        self.user.membership_employers.add(employer)
+        return get_success_response(f'Added {employer.employer_name} to your favorites')
+    
+    def delete(self, request):
+        user_id = coerce_int(self.data['user_id'])
+        employer_id = coerce_int(self.data['employer_id'])
+        if user_id != self.user.id:
+            return get_error_response('You do not have permission to view this user')
+        employer = Employer.objects.get(id=employer_id)
+        
+        self.user.membership_employers.remove(employer)
+        return get_success_response(f'Removed {employer.employer_name} from favorites')
 
 
 class UserFileView(JobVyneAPIView):
     
     def get(self, request):
-        if not (user_id := self.query_params.get('user_id')):
-            return Response('A user ID is required', status=status.HTTP_400_BAD_REQUEST)
+        user_id = self.query_params['user_id']
         files = self.get_user_files(user_id)
         return Response(
             status=status.HTTP_200_OK,

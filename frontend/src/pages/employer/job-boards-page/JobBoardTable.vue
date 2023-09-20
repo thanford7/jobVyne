@@ -59,12 +59,12 @@
                 </CustomTooltip>
               </template>
               <template v-else-if="col.name === 'link'">
-                <a :href="socialUtil.getJobLinkUrl(props.row)" target="_blank">
+                <a :href="props.row.url" target="_blank">
                   Job board link
                 </a>
                 <q-btn
                   flat round dense icon="content_copy"
-                  size="sm" @click="dataUtil.copyText(socialUtil.getJobLinkUrl(props.row))"
+                  size="sm" @click="dataUtil.copyText(props.row.url)"
                 />
               </template>
             </q-td>
@@ -82,7 +82,6 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import { useQuasar } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { getAjaxFormData, openConfirmDialog } from 'src/utils/requests.js'
-import socialUtil from 'src/utils/social.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useSocialStore } from 'stores/social-store.js'
 
@@ -102,8 +101,7 @@ export default {
       isLoading: false,
       jobLinks: [],
       jobLinkColumns,
-      dataUtil,
-      socialUtil
+      dataUtil
     }
   },
   methods: {

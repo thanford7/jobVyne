@@ -1,19 +1,18 @@
 import asyncio
-import datetime
 import logging
 
 from django.conf import settings
 from django.utils import timezone
 from playwright.async_api import async_playwright
 
-from jvapp.models.employer import Employer, EmployerJob
-from scrape.base_scrapers import get_random_user_agent
+from jvapp.models.employer import ApplicantTrackingSystem, Employer
+from scrape.base_scrapers import get_random_user_agent, get_recent_scraped_job_urls
+from scrape.custom_scraper.workableAts import workable_scrapers
 from scrape.employer_scrapers import all_scrapers, test_scrapers
-from scrape.job_processor import JobProcessor
+from scrape.job_processor import ScrapedJobProcessor
 
 logger = logging.getLogger(__name__)
 JS_LOAD_WAIT_MS = 30000 if settings.DEBUG else 60000
-SKIP_SCRAPE_CUTOFF = datetime.timedelta(days=7)
 
 
 async def get_browser(playwright):
@@ -22,7 +21,12 @@ async def get_browser(playwright):
     browser_context.set_default_timeout(JS_LOAD_WAIT_MS)
     await browser_context.set_geolocation({'latitude': 34.02016, 'longitude': -118.44472})
     await browser_context.set_extra_http_headers({
-        'User-Agent': get_random_user_agent()
+        'User-Agent': get_random_user_agent(),
+        'Referer': 'https://www.google.com',
+        'Origin': 'https://www.google.com',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': '*/*'
     })
     return browser, browser_context
 
@@ -46,54 +50,74 @@ async def launch_scraper(scraper_class, skip_urls):
 def run_job_scrapers(employer_names=None):
     if not employer_names:
         if settings.IS_LOCAL and test_scrapers:
-            scraper_classes = test_scrapers.values()
+            scraper_classes = list(test_scrapers.values())
         else:
-            scraper_classes = all_scrapers.values()
+            scraper_classes = list(all_scrapers.values())
     else:
-        scraper_classes = [all_scrapers[employer_name] for employer_name in employer_names]
-
+        scraper_classes = (
+            [all_scrapers.get(employer_name) for employer_name in employer_names] +
+            [workable_scrapers.get(employer_name) for employer_name in employer_names]
+        )
+        scraper_classes = [s for s in scraper_classes if s]
+    
+    # Sort scrapers by the oldest successful scrape date
+    employer_last_scrape_date = {e['employer_name']: e['last_job_scrape_success_dt'] for e in (
+        Employer.objects.filter(is_use_job_url=True, organization_type=Employer.ORG_TYPE_EMPLOYER)
+        .values('employer_name', 'last_job_scrape_success_dt')
+    )}
+    old_date = timezone.datetime(1900, 1, 1, tzinfo=timezone.get_default_timezone())
+    scraper_classes.sort(key=lambda s: employer_last_scrape_date.get(s.employer_name) or old_date)
+    applicant_tracking_systems = {ats.name: ats for ats in ApplicantTrackingSystem.objects.all()}
+    def get_or_create_ats(ats_name):
+        try:
+            return applicant_tracking_systems[ats_name]
+        except KeyError:
+            ats = ApplicantTrackingSystem(name=ats_name)
+            ats.save()
+            applicant_tracking_systems[ats_name] = ats
+            return ats
+    
     for scraper_class in scraper_classes:
         # Allow scrapers to fail so it doesn't impact other scrapers
         employer = None
+        ats = None
         scraper = None
         try:
             logger.info(f'Starting scraper for {scraper_class.employer_name}')
+            ats = get_or_create_ats(scraper_class.ATS_NAME)
             try:
                 employer = Employer.objects.get(employer_name=scraper_class.employer_name)
+                if (not employer.applicant_tracking_system) or ats.id != employer.applicant_tracking_system_id:
+                    employer.applicant_tracking_system = ats
+                    employer.save()
             except Employer.DoesNotExist:
                 employer = Employer(
                     employer_name=scraper_class.employer_name,
+                    applicant_tracking_system=ats,
                     is_use_job_url=True
                 )
                 employer.save()
-            
+                
             if employer and employer.last_job_scrape_success_dt:
                 last_run_diff_minutes = (timezone.now() - employer.last_job_scrape_success_dt).total_seconds() / 60
-                if (not settings.DEBUG) and last_run_diff_minutes < 180:
-                    logger.info(f'Scraper successfully run in last 3 hours for {scraper_class.employer_name}. Skipping')
+                if (not settings.IS_SCRAPER_TEST) and last_run_diff_minutes < (24 * 60):
+                    logger.info(f'Scraper successfully run in last 24 hours for {scraper_class.employer_name}. Skipping')
                     continue
-
-            recent_scraped_jobs = {
-                job for job in EmployerJob.objects
-                .filter(
-                    modified_dt__gt=timezone.now() - SKIP_SCRAPE_CUTOFF,
-                    is_scraped=True,
-                    close_date__isnull=True,
-                    employer__employer_name=employer.employer_name
-                ).values_list('application_url', flat=True)
-            }
             
-            scraper = asyncio.run(launch_scraper(scraper_class, recent_scraped_jobs))
+            skip_urls = []
+            if not employer_names:
+                skip_urls = get_recent_scraped_job_urls(employer.employer_name)
+            scraper = asyncio.run(launch_scraper(scraper_class, skip_urls))
         
             # Process raw job data
-            job_processor = JobProcessor(employer)
+            job_processor = ScrapedJobProcessor(employer)
             logger.info(f'Processing jobs for {scraper_class.employer_name}')
             job_processor.process_jobs(scraper.job_items)
             logger.info(f'Finalizing all data for {scraper_class.employer_name}')
             job_processor.finalize_data(scraper.skipped_urls)
             logger.info(f'Scraping complete for {scraper_class.employer_name}')
         except Exception as e:
-            logger.exception(f'Error occurred while scraping jobs for {scraper_class.employer_name}', exc_info=e)
+            logger.exception(f'Error occurred while scraping jobs for {scraper_class.employer_name} ({ats.name if ats else "Unknown ATS"})', exc_info=e)
             if employer:
                 employer.has_job_scrape_failure = True
                 employer.save()

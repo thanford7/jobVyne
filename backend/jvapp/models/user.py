@@ -7,18 +7,22 @@ __all__ = (
 from collections import defaultdict
 from enum import Enum, IntEnum
 
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
-from django.db.models import Q
+from django.db.models import Q, UniqueConstraint
 from django.utils import crypto, timezone
 from django.utils.translation import gettext_lazy as _
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin
+from jvapp.models.location import REMOTE_TYPES
+from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.email import get_domain_from_email
 from jvapp.utils.file import get_user_upload_location
+from jvapp.utils.security import generate_user_token, get_uid_from_user
 
 
 def generate_password():
@@ -64,11 +68,19 @@ class CustomUserManager(BaseUserManager):
         Create and save a User with the given email and password.
         """
         from jvapp.models.employer import Employer
-        from jvapp.apis.employer import EmployerSubscriptionView
+        from jvapp.apis.employer import EmployerSubscriptionView, EmployerFromDomainView
         
         if not email:
             raise ValueError(_('Email must be set'))
         email = self.normalize_email(email)
+        if not 'employer_id' in extra_fields:
+            try:
+                matched_employers = EmployerFromDomainView.get_employers_from_email(email)
+                if len(matched_employers) == 1:
+                    extra_fields['employer_id'] = matched_employers[0]['id']
+            except ValueError:
+                pass
+        
         extra_fields['user_type_bits'] = extra_fields.get('user_type_bits') or 0
         user = self.model(email=email, **extra_fields)
         if password:
@@ -110,6 +122,15 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     USER_TYPE_INFLUENCER = 0x8
     USER_TYPE_EMPLOYER = 0x10
     
+    JOB_SEARCH_TYPE_ACTIVE = 0x1
+    JOB_SEARCH_TYPE_PASSIVE = 0x2
+    
+    DEFAUL_JOB_SEARCH_RANGE_MILES = 50
+    
+    # Keep in sync with community.js member types
+    MEMBER_TYPE_JOB_SEEKER = 0x1
+    MEMBER_TYPE_HIRING_MGR = 0x2
+    
     ALL_USER_TYPES = [
         USER_TYPE_ADMIN,
         USER_TYPE_CANDIDATE,
@@ -124,7 +145,9 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     username = None
     date_joined = None
     email = models.EmailField(_('email address'), unique=True)
+    user_key = models.CharField(max_length=160, unique=True, null=True, blank=True)
     linkedin_url = models.CharField(max_length=200, null=True, blank=True)
+    professional_site_url = models.URLField(null=True, blank=True)
     phone_number = models.CharField(max_length=25, null=True, blank=True)
     profile_picture = models.ImageField(upload_to=get_user_upload_location, null=True, blank=True)
     is_email_verified = models.BooleanField(default=False)
@@ -145,8 +168,21 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     # Employee data
     is_profile_viewable = models.BooleanField(default=True)
     job_title = models.CharField(max_length=100, null=True, blank=True)
-    home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
+    profession = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL)
     employment_start_date = models.DateField(null=True, blank=True)
+    
+    is_share_connections = models.BooleanField(default=True)
+    home_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
+    work_remote_type_bit = models.SmallIntegerField(default=REMOTE_TYPES.NO.value | REMOTE_TYPES.YES.value)
+    job_search_type_bit = models.SmallIntegerField(default=0)
+    is_job_search_visible = models.BooleanField(default=False)
+    job_search_levels = models.ManyToManyField('Taxonomy', related_name='level_job_seeker')
+    job_search_industries = models.ManyToManyField('Taxonomy', related_name='industry_job_seeker')
+    job_search_professions = models.ManyToManyField('Taxonomy', related_name='profession_job_seeker')
+    job_search_qualifications = models.CharField(max_length=1000, null=True, blank=True)
+    membership_groups = models.ManyToManyField('Employer', related_name='group_member')
+    membership_professions = models.ManyToManyField('Taxonomy', related_name='profession_member')
+    membership_employers = models.ManyToManyField('Employer', related_name='employer_member')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -169,6 +205,11 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
         permissions_by_employer = self.get_permissions_by_employer()
         permission_names = [p.name for p in permissions_by_employer.get(employer_id) or []]
         return check_method((name in permission_names for name in permission_name))
+    
+    def get_reset_password_link(self):
+        uid = get_uid_from_user(self)
+        token = generate_user_token(self, 'email')
+        return f'{settings.BASE_URL}/password-reset/{uid}/{token}'
 
     @classmethod
     def _jv_filter_perm_query(cls, user, query):
@@ -250,27 +291,44 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
     @property
     def is_active_employee(self):
         return self.has_employee_seat and (not self.is_employer_deactivated)
+    
+    @property
+    def is_hiring_manager(self):
+        from jvapp.models.employer import ConnectionTypeBit  # Avoid circular import
+        return any((
+            ec.connection_type & ConnectionTypeBit.HIRING_MEMBER
+            for ec in self.employer_connection.all()
+        ))
+    
+    @property
+    def is_can_contact(self):
+        return any((ec.is_allow_contact for ec in self.employer_connection.all())) or self.is_job_search_visible
 
     @property
     def is_employer_verified(self):
+        if self.is_employer_owner and self.is_email_verified:
+            return True
         if not self.employer_id or not self.employer.email_domains:
             return False
     
         return (
-                (self.is_email_verified and self.is_email_employer_permitted)
-                or (
-                        self.business_email
-                        and self.is_business_email_verified
-                        and get_domain_from_email(self.business_email) in self.employer.email_domains
-                )
+            (self.is_email_verified and self.is_email_employer_permitted)
+            or (
+                    self.business_email
+                    and self.is_business_email_verified
+                    and get_domain_from_email(self.business_email) in self.employer.email_domains
+            )
         )
     
     @property
     def is_email_employer_permitted(self):
+        if self.is_employer_owner or self.is_admin:
+            return True
+        
         if not self.employer_id or not self.employer.email_domains:
             return False
         
-        return get_domain_from_email(self.email) in self.employer.email_domains
+        return get_domain_from_email(self.email) in (self.employer.email_domains + 'jobvyne.com')
 
     @property
     def is_business_email_employer_permitted(self):
@@ -278,6 +336,51 @@ class JobVyneUser(AbstractUser, JobVynePermissionsMixin):
             return False
     
         return self.business_email and get_domain_from_email(self.business_email) in self.employer.email_domains
+    
+    @property
+    def preferred_jobs_filter(self):
+        from jvapp.apis.job_subscription import JobSubscriptionView
+        from jvapp.apis.social import SocialLinkJobsView
+        
+        preferred_employers = Q(employer__in=self.membership_employers.all())
+        preferred_professions = Q(taxonomy__taxonomy__in=JobSubscriptionView.get_parent_and_child_professions(self.job_search_professions.all()))
+        jobs_filter = preferred_employers & preferred_professions
+        if self.home_location_id:
+            location_dict = get_serialized_location(self.home_location)
+            location_filter = SocialLinkJobsView.get_location_filter(
+                location_dict, self.work_remote_type_bit, self.DEFAUL_JOB_SEARCH_RANGE_MILES
+            )
+            jobs_filter &= location_filter
+        # Consider adding job search level and job search industries
+        return jobs_filter
+    
+    @property
+    def contact_email(self):
+        return self.business_email or self.email
+    
+    @property
+    def has_connections(self):
+        return self.owner_connection.exists()
+    
+    @property
+    def can_view_other_connections(self):
+        return bool(self.is_share_connections and self.has_connections)
+    
+    
+class UserSlackProfile(models.Model):
+    user = models.ForeignKey('JobVyneUser', null=False, blank=False, related_name='slack_profile', on_delete=models.CASCADE)
+    user_key = models.CharField(max_length=20)
+    team_key = models.CharField(max_length=20)
+    # The datetime when JobVyne posted that this user was looking for a job
+    job_seeker_post_dt = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['user_key', 'team_key'],
+                name='unique_user'
+            ),
+        ]
 
 
 class UserFile(models.Model, JobVynePermissionsMixin):
@@ -399,8 +502,7 @@ class UserSocialSubscription(AuditFields):
     """Push content to user's social feed
     """
     class SubscriptionType(Enum):
-        jobs = 'JOBS'
-        connect_managers = 'CONNECT_MANAGERS'  # Job seekers can opt to be shown to managers
+        jobs = 'JOBS'  # Receive updates on any jobs
         events = 'EVENTS'
         news = 'NEWS'
         
@@ -411,3 +513,31 @@ class UserSocialSubscription(AuditFields):
     
     class Meta:
         unique_together = ('user', 'provider', 'subscription_type')
+        
+        
+class UserConnection(AuditFields, JobVynePermissionsMixin):
+    owner = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, related_name='owner_connection')
+    connection_user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.CASCADE, related_name='other_connection')
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    email = models.EmailField(null=True, blank=True)
+    linkedin_handle = models.CharField(max_length=100, null=True, blank=True)
+    employer_raw = models.CharField(max_length=200, null=True, blank=True)
+    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, related_name='connection')
+    job_title = models.CharField(max_length=100, null=True, blank=True)
+    profession = models.ForeignKey('Taxonomy', null=True, blank=True, on_delete=models.SET_NULL)
+    
+    def _jv_can_create(self, user):
+        return user.id == self.owner_id
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(fields=['owner', 'connection_user', 'employer_raw'], condition=Q(connection_user__isnull=False), name='unique_user_connection'),
+            UniqueConstraint(fields=['owner', 'first_name', 'last_name', 'employer_raw'], name='unique_user_connection_name'),
+            UniqueConstraint(fields=['owner', 'email', 'employer_raw'], condition=Q(email__isnull=False), name='unique_user_connection_email'),
+            UniqueConstraint(fields=['owner', 'linkedin_handle', 'employer_raw'], name='unique_user_connection_linkedin'),
+        ]
+    
+    @property
+    def full_name(self):
+        return ' '.join([n for n in [self.first_name, self.last_name] if n])

@@ -5,7 +5,7 @@
     </template>
     <div v-if="isShowError">
       There was an issue with this email verification link. The link may have expired. You
-      can request a new verification email from <a href="/user/profile/?tab=security">your profile</a>.
+      can request a new verification email from <a href="/account/settings/?tab=security">your profile</a>.
     </div>
   </BaseAuthPage>
 </template>

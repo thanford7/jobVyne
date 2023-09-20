@@ -36,10 +36,15 @@
             <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Job Title</td>
             <td style="border: 1px solid black; padding: 5px;">{{ job.job_title }}</td>
         </tr>
-        {% if referrer %}
+        {% if referrer_user %}
             <tr>
                 <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Referrer</td>
-                <td style="border: 1px solid black; padding: 5px;">{{ referrer.first_name }} {{ referrer.last_name }}</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ referrer_user.first_name }} {{ referrer_user.last_name }}</td>
+            </tr>
+        {% elif referrer_employer %}
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Referrer</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ referrer_employer.employer_name }}</td>
             </tr>
         {% elif is_employer %}
             <tr>

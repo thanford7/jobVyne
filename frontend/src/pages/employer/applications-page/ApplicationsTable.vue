@@ -114,9 +114,9 @@
         </template>
       </CollapsableCard>
       <div class="col-12">
-        <div v-if="!user.connected_emails?.length" class="callout-card">
+        <div v-if="isEmployer && !user.connected_emails?.length" class="callout-card">
           <q-icon name="lightbulb" color="warning" size="24px"/>
-          Want to email applicants? Connect your Google account on your <a href="/user/profile?tab=connection">Account page</a>.
+          Want to email applicants? Connect your Google account on your <a href="/account/settings?tab=connection">Account page</a>.
         </div>
         <q-tabs
           v-model="applicationFilter.application_status"
@@ -141,7 +141,7 @@
           input
         />
       </div>
-      <div class="col-12">
+      <div v-if="isEmployer" class="col-12">
         <q-btn-dropdown
           v-if="user.connected_emails?.length"
           label="Bulk actions" color="primary"
@@ -173,7 +173,7 @@
       <div v-for="application in applications" class="col-12 col-md-4 col-lg-3 q-px-sm">
         <q-card class="h-100 q-pb-md">
           <div class="row" :style="employerJobTitleColors[application.job_title]">
-            <div class="col-1">
+            <div v-if="isEmployer" class="col-1">
               <q-checkbox v-model="application.isSelected"
                           @update:model-value="toggleSelectedApplication($event, application.id)"/>
             </div>
@@ -187,7 +187,7 @@
               </div>
             </div>
           </div>
-          <div class="q-px-sm q-py-sm q-gutter-y-sm border-bottom-1-gray-300">
+          <div v-if="isEmployer" class="q-px-sm q-py-sm q-gutter-y-sm border-bottom-1-gray-300">
             <DropdownApplicationStatus
               v-model="application.application_status"
               :is-employer="isEmployer"
@@ -274,6 +274,10 @@
             <div v-if="application.academic_transcript_url">
               <q-icon name="feed"/>&nbsp;
               <a :href="application.academic_transcript_url" target="_blank">Academic Transcript</a>
+            </div>
+            <div v-if="application.cover_letter_url">
+              <q-icon name="feed"/>&nbsp;
+              <a :href="application.cover_letter_url" target="_blank">Cover Letter</a>
             </div>
             <div v-if="application.linkedin_url">
               <q-icon name="fa-brands fa-linkedin"/>&nbsp;

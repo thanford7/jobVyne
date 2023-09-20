@@ -349,7 +349,7 @@ class ShareSocialPostView(JobVyneAPIView):
             post_account_credential = post_account['credential']
             platform_name = OAUTH_CFGS[post_account_credential.provider]['name']
             formatted_content = SocialPostView.get_formatted_content(post, post_account['jobs'], platform_name)
-            args = [post.owner, post_account_credential.access_token, formatted_content]
+            args = [post.user, post_account_credential.access_token, formatted_content]
             kwargs = {'post_file': file.file if file else None}
             resp = None
             if post_account_credential.provider == 'linkedin-oauth2':
@@ -555,3 +555,6 @@ class ShareSocialPostView(JobVyneAPIView):
             return JobPost.PostChannel.LINKEDIN_JOB.value
         # Note: Will add more as we build more integrations
         return None
+    
+    
+

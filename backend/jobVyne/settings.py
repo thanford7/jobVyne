@@ -31,9 +31,10 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', default=get_random_secret_key())
 
 DEBUG = env('DEBUG', cast=bool, default=False)
 DEPLOY_TS = datetime.datetime.now()
+IS_SCRAPER_TEST = env('IS_SCRAPER_TEST', cast=bool, default=False)
 
 PREPEND_WWW = False
-ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,3144-75-166-113-92.ngrok-free.app').split(',')
+ALLOWED_HOSTS = env('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,backend,cda8-75-166-124-123.ngrok-free.app').split(',')
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 8  # Reset is in seconds
 
 IS_SEND_EMAILS = env('IS_SEND_EMAILS', cast=bool, default=True)
@@ -45,7 +46,7 @@ IS_LOCAL = env('IS_LOCAL', cast=bool)
 if IS_LOCAL:
     CSRF_TRUSTED_ORIGINS = ['https://localhost']
 else:
-    CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com']
+    CSRF_TRUSTED_ORIGINS = ['https://*.jobvyne.com', 'https://jobvyne.com', 'https://jobvyne.webflow.io']
 
 SUBDOMAIN = env('SUBDOMAIN', default='app')
 # COMMUNICATION_ADDRESS is used for email webhooks
@@ -59,6 +60,9 @@ if IS_LOCAL:
 elif SUBDOMAIN:
     BASE_URL = f'https://{SUBDOMAIN}.jobvyne.com'
     COMMUNICATION_ADDRESS = f'communications_{SUBDOMAIN}'
+else:
+    BASE_URL = f'https://jobvyne.com'
+    COMMUNICATION_ADDRESS = f'communications'
 
 API_PATH = 'api/v1/'
 API_URL = f'{BASE_URL}/{API_PATH}'
@@ -76,6 +80,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
+    'corsheaders',
     'jvapp',
     'django_celery_beat',
     'django_celery_results',
@@ -89,12 +94,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.BrokenLinkEmailsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'jobVyne.customMiddleware.AdminRedirectMiddleware',
+    'jobVyne.customMiddleware.DeployVersionMiddleware',
     'jobVyne.customMiddleware.ErrorHandlerMiddleware'
 ]
 
@@ -120,6 +127,12 @@ SOCIAL_AUTH_PIPELINE = (
     'jobVyne.customSocialPipeline.save_user_credentials',
 )
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://.+?\.jobvyne\.com$',
+    r'^https://jobvyne\.com$',
+    r'^https://jobvyne\.webflow\.io$',
+]
+
 AUTH_STATE = env('AUTH_STATE')
 SOCIAL_AUTH_FACEBOOK_KEY = env('FACEBOOK_KEY')
 SOCIAL_AUTH_FACEBOOK_SECRET = env('FACEBOOK_SECRET')
@@ -130,6 +143,11 @@ SOCIAL_AUTH_LINKEDIN_SECRET = env('LINKEDIN_SECRET')
 SOCIAL_AUTH_SLACK_KEY = env('SLACK_CLIENT_ID')
 SOCIAL_AUTH_SLACK_SECRET = env('SLACK_CLIENT_SECRET')
 
+
+# this is needed to get a user's email from Facebook. See:
+# https://stackoverflow.com/questions/32024327/facebook-doesnt-return-email-python-social-auth
+# https://stackoverflow.com/a/32129851/6084948
+# https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/
 SOCIAL_AUTH_FACEBOOK_API_VERSION = '14.0'
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
@@ -150,14 +168,6 @@ SOCIAL_AUTH_LINKEDIN_OAUTH2_EXTRA_DATA = [
     ('emailAddress', 'email_address'),
     ('profilePicture', 'picture')
 ]
-
-# this is needed to get a user's email from Facebook. See:
-# https://stackoverflow.com/questions/32024327/facebook-doesnt-return-email-python-social-auth
-# https://stackoverflow.com/a/32129851/6084948
-# https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/
-SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
-    "fields": "id,name,email",
-}
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (

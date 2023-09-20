@@ -36,36 +36,39 @@ export default {
   components: { SelectUserType, DialogBase },
   data () {
     return {
+      permissionGroups: [],
       formData: {
         name: null,
         user_type_bit: null
       },
+      employerStore: useEmployerStore(),
+      authStore: useAuthStore(),
       USER_TYPE_EMPLOYER,
       USER_TYPE_EMPLOYEE
     }
   },
   computed: {
     existingGroupNames () {
-      return this.employerStore.permissionGroups.map((group) => group.name)
+      return this.permissionGroups.map((group) => group.name)
     }
   },
   methods: {
+    async updatePermissionData (isForceRefresh) {
+      await this.employerStore.setEmployerPermissions(this.authStore.user.employer_id, isForceRefresh)
+      this.permissionGroups = this.employerStore.getEmployerPermissions(this.authStore.user.employer_id)
+    },
     async saveGroup () {
       const data = {
         ...this.formData,
         employer_id: this.authStore.user.employer_id
       }
       const resp = await this.$api.post('employer/permission/', getAjaxFormData(data))
-      await this.employerStore.setEmployerPermissions(true)
+      await this.updatePermissionData(true)
       this.$emit('ok', resp.data.auth_group_id)
     }
   },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    return employerStore.setEmployerPermissions()
-  },
-  setup () {
-    return { authStore: useAuthStore(), employerStore: useEmployerStore() }
+  async mounted () {
+    await this.updatePermissionData(false)
   }
 }
 </script>

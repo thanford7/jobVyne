@@ -1,14 +1,16 @@
 <template>
   <q-select
-    v-if="isLoaded"
+    ref="select"
     :multiple="isMulti"
     :use-chips="isMulti"
+    :model-value="modelValue"
+    @update:model-value="$emit('update:model-value', $event)"
     filled emit-value map-options use-input
     @filter="filter"
     :options="filteredEmployers"
     option-value="id"
-    option-label="name"
-    label="Employer"
+    option-label="employer_name"
+    :label="`Employer${(isMulti) ? 's' : ''}`"
     lazy-rules
     :rules="rules"
   />
@@ -20,6 +22,7 @@ import { useEmployerStore } from 'stores/employer-store.js'
 export default {
   name: 'SelectEmployer',
   props: {
+    modelValue: [Number, null],
     isMulti: Boolean,
     employers: [Array, null],
     isRequired: {
@@ -29,8 +32,7 @@ export default {
   },
   data () {
     return {
-      isLoaded: false,
-      allEmployers: null,
+      allEmployers: [],
       filterTxt: null
     }
   },
@@ -49,14 +51,11 @@ export default {
       }
     },
     filteredEmployers () {
-      if (!this.isLoaded) {
-        return
-      }
       if (!this.filterTxt || this.filterTxt === '') {
         return this.allEmployers
       }
       const filterRegex = new RegExp(`.*?${this.filterTxt}.*?`, 'i')
-      return this.allEmployers.filter((e) => e.name.match(filterRegex))
+      return this.allEmployers.filter((e) => e.employer_name.match(filterRegex))
     }
   },
   methods: {
@@ -73,7 +72,15 @@ export default {
       await this.employerStore.setAllEmployers()
       this.allEmployers = this.employerStore.allEmployers
     }
-    this.isLoaded = true
+    if (this.modelValue) {
+      const employerIds = (Array.isArray(this.modelValue)) ? this.modelValue : [this.modelValue]
+      employerIds.forEach((employerId) => {
+        const employer = this.allEmployers.find((emp) => emp.id === employerId)
+        if (employer) {
+          this.$refs.select.add(employer, true)
+        }
+      })
+    }
   },
   setup () {
     return {

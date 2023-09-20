@@ -1,18 +1,23 @@
+import asyncio
+import logging
 from collections import defaultdict
+from datetime import timedelta
 from functools import reduce
 from io import StringIO
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.transaction import atomic
 from django.utils import timezone
+from openai.error import RateLimitError
 from rest_framework import status
 from rest_framework.response import Response
 from slack_sdk import WebClient
 
-from jobVyne import settings
-from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response
+from jvapp.apis._apiBase import JobVyneAPIView, SUCCESS_MESSAGE_KEY, WARNING_MESSAGES_KEY, get_error_response, \
+    get_success_response
 from jvapp.apis.geocoding import LocationParser, get_raw_location
 from jvapp.apis.job import LocationView
 from jvapp.apis.job_subscription import JobSubscriptionView
@@ -21,11 +26,13 @@ from jvapp.apis.social import SocialLinkView, SocialLinkJobsView
 from jvapp.apis.stripe import StripeCustomerView
 from jvapp.apis.user import UserView
 from jvapp.models.abstract import PermissionTypes
-from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerReferralBonusRule, \
+from jvapp.models.employer import ConnectionTypeBit, Employer, EmployerAuthGroup, EmployerConnection, \
+    EmployerReferralBonusRule, \
     EmployerReferralRequest, EmployerAts, EmployerSlack, EmployerSubscription, JobDepartment, EmployerJob, \
     EmployerJobApplicationRequirement, EmployerReferralBonusRuleModifier, EmployerPermission, EmployerFile, \
     EmployerFileTag
 from jvapp.models.job_seeker import JobApplication
+from jvapp.models.location import Location
 from jvapp.models.social import SocialLink
 from jvapp.models.tracking import MessageThread, MessageThreadContext
 from jvapp.models.user import JobVyneUser, PermissionName, UserEmployerPermissionGroup
@@ -34,7 +41,8 @@ from jvapp.serializers.employer import get_serialized_auth_group, get_serialized
     get_serialized_employer_billing, get_serialized_employer_bonus_rule, get_serialized_employer_file, \
     get_serialized_employer_file_tag, get_serialized_employer_job, \
     get_serialized_employer_referral_request
-from jvapp.utils import csv
+from jvapp.utils import csv, ai
+from jvapp.utils.ai import PromptError
 from jvapp.utils.data import AttributeCfg, coerce_bool, coerce_int, is_obfuscated_string, set_object_attributes
 from jvapp.utils.datetime import get_datetime_or_none
 from jvapp.utils.email import ContentPlaceholders, get_domain_from_email, send_django_email
@@ -42,22 +50,39 @@ from jvapp.utils.sanitize import sanitize_html
 
 __all__ = (
     'EmployerView', 'EmployerJobView', 'EmployerAuthGroupView', 'EmployerUserView', 'EmployerUserActivateView',
-    'EmployerSubscriptionView'
+    'EmployerSubscriptionView', 'EmployerInfoView',
 )
 
-from jvapp.utils.security import generate_user_token, get_uid_from_user
 from jvapp.utils.slack import raise_slack_exception_if_error
 
 BATCH_UPDATE_SIZE = 100
+logger = logging.getLogger(__name__)
 
 
 class EmployerView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request, employer_id=None):
+        employer = None
         if employer_id:
             employer_id = int(employer_id)
             employer = self.get_employers(employer_id=employer_id)
+        elif employer_key := self.query_params.get('employer_key'):
+            try:
+                employer = self.get_employers(employer_key=employer_key)
+            except Employer.DoesNotExist:
+                return get_error_response('This is a bad URL')
+        elif social_link_id := self.query_params.get('social_link_id'):
+            try:
+                social_link = SocialLink.objects.get(id=social_link_id)
+            except SocialLink.DoesNotExist:
+                return get_error_response('This is a bad URL')
+            employer_id = social_link.employer_id
+            if not employer_id:
+                return get_error_response('This is a bad URL')
+            employer = self.get_employers(employer_id=employer_id)
+        
+        if employer:
             data = get_serialized_employer(
                 employer,
                 is_employer=self.user and (
@@ -65,11 +90,11 @@ class EmployerView(JobVyneAPIView):
                         or (self.user.employer_id == employer_id and self.user.is_employer)
                 )
             )
-        else:
-            employers = self.get_employers(employer_filter=Q())
-            data = sorted([get_serialized_employer(e) for e in employers], key=lambda e: e['name'])
+            return Response(status=status.HTTP_200_OK, data=data)
         
-        return Response(status=status.HTTP_200_OK, data=data)
+        employers = list(Employer.objects.all().values('id', 'employer_name'))
+        employers.sort(key=lambda e: e['employer_name'])
+        return Response(status=status.HTTP_200_OK, data=employers)
     
     @atomic
     def put(self, request, employer_id):
@@ -97,18 +122,14 @@ class EmployerView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_employers(employer_id=None, employer_filter=None):
+    def get_employers(employer_id=None, employer_key=None, employer_filter=None):
         if employer_id:
             employer_filter = Q(id=employer_id)
-        
-        default_job_board_prefetch = Prefetch(
-            'sociallink_set',
-            queryset=SocialLink.objects.filter(is_default=True),
-            to_attr='default_job_board'
-        )
+        elif employer_key:
+            employer_filter = Q(employer_key=employer_key)
         
         employers = Employer.objects \
-            .select_related('employer_size', 'default_bonus_currency') \
+            .select_related('default_bonus_currency', 'applicant_tracking_system') \
             .prefetch_related(
                 'subscription',
                 'employee',
@@ -116,22 +137,17 @@ class EmployerView(JobVyneAPIView):
                 'employee__employer_permission_group__permission_group',
                 'employee__employer_permission_group__permission_group__permissions',
                 'ats_cfg',
-                'slack_cfg',
-                default_job_board_prefetch
+                'slack_cfg'
             ) \
             .filter(employer_filter) \
             .annotate(employee_count=Count('employee'))
         
-        if employer_id:
+        if employer_id or employer_key:
             if not employers:
                 raise Employer.DoesNotExist
             return employers[0]
         
         return employers
-    
-    @staticmethod
-    def get_employer_account_owner(employer):
-        return next((employee for employee in employer.employee.all() if employee.is_employer_owner), None)
     
 
 class EmployerAtsView(JobVyneAPIView):
@@ -165,8 +181,16 @@ class EmployerAtsView(JobVyneAPIView):
         ats = EmployerAts.objects.get(id=ats_id)
         ats.jv_check_permission(PermissionTypes.DELETE.value, self.user)
         ats_api = get_ats_api(ats)
-        ats_api.delete_webhooks()
+        try:
+            ats_api.delete_webhooks()
+        except ConnectionError:
+            # The refresh token may have expired. Since we are deleting the configuration, this doesn't matter
+            pass
         ats.delete()
+        ats_jobs = EmployerJob.objects.filter(employer_id=ats.employer_id, ats_job_key__isnull=False)
+        for job in ats_jobs:
+            job.close_date = timezone.now().date()
+        EmployerJob.objects.bulk_update(ats_jobs, ['close_date'])
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: 'Successfully deleted ATS configuration'
         })
@@ -226,7 +250,7 @@ class EmployerSlackView(JobVyneAPIView):
             return get_error_response('An employer ID is required')
         if not self.user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, employer_id):
             return get_error_response('You do not have permission for this operation')
-        slack_cfg = EmployerSlack.objects.get(id=slack_cfg_id)
+        slack_cfg = EmployerSlack.objects.select_related('employer').get(id=slack_cfg_id)
         self.update_slack_cfg(self.user, slack_cfg, self.data)
         
         # Slack bot needs to be part of the channel to post to it
@@ -264,14 +288,15 @@ class EmployerSlackView(JobVyneAPIView):
             'jobs_post_dow_bits': None,
             'jobs_post_tod_minutes': None,
             'jobs_post_max_jobs': None,
-            'referrals_post_channel': None
+            'referrals_post_channel': None,
+            'modal_cfg_is_salary_required': None,
         })
         slack_cfg.jv_check_permission(PermissionTypes.EDIT.value, user)
         slack_cfg.save()
     
     @staticmethod
     def get_slack_cfg(employer_id):
-        slack_cfg = EmployerSlack.objects.filter(employer_id=employer_id)
+        slack_cfg = EmployerSlack.objects.select_related('employer').filter(employer_id=employer_id)
         if slack_cfg:
             return slack_cfg[0]
         return None
@@ -296,7 +321,7 @@ class EmployerBillingView(JobVyneAPIView):
         
         # Street address isn't important to normalize. We are just using the address to determine taxes
         location_text = f'{self.data["city"]}, {self.data["state"]}, {self.data["country"]} {self.data.get("postal_code")}'
-        raw_location = get_raw_location(location_text)
+        raw_location, _ = get_raw_location(location_text)
         if not raw_location:
             raise ValueError(f'Could not locate address for {location_text}')
         employer.street_address = self.data.get('street_address')
@@ -392,7 +417,7 @@ class EmployerReferralRequestView(JobVyneAPIView):
             
             # Jobs are the same regardless of recipient so we only need to fetch them once
             if idx == 0:
-                jobs = SocialLinkJobsView.get_jobs_from_social_link(referral_link)
+                jobs, _ = SocialLinkJobsView.get_jobs_from_social_link(referral_link)
                 if not jobs:
                     return 'No jobs were provided'
                 job_titles = list({j.job_title for j in jobs})
@@ -605,18 +630,18 @@ class EmployerJobView(JobVyneAPIView):
             employer_job.salary_currency_name = salary_currency
         
         # Handle job department - if ID is a string, this is a new department for this employer
-        job_department = data['job_department']
-        try:
-            employer_job.job_department_id = int(job_department['id'])
-        except ValueError:
-            # Check whether job department has already been created by a different employer
-            job_departments = JobDepartment.objects.filter(name__iexact=job_department['id'])
-            if job_departments:
-                employer_job.job_department = job_departments[0]
-            else:
-                new_job_department = JobDepartment(name=job_department['id'])
-                new_job_department.save()
-                employer_job.job_department = new_job_department
+        if job_department := data['job_department']:
+            try:
+                employer_job.job_department_id = int(job_department['id'])
+            except ValueError:
+                # Check whether job department has already been created by a different employer
+                job_departments = JobDepartment.objects.filter(name__iexact=job_department['id'])
+                if job_departments:
+                    employer_job.job_department = job_departments[0]
+                else:
+                    new_job_department = JobDepartment(name=job_department['id'])
+                    new_job_department.save()
+                    employer_job.job_department = new_job_department
         
         # Remove existing locations if this is an existing job
         if employer_job.id:
@@ -634,43 +659,141 @@ class EmployerJobView(JobVyneAPIView):
         return employer_job
     
     @staticmethod
-    def get_employer_jobs(
-            employer_job_id=None, employer_job_filter=None, order_by='-open_date',
-            is_only_closed=False, is_include_closed=False, is_include_future=False
+    def get_employer_job_filter(
+        employer_job_id=None, is_only_closed=False, is_include_closed=False, is_include_future=False,
+        is_allow_unapproved=False, lookback_days=None
     ):
         if employer_job_id:
-            employer_job_filter = Q(id=employer_job_id)
-        else:
-            if is_only_closed:
-                employer_job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
-            elif not is_include_closed:
-                employer_job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
-            if not is_include_future:
-                employer_job_filter &= Q(open_date__lte=timezone.now().date())
+            return Q(id=employer_job_id)
         
-        jobs = EmployerJob.objects \
-            .select_related(
-                'job_department',
-                'employer',
-                'referral_bonus_currency',
-                'salary_currency'
-            ) \
-            .prefetch_related(
-                'locations',
-                'locations__city',
-                'locations__state',
-                'locations__country'
-            ) \
-            .filter(employer_job_filter) \
-            .distinct() \
-            .order_by(order_by, 'id')
+        job_filter = Q()
+        if not is_allow_unapproved:
+            job_filter &= Q(is_job_approved=True)
+        if is_only_closed:
+            job_filter &= (Q(close_date__isnull=False) & Q(close_date__lt=timezone.now().date()))
+        elif not is_include_closed:
+            job_filter &= (Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date()))
+        if not is_include_future:
+            end_date = timezone.now().date()
+            if lookback_days:
+                start_date = timezone.now().date() - timedelta(days=30 * 3)
+                job_filter &= Q(open_date__range=(start_date, end_date))
+            else:
+                job_filter &= Q(open_date__lte=end_date)
         
+        return job_filter
+    
+    @staticmethod
+    def get_employer_jobs(
+            employer_job_id=None, employer_job_filter=None, order_by=None, applicant_user=None,
+            is_include_fetch=True, is_only_closed=False, is_include_closed=False, is_include_future=False,
+            is_allow_unapproved=False, lookback_days=None, jobs_per_page=25, page_count=1
+    ):
+        # NOTE: Be careful adding the order_by argument since it may cause a full table scan if not on an index
+        standard_job_filter = EmployerJobView.get_employer_job_filter(
+            employer_job_id=employer_job_id, is_only_closed=is_only_closed, is_include_closed=is_include_closed,
+            is_include_future=is_include_future, is_allow_unapproved=is_allow_unapproved, lookback_days=lookback_days
+        )
+        
+        jobs = EmployerJob.objects.filter(standard_job_filter)
+        if employer_job_filter:
+            jobs = jobs.filter(employer_job_filter)
+        
+        # Jobs can be duplicated when we filter based on location
+        # Calling "distinct" on the entire data set is extremely inefficient
+        # Instead we get unique job ids and then re-query the database with a much smaller paginated subset
+        jobs = jobs.values('id')
+        if order_by:
+            jobs = jobs.order_by(*order_by)
+        paginated_jobs = Paginator(jobs, per_page=jobs_per_page)
+        page_count = min(page_count, paginated_jobs.num_pages)
+        jobs = paginated_jobs.get_page(page_count)
+        job_ids = {job['id'] for job in jobs}
+        
+        if is_include_fetch:
+            locations_prefetch = Prefetch(
+                'locations', queryset=Location.objects.select_related('city', 'state', 'country')
+            )
+            
+            jobs = (
+                EmployerJob.objects
+                .select_related(
+                    'job_department',
+                    'employer',
+                    'employer__applicant_tracking_system',
+                    'referral_bonus_currency',
+                    'salary_currency'
+                )
+                .prefetch_related(
+                    locations_prefetch,
+                    'taxonomy',
+                    'taxonomy__taxonomy'
+                )
+                .filter(id__in=job_ids)
+            )
+            if applicant_user:
+                user_application_prefetch = Prefetch(
+                    'job_application',
+                    queryset=JobApplication.objects.filter(user=applicant_user),
+                    to_attr='user_job_applications'
+                )
+                jobs = jobs.prefetch_related(user_application_prefetch)
+            
         if employer_job_id:
             if not jobs:
                 raise EmployerJob.DoesNotExist
             return jobs[0]
         
-        return jobs
+        return jobs, paginated_jobs
+    
+    
+class EmployerConnectionView(JobVyneAPIView):
+    
+    def get(self, request):
+        pass
+    
+    @staticmethod
+    def get_employer_connections(job=None, user_id=None, group_id=None):
+        assert any((job, user_id, group_id))
+        connection_filter = Q()
+        if job:
+            connection_filter &= Q(employer_id=job.employer_id)
+        if user_id:
+            connection_filter &= Q(user_id=user_id)
+        if group_id:
+            connection_filter &= Q(group_id=None)
+            
+        return EmployerConnection.objects.filter(connection_filter)
+    
+    @staticmethod
+    def get_and_update_employer_connection(employer_connection, data):
+        if not employer_connection.id:
+            try:
+                employer_connection = EmployerConnection.objects.get(
+                    user_id=employer_connection.user_id, employer_id=employer_connection.employer_id
+                )
+            except EmployerConnection.DoesNotExist:
+                pass
+        
+        hiring_job = None
+        if data['connection_type'] == ConnectionTypeBit.HIRING_MEMBER.value:
+            data['connection_type'] = ConnectionTypeBit.CURRENT_EMPLOYEE.value
+            hiring_job = data.get('job')
+        
+        set_object_attributes(employer_connection, data, {
+            'connection_type': None,
+            'is_allow_contact': None
+        })
+        
+        is_new = not employer_connection.id
+        employer_connection.save()
+        
+        if hiring_job:
+            employer_connection.hiring_jobs.add(hiring_job)
+        elif job := data.get('job'):
+            employer_connection.hiring_jobs.remove(job)
+        
+        return employer_connection, is_new
 
 
 class EmployerJobApplicationView(JobVyneAPIView):
@@ -716,14 +839,26 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerOrReadOnlyPermission]
     
     def get(self, request):
-        if not (employer_id := self.query_params.get('employer_id')):
-            return get_error_response('An employer ID is required')
-        
-        application_requirements = self.get_application_requirements(employer_ids=[employer_id])
-        return Response(
-            status=status.HTTP_200_OK,
-            data=self.get_consolidated_application_requirements(application_requirements)
-        )
+        employer_id = coerce_int(self.query_params.get('employer_id'))
+        job_id = coerce_int(self.query_params.get('job_id'))
+        assert employer_id or job_id
+        if employer_id:
+            application_requirements = self.get_application_requirements(employer_ids=[employer_id])
+            return Response(
+                status=status.HTTP_200_OK,
+                data=self.get_consolidated_application_requirements(application_requirements)
+            )
+        else:
+            job = EmployerJob.objects.get(id=job_id)
+            application_requirements = self.get_application_requirements(job=job)
+            consolidated_requirements = self.get_consolidated_application_requirements(application_requirements)
+            application_requirements = self.get_job_application_fields(
+                job, consolidated_requirements
+            )
+            return Response(
+                status=status.HTTP_200_OK,
+                data=application_requirements
+            )
     
     @atomic
     def put(self, request):
@@ -823,7 +958,7 @@ class EmployerJobApplicationRequirementView(JobVyneAPIView):
         return consolidated_requirements
     
     @staticmethod
-    def get_job_application_fields(job: EmployerJob, consolidated_requirements: dict):
+    def get_job_application_fields(job: EmployerJob, consolidated_requirements: list):
         application_fields = {}
         for requirement in consolidated_requirements:
             field_key = requirement['application_field']
@@ -1057,11 +1192,11 @@ class EmployerAuthGroupView(JobVyneAPIView):
     permission_classes = [IsAdminOrEmployerPermission]
     IGNORED_AUTH_GROUPS = [
         JobVyneUser.USER_TYPE_ADMIN, JobVyneUser.USER_TYPE_CANDIDATE,
-        JobVyneUser.USER_TYPE_INFLUENCER  # TODO: Remove this one once influencer functionality is added
     ]
     
     def get(self, request):
-        auth_groups = self.get_auth_groups(employer_id=None if self.user.is_admin else self.user.employer_id)
+        employer_id = self.query_params['employer_id']
+        auth_groups = self.get_auth_groups(self.user, employer_id)
         all_permissions = EmployerPermission.objects.all()
         return Response(
             status=status.HTTP_200_OK,
@@ -1118,12 +1253,13 @@ class EmployerAuthGroupView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_auth_groups(auth_group_filter=None, employer_id=None):
-        auth_group_filter = auth_group_filter or Q()
-        if employer_id:
-            auth_group_filter &= (Q(employer_id=employer_id) | Q(employer_id__isnull=True))
-            auth_group_filter &= ~Q(user_type_bit__in=EmployerAuthGroupView.IGNORED_AUTH_GROUPS)
-        return EmployerAuthGroup.objects.prefetch_related('permissions').filter(auth_group_filter)
+    def get_auth_groups(user, employer_id):
+        auth_group_filter = (
+            Q(employer_id=employer_id) | Q(employer_id__isnull=True)
+            & ~Q(user_type_bit__in=EmployerAuthGroupView.IGNORED_AUTH_GROUPS)
+        )
+        auth_groups = EmployerAuthGroup.objects.prefetch_related('permissions').filter(auth_group_filter)
+        return EmployerAuthGroup.jv_filter_perm(user, auth_groups)
 
 
 class EmployerUserView(JobVyneAPIView):
@@ -1160,28 +1296,41 @@ class EmployerUserView(JobVyneAPIView):
         )
         user.user_type_bits = user_type_bits
         user.save()
-        referral_link = SocialLinkView.get_or_create_employee_referral_links([user], employer)
         
-        uid = get_uid_from_user(user)
-        token = generate_user_token(user, 'email')
-        reset_password_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}'
-        job_referral_url = referral_link.get_link_url()
-        employer = user.employer
-        send_django_email(
-            'Welcome to JobVyne!',
-            'emails/employer_user_welcome_email.html',
-            to_email=user.email,
-            django_context={
-                'user': user,
-                'employer': employer,
-                'admin_user': self.user,
-                'job_referral_url': job_referral_url,
-                'reset_password_url': reset_password_url,
-                'is_exclude_final_message': False
-            },
-            employer=employer,
-            is_tracked=False
-        )
+        base_django_data = {
+            'user': user,
+            'employer': employer,
+            'admin_user': self.user,
+            'is_exclude_final_message': False,
+            'reset_password_url': user.get_reset_password_link(),
+            'is_employer_owner': user.is_employer_owner
+        }
+        if employer.organization_type == Employer.ORG_TYPE_EMPLOYER:
+            referral_link = SocialLinkView.get_or_create_employee_referral_links([user], employer)[0]
+            job_referral_url = referral_link.get_link_url()
+            send_django_email(
+                'Welcome to JobVyne!',
+                'emails/employer_user_welcome_email.html',
+                to_email=user.email,
+                django_context={
+                    'job_referral_url': job_referral_url,
+                    **base_django_data
+                },
+                employer=employer,
+                is_tracked=False
+            )
+        elif employer.organization_type == Employer.ORG_TYPE_GROUP:
+            send_django_email(
+                'Welcome to JobVyne!',
+                'emails/group_user_welcome_email.html',
+                to_email=user.email,
+                django_context={
+                    **base_django_data,
+                    'job_board_url': employer.main_job_board_link
+                },
+                employer=employer,
+                is_tracked=False
+            )
         
         success_message = f'Account created for {user.full_name}' if is_new else f'Account already exists for {user.full_name}. Permissions were updated.'
         
@@ -1215,7 +1364,8 @@ class EmployerUserView(JobVyneAPIView):
                 set_object_attributes(user, self.data, {
                     'first_name': None,
                     'last_name': None,
-                    'employer_id': None
+                    'employer_id': None,
+                    'profession_id': None
                 })
                 user.jv_check_permission(PermissionTypes.EDIT.value, self.user)
                 current_user_permissions = {
@@ -1253,7 +1403,7 @@ class EmployerUserView(JobVyneAPIView):
                         user_employer_permissions_to_delete_filters.append(
                             Q(user_id=user.id) & Q(permission_group_id=group_id))
             
-            JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name', 'employer_id'])
+            JobVyneUser.objects.bulk_update(users, ['first_name', 'last_name', 'employer_id', 'profession_id'])
             if user_employer_permissions_to_delete_filters:
                 def reduceFilters(allFilters, filter):
                     allFilters |= filter
@@ -1280,6 +1430,12 @@ class EmployerUserView(JobVyneAPIView):
             JobVyneUser.objects.bulk_update(users_to_update, ['user_type_bits'])
             
             batchCount += BATCH_UPDATE_SIZE
+            
+        if len(users) == 1 and self.user.is_admin and ('is_employer_owner' in self.data):
+            user = users[0]
+            user.is_employer_owner = self.data['is_employer_owner']
+            user.save()
+            
         user_count = len(users)
         return Response(status=status.HTTP_200_OK, data={
             SUCCESS_MESSAGE_KEY: f'{user_count} {"user" if user_count == 1 else "users"} updated'
@@ -1494,10 +1650,19 @@ class EmployerFromDomainView(JobVyneAPIView):
     
     def get(self, request):
         if not (email := self.query_params.get('email')):
-            return Response('An email address is required', status=status.HTTP_400_BAD_REQUEST)
+            return get_error_response('An email address is required')
         
+        try:
+            employers = self.get_employers_from_email(email)
+        except ValueError:
+            return get_error_response(f'Could not parse email domain for {email}')
+        
+        return Response(status=status.HTTP_200_OK, data=employers)
+    
+    @staticmethod
+    def get_employers_from_email(email):
         if not (email_domain := get_domain_from_email(email)):
-            return Response(f'Could not parse email domain for {email}', status=status.HTTP_400_BAD_REQUEST)
+            raise ValueError()
         
         employers = [(e.email_domains, e) for e in Employer.objects.all()]
         matched_employers = []
@@ -1507,10 +1672,8 @@ class EmployerFromDomainView(JobVyneAPIView):
             if email_domain in domains:
                 matched_employers.append({'id': employer.id, 'name': employer.employer_name})
         
-        return Response(
-            status=status.HTTP_200_OK,
-            data=matched_employers
-        )
+        return matched_employers
+        
 
 
 class EmployerJobDepartmentView(JobVyneAPIView):
@@ -1555,11 +1718,94 @@ class EmployerJobLocationView(JobVyneAPIView):
             job_subscription_filter |= Q(employer_id=employer_id)
         else:
             job_subscription_filter = Q(employer_id=employer_id)
-        jobs = EmployerJobView.get_employer_jobs(employer_job_filter=job_subscription_filter,
-                                                 is_include_closed=True).distinct()
+        jobs = (
+            EmployerJob.objects
+            .prefetch_related('locations', 'locations__city', 'locations__state', 'locations__country')
+            .filter(job_subscription_filter)
+            .only('id')
+        )
         locations = []
         for job in jobs:
             for location in job.locations.all():
                 locations.append(location)
         
         return Response(status=status.HTTP_200_OK, data=LocationView.get_serialized_locations(locations))
+
+
+class EmployerInfoView(JobVyneAPIView):
+    CONCURRENT_REQUESTS = 10
+    MIN_AI_YEAR = 2020
+    DESCRIPTION_PROMPT = (
+        'You are helping describe a company. The user will provide a company name and a list of website domains used by the company. You should provide a'
+        '(description) which is limited to 1 sentence and a (description_long) which is limited to 5 sentences.\n'
+        'Both the (description) and (description_long) should begin with "(name of company) is a" and proceed with the description.\n'
+        'Your response should be RFC8259 compliant JSON in the format:\n'
+        '{"name": "(name of company)", "description": "(description)", "description_long": "(description_long)"}'
+    )
+
+    @staticmethod
+    def fill_employer_description(limit=None, employer_filter=None):
+        employer_filter = employer_filter or (
+            (Q(description__isnull=True) | Q(description_long__isnull=True))
+            & Q(organization_type=Employer.ORG_TYPE_EMPLOYER)
+        )
+        employer_filter &= Q(email_domains__isnull=False)
+        undescribed_employers = Employer.objects.filter(employer_filter)
+        if limit:
+            undescribed_employers = undescribed_employers[:limit]
+        employer_idx = 0
+        while employer_idx < len(undescribed_employers):
+            employers_to_process = undescribed_employers[employer_idx:employer_idx + EmployerInfoView.CONCURRENT_REQUESTS]
+            asyncio.run(
+                EmployerInfoView.process_employers(employers_to_process)
+            )
+    
+            Employer.objects.bulk_update(
+                employers_to_process, ['description', 'description_long']
+            )
+            employer_idx += EmployerInfoView.CONCURRENT_REQUESTS
+
+    @staticmethod
+    async def summarize_employer(queue):
+        while True:
+            employer = await queue.get()
+            logger.info(f'Running employer description for {employer.employer_name}')
+            try:
+                website_domains = employer.email_domains.split(',')[0] if employer.email_domains else None
+                resp, tracker = await ai.ask([
+                    {'role': 'system', 'content': EmployerInfoView.DESCRIPTION_PROMPT},
+                    {'role': 'user', 'content': f'Company: {employer.employer_name}\nWebsite domains: {website_domains}'}
+                ], is_test=False)
+                employer.description = resp.get('description')
+                employer.description_long = resp.get('description_long')
+            except (PromptError, RateLimitError):
+                pass
+        
+            queue.task_done()
+
+    @staticmethod
+    async def process_employers(employers):
+        queue = asyncio.Queue()
+        workers = [
+            asyncio.create_task(EmployerInfoView.summarize_employer(queue))
+            for _ in range(EmployerInfoView.CONCURRENT_REQUESTS)
+        ]
+    
+        for employer in employers:
+            await queue.put(employer)
+    
+        # Wait until the queue is fully processed
+        if not queue.empty():
+            logger.info(f'Waiting for job queue to finish - Currently {queue.qsize()}')
+            done, _ = await asyncio.wait([queue.join(), *workers], return_when=asyncio.FIRST_COMPLETED)
+            consumers_raised = set(done) & set(workers)
+            if consumers_raised:
+                logger.info(f'Found {len(consumers_raised)} consumers that raised exceptions')
+                await consumers_raised.pop()  # propagate the exception
+    
+        for worker in workers:
+            worker.cancel()
+    
+        # Wait until all workers are cancelled
+        await asyncio.gather(*workers, return_exceptions=True)
+        logger.info(f'Completed summarizing {len(employers)} employers')

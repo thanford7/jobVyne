@@ -201,6 +201,24 @@
         </CustomTooltip>
       </q-th>
     </template>
+    <template v-slot:header-cell-is_employer_owner="props">
+      <q-th :props="props">
+        {{ props.col.label }}
+        <TableFilter filter-name="Account Owner"
+                     :has-filter="userFilter.isAccountOwner && userFilter.isAccountOwner.length">
+          <SelectYesNo label="Is Account Owner" v-model="userFilter.isAccountOwner"/>
+        </TableFilter>
+      </q-th>
+    </template>
+    <template v-slot:header-cell-profession="props">
+      <q-th :props="props">
+        {{ props.col.label }}
+        <TableFilter filter-name="Departments"
+                     :has-filter="userFilter.professionIds && userFilter.professionIds.length">
+          <SelectJobProfession v-model="userFilter.professionIds" :is-multi="true" :is-required="false"/>
+        </TableFilter>
+      </q-th>
+    </template>
     <template v-slot:header-cell-user_type_bits="props">
       <q-th :props="props">
         {{ props.col.label }}
@@ -294,6 +312,7 @@ import CustomTooltip from 'components/CustomTooltip.vue'
 import DialogBulkUploadUsers from 'components/dialogs/DialogBulkUploadUsers.vue'
 import DialogUser from 'components/dialogs/DialogUser.vue'
 import SelectEmployer from 'components/inputs/SelectEmployer.vue'
+import SelectJobProfession from 'components/inputs/SelectJobProfession.vue'
 import SelectPermissionGroup from 'components/inputs/SelectPermissionGroup.vue'
 import SelectUserType from 'components/inputs/SelectUserType.vue'
 import SelectYesNo from 'components/inputs/SelectYesNo.vue'
@@ -326,7 +345,9 @@ const userFilterTemplate = {
   permissionGroupIds: null,
   isApprovalRequired: null,
   isActive: null,
-  employerIds: null
+  isAccountOwner: null,
+  employerIds: null,
+  professionIds: null
 }
 
 const pagination = {
@@ -340,6 +361,7 @@ const pagination = {
 export default {
   name: 'UserTable',
   components: {
+    SelectJobProfession,
     Tooltip,
     SelectEmployer,
     CustomTooltip,
@@ -428,9 +450,18 @@ export default {
           sortable: true,
           classes: (row) => (row.has_employee_seat) ? '' : 'text-negative text-bold'
         },
+        {
+          name: 'is_employer_owner',
+          field: 'is_employer_owner',
+          align: 'center',
+          label: 'Is Account Owner',
+          format: (val) => (val) ? 'Yes' : 'No',
+          sortable: true
+        },
         { name: 'first_name', field: 'first_name', align: 'left', label: 'First name', sortable: true },
         { name: 'last_name', field: 'last_name', align: 'left', label: 'Last name', sortable: true },
         { name: 'email', field: 'email', align: 'left', label: 'Email', sortable: true },
+        { name: 'profession', field: 'profession_name', align: 'left', label: 'Department', sortable: true },
         { name: 'user_type_bits', field: 'user_type_bits', align: 'left', label: 'User types' },
         { name: 'permission_groups', field: getAllUserPermissionGroups, align: 'left', label: 'Permission groups' },
         {
@@ -546,9 +577,7 @@ export default {
   },
   async mounted () {
     await this.authStore.setUser()
-    await Promise.all([
-      this.fetchUsers()
-    ])
+    await this.fetchUsers()
     if (!this.isAdminMode) {
       await this.employerStore.setEmployerSubscription(this.authStore.propUser.employer_id)
       this.subscription = this.employerStore.getEmployerSubscription(this.authStore.propUser.employer_id)

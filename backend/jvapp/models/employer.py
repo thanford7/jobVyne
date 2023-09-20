@@ -1,20 +1,25 @@
-from enum import Enum
+import re
+import uuid
+from enum import Enum, IntEnum
 
+from django.conf import settings
 from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.db.models import Q, UniqueConstraint
+from django.utils import timezone
 
-from jvapp.models._customDjangoField import LowercaseCharField
+from jvapp.models._customDjangoField import LowercaseCharField, SeparatedValueField
 from jvapp.models.abstract import ALLOWED_UPLOADS_ALL, AuditFields, JobVynePermissionsMixin, OwnerFields
 
 __all__ = (
-    'Employer', 'EmployerAts', 'EmployerJob', 'EmployerSize', 'JobDepartment',
+    'Employer', 'EmployerAts', 'EmployerJob', 'JobDepartment',
     'EmployerAuthGroup', 'EmployerPermission', 'EmployerFile', 'EmployerFileTag',
     'EmployerReferralBonusRule', 'EmployerReferralBonusRuleModifier',
     'EmployerSubscription', 'EmployerReferralRequest', 'EmployerJobApplicationRequirement',
-    'EmployerSlack'
+    'EmployerSlack', 'Taxonomy', 'JobTaxonomy',
 )
 
-from jvapp.models.user import PermissionName
+from jvapp.models.user import JobVyneUser, PermissionName
 
 
 def get_employer_upload_location(instance, filename):
@@ -29,15 +34,28 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     organization_type = models.SmallIntegerField(default=ORG_TYPE_EMPLOYER)
     employer_name = models.CharField(max_length=150, unique=True)
+    employer_name_aliases = SeparatedValueField('|', max_length=200, null=True, blank=True)
+    employer_key = models.CharField(max_length=160, unique=True, null=True, blank=True)
     logo = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
     logo_square_88 = models.ImageField(upload_to=get_employer_upload_location, null=True, blank=True)
-    employer_size = models.ForeignKey('EmployerSize', null=True, blank=True, on_delete=models.SET_NULL)
     email_domains = models.CharField(max_length=200, null=True, blank=True)  # CSV list of allowed email domains
     notification_email = models.CharField(max_length=50, null=True, blank=True)  # If present, an email will be sent to this address when a new application is created
     company_jobs_page_url = models.CharField(max_length=100, null=True, blank=True)  # Used to redirect users if employer's account is inactive
     is_manual_job_entry = models.BooleanField(default=False, blank=True)  # Whether HR users can manually add jobs
     is_use_job_url = models.BooleanField(default=False, blank=True)  # For employers with no relationship to JobVyne we need to redirect users to the job page
-    
+    applicant_tracking_system = models.ForeignKey('ApplicantTrackingSystem', null=True, blank=True, on_delete=models.SET_NULL)
+
+    # Company data
+    description = models.TextField(null=True, blank=True)
+    description_long = models.TextField(null=True, blank=True)
+    website = models.URLField(null=True, blank=True)
+    industry = models.CharField(max_length=100, null=True, blank=True)
+    size_min = models.IntegerField(null=True, blank=True)
+    size_max = models.IntegerField(null=True, blank=True)
+    ownership_type = models.CharField(max_length=50, null=True, blank=True)
+    year_founded = models.IntegerField(null=True, blank=True)
+    linkedin_handle = models.CharField(max_length=50, null=True, blank=True)
+
     # Brand colors - saved in hex form (e.g. #32a852)
     color_primary = models.CharField(max_length=9, null=True, blank=True)
     color_secondary = models.CharField(max_length=9, null=True, blank=True)
@@ -62,6 +80,9 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     has_job_scraper = models.BooleanField(default=False, blank=True)
     last_job_scrape_success_dt = models.DateTimeField(null=True, blank=True)
     has_job_scrape_failure = models.BooleanField(default=False, blank=True)
+
+    # User entered Employer through a social platform
+    is_user_created = models.BooleanField(default=False)
     
     def __str__(self):
         return self.employer_name
@@ -81,6 +102,20 @@ class Employer(AuditFields, OwnerFields, JobVynePermissionsMixin):
     def _jv_can_delete(self, user):
         return user.is_admin
     
+    @property
+    def main_job_board_link(self):
+        if self.organization_type == self.ORG_TYPE_EMPLOYER:
+            org_type_name = 'co'
+        elif self.organization_type == self.ORG_TYPE_GROUP:
+            org_type_name = 'group'
+        else:
+            raise ValueError('This org type is not yet supported')
+        return f'{settings.BASE_URL}/{org_type_name}/{self.employer_key}'
+    
+    @property
+    def website_domain(self):
+        return self.email_domains.split(',')[0] if self.email_domains else None
+
     
 class EmployerSubscription(models.Model, JobVynePermissionsMixin):
     
@@ -122,6 +157,7 @@ class EmployerSlack(models.Model, JobVynePermissionsMixin):
     jobs_post_tod_minutes = models.SmallIntegerField(null=True, blank=True)
     jobs_post_max_jobs = models.SmallIntegerField(null=True, blank=True)
     referrals_post_channel = models.CharField(max_length=75, null=True, blank=True)
+    modal_cfg_is_salary_required = models.BooleanField(default=False)
 
     def _jv_can_create(self, user):
         return (
@@ -131,6 +167,11 @@ class EmployerSlack(models.Model, JobVynePermissionsMixin):
                 and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_SETTINGS.value, user.employer_id)
             )
         )
+    
+    
+class ApplicantTrackingSystem(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+    logo = models.ImageField(blank=True, null=True, upload_to='logos')
     
     
 class EmployerAts(AuditFields, JobVynePermissionsMixin):
@@ -190,13 +231,24 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
         DAY = 'day'
         HOUR = 'hour'
         ONCE = 'once'
+        
+    class EmploymentType(Enum):
+        FULL_TIME = 'Full Time'
+        PART_TIME = 'Part Time'
+        CONTRACT = 'Contract'
+        INTERNSHIP = 'Internship'
     
-    employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name='employer_job')
+    job_key = models.UUIDField(unique=True, default=uuid.uuid4, db_index=True)
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='employer_job')
     job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True, blank=True)
+    job_description_summary = models.TextField(null=True, blank=True)
+    responsibilities = models.JSONField(null=True, blank=True)
+    qualifications = models.JSONField(null=True, blank=True)
+    technical_qualifications = models.JSONField(null=True, blank=True)
     job_department = models.ForeignKey('JobDepartment', on_delete=models.SET_NULL, null=True, blank=True)
-    open_date = models.DateField(null=True, blank=True)
-    close_date = models.DateField(null=True, blank=True)
+    open_date = models.DateField(null=True, blank=True, db_index=True)
+    close_date = models.DateField(null=True, blank=True, db_index=True)
     salary_currency = models.ForeignKey('Currency', on_delete=models.PROTECT, null=True, blank=True, to_field='name', default='USD', related_name='job')
     salary_interval = models.CharField(max_length=20, null=True, blank=True)
     salary_floor = models.FloatField(null=True, blank=True)
@@ -207,8 +259,22 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     locations = models.ManyToManyField('Location')
     application_url = models.CharField(max_length=300, null=True, blank=True)  # Used as a fallback when we don't have an ATS integration with an employer
     is_scraped = models.BooleanField(default=False, blank=True)
-    
+    qualifications_prompt = models.ForeignKey('AIRequest', null=True, on_delete=models.SET_NULL)
+
     ats_job_key = models.CharField(max_length=50, null=True, blank=True)
+
+    # For user entered jobs, we want to review and approve before displaying on the website
+    is_job_approved = models.BooleanField(default=True, db_index=True)
+    
+    class Meta:
+        # For ordering to use an index, you cannot mix ascending and descending ordering!
+        # https://dba.stackexchange.com/questions/11031/order-by-column-should-have-index-or-not
+        ordering = ('-open_date', '-id')
+        indexes = [
+            models.Index('open_date', 'id', name='open_date_id_idx'),
+            models.Index('close_date', 'open_date', name='open_close_idx')
+            
+        ]
     
     def __str__(self):
         return f'{self.employer.employer_name}-{self.job_title}-{self.id}'
@@ -221,6 +287,9 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
                 self.employer_id == user.employer_id
                 and user.has_employer_permission(PermissionName.MANAGE_REFERRAL_BONUSES.value, user.employer_id)
             )
+            or (
+                self.created_user_id and self.created_user_id == user.id
+            )
         )
 
     def get_key(self):
@@ -232,13 +301,16 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
     def locations_text(self):
         job_locations_text = ''
         for idx, job_location in enumerate(self.locations.all()):
+            job_location_text = job_location.text
+            if job_location.is_remote and (not re.search('remote|anywhere|virtual', job_location_text, flags=re.IGNORECASE)):
+                job_location_text = f'(Remote) {job_location_text}'
             if idx == 0:
-                job_locations_text = job_location.text
+                job_locations_text = job_location_text
             elif idx == 3:
                 job_locations_text += ', and more'
                 break
             else:
-                job_locations_text += f', {job_location.text}'
+                job_locations_text += f', {job_location_text}'
         if not job_locations_text:
             job_locations_text = 'Unknown'
         
@@ -276,7 +348,127 @@ class EmployerJob(AuditFields, OwnerFields, JobVynePermissionsMixin):
             
         return False
     
+    @property
+    def profession(self):
+        for tax in self.taxonomy.all():
+            if tax.taxonomy.tax_type == Taxonomy.TAX_TYPE_PROFESSION:
+                return tax.taxonomy
+        return None
     
+    @property
+    def is_user_created(self):
+        return bool(self.created_user_id)
+    
+    @property
+    def jv_relative_job_url(self):
+        return f'/job/{self.job_key}/'
+    
+    @property
+    def preferred_application_url(self):
+        if self.employer.is_use_job_url:
+            return self.application_url
+        else:
+            return f'{settings.BASE_URL}{self.jv_relative_job_url}'
+    
+    @property
+    def has_salary(self):
+        return bool(self.salary_floor or self.salary_ceiling)
+    
+    
+# Keep in sync with community.js
+class ConnectionTypeBit(IntEnum):
+    HIRING_MEMBER = 1
+    CURRENT_EMPLOYEE = 2
+    FORMER_EMPLOYEE = 4
+    KNOW_EMPLOYEE = 8
+    NO_CONNECTION = 16
+    
+
+# TODO: Drop EmployerJobConnection once migrated to EmployerConnection
+class EmployerJobConnection(AuditFields):
+
+    user = models.ForeignKey(JobVyneUser, on_delete=models.CASCADE, related_name='job_connection')
+    job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='job_connection')
+    connection_type = models.SmallIntegerField()
+    is_allow_contact = models.BooleanField()  # Whether users can contact the connection
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['user', 'job'],
+                name='unique_user_job'
+            ),
+        ]
+
+
+class EmployerConnection(AuditFields):
+    user = models.ForeignKey(JobVyneUser, on_delete=models.CASCADE, related_name='employer_connection')
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='user_connection')
+    connection_type = models.SmallIntegerField()
+    hiring_jobs = models.ManyToManyField('EmployerJob')  # If this user is a hiring manager, there may be one or more jobs they are hiring for
+    is_allow_contact = models.BooleanField()  # Whether users can contact the connection
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['user', 'employer'],
+                name='unique_employer_connection'
+            ),
+        ]
+
+
+class Taxonomy(models.Model):
+    TAX_TYPE_PROFESSION = 'JOB_TITLE'
+    TAX_TYPE_INDUSTRY = 'INDUSTRY'
+    TAX_TYPE_JOB_LEVEL = 'JOB_LEVEL'
+    ALL_TAX_TYPES = [
+        TAX_TYPE_PROFESSION,
+        TAX_TYPE_INDUSTRY,
+        TAX_TYPE_JOB_LEVEL
+    ]
+    
+    tax_type = models.CharField(max_length=20)
+    name = models.CharField(max_length=100, db_index=True)
+    key = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    sub_taxonomies = models.ManyToManyField('self', related_name='parent_taxonomy', symmetrical=False)
+    # TODO: Add descriptions for job levels category
+    description = models.CharField(max_length=2000, null=True, blank=True)
+    sort_order = models.SmallIntegerField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('tax_type', 'name')
+
+    def __str__(self):
+        return f'{self.tax_type}: {self.name}'
+    
+    def get_unique_key(self):
+        return self.tax_type, self.name
+    
+    @property
+    def jobs_url(self):
+        if self.tax_type == self.TAX_TYPE_PROFESSION:
+            return f'{settings.BASE_URL}/profession/{self.key}'
+        return None
+
+
+class JobTaxonomy(AuditFields):
+    job = models.ForeignKey(EmployerJob, on_delete=models.CASCADE, related_name='taxonomy')
+    taxonomy = models.ForeignKey(Taxonomy, on_delete=models.CASCADE, related_name='job')
+
+    class Meta:
+        constraints = [
+            # This is what we really want:
+            # models.constraints.UniqueConstraint(fields=('job', 'taxonomy__tax_type'), name='job_unique_taxonomy')
+            # But this is the best we can do; we'll have to disallow multiple assignments on a single taxonomy type some other way
+            models.constraints.UniqueConstraint(fields=('job', 'taxonomy'), name='job_unique_taxonomy'),
+        ]
+
+# TODO: Implement model and use in prediction
+# class AiPrompt():
+#     '''An AI prompt'''
+#     pass
+
+
 class EmployerJobApplicationRequirement(AuditFields, JobVynePermissionsMixin):
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='job_application_requirement')
     application_field = models.CharField(max_length=25)  # based on JobApplicationFields model
@@ -401,12 +593,24 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
     def __str__(self):
         return f'{self.employer.employer_name if self.employer else "<General>"}-{self.name}'
     
+    @classmethod
+    def _jv_filter_perm_query(cls, user, query):
+        if user.is_admin:
+            return query
+        
+        if user.is_employer and user.is_employer_verified:
+            employer_filter = Q(employer_id=user.employer_id) | Q(employer_id__isnull=True)
+            return query.filter(employer_filter)
+        
+        return query.filter(Q(employer_id__isnull=True))
+        
+    
     def jv_check_can_update_permissions(self, user):
         if not self.jv_can_update_permissions(user):
             self._raise_permission_error(PermissionName.CHANGE_PERMISSIONS.value)
     
     def jv_can_update_permissions(self, user):
-        return user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value, user.employer_id)
+        return self.employer_id == user.employer_id and user.has_employer_permission(PermissionName.CHANGE_PERMISSIONS.value, user.employer_id)
     
     def _jv_can_create(self, user):
         return (
@@ -423,9 +627,6 @@ class EmployerAuthGroup(models.Model, JobVynePermissionsMixin):
             return False
         
         return bool(self.employer_id) or user.is_admin
-    
-    def _jv_can_delete(self, user):
-        return self._jv_can_edit(user)
 
 
 class EmployerPermission(models.Model):
@@ -474,13 +675,6 @@ class EmployerFileTag(models.Model, JobVynePermissionsMixin):
                 and user.has_employer_permission(PermissionName.MANAGE_EMPLOYER_CONTENT.value, user.employer_id)
             )
         )
-
-
-class EmployerSize(models.Model):
-    size = models.CharField(max_length=25, unique=True)
-    
-    def __str__(self):
-        return self.size
 
 
 class JobDepartment(models.Model):

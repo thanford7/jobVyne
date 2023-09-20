@@ -1,0 +1,49 @@
+{% extends 'emails/base_email.html' %}
+
+{% block body %}
+    <p>
+        Hi {{ recipient_first_name }},
+    </p>
+    <p>I saw this job on JobVyne and thought you would be a good fit:</p>
+    <p>
+        <table class="bordered" width="100%" cellpadding="0" cellspacing="0"
+               style="min-width:100%; border-collapse: collapse;">
+            <tbody>
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Job</td>
+                <td style="border: 1px solid black; padding: 5px;">
+                    <a href="{{ job_link_url }}">{{ job_title }}</a>
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Employer</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ job_employer_name }}</td>
+            </tr>
+            {% if job_employer_description %}
+                <tr>
+                    <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Employer description</td>
+                    <td style="border: 1px solid black; padding: 5px;">{{ job_employer_description }}</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Location</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ job_locations_text }}</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Salary</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ job_salary_text }}</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; font-weight: bold; padding: 5px;">Post date</td>
+                <td style="border: 1px solid black; padding: 5px;">{{ job_post_date }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </p>
+    <p>
+        I sent this email using JobVyne, but I am CCed if you have any questions.
+    </p>
+    <p>
+        - {{ from_user.full_name }}
+    </p>
+{% endblock body %}

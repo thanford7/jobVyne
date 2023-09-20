@@ -54,6 +54,12 @@ class PagePermissionsUtil {
             emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
           },
           {
+            icon: 'work',
+            key: 'admin-user-jobs',
+            label: 'User Jobs',
+            emailValidationKey: EMAIL_VALIDATION_KEYS.PERSONAL
+          },
+          {
             icon: 'people',
             key: 'admin-users',
             label: 'Users',
@@ -67,9 +73,19 @@ class PagePermissionsUtil {
         namespace: 'candidate',
         menuItems: [
           {
-            icon: 'home',
+            icon: 'contact_page',
             key: 'candidate-dashboard',
-            label: 'Dashboard'
+            label: 'Job Applications'
+          },
+          {
+            icon: 'star',
+            key: 'candidate-favorites',
+            label: 'Favorites'
+          },
+          {
+            icon: 'hub',
+            key: 'candidate-connections',
+            label: 'Connections'
           }
         ]
       },
@@ -96,15 +112,16 @@ class PagePermissionsUtil {
             label: 'Job Referrals',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER
           },
-          {
-            icon: 'web',
-            key: 'employee-profile-page',
-            label: 'Profile Settings',
-            emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedFn: (permissionGroups, permissions) => {
-              return permissions && permissions.includes(this.PERMISSION_NAMES.ADD_EMPLOYEE_CONTENT)
-            }
-          },
+          // Disabling for now - too much work for employees to fill in
+          // {
+          //   icon: 'web',
+          //   key: 'employee-profile-page',
+          //   label: 'Profile Settings',
+          //   emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
+          //   isPermittedFn: (permissionGroups, permissions) => {
+          //     return permissions && permissions.includes(this.PERMISSION_NAMES.ADD_EMPLOYEE_CONTENT)
+          //   }
+          // },
           {
             icon: 'share',
             key: 'employee-social',
@@ -168,7 +185,7 @@ class PagePermissionsUtil {
           {
             icon: 'person_add',
             key: 'employer-referrals',
-            label: 'Employee Referrals',
+            label: 'Referral Requests',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
             isPermittedViewFn: (permissionGroups, permissions, orgTypeBit) => {
               return isUserEmployerFn(permissionGroups, permissions) && employerTypeUtil.isTypeEmployer(orgTypeBit)
@@ -202,7 +219,7 @@ class PagePermissionsUtil {
             key: 'employer-applications',
             label: 'Job Applications',
             emailValidationKey: EMAIL_VALIDATION_KEYS.EMPLOYER,
-            isPermittedFn: isUserEmployerFn
+            isPermittedFn: (userPermissionGroups, userPermissions, employerOrgType) => isUserEmployerFn(userPermissionGroups, userPermissions) && employerTypeUtil.isTypeEmployer(employerOrgType)
           },
           {
             icon: 'groups',
@@ -321,7 +338,7 @@ class PagePermissionsUtil {
         }
       }
     }
-    return this.getRouterPageCfg('profile')
+    return this.getRouterPageCfg('settings')
   }
 
   getRouterPageCfg (pageKey, userTypeBit = null) {
@@ -329,7 +346,7 @@ class PagePermissionsUtil {
     const pageCfg = this.userPagePermissionCfgs[pageKey]
 
     if (!pageCfg) {
-      routerCfg.params.namespace = 'user'
+      routerCfg.params.namespace = 'account'
       // Use the existing user type bit if this is a generic user page
       routerCfg.params.userTypeBit = userTypeBit
     } else {

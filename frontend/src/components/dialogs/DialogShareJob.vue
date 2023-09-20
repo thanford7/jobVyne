@@ -188,10 +188,10 @@ export default {
     this.socialLink = await socialStore.getOrCreateSocialLink({
       owner_id: authStore.propUser.id,
       employer_id: this.job.employer_id,
-      job_ids: [this.job.id],
+      job_id: this.job.id,
       is_get_or_create: true
     })
-    this.socialLinkUrl = socialUtil.getJobLinkUrl(this.socialLink, { platform: this.shareType })
+    this.socialLinkUrl = socialUtil.getJobLinkUrl(this.socialLink, this.shareType)
     this.employer = this.employerStore.getEmployer(this.job.employer_id)
     this.user = authStore.propUser
     this.shortMessage = `My company, ${this.employer.name}, is hiring for a ${this.job.job_title} position and I think you would be a great fit. If you're interested, you can use this link to view more details and apply:

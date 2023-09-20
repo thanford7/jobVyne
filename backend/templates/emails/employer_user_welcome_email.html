@@ -30,17 +30,9 @@
         There are a few quick items you can do to get started:
         <ul>
             <li>
-                <a href="{{ reset_password_url }}" target="_blank"> Set your JobVyne password</a>.
-                Note that this link can only be used once and will expire in 8 hours. If you need to reset your
-                password again, please visit <a href="{{ base_url }}/login">app.jobvyne.com/login</a>
-                and request a password reset.
+                {% include 'snippets/reset_password_instructions.html' %}
             </li>
             {% if user.is_employee %}
-                <li>
-                    Complete the onboarding checklist on your
-                    <a href="{{ base_url }}/employee/dashboard/">JobVyne dashboard</a>
-                    JobVyne dashboard
-                </li>
                 <li>
                     Start sharing your unique referral link: {{ job_referral_url }}
                 </li>
@@ -56,3 +48,6 @@
         </ul>
     </p>
 {% endblock body %}
+{% block final_message %}
+    If you have any questions or issues, please contact us at {{ support_email }}.
+{% endblock final_message %}

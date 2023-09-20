@@ -3,7 +3,6 @@ from string import Template
 
 from jvapp.models.user import JobVyneUser, UserFile
 from jvapp.serializers.job_seeker import base_application_serializer
-from jvapp.serializers.location import get_serialized_location
 from jvapp.utils.datetime import get_datetime_format_or_none
 from jvapp.utils.oauth import OauthProviders
 
@@ -21,10 +20,12 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
     if is_include_employer_info:
         data['email'] = user.email
         data['business_email'] = user.business_email
+        data['contact_email'] = user.contact_email
         data['user_type_bits'] = user.user_type_bits
         data['employer_id'] = user.employer_id
         data['employer_name'] = user.employer.employer_name if user.employer else None
         data['employer_org_type'] = user.employer.organization_type if user.employer else 0
+        data['is_employer_owner'] = user.is_employer_owner
         data['is_employer_deactivated'] = user.is_employer_deactivated
         data['has_employee_seat'] = user.has_employee_seat
         data['created_dt'] = get_datetime_format_or_none(user.created_dt)
@@ -67,6 +68,9 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
             cred.email for cred in user.social_credential.all() if
             (cred.provider == OauthProviders.google.value) and cred.refresh_token
         ]
+        data['is_share_connections'] = user.is_share_connections
+        data['has_connections'] = user.has_connections
+        data['can_view_other_connections'] = user.can_view_other_connections
     
     return data
 
@@ -74,16 +78,27 @@ def get_serialized_user(user: JobVyneUser, is_include_employer_info=False, is_in
 def get_serialized_user_profile(user: JobVyneUser, is_get_profile=False):
     data = {
         'id': user.id,
+        'user_key': user.user_key,
         'profile_picture_url': user.profile_picture.url if user.profile_picture else None,
         'first_name': user.first_name,
         'last_name': user.last_name,
         'job_title': user.job_title,
+        'linkedin_url': user.linkedin_url,
+        'professional_site_url': user.professional_site_url,
+        'employer_name': user.employer.employer_name if user.employer else None,
+        'profession_id': user.profession.id if user.profession else None,
+        'profession_name': user.profession.name if user.profession else None,
         'employment_start_date': user.employment_start_date,
-        'home_location': get_serialized_location(user.home_location) if user.home_location else None,
-        'is_profile_viewable': user.is_profile_viewable
+        'home_location': {
+            'city': user.home_location.city.name if user.home_location.city else None,
+            'state': user.home_location.state.name if user.home_location.state else None,
+            'country': user.home_location.country.name if user.home_location.country else None
+        } if user.home_location else None,
+        'is_profile_viewable': user.is_profile_viewable,
+        'has_connections': user.has_connections
     }
     
-    if is_get_profile or user.is_profile_viewable:
+    if (is_get_profile or user.is_profile_viewable) and user.employer:
         data['profile_responses'] = [
             {
                 'question_id': response.question_id,

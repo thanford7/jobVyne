@@ -8,6 +8,7 @@ from django.contrib.gis.db import models as spatial_models
 __all__ = ('REMOTE_TYPES', 'Country', 'State', 'City', 'Location')
 
 from django.db.models import Lookup
+from django.db.models.functions import Lower
 
 from jvapp.utils.data import coerce_float
 
@@ -18,21 +19,21 @@ class REMOTE_TYPES(IntEnum):
 
 
 class Country(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, unique=True, db_index=True)
     
     def __str__(self):
         return self.name
 
 
 class State(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, unique=True, db_index=True)
     
     def __str__(self):
         return self.name
     
     
 class City(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, unique=True, db_index=True)
     
     def __str__(self):
         return self.name
@@ -67,17 +68,21 @@ SRID = 4326
 
 
 class Location(models.Model):
-    text = models.CharField(max_length=200, null=True, blank=True)  # Raw text
-    is_remote = models.BooleanField(null=True, blank=True)
+    text = models.CharField(max_length=200)  # Raw text
+    is_remote = models.BooleanField(default=False)
     city = models.ForeignKey(City, null=True, blank=True, on_delete=models.SET_NULL)
     state = models.ForeignKey(State, null=True, blank=True, on_delete=models.SET_NULL)
     country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.SET_NULL)
     latitude = models.CharField(max_length=15, null=True, blank=True)
     longitude = models.CharField(max_length=15, null=True, blank=True)
+    postal_code = models.CharField(max_length=15, null=True, blank=True)
     geometry = SridGeometryField(null=True, srid=SRID)
     
     class Meta:
-        unique_together = ('is_remote', 'city', 'state', 'country')
+        constraints = [
+            models.UniqueConstraint('is_remote', Lower('text'), name='unique_location'),
+            models.UniqueConstraint(fields=['is_remote', 'latitude', 'longitude'], name='unique_latlong'),
+        ]
     
     def __str__(self):
         return self.text

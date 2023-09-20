@@ -17,7 +17,7 @@ export const useEmployerStore = defineStore('employer', {
     employerJobLocations: {},
     employerFiles: {}, // employerId: [<file1>, <file2>, ...],
     employerFileTags: {}, // employerId: [<tag1>, <tag2>, ...]
-    permissionGroups: [],
+    permissionGroups: {}, // employerId: [<group1>, ...]
     employersFromEmail: {} // email: {<employer>}
   }),
 
@@ -71,16 +71,21 @@ export const useEmployerStore = defineStore('employer', {
         this.employerJobLocations[employerId] = locResp.data
       }
     },
-    async setEmployerJobApplicationRequirements (employerId, isForceRefresh = false) {
-      if (!this.employerJobApplicationRequirements[employerId] || isForceRefresh) {
-        const resp = await this.$api.get(
-          'employer/job-application-requirement/',
-          {
-            params: { employer_id: employerId }
-          }
-        )
-        this.employerJobApplicationRequirements[employerId] = resp.data
+    async setEmployerJobApplicationRequirements ({ employerId = null, jobId = null, isForceRefresh = false }) {
+      if (!(employerId || jobId)) {
+        return
       }
+      const apiRequestKey = makeApiRequestKey(employerId, jobId)
+      if (this.employerJobApplicationRequirements[apiRequestKey] && !isForceRefresh) {
+        return
+      }
+      const resp = await this.$api.get(
+        'employer/job-application-requirement/',
+        {
+          params: { employer_id: employerId, job_id: jobId }
+        }
+      )
+      this.employerJobApplicationRequirements[apiRequestKey] = resp.data
     },
     async setEmployerJobDepartments (employerId, isForceRefresh = false) {
       if (!this.employerJobDepartments[employerId] || isForceRefresh) {
@@ -115,10 +120,14 @@ export const useEmployerStore = defineStore('employer', {
         this.employerSubscription[employerId] = resp.data
       }
     },
-    async setEmployerPermissions (isForceRefresh = false) {
-      if (!this.permissionGroups.length || isForceRefresh) {
-        const resp = await this.$api.get('employer/permission/')
-        this.permissionGroups = resp.data
+    async setEmployerPermissions (employerId, isForceRefresh = false) {
+      if (!this.permissionGroups[employerId] || isForceRefresh) {
+        const resp = await this.$api.get('employer/permission/', {
+          params: {
+            employer_id: employerId
+          }
+        })
+        this.permissionGroups[employerId] = resp.data
       }
     },
     async setEmployerFiles (employerId, isForceRefresh = false) {
@@ -170,6 +179,9 @@ export const useEmployerStore = defineStore('employer', {
     getEmployerBilling (employerId) {
       return this.employerBilling[employerId]
     },
+    getEmployerPermissions (employerId) {
+      return this.permissionGroups[employerId]
+    },
     getEmployerFiles (employerId, fileId = null) {
       const files = this.employerFiles[employerId]
       if (fileId) {
@@ -187,8 +199,9 @@ export const useEmployerStore = defineStore('employer', {
       const apiRequestKey = makeApiRequestKey(employerId, isOnlyClosed, isIncludeClosed)
       return dataUtil.sortBy(this.employerJobs[apiRequestKey] || [], 'job_title')
     },
-    getEmployerJobApplicationRequirements (employerId) {
-      return this.employerJobApplicationRequirements[employerId] || []
+    getEmployerJobApplicationRequirements ({ employerId = null, jobId = null }) {
+      const apiRequestKey = makeApiRequestKey(employerId, jobId)
+      return this.employerJobApplicationRequirements[apiRequestKey]
     },
     getEmployerReferralRequests (employerId) {
       return dataUtil.sortBy(this.employerReferralRequests[employerId] || [], { key: 'modified_dt', direction: -1 })

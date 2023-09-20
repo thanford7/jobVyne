@@ -14,7 +14,7 @@
               <q-btn
                 v-for="option in GROUP_OPTIONS"
                 :color="(chartGroups.includes(option.key)) ? 'grey-8' : 'grey-6'"
-                rounded :label="option.label"
+                rounded text-color="black" size="12px" :label="option.label"
                 @click="toggleGroup(option.key)"
               />
             </q-btn-group>
@@ -154,7 +154,14 @@ export default {
           sortable: true
         },
         { name: 'jobTitle', field: 'job_title', label: 'Job Title', align: 'left', sortable: true },
-        { name: 'applicantName', field: 'applicant_name', label: 'Applicant', align: 'left', sortable: true },
+        {
+          name: 'applicantName',
+          field: 'applicant_name',
+          label: 'Applicant',
+          align: 'left',
+          sortable: true,
+          format: (val) => val.trim() || 'Anonymous'
+        },
         {
           name: 'applicationDT',
           field: 'date',

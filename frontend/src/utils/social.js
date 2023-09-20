@@ -76,43 +76,20 @@ class SocialUtil {
     return text
   }
 
-  getJobLinkUrl (jobLink, { platform, filters, employerId } = {}) {
-    let url = `${window.location.origin}/jobs-link/`
-    if (!jobLink) {
-      url = `${url}example/${employerId}`
-    } else {
-      url = `${url}${jobLink.id}`
+  getJobLinkUrl (jobLink, platform) {
+    if (!platform) {
+      return jobLink.url
     }
-    const params = []
-    if (platform) {
-      params.push({ key: 'platform', val: platform })
-    }
-    if (filters) {
-      Object.entries(filters).forEach(([filterKey, filterVal]) => {
-        if (filterVal && filterVal.length) {
-          if (Array.isArray(filterVal)) {
-            filterVal.forEach((val) => {
-              params.push({ key: filterKey, val })
-            })
-          } else {
-            params.push({ key: filterKey, val: filterVal })
-          }
-        }
-      })
-    }
-    if (params.length) {
-      url = dataUtil.getUrlWithParams({
-        isExcludeExistingParams: true,
-        path: url,
-        addParams: params
-      })
-    }
-    return url
+    return dataUtil.getUrlWithParams({
+      isExcludeExistingParams: false,
+      path: jobLink.url,
+      addParams: [{ key: 'platform', val: platform }]
+    })
   }
 
   getSocialLinks (platforms, jobLink) {
     return platforms.reduce((socialLinks, platform) => {
-      const socialLink = this.getJobLinkUrl(jobLink, { platform: platform.name })
+      const socialLink = this.getJobLinkUrl(jobLink, platform.name)
       socialLinks.push(Object.assign(
         dataUtil.pick(platform, ['name', 'logo', 'is_displayed']),
         { socialLink }

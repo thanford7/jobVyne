@@ -1,9 +1,9 @@
 <template>
   <div class="row">
-    <div class="col-12 q-gutter-y-md">
+    <div class="col-12">
       <IntegrationSectionAts
         v-if="isEmployerOrgType"
-        class="border-bottom-1-gray-100"
+        class="border-bottom-1-gray-100 q-mb-md"
         :ats-data="employerData.ats_cfg"
         @update-employer="$emit('updateEmployer')"
       />

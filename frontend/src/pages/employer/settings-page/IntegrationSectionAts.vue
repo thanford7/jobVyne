@@ -1,5 +1,5 @@
 <template>
-  <div class="row q-gutter-y-md">
+  <div class="row q-gutter-y-md q-pb-sm">
     <div class="text-h6">Applicant Tracking System</div>
     <div v-if="hasChanged" class="col-12">
       <q-btn ripple label="Save" icon="save" color="primary" @click="saveAts"/>

@@ -41,10 +41,10 @@
                 </SelectSlackChannel>
               </div>
               <template v-if="slackData.jobs_post_channel">
-                <div class="col-12 q-my-md">
+                <div class="col-12 q-py-md border-bottom-1-gray-100">
                   <q-btn label="Send test Slack message" color="primary" @click="postSlackMessage()"/>
                 </div>
-                <div class="col-12 q-mb-md">
+                <div class="col-12 q-py-sm">
                   <div class="text-bold">
                     Set a schedule for when new jobs will be posted to Slack
                   </div>
@@ -79,7 +79,7 @@
                     </template>
                   </InputTime>
                 </div>
-                <div class="col-12">
+                <div class="col-12 border-bottom-1-gray-100 q-pb-sm">
                   <q-input
                     v-model.number="slackFormData.jobs_post_max_jobs"
                     type="number"
@@ -87,7 +87,7 @@
                     filled
                     lazy-rules
                     :rules="[
-                      (val) => !val || (val > 0 && val <= 5) || 'Value must be between 1 and 5 or unspecified'
+                      (val) => !val || (val > 0 && val <= 6) || 'Value must be between 1 and 6 or unspecified'
                     ]"
                   >
                     <template v-slot:after>
@@ -96,6 +96,20 @@
                       </CustomTooltip>
                     </template>
                   </q-input>
+                </div>
+                <div class="col-12 q-py-sm">
+                  <div class="text-bold">
+                    User policies
+                  </div>
+                </div>
+                <div class="col-12 q-mb-sm">
+                  <q-toggle
+                    v-model="slackFormData.modal_cfg_is_salary_required"
+                    label="Require salary input for user entered jobs"
+                  />
+                  <CustomTooltip>
+                    When a user enters a job using the JobVyne Slack App, they will be required to add salary information
+                  </CustomTooltip>
                 </div>
               </template>
               <div class="col-12 q-mt-md">
@@ -185,14 +199,15 @@ export default {
         text += ' Monday-Friday'
       }
       if (this.slackFormData.jobs_post_tod_minutes) {
-        text += ` at ${dateTimeUtil.getTimeStrFromMinutes(this.slackFormData.jobs_post_tod_minutes)}`
+        const utcOffsetMinutes = dateTimeUtil.getCurrentTimeZoneMinuteOffset()
+        text += ` at ${dateTimeUtil.getTimeStrFromMinutes(this.slackFormData.jobs_post_tod_minutes - utcOffsetMinutes)}`
         text += ` ${dateTimeUtil.getCurrentTimeZone()}`
       } else {
         text += ' at 12:00 PM UTC'
       }
       text += ' if at least one new job has been posted in the last 14 days.'
       text += ' Up to '
-      text += `${dataUtil.pluralize('new job', this.slackFormData.jobs_post_max_jobs || 5)}`
+      text += `${dataUtil.pluralize('new job', this.slackFormData.jobs_post_max_jobs || 6)}`
       text += ' will be included in the post.'
       return text
     }
@@ -206,7 +221,8 @@ export default {
         this.jobs_post_dows = []
       }
       if (this.slackFormData.jobs_post_tod_minutes) {
-        this.jobs_post_tod = dateTimeUtil.getTimeStrFromMinutes(this.slackFormData.jobs_post_tod_minutes)
+        const utcOffsetMinutes = dateTimeUtil.getCurrentTimeZoneMinuteOffset()
+        this.jobs_post_tod = dateTimeUtil.getTimeStrFromMinutes(this.slackFormData.jobs_post_tod_minutes - utcOffsetMinutes)
       }
     },
     updateJobPostDow (val) {
@@ -217,7 +233,8 @@ export default {
       this.jobs_post_tod = val
       const parsedTimeStr = dateTimeUtil.parseTimeStr(val)
       if (parsedTimeStr) {
-        this.slackFormData.jobs_post_tod_minutes = parsedTimeStr.hour * 60 + parsedTimeStr.minute
+        const utcOffsetMinutes = dateTimeUtil.getCurrentTimeZoneMinuteOffset()
+        this.slackFormData.jobs_post_tod_minutes = (parsedTimeStr.hour * 60 + parsedTimeStr.minute) + utcOffsetMinutes
       } else {
         this.slackFormData.jobs_post_tod_minutes = null
       }

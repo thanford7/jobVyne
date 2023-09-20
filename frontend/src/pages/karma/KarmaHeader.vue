@@ -1,5 +1,5 @@
 <template>
-  <PageHeader :is-include-logo="true" :is-include-sidebar-toggle="isLoggedIn">
+  <PageHeader :isIncludeJobVyneLogo="true" :is-include-sidebar-toggle="isLoggedIn">
     <template v-slot:title>
       <div class="self-center title">
         <h4 class="q-mb-none text-center">KARMA CONNECT</h4>
@@ -24,7 +24,6 @@ export default {
   },
   computed: {
     isLoggedIn () {
-      console.log(this.user)
       return Boolean(this.user || !dataUtil.isEmpty(this.user))
     }
   },

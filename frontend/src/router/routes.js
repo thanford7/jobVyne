@@ -2,10 +2,19 @@ import { USER_TYPES } from 'src/utils/user-types'
 
 const routes = [
   {
-    path: '/login',
+    path: '/',
     component: () => import('layouts/HeaderlessLayout.vue'),
     children: [
-      { path: '', name: 'login', meta: { isNoAuth: true }, component: () => import('pages/auth/LoginPage.vue') }
+      { path: 'login', name: 'login', meta: { isNoAuth: true }, component: () => import('pages/auth/LoginPage.vue') },
+      { path: '', name: 'home', meta: { isNoAuth: true }, component: () => import('pages/auth/LoginPage.vue') },
+      {
+        // This is a "fake" page. We need a route to catch the redirect after social authentication
+        // This route is redirected in router-guard.js
+        path: '/auth/:provider/callback',
+        name: 'auth-callback',
+        meta: { isNoAuth: true },
+        component: () => {}
+      }
     ]
   },
 
@@ -45,7 +54,6 @@ const routes = [
     path: '/',
     component: () => import('layouts/LandingLayout.vue'),
     children: [
-      { path: '', name: 'landing', meta: { isNoAuth: true }, component: () => import('pages/index-page/IndexPage.vue') },
       {
         path: 'terms-of-service',
         name: 'tos',
@@ -53,15 +61,7 @@ const routes = [
         component: () => import('pages/TermsOfServicePage.vue')
       },
       { path: 'privacy', name: 'privacy', meta: { isNoAuth: true }, component: () => import('pages/PrivacyPage.vue') },
-      { path: 'credits', name: 'credits', meta: { isNoAuth: true }, component: () => import('pages/CreditsPage.vue') },
-      {
-        // This is a "fake" page. We need a route to catch the redirect after social authentication
-        // This route is redirected in router-guard.js
-        path: '/auth/:provider/callback',
-        name: 'auth-callback',
-        meta: { isNoAuth: true },
-        component: () => {}
-      }
+      { path: 'credits', name: 'credits', meta: { isNoAuth: true }, component: () => import('pages/CreditsPage.vue') }
     ]
   },
 
@@ -88,6 +88,12 @@ const routes = [
         component: () => import('pages/admin/EmployersPage.vue')
       },
       {
+        path: 'user-jobs',
+        name: 'admin-user-jobs',
+        meta: { userTypeBits: USER_TYPES.Admin },
+        component: () => import('pages/admin/user-jobs-page/UserJobsPage.vue')
+      },
+      {
         path: 'scrapers',
         name: 'admin-scrapers',
         meta: { userTypeBits: USER_TYPES.Admin },
@@ -101,10 +107,22 @@ const routes = [
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
       {
-        path: 'dashboard',
+        path: 'job-applications',
         name: 'candidate-dashboard',
         meta: { userTypeBits: USER_TYPES.Candidate },
         component: () => import('pages/candidate/DashboardPage.vue')
+      },
+      {
+        path: 'favorites',
+        name: 'candidate-favorites',
+        meta: { userTypeBits: USER_TYPES.Candidate },
+        component: () => import('pages/candidate/FavoritesPage.vue')
+      },
+      {
+        path: 'connections',
+        name: 'candidate-connections',
+        meta: { userTypeBits: USER_TYPES.Candidate },
+        component: () => import('pages/candidate/connections-page/ConnectionsPage.vue')
       }
     ]
   },
@@ -227,13 +245,13 @@ const routes = [
   },
 
   {
-    path: '/:namespace(user)',
+    path: '/:namespace(account)',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
       {
-        path: ':key(profile)',
-        name: 'profile',
-        component: () => import('pages/profile-page/ProfilePage.vue')
+        path: ':key(settings)',
+        name: 'settings',
+        component: () => import('pages/settings-page/AccountSettingsPage.vue')
       },
       {
         path: ':key(feedback)',
@@ -251,9 +269,44 @@ const routes = [
   },
 
   {
-    path: '/jobs-link/example/:employerId(\\d+)/:ownerId(\\d+)?/:tab?',
-    name: 'jobs-link-example',
-    meta: { isNoAuth: true, isExample: true },
+    path: '/job/:jobKey',
+    name: 'job',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/jobs',
+    name: 'jobs',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/group/:employerKey',
+    name: 'group',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/co/:employerKey',
+    name: 'company',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/profession/:professionKey',
+    name: 'profession',
+    meta: { isNoAuth: true, trackRoute: true },
+    component: () => import('layouts/JobsLayout.vue')
+  },
+
+  {
+    path: '/jv/:userKey',
+    name: 'profile',
+    meta: { isNoAuth: true, trackRoute: true },
     component: () => import('layouts/JobsLayout.vue')
   },
 
@@ -262,7 +315,7 @@ const routes = [
     component: () => import('layouts/BodyLeftDrawerFooterLayout.vue'),
     children: [
       {
-        path: 'home/',
+        path: '',
         name: 'karma-home',
         meta: {},
         component: () => import('pages/karma/home-page/HomePage.vue')
@@ -288,6 +341,13 @@ const routes = [
         component: () => {}
       }
     ]
+  },
+
+  {
+    path: '/unsubscribe',
+    name: 'unsubscribe',
+    meta: { isNoAuth: true },
+    component: () => import('pages/UnsubscribePage.vue')
   },
 
   {

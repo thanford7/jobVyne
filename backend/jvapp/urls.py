@@ -1,8 +1,10 @@
 from django.urls import path, re_path
+from django.views.decorators.cache import cache_page
 
 from jvapp.apis import (
-    admin, ats, auth, content, currency, data, donation_org, email, employer, job_seeker, job, jobs, job_subscription,
-    karma, message, notification, sales, slack, social, stripe, test, tracking, user
+    admin, ats, auth, community, content, currency, data, donation_org, email, employer, job_seeker, job, jobs,
+    job_subscription,
+    karma, message, notification, sales, search, slack, social, stripe, taxonomy, test, tracking, user
 )
 from jvapp.apis.geocoding import LocationSearchView
 
@@ -12,7 +14,14 @@ urlpatterns = [
     path('admin/ats-jobs/', admin.AdminAtsJobsView.as_view()),
     re_path('^admin/employer/(?P<employer_id>[0-9]+)?/?$', admin.AdminEmployerView.as_view()),
     path('admin/job-scraper/', admin.AdminJobScrapersView.as_view()),
+    path('admin/taxonomy-update/', admin.AdminTaxonomyView.as_view()),
     re_path('^admin/user/(?P<user_id>[0-9]+)?/?$', admin.AdminUserView.as_view()),
+    path('admin/user-connections/', admin.AdminUserConnectionsView.as_view()),
+    path('admin/user-created-job/approval/', admin.AdminUserCreatedJobApprovalView.as_view()),
+    path('community/members/', community.CommunityMemberView.as_view()),
+    path('community/job-connections/', community.JobConnectionsView.as_view()),
+    path('community/job-connections/share/', community.JobConnectionsShareView.as_view()),
+    path('community/connection-invite/', community.ConnectionInviteView.as_view()),
     path('currency/', currency.CurrencyView.as_view()),
     path('employee-questions/', user.UserEmployeeProfileQuestionsView.as_view()),
     path('employer-from-domain/', employer.EmployerFromDomainView.as_view()),
@@ -41,23 +50,30 @@ urlpatterns = [
     path('feedback/', user.FeedbackView.as_view()),
     re_path('^job-application/(?P<application_id>[0-9]+)?/?$', job_seeker.ApplicationView.as_view()),
     path('job-application/external/', job_seeker.ApplicationExternalView.as_view()),
+    path('job-application/status/', job_seeker.ApplicationStatusView.as_view()),
     path('job/department/', job.JobDepartmentView.as_view()),
     path('job/location/', job.LocationView.as_view()),
     path('jobs/', jobs.JobsView.as_view()),
     re_path('^job-subscription/(?P<subscription_id>[0-9]+)?/?$', job_subscription.JobSubscriptionView.as_view()),
     path('notification-preference/', notification.UserNotificationPreferenceView.as_view()),
     path('page-view/', tracking.PageTrackView.as_view()),
+    path('search/entity/', cache_page(60 * 60 * 24)(search.SearchEntityView.as_view())),
     re_path('^social-content-item/(?P<item_id>[0-9]+)?/?$', content.SocialContentItemView.as_view()),
     path('social-link/share/', social.ShareSocialLinkView.as_view()),
     re_path('^social-link/(?P<link_id>\S+)?/?$', social.SocialLinkView.as_view()),
-    re_path('^social-link-jobs/(?P<link_id>\S+)?/?$', social.SocialLinkJobsView.as_view()),
+    path('social-link-jobs/', social.SocialLinkJobsView.as_view()),
     path('social-link-post-jobs/', social.SocialLinkPostJobsView.as_view()),
     path('social-platform/', social.SocialPlatformView.as_view()),
     re_path('^social-post/(?P<post_id>[0-9]+)?/?$', content.SocialPostView.as_view()),
     path('social-post/share/', content.ShareSocialPostView.as_view()),
+    path('taxonomy/job-level/', taxonomy.TaxonomyJobLevelView.as_view()),
+    path('taxonomy/job-profession/', taxonomy.TaxonomyJobProfessionView.as_view()),
+    path('unsubscribe/', tracking.UnsubscribeView.as_view()),
     re_path('^user/(?P<user_id>[0-9]+)?/?$', user.UserView.as_view()),
+    path('user/created-jobs/', user.UserCreatedJobView.as_view()),
     re_path('^user/employee-checklist/(?P<user_id>[0-9]+)?/?$', user.UserEmployeeChecklistView.as_view()),
-    re_path('^user/profile/(?P<user_id>[0-9]+)/?$', user.UserProfileView.as_view()),
+    path('user/favorite/', user.UserFavoriteView.as_view()),
+    path('user/profile/', user.UserProfileView.as_view()),
     re_path('^user/file/(?P<file_id>[0-9]+)?/?$', user.UserFileView.as_view()),
     path('user/job-application-review/', user.UserJobApplicationReviewView.as_view()),
     path('user/social-credentials/', user.UserSocialCredentialsView.as_view()),
@@ -83,6 +99,7 @@ urlpatterns = [
     # Chart Data
     path('data/applications/', data.ApplicationsView.as_view()),
     path('data/page-views/', data.PageViewsView.as_view()),
+    path('data/admin/processed-jobs/', data.AdminDataProcessedJobsView.as_view()),
     
     # ATS operations
     path('ats/custom-fields/', ats.AtsCustomFieldsView.as_view()),
@@ -131,10 +148,11 @@ urlpatterns = [
     
     # Slack
     path('slack/channel/', slack.SlackChannelView.as_view()),
-    path('slack/command/suggest/', slack.SlackCommandSuggestView.as_view()),
+    path('slack/command/job/', slack.SlackCommandJobView.as_view()),
     path('slack/command/job-seeker/', slack.SlackCommandJobSeekerView.as_view()),
     path('slack/message/job/', slack.SlackJobsMessageView.as_view()),
     path('slack/message/referral/', slack.SlackReferralsMessageView.as_view()),
+    path('slack/options/inbound/', slack.SlackOptionsInboundView.as_view()),
     path('slack/webhooks/inbound/', slack.SlackWebhookInboundView.as_view()),
     
     # Twilio SMS
@@ -145,6 +163,9 @@ urlpatterns = [
     path('social/calendly/', auth.social_auth_calendly),
     path('social/<backend>/', auth.social_auth),
     path('social-credentials/', auth.SocialAuthCredentialsView.as_view()),
+
+    # Job classification
+    path('classify-jobs/', job.JobClassificationView.as_view()),
     
     # Test url
     path('test/email/', test.TestEmailView.as_view()),

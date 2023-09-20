@@ -16,34 +16,20 @@ def get_serialized_social_platform(social_platform: SocialPlatform):
     }
 
 
-def get_serialized_social_link(link: SocialLink, is_include_performance=False):
+def get_serialized_social_link(link: SocialLink):
     data = {
         'id': link.id,
+        'url': link.get_link_url(),
         'owner_id': link.owner_id,
         'employer_name': link.employer.employer_name if link.employer else None,
+        'employer_key': link.employer.employer_key if link.employer else None,
         'employer_id': link.employer_id,
+        'employer_org_type': link.employer.organization_type if link.employer else None,
         'link_name': link.name,
         'is_default': link.is_default,
         'is_employee_referral': link.is_employee_referral,
         'job_subscriptions': [get_serialized_job_subscription(js) for js in link.job_subscriptions.all()],
     }
-    
-    if is_include_performance:
-        views = link.page_view.all()
-        unique_views = {view.ip_address for view in views}
-        data['performance'] = {
-            'views': {
-                'total': len(views),
-                'unique': len(unique_views)
-            },
-            'applications': [{
-                'id': app.id,
-                'first_name': app.first_name,
-                'last_name': app.last_name,
-                'job_title': app.employer_job.job_title,
-                'apply_dt': get_datetime_format_or_none(app.created_dt)
-            } for app in link.job_application.all()]
-        }
     
     return data
 

@@ -29,9 +29,10 @@ from jvapp.permissions.employer import IsAdminOrEmployerPermission
 from jvapp.utils.data import coerce_int
 from jvapp.utils.datetime import get_datetime_from_unix, get_datetime_or_none, get_unix_datetime
 from jvapp.utils.file import get_file_name, get_mime_from_file_path, get_safe_file_path
+from jvapp.utils.money import merge_compensation_data, parse_compensation_text
 from jvapp.utils.response import is_good_response
 from jvapp.utils.sanitize import sanitize_html
-
+from jvapp.utils.taxonomy import run_job_title_standardization
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class JobData:
     employment_type: str = None
     salary_floor: float = None
     salary_ceiling: float = None
-    salary_currency_type: str = None
+    salary_currency: str = None
     salary_interval: str = None
     locations: list = None
 
@@ -112,7 +113,7 @@ class BaseAts:
             for job in
             EmployerJob.objects
                 .prefetch_related('locations')
-                .filter(employer_id=self.ats_cfg.employer_id, close_date__isnull=True)
+                .filter(employer_id=self.ats_cfg.employer_id)
         }
     
     def get_job_departments(self):
@@ -122,8 +123,10 @@ class BaseAts:
         pass
     
     def get_referrer_name_from_application(self, application):
-        referrer = application.social_link.owner
-        return f'{referrer.first_name} {referrer.last_name}'
+        referrer = application.social_link.owner if application.social_link else application.referrer_user
+        if referrer:
+            return f'{referrer.first_name} {referrer.last_name}'
+        return None
     
     def get_job_title_from_application(self, application):
         return application.employer_job.job_title
@@ -132,9 +135,11 @@ class BaseAts:
         return get_base64_encoded(application.resume.open('rb').read(), as_string=as_string) if application.resume else None
     
     def get_referral_note(self, application):
-        return f'''Candidate was referred by {self.get_referrer_name_from_application(application)}
-        for the {self.get_job_title_from_application(application)} position
-        '''
+        if referral_name := self.get_referrer_name_from_application(application):
+            return f'''Candidate was referred by {referral_name}
+            for the {self.get_job_title_from_application(application)} position
+            '''
+        return None
     
     def get_ats_user_id(self):
         return None
@@ -204,7 +209,7 @@ class BaseAts:
                 current_job.employment_type = job_data.employment_type
                 current_job.salary_floor = job_data.salary_floor
                 current_job.salary_ceiling = job_data.salary_ceiling
-                current_job.salary_currency_id = job_data.salary_currency_type
+                current_job.salary_currency_id = job_data.salary_currency
                 jobs_list = update_jobs
                 if is_new:
                     # We can't bulk save new jobs because Django doesn't provide the PK after saving
@@ -248,6 +253,11 @@ class BaseAts:
         for job in close_jobs:
             job.close_date = now.date()
         EmployerJob.objects.bulk_update(close_jobs, ['close_date'])
+        
+        run_job_title_standardization(
+            job_filter=Q(employer_id=self.ats_cfg.employer_id) & Q(ats_job_key__isnull=False),
+            is_non_standardized_only=True
+        )
         
     def save_application_statuses(self, application_statuses):
         current_applications = self.get_current_applications()
@@ -346,21 +356,32 @@ class GreenhouseAts(BaseAts):
     def get_normalized_job_data(self, job):
         custom_fields = job['custom_fields']
         employment_type_key = self.ats_cfg.employment_type_field_key or 'employment_type'
+        raw_locations = [office['location']['name'] or office['name'] for office in job['offices']]
+        raw_locations = [l for l in raw_locations if l]
+        locations = [self.location_parser.get_location(l) for l in raw_locations]
+        
+        job_description = job.get('content', '')
         salary_range_key = self.ats_cfg.salary_range_field_key or 'salary_range'
-        salary_range = custom_fields.get(salary_range_key)
-        locations = [self.location_parser.get_location(office['location']['name']) for office in job['offices']]
+        salary_range = {}
+        if salary_range_data := custom_fields.get(salary_range_key):
+            salary_range = {
+                'salary_floor': salary_range_data.get('min_value'),
+                'salary_ceiling': salary_range_data.get('max_value'),
+                'salary_currency': salary_range_data.get('unit')
+            }
+        description_compensation_data = parse_compensation_text(job_description)
+        compensation_data = merge_compensation_data([description_compensation_data, salary_range])
+        
         data = JobData(
             ats_job_key=str(job['id']),
             job_title=job['name'],
-            job_description=job.get('content', ''),
+            job_description=job_description,
             open_date=self.parse_datetime_str(job['opened_at'], as_date=True),
             close_date=self.parse_datetime_str(job['closed_at'], as_date=True),
             department_name=job['departments'][0]['name'] if job['departments'] else None,
             employment_type=custom_fields.get(employment_type_key),
-            salary_floor=salary_range.get('min_value') if isinstance(salary_range, dict) else None,
-            salary_ceiling=salary_range.get('max_value') if isinstance(salary_range, dict) else None,
-            salary_currency_type=salary_range.get('unit') if isinstance(salary_range, dict) else None,
-            locations=[l for l in locations if l]
+            locations=[l for l in locations if l],
+            **compensation_data
         )
         return data
 
@@ -430,7 +451,8 @@ class GreenhouseAts(BaseAts):
             ats_application_key = str(candidate_data['application_ids'][0])
             
         # Add a note to the candidate so we know who referred them
-        self.add_application_note(self.get_referral_note(application), candidate_key=ats_candidate_key)
+        if referral_note := self.get_referral_note(application):
+            self.add_application_note(referral_note, candidate_key=ats_candidate_key)
             
         return ats_candidate_key, ats_application_key
     
@@ -582,32 +604,36 @@ class LeverAts(BaseAts):
         
         # Delete requests don't return any content
         return response.json() if response.content else None
+    
+    def add_salary_data(self, job, salary_range):
+        min_salary, max_salary, interval = self.get_normalized_salary(salary_range)
+        job['salary_floor'] = min_salary
+        job['salary_ceiling'] = max_salary
+        job['salary_interval'] = interval
+        job['salary_currency'] = salary_range['currency']
 
     def get_jobs(self):
         jobs = self.get_paginated_data('postings', body_cfg={'state': 'published'})
         requisitions = self.get_requisitions()
-        if requisitions:
-            for job in jobs:
+        for job in jobs:
+            salary_range = job.get('salaryRange')
+            if salary_range:
+                self.add_salary_data(job, salary_range)
+                continue
+            elif requisitions:
                 requisition_codes = job['requisitionCodes']
-                salary_range = job.get('salaryRange')
-                if not any([requisition_codes, salary_range]):
+                if not requisition_codes:
                     continue
                 
-                # If no salary range is present on the job, fall back to requisition
+                requisition_code = requisition_codes[0]
+                requisition = requisitions.get(requisition_code)
+                if not requisition:
+                    continue
+                salary_range = requisition['compensationBand']
                 if not salary_range:
-                    requisition_code = requisition_codes[0]
-                    requisition = requisitions.get(requisition_code)
-                    if not requisition:
-                        continue
-                    salary_range = requisition['compensationBand']
-                    if not salary_range:
-                        continue
+                    continue
                 
-                min_salary, max_salary, interval = self.get_normalized_salary(salary_range)
-                job['salary_floor'] = min_salary
-                job['salary_ceiling'] = max_salary
-                job['salary_interval'] = interval
-                job['salary_currency'] = salary_range['currency']
+                self.add_salary_data(job, salary_range)
             
         return jobs
     
@@ -633,7 +659,7 @@ class LeverAts(BaseAts):
             employment_type=job['categories']['commitment'],
             salary_floor=job.get('salary_floor'),
             salary_ceiling=job.get('salary_ceiling'),
-            salary_currency_type=job.get('salary_currency'),
+            salary_currency=job.get('salary_currency'),
             salary_interval=job.get('salary_interval'),
             locations=[l for l in locations if l]
         )
@@ -841,7 +867,8 @@ class AtsBaseView(JobVyneAPIView):
             self.ats_cfg = EmployerAts.objects.select_related('employer').get(ats_filter)
         except EmployerAts.DoesNotExist:
             return get_error_response('An ATS connection does not exist')
-
+        
+        self.employer_id = self.ats_cfg.employer_id
         self.ats_api = get_ats_api(self.ats_cfg)
         
 

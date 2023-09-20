@@ -55,6 +55,9 @@ export default {
     redirectPageUrl: {
       type: [String, null]
     },
+    redirectParams: {
+      type: [Object, null]
+    },
     styleOverride: {
       type: Object,
       default: () => {
@@ -79,13 +82,16 @@ export default {
       }
       await this.$api.post('auth/login/', getAjaxFormData(userData))
       await this.authStore.setUser(true)
-      if (this.$route.name === 'login') {
-        await this.$router.push(
-          this.redirectPageUrl || pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser)
-        )
+      if (this.redirectPageUrl) {
+        await this.$router.push({
+          path: this.redirectPageUrl,
+          query: this.redirectParams
+        })
+      } else if (['login', 'home'].includes(this.$route.name)) {
+        await this.$router.push(pagePermissionsUtil.getDefaultLandingPage(this.authStore.propUser))
       } else {
         // User logged in from a dialog so redirect back to the page they were on
-        this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })
+        await this.$router.replace({ path: this.$route.fullPath, query: this.$route.query })
       }
       this.$global.$emit('login')
     },

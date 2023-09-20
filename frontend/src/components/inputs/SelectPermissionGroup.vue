@@ -39,6 +39,7 @@
 </template>
 
 <script>
+import { useAuthStore } from 'stores/auth-store.js'
 import { useEmployerStore } from 'stores/employer-store'
 import dataUtil from 'src/utils/data'
 import userTypeUtil from 'src/utils/user-types'
@@ -61,12 +62,15 @@ export default {
   data () {
     return {
       isLoaded: false,
-      userTypeUtil
+      permissionGroups: [],
+      userTypeUtil,
+      authStore: useAuthStore(),
+      employerStore: useEmployerStore()
     }
   },
   computed: {
     options () {
-      const groupedPermissions = dataUtil.groupBy(this.employerStore.permissionGroups, 'user_type_bit')
+      const groupedPermissions = dataUtil.groupBy(this.permissionGroups, 'user_type_bit')
       return Object.entries(groupedPermissions).map(([userTypeBit, childOptions]) => {
         return {
           user_type_bit: userTypeBit,
@@ -86,15 +90,14 @@ export default {
       return dataUtil.omit(itemProps, ['id', 'onClick', 'onMousemove'])
     },
     getOptionLabel (groupId) {
-      return this.employerStore.permissionGroups.find((pg) => pg.id === parseInt(groupId)).name
+      return this.permissionGroups.find((pg) => pg.id === parseInt(groupId)).name
     }
   },
   async mounted () {
-    await this.employerStore.setEmployerPermissions()
+    const employerId = this.authStore.propUser.employer_id
+    await this.employerStore.setEmployerPermissions(employerId)
+    this.permissionGroups = this.employerStore.getEmployerPermissions(employerId)
     this.isLoaded = true
-  },
-  setup () {
-    return { employerStore: useEmployerStore() }
   }
 }
 </script>

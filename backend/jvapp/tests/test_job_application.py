@@ -181,9 +181,4 @@ class JobApplicationTestCase(BaseTestCase):
     def _get_jobs_from_social_link(self, **data_kwargs):
         resp = self.make_get_request(f'social-link-jobs/{self.social_link.id}', data=dict(**data_kwargs))
         self.assert_200_response(resp)
-        job_dicts = []
-        for employer_info in resp.data['jobs_by_employer']:
-            for job_list in employer_info['jobs'].values():
-                for job_info in job_list:
-                    job_dicts.append(job_info)
-        return job_dicts
+        return resp.data['jobs']

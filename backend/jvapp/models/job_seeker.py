@@ -68,10 +68,20 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
         DECLINED = 'declined'
         ARCHIVED = 'archived'
     
+    # For applications to an employer managed by JobVyne, there are only a few statuses that
+    # the candidate should be able to move themselves to
+    USER_EDITABLE_APPLICATION_STATUSES = [
+        ApplicationStatus.INTERESTED.value, ApplicationStatus.APPLIED.value,
+        ApplicationStatus.DECLINED.value, ApplicationStatus.ARCHIVED.value
+    ]
+    
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, related_name='job_application', on_delete=models.CASCADE)
     social_link = models.ForeignKey(
         'SocialLink', on_delete=models.SET_NULL, null=True, blank=True, related_name='job_application'
     )
+    referrer_employer = models.ForeignKey('Employer', null=True, blank=True, on_delete=models.SET_NULL, related_name='referral')
+    referrer_user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.SET_NULL, related_name='referral')
+    # TODO: Change platform to character field
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
     employer_job = models.ForeignKey(
         'EmployerJob', on_delete=models.CASCADE, related_name='job_application'
@@ -104,6 +114,12 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     
     ats_application_key = models.CharField(max_length=40, null=True, blank=True)
     
+    cover_letter = models.FileField(
+        upload_to=get_user_upload_location,
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_UPLOADS_FILE)],
+        null=True, blank=True
+    )
+    
     class Meta:
         unique_together = ('employer_job', 'email')
         
@@ -129,7 +145,7 @@ class JobApplication(JobApplicationFields, JobVynePermissionsMixin):
     
     def get_recommend_applicant_label(self, val):
         return self.feedbackRecommendLabels.get(val, self.FEEDBACK_NO_RESPONSE_LABEL)
-
+    
 
 class JobApplicationTemplate(JobApplicationFields, JobVynePermissionsMixin):
     

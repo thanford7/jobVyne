@@ -24,7 +24,7 @@
         <q-tab-panel name="users">
           <div class="row q-gutter-y-md">
             <div class="col-12">
-              <UserTable @userUpdate="updateSubscriptionData()"/>
+              <UserTable @userUpdate="updateSubscriptionData(true)"/>
             </div>
           </div>
         </q-tab-panel>
@@ -50,7 +50,7 @@
                       <div class="text-bold q-mb-sm">{{ userGroup.name }}</div>
                       <q-list>
                         <q-item
-                          v-for="group in employerStore.permissionGroups.filter((g) => g.user_type_bit === userGroup.user_type_bit)"
+                          v-for="group in permissionGroups.filter((g) => g.user_type_bit === userGroup.user_type_bit)"
                           clickable v-ripple
                           :active="selectedGroupId === group.id"
                           active-class="border-left-4-primary"
@@ -140,6 +140,7 @@
                     <q-item
                       v-for="perm in selectedGroupPermissions"
                       tag="label"
+                      :disable="!selectedGroup.can_edit"
                       :v-ripple="selectedGroup.can_edit"
                       :clickable="selectedGroup.can_edit"
                     >
@@ -193,6 +194,7 @@ export default {
   data () {
     return {
       tab: 'users',
+      permissionGroups: [],
       selectedGroupId: null,
       userGroups: [USER_TYPE_EMPLOYER, USER_TYPE_EMPLOYEE].map((userType) => {
         return {
@@ -200,34 +202,24 @@ export default {
           user_type_bit: USER_TYPES[userType]
         }
       }),
-      subscription: this.employerStore.getEmployerSubscription(this.authStore.propUser.employer_id),
+      subscription: {},
       dataUtil,
       userTypeUtil,
       dateTimeUtil,
       PERMISSION_NAMES: pagePermissionsUtil.PERMISSION_NAMES,
       USER_TYPE_EMPLOYER,
-      USER_TYPE_EMPLOYEE
+      USER_TYPE_EMPLOYEE,
+      employerStore: useEmployerStore(),
+      authStore: useAuthStore(),
+      q: useQuasar()
     }
   },
   computed: {
-    xCsrfToken () {
-      // TODO: Remove
-      const cookies = document.cookie.split(';')
-      const d = {
-        csrftoken: null
-      }
-      for (const cookie of cookies) {
-        const [k, v] = cookie.split('=')
-        d[k.trim()] = v.trim()
-      }
-      console.log(d.csrftoken)
-      return d.csrftoken
-    },
     selectedGroup () {
       if (!this.selectedGroupId) {
         return null
       }
-      return this.employerStore.permissionGroups.find((group) => group.id === this.selectedGroupId)
+      return this.permissionGroups.find((group) => group.id === this.selectedGroupId)
     },
     selectedGroupPermissions () {
       if (!this.selectedGroup) {
@@ -256,9 +248,13 @@ export default {
     }
   },
   methods: {
-    async updateSubscriptionData () {
-      await this.employerStore.setEmployerSubscription(this.authStore.user.employer_id, true)
+    async updateSubscriptionData (isForceRefresh) {
+      await this.employerStore.setEmployerSubscription(this.authStore.user.employer_id, isForceRefresh)
       this.subscription = this.employerStore.getEmployerSubscription(this.authStore.user.employer_id)
+    },
+    async updateEmployerPermissionData (isForceRefresh) {
+      await this.employerStore.setEmployerPermissions(this.authStore.user.employer_id, isForceRefresh)
+      this.permissionGroups = this.employerStore.getEmployerPermissions(this.authStore.user.employer_id)
     },
     getIsGroupReadOnly (group) {
       return !group.employer_id || !group.can_edit
@@ -271,9 +267,9 @@ export default {
         {
           okFn: async () => {
             await this.$api.delete(`employer/permission/${this.selectedGroupId}/`)
-            this.employerStore.setEmployer(this.authStore.user.employer_id, true)
-            this.employerStore.setEmployerPermissions(true)
-            this.authStore.setUser(true)
+            await this.employerStore.setEmployer(this.authStore.user.employer_id, true)
+            await this.updateEmployerPermissionData(true)
+            await this.authStore.setUser(true)
           }
         }
       )
@@ -283,16 +279,16 @@ export default {
         `employer/permission/${this.selectedGroupId}/`,
         getAjaxFormData({ is_default: true })
       )
-      this.employerStore.setEmployerPermissions(true)
-      this.authStore.setUser(true)
+      await this.updateEmployerPermissionData(true)
+      await this.authStore.setUser(true)
     },
     async saveGroup () {
       await this.$api.put(
         `employer/permission/${this.selectedGroupId}/`,
         getAjaxFormData({ permissions: this.selectedGroup.permissions })
       )
-      this.employerStore.setEmployerPermissions(true)
-      this.authStore.setUser(true)
+      await this.updateEmployerPermissionData(true)
+      await this.authStore.setUser(true)
     },
     openEmployerAuthGroupDialog () {
       return this.q.dialog({
@@ -302,26 +298,8 @@ export default {
       })
     }
   },
-  preFetch () {
-    const employerStore = useEmployerStore()
-    const authStore = useAuthStore()
-    Loading.show()
-
-    return authStore.setUser().then(() => {
-      return Promise.all([
-        employerStore.setEmployer(authStore.propUser.employer_id),
-        employerStore.setEmployerJobs(authStore.propUser.employer_id),
-        employerStore.setEmployerPermissions(),
-        employerStore.setEmployerSubscription(authStore.propUser.employer_id)
-      ])
-    }).finally(() => {
-      Loading.hide()
-    })
-  },
   setup () {
-    const employerStore = useEmployerStore()
     const globalStore = useGlobalStore()
-    const authStore = useAuthStore()
 
     const pageTitle = 'User Management'
     const metaData = {
@@ -329,12 +307,22 @@ export default {
       titleTemplate: globalStore.getPageTitle
     }
     useMeta(metaData)
-    const q = useQuasar()
-
-    return { employerStore, authStore, globalStore, q }
   },
-  mounted () {
-    this.selectedGroupId = this.employerStore.permissionGroups[0].id
+  async mounted () {
+    Loading.show()
+
+    await this.authStore.setUser().then(() => {
+      const employerId = this.authStore.propUser.employer_id
+      return Promise.all([
+        this.employerStore.setEmployer(employerId),
+        this.employerStore.setEmployerJobs(employerId),
+        this.updateEmployerPermissionData(false),
+        this.updateSubscriptionData(false)
+      ])
+    }).finally(() => {
+      Loading.hide()
+    })
+    this.selectedGroupId = this.permissionGroups[0].id
   }
 }
 </script>

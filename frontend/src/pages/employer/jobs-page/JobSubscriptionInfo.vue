@@ -1,17 +1,13 @@
 <template>
   <div>
-    <q-chip
-      v-if="jobSubscription.filters.job_title_regex"
-      dense size="13px"
+    <template v-if="jobSubscription.filters.job_professions">
+      <q-chip
+      v-for="jobProfession in jobSubscription.filters.job_professions"
+      dense
     >
-      <b>Include: </b>&nbsp;{{ jobSubscription.filters.job_title_regex }}
+      {{ jobProfession.name }}
     </q-chip>
-    <q-chip
-      v-if="jobSubscription.filters.exclude_job_title_regex"
-      dense size="13px"
-    >
-      <b>Exclude: </b>&nbsp;{{ jobSubscription.filters.exclude_job_title_regex }}
-    </q-chip>
+    </template>
     <LocationChip :locations="jobSubscription.filters.locations" :is-dense="true"/>
     <template v-if="jobSubscription.filters.jobs?.length && jobSubscription.filters.jobs?.length > 2">
       <CustomTooltip :is_include_icon="false">
@@ -60,13 +56,13 @@
     <template v-if="jobSubscription.filters.remote_type_bit">
       <q-chip
         v-if="jobSubscription.filters.remote_type_bit === locationUtil.REMOTE_TYPE_TRUE"
-        dense color="grey-8" text-color="white" size="13px"
+        dense color="grey-8" text-color="white"
       >
         Remote only
       </q-chip>
       <q-chip
         v-else
-        dense color="grey-8" text-color="white" size="13px"
+        dense color="grey-8" text-color="white"
       >
         On-site only
       </q-chip>

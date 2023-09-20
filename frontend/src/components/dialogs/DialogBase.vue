@@ -5,6 +5,11 @@
     transition-show="slide-up"
     transition-hide="slide-down"
     @hide="onDialogHide"
+    @keyup.enter.prevent="() => {
+      if (isSubmitOnEnter) {
+        onOkClick()
+      }
+    }"
   >
     <q-card class="q-dialog-plugin" :style="cardStyle">
       <q-bar v-if="isFullScreen">
@@ -14,22 +19,17 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <q-card-section v-if="isIncludeHeader && !isFullScreen" class="border-bottom-1-gray-300 q-pb-none q-mb-md">
-        <div v-if="baseTitleText" class="text-h6">
-          {{ baseTitleText }}
-        </div>
-        <q-btn
-          flat unelevated ripple
-          icon="close"
-          text-color="grey-5"
-          @click="onDialogCancel"
-          class="q-pr-sm"
-          style="position: absolute; top: 0; right: 0"
-        />
-        <p class="text-gray-500 q-mt-none">
+      <div v-if="isIncludeHeader && !isFullScreen" class="border-bottom-1-gray-300 q-pb-none q-mb-md">
+        <q-toolbar>
+          <q-toolbar-title v-if="baseTitleText" class="text-h6">
+            {{ baseTitleText }}
+          </q-toolbar-title>
+          <q-btn v-if="isIncludeCloseButton" flat round dense icon="close" v-close-popup/>
+        </q-toolbar>
+        <p class="text-gray-500 q-mt-none q-mb-sm q-px-md">
           <slot name="subTitle"/>
         </p>
-      </q-card-section>
+      </div>
 
       <slot name="fullWidthBody"/>
 
@@ -99,6 +99,10 @@ export default {
       type: Boolean,
       default: true
     },
+    isIncludeCloseButton: {
+      type: Boolean,
+      default: true
+    },
     isIncludeHeader: {
       type: Boolean,
       default: true
@@ -119,6 +123,10 @@ export default {
     },
     isValidFormFn: {
       type: [Function, null]
+    },
+    isSubmitOnEnter: {
+      type: Boolean,
+      default: false
     },
     width: {
       type: String,
@@ -141,7 +149,8 @@ export default {
   methods: {
     async onOkClick () {
       if (this.okFn) {
-        await this.okFn().finally(() => this.onDialogOK())
+        const okData = await this.okFn()
+        this.onDialogOK(okData || {})
       } else {
         if (this.isValidFormFn) {
           const isValidForm = await this.isValidFormFn()
@@ -149,7 +158,7 @@ export default {
             return
           }
         }
-        this.onDialogOK()
+        this.onDialogOK(this.okData)
       }
     }
   },

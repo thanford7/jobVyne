@@ -6,6 +6,8 @@ from scrape.job_processor import JobItem
 
 
 class AncestryScraper(Scraper):
+    ATS_NAME = 'Custom'
+    USE_HEADERS = False
     employer_name = 'Ancestry'
     start_url = 'https://careers.ancestry.com/jobs/search'
     
@@ -50,9 +52,3 @@ class AncestryScraper(Scraper):
             first_posted_date=standard_job_item.first_posted_date,
             **compensation_data
         )
-    
-    async def request_failure_logger(self, request):
-        return  # noop
-    
-    def response_failure_logger(self, response):
-        return  # noop

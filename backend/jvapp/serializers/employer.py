@@ -29,10 +29,17 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
         'id': employer.id,
         'organization_type': employer.organization_type,
         'name': employer.employer_name,
+        'key': employer.employer_key,
+        'description': employer.description,
+        'industry': employer.industry,
+        'employee_count_min': employer.size_min,
+        'employee_count_max': employer.size_max,
+        'year_founded': employer.year_founded,
         'logo_url': employer.logo.url if employer.logo else None,
         'logo_square_88_url': employer.logo_square_88.url if employer.logo_square_88 else None,
-        'size': employer.employer_size.size if employer.employer_size else None,
         'email_domains': employer.email_domains,
+        'website': employer.website_domain,
+        'ats_name': employer.applicant_tracking_system.name if employer.applicant_tracking_system else None,
         'is_use_job_url': employer.is_use_job_url,
         'company_jobs_page_url': employer.company_jobs_page_url,
         'color_primary': employer.color_primary,
@@ -75,7 +82,8 @@ def get_serialized_employer(employer: Employer, is_employer: bool = False):
             'jobs_post_dow_bits': slack_cfg.jobs_post_dow_bits,
             'jobs_post_tod_minutes': slack_cfg.jobs_post_tod_minutes,
             'jobs_post_max_jobs': slack_cfg.jobs_post_max_jobs,
-            'referrals_post_channel': slack_cfg.referrals_post_channel
+            'referrals_post_channel': slack_cfg.referrals_post_channel,
+            'modal_cfg_is_salary_required': slack_cfg.modal_cfg_is_salary_required,
         } if slack_cfg else None
         
         employees = employer.employee.all()
@@ -154,14 +162,16 @@ def calculate_bonus_amount(employer_job, bonus_rule=None):
 def get_serialized_employer_job(employer_job: EmployerJob, is_include_bonus=False, rules=None):
     data = {
         'id': employer_job.id,
-        'ats_job_key': employer_job.ats_job_key,
-        'employer_id': employer_job.employer_id,
         'employer_name': employer_job.employer.employer_name,
-        'employer_logo': employer_job.employer.logo.url if employer_job.employer.logo else None,
+        'ats_job_key': employer_job.ats_job_key,
         'is_use_job_url': employer_job.employer.is_use_job_url,
         'application_url': employer_job.application_url,
         'job_title': employer_job.job_title,
         'job_description': employer_job.job_description,
+        'job_description_summary': employer_job.job_description_summary,
+        'responsibilities': employer_job.responsibilities,
+        'qualifications': employer_job.qualifications,
+        'technical_qualifications': employer_job.technical_qualifications,
         'job_department': employer_job.job_department.name if employer_job.job_department else None,
         'job_department_id': employer_job.job_department_id,
         'is_remote': employer_job.is_remote,

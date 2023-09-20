@@ -29,8 +29,7 @@ class JobSubscriptionView(JobVyneAPIView):
             job_subscriptions = self.get_job_subscriptions(user_id=user_id)
         else:
             job_subscriptions = self.get_job_subscriptions(employer_id=employer_id)
-        jobs_by_subscription = self.get_jobs_from_subscriptions(job_subscriptions)
-        job_counts_by_subscription = [j.count() for j in jobs_by_subscription]
+        job_counts_by_subscription = self.get_jobs_count_from_subscriptions(job_subscriptions)
         serialized_subscriptions = [get_serialized_job_subscription(js) for js in job_subscriptions]
         for sub, job_count in zip(serialized_subscriptions, job_counts_by_subscription):
             sub['job_count'] = job_count
@@ -71,8 +70,8 @@ class JobSubscriptionView(JobVyneAPIView):
         })
     
     @staticmethod
-    def get_job_subscriptions(subscription_id=None, employer_id=None, user_id=None):
-        subscription_filter = Q()
+    def get_job_subscriptions(subscription_id=None, employer_id=None, user_id=None, subscription_filter=None):
+        subscription_filter = subscription_filter or Q()
         if subscription_id:
             subscription_filter &= Q(id=subscription_id)
         elif user_id:
@@ -89,7 +88,9 @@ class JobSubscriptionView(JobVyneAPIView):
                 'filter_location__state',
                 'filter_location__country',
                 'filter_job',
-                'filter_employer'
+                'filter_employer',
+                'filter_job_professions',
+                'filter_job_professions__sub_taxonomies'
             ) \
             .filter(subscription_filter)
         
@@ -111,8 +112,7 @@ class JobSubscriptionView(JobVyneAPIView):
         with atomic():
             set_object_attributes(job_subscription, data, {
                 'title': None,
-                'filter_job_title_regex': AttributeCfg(form_name='job_title_regex'),
-                'filter_exclude_job_title_regex': AttributeCfg(form_name='exclude_job_title_regex'),
+                'filter_is_salary_only': AttributeCfg(form_name='is_salary_only'),
                 'filter_remote_type_bit': AttributeCfg(form_name='remote_type_bit'),
                 'filter_range_miles': AttributeCfg(form_name='range_miles')
             })
@@ -128,10 +128,21 @@ class JobSubscriptionView(JobVyneAPIView):
                     job_subscription.filter_job.clear()
                 if job_subscription.filter_employer.all():
                     job_subscription.filter_employer.clear()
+                if job_subscription.filter_job_professions.all():
+                    job_subscription.filter_job_professions.clear()
             
             job_subscription.save()
             
             # Add new filters
+            if job_title_ids := data.get('job_professions'):
+                filter_job_professions = []
+                filter_model = job_subscription.filter_job_professions.through
+                for job_title_id in job_title_ids:
+                    filter_job_professions.append(filter_model(
+                        jobsubscription_id=job_subscription.id,
+                        taxonomy_id=job_title_id
+                    ))
+                filter_model.objects.bulk_create(filter_job_professions)
             if locations:
                 filter_locations = []
                 filter_model = job_subscription.filter_location.through
@@ -161,13 +172,24 @@ class JobSubscriptionView(JobVyneAPIView):
                 filter_model.objects.bulk_create(filter_employers)
 
     @staticmethod
-    def get_jobs_from_subscriptions(job_subscriptions: iter):
+    def get_jobs_count_from_subscriptions(job_subscriptions: iter):
         from jvapp.apis.employer import EmployerJobView  # Avoid circular import
         job_filters = [JobSubscriptionView.get_job_filter(js) for js in job_subscriptions]
-        return [
-            EmployerJobView.get_employer_jobs(employer_job_filter=jf)
-            for jf in job_filters
-        ]
+        jobs_count_by_subscription = []
+        for jf in job_filters:
+            jobs, paginated_jobs = EmployerJobView.get_employer_jobs(employer_job_filter=jf, is_include_fetch=False)
+            jobs_count_by_subscription.append(paginated_jobs.count)
+        return jobs_count_by_subscription
+    
+    @staticmethod
+    def get_combined_job_professions_from_subscriptions(job_subscriptions):
+        if not job_subscriptions:
+            return []
+        job_professions = set()
+        for sub in job_subscriptions:
+            for profession in sub.filter_job_professions.all():
+                job_professions.add(profession)
+        return list(job_professions)
     
     @staticmethod
     def get_combined_job_subscription_filter(job_subscriptions):
@@ -179,14 +201,15 @@ class JobSubscriptionView(JobVyneAPIView):
     @staticmethod
     def get_job_filter(job_subscription):
         job_filter = Q()
-        if job_subscription.filter_job_title_regex:
-            job_filter &= Q(job_title__iregex=f'^.*({job_subscription.filter_job_title_regex}).*$')
-        if job_subscription.filter_exclude_job_title_regex:
-            job_filter &= ~Q(job_title__iregex=f'^.*({job_subscription.filter_exclude_job_title_regex}).*$')
+        if job_professions := job_subscription.filter_job_professions.all():
+            job_profession_ids = [p.id for p in JobSubscriptionView.get_parent_and_child_professions(job_professions)]
+            job_filter &= Q(taxonomy__taxonomy_id__in=job_profession_ids)
         if job_ids := [j.id for j in job_subscription.filter_job.all()]:
             job_filter &= Q(id__in=job_ids)
         if employer_ids := [e.id for e in job_subscription.filter_employer.all()]:
             job_filter &= Q(employer_id__in=employer_ids)
+        if job_subscription.filter_is_salary_only:
+            job_filter &= (Q(salary_floor__isnull=False) | Q(salary_ceiling__isnull=False))
     
         location_dicts = [get_serialized_location(l) for l in job_subscription.filter_location.all()]
         combined_location_filter = None
@@ -207,16 +230,29 @@ class JobSubscriptionView(JobVyneAPIView):
         return job_filter
     
     @staticmethod
-    def get_or_create_employer_subscription(employer_id):
+    def get_parent_and_child_professions(job_professions):
+        child_professions = []
+        for job_profession in job_professions:
+            child_professions += job_profession.sub_taxonomies.all()
+        deduped_professions = {}
+        for job_profession in child_professions + list(job_professions):
+            deduped_professions[job_profession.id] = job_profession
+        return list(deduped_professions.values())
+        
+    
+    @staticmethod
+    def get_or_create_employer_own_subscription(employer_id):
         """ Each employer has a unique job subscription that filters for all jobs
         connected to that employer
         """
         try:
             return JobSubscription.objects.get(employer_id=employer_id, is_single_employer=True)
         except JobSubscription.DoesNotExist:
+            employer = Employer.objects.get(id=employer_id)
             employer_subscription = JobSubscription(
                 employer_id=employer_id,
-                is_single_employer=True
+                is_single_employer=True,
+                title=employer.employer_name
             )
             employer_subscription.save()
             employer_subscription.filter_employer.add(employer_id)
@@ -233,15 +269,12 @@ class JobSubscriptionView(JobVyneAPIView):
             job_subscription.save()
             job_subscription.filter_job.add(job_id)
             return job_subscription
-    
+        
     @staticmethod
-    def create_employer_subscription(employer_id):
-        employer = Employer.objects.get(id=employer_id)
-        employer_subscription = JobSubscription(
-            employer_id=employer_id,
-            is_single_employer=True,
-            title=employer.employer_name
-        )
-        employer_subscription.save()
-        employer_subscription.filter_employer.add(employer_id)
-        return employer_subscription
+    def get_or_create_user_generated_subscription(employer_id):
+        try:
+            return JobSubscription.objects.get(employer_id=employer_id, is_user_entered=True)
+        except JobSubscription.DoesNotExist:
+            job_subscription = JobSubscription(employer_id=employer_id, is_user_entered=True)
+            job_subscription.save()
+            return job_subscription

@@ -12,10 +12,11 @@ class JobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
     employer = models.ForeignKey('Employer', null=True, blank=True, on_delete=models.CASCADE, related_name='job_subscription')
     user = models.ForeignKey('JobVyneUser', null=True, blank=True, on_delete=models.CASCADE, related_name='job_subscription')
     job = models.ForeignKey('EmployerJob', null=True, blank=True, unique=True, on_delete=models.CASCADE, related_name='job_subscription')
-    is_single_employer = models.BooleanField(default=False)
+    is_single_employer = models.BooleanField(default=False)  # Used for an employer's own jobs
+    is_user_entered = models.BooleanField(default=False)  # Used for members of a group entering a new job
     title = models.CharField(max_length=200)
-    filter_job_title_regex = models.CharField(max_length=500, null=True, blank=True)
-    filter_exclude_job_title_regex = models.CharField(max_length=500, null=True, blank=True)
+    filter_is_salary_only = models.BooleanField(default=False)
+    filter_job_professions = models.ManyToManyField('Taxonomy')
     filter_location = models.ManyToManyField('Location')
     filter_range_miles = models.SmallIntegerField(null=True, blank=True)
     filter_job = models.ManyToManyField('EmployerJob')
@@ -24,7 +25,8 @@ class JobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
     
     class Meta:
         constraints = [
-            UniqueConstraint(fields=['employer'], condition=Q(is_single_employer=True), name='unique_employer')
+            UniqueConstraint(fields=['employer'], condition=Q(is_single_employer=True), name='unique_employer'),
+            UniqueConstraint(fields=['employer'], condition=Q(is_user_entered=True), name='unique_user_provided_jobs')
         ]
     
     def _jv_can_create(self, user):
@@ -41,6 +43,14 @@ class JobSubscription(AuditFields, OwnerFields, JobVynePermissionsMixin):
                 and user.id == self.user_id
             )
         )
+    
+    @property
+    def is_job_subscription(self):
+        return bool(self.filter_job.all())
+    
+    @property
+    def is_single_job_subscription(self):
+        return len(self.filter_job.all()) == 1
     
     @property
     def is_employer_subscription(self):

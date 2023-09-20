@@ -1,18 +1,26 @@
 __all__ = ('PageTrackView',)
 import logging
 from datetime import timedelta
+from urllib.parse import urlencode
 
+from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis.geoip2 import GeoIP2
 from django.db import DataError
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from user_agents import parse
 
+from jvapp.apis._apiBase import get_error_response, get_success_response
+from jvapp.models.employer import Employer
 from jvapp.models.social import SocialPlatform
-from jvapp.models.tracking import PageView
+from jvapp.models.tracking import EmailUnsubscribe, PageView
+from jvapp.utils.security import get_hash_string, get_reversible_hash, reverse_hash
 
 geo_locator = GeoIP2()
 logger = logging.getLogger(__name__)
@@ -32,13 +40,25 @@ def parse_ip_address(address):
 class PageTrackView(APIView):
     permission_classes = [AllowAny]
     
+    @method_decorator(csrf_exempt)
+    @method_decorator(ensure_csrf_cookie)
     def post(self, request):
+        location_data = None
         try:
             meta = request.META
             page_view = PageView()
+            
+            if not isinstance(request.user, AnonymousUser):
+                page_view.viewer_id = request.user.id
             page_view.relative_url = request.data['relative_url']
             page_view.social_link_id = request.data.get('filter_id')
             params = request.data.get('query') or {}
+            page_view.page_owner_id = params.get('connect')
+            if employer_key := request.data.get('employer_key'):
+                try:
+                    page_view.employer = Employer.objects.get(employer_key=employer_key)
+                except Employer.DoesNotExist:
+                    pass
             if platform_name := params.get('platform'):
                 try:
                     page_view.platform = SocialPlatform.objects.get(name__iexact=platform_name)
@@ -51,7 +71,6 @@ class PageTrackView(APIView):
                 page_view.ip_address = None
             page_view.access_dt = timezone.now()
             
-            location_data = None
             if page_view.ip_address:
                 try:
                     location_data = geo_locator.city(page_view.ip_address)
@@ -78,7 +97,41 @@ class PageTrackView(APIView):
         except DataError as e:
             logger.error(e)
 
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data={
+            # 'location': location_data
+            'location': {'country_name': 'US'}
+        })
+    
+    
+class UnsubscribeView(APIView):
+    """Allow email recipients to unsubscribe, even though they don't have an account
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        if not (key := request.data.get('key')):
+            return get_error_response('This unsubscribe URL is incorrect. Please contact support@jobvyne.com')
+        email = self.get_email_from_hash(key)
+        try:
+            unsubscribe = EmailUnsubscribe.objects.get(email=email)
+        except EmailUnsubscribe.DoesNotExist:
+            unsubscribe = EmailUnsubscribe(email=email)
+        unsubscribe.unsubscribe_dt = timezone.now()
+        unsubscribe.save()
+        return get_success_response('You have been unsubscribed from email communications')
+    
+    @staticmethod
+    def generate_email_hash(email):
+        return get_reversible_hash(email)
+    
+    @staticmethod
+    def get_email_from_hash(email):
+        return reverse_hash(email)
+    
+    @staticmethod
+    def get_unsubscribe_url(email):
+        params = {'key': UnsubscribeView.generate_email_hash(email)}
+        return f'{settings.BASE_URL}/unsubscribe?{urlencode(params)}'
 
 
 def set_user_agent_data(page_view, user_agent_str):

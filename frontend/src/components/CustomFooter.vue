@@ -1,5 +1,5 @@
 <template>
-  <q-footer elevated reveal class="bg-grey-8 text-white">
+  <div class="bg-grey-8 text-white">
     <q-toolbar class="justify-center items-center">
       <ResponsiveWidth class="q-py-md">
         <div class="row">
@@ -45,7 +45,7 @@
         </div>
       </ResponsiveWidth>
     </q-toolbar>
-  </q-footer>
+  </div>
 </template>
 
 <script>

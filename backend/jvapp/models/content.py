@@ -6,7 +6,9 @@ from django.db.models import Q, UniqueConstraint
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO, AuditFields, JobVynePermissionsMixin
 
-__all__ = ('ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
+__all__ = ('Article', 'ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
+
+from jvapp.models.employer import Taxonomy
 
 from jvapp.models.user import PermissionName
 
@@ -138,6 +140,7 @@ class JobPost(AuditFields):
     recipient = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE, null=True, blank=True, related_name='recipient_job_post')
     job = models.ForeignKey('EmployerJob', on_delete=models.CASCADE, related_name='job_post')
     channel = models.CharField(max_length=30)
+    meta_data = models.JSONField(blank=True, null=True)  # Useful for storing responses, original message text, etc
     
     class Meta:
         constraints = [
@@ -157,3 +160,13 @@ class JobPost(AuditFields):
                 name='unique_recipient_job_channel'
             ),
         ]
+
+
+class Article(AuditFields):
+    source = models.CharField(max_length=40)
+    url = models.URLField()
+    title = models.CharField(max_length=100)
+    summary = models.CharField(max_length=1000)
+    professions = models.ManyToManyField(Taxonomy, related_name='profession_articles')
+    industries = models.ManyToManyField(Taxonomy, related_name='industry_articles')
+    companies = models.JSONField()

@@ -38,6 +38,8 @@ class SeparatedValueField(models.CharField):
 
         # Use sorted to ensure value comparisons are correct
         # e.g. [a, b] == [b, a]
+        if isinstance(value, str):
+            value = value.split(self.separator)
         return self.separator.join([str(val) for val in sorted(value)])
     
     

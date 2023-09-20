@@ -1,4 +1,5 @@
 from jvapp.models.content import *
+from jvapp.serializers.social import get_serialized_social_link
 from jvapp.utils.datetime import get_datetime_format_or_none
 
 
@@ -34,5 +35,6 @@ def get_serialized_social_post(social_post: SocialPost):
         'auto_day_of_week': social_post.auto_day_of_week,
         'post_account_ids': [pc.id for pc in social_post.post_credentials.all()],
         'post_platforms': {pc.provider for pc in social_post.post_credentials.all()},
-        'social_link_id': social_post.social_link_id
+        'social_link_id': social_post.social_link_id,
+        'social_link': get_serialized_social_link(social_post.social_link) if social_post.social_link else None
     }

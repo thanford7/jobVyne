@@ -1,16 +1,22 @@
 __all__ = ('add_audit_fields', 'add_owner_fields', 'set_user_permission_groups_on_save')
+
+import re
+
 from django.core.files import File
+from django.db import IntegrityError
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from jvapp.apis.employer import EmployerInfoView
 from jvapp.apis.job_seeker import ApplicationTemplateView
 from jvapp.apis.job_subscription import JobSubscriptionView
 from jvapp.apis.social import SocialLinkView
 from jvapp.models.employer import Employer, EmployerAuthGroup, EmployerJobApplicationRequirement, is_default_auth_group
 from jvapp.models.job_seeker import JobApplication, JobApplicationTemplate
 from jvapp.models.social import SocialLink
+from jvapp.models.tracking import PageView
 from jvapp.models.user import JobVyneUser, UserEmployerPermissionGroup
 from jvapp.utils.file import get_file_extension, get_file_name
 from jvapp.utils.image import resize_image_with_fill
@@ -64,12 +70,12 @@ def prevent_duplicate_user(sender, instance, *args, **kwargs):
     current_user_filter &= ~Q(id=instance.id)
     existing_users = JobVyneUser.objects.filter(current_user_filter)
     if existing_users:
-        raise ValueError('A user with this email address already exists')
+        raise IntegrityError('A user with this email address already exists')
 
     
 @receiver(post_save, sender=JobVyneUser)
 def create_employee_referral_link(sender, instance, *args, **kwargs):
-    if instance.employer_id:
+    if instance.employer_id and (instance.employer.organization_type & Employer.ORG_TYPE_EMPLOYER):
         SocialLinkView.get_or_create_employee_referral_links([instance], instance.employer)
 
     
@@ -123,6 +129,19 @@ def link_job_applications(sender, instance, *args, **kwargs):
         ).save()
         
         
+@receiver(post_save, sender=JobVyneUser)
+def create_user_key(sender, instance, created, *args, **kwargs):
+    if created:
+        if instance.full_name:
+            instance.user_key = re.sub('[^a-z0-9]', '-', instance.full_name.lower())
+            existing_user_filter = Q(user_key=instance.user_key) & ~Q(id=instance.id)
+            if JobVyneUser.objects.filter(existing_user_filter):
+                instance.user_key = f'{instance.user_key}{instance.id}'
+        else:
+            instance.user_key = f'user-{instance.id}'
+        instance.save()
+        
+        
 @receiver(post_save, sender=Employer)
 def add_job_application_requirements(sender, instance, created, *args, **kwargs):
     # Only add requirements if this is a new employer
@@ -157,6 +176,11 @@ def add_job_application_requirements(sender, instance, created, *args, **kwargs)
         EmployerJobApplicationRequirement(
             created_dt=timezone.now(), modified_dt=timezone.now(),
             application_field='academic_transcript', is_required=False, is_optional=False, is_hidden=True, is_locked=False
+        ),
+        EmployerJobApplicationRequirement(
+            created_dt=timezone.now(), modified_dt=timezone.now(),
+            application_field='cover_letter', is_required=False, is_optional=False, is_hidden=True,
+            is_locked=False
         )
     ]
     for application_requirement in requirements:
@@ -179,13 +203,41 @@ def generate_logo_sizes(sender, instance, created, *args, **kwargs):
 
 
 @receiver(post_save, sender=Employer)
-def create_employer_job_board(sender, instance, created, *args, **kwargs):
+def create_employer_job_subscription(sender, instance, created, *args, **kwargs):
+    if created and (instance.organization_type & Employer.ORG_TYPE_EMPLOYER):
+        JobSubscriptionView.get_or_create_employer_own_subscription(instance.id)
+
+
+@receiver(post_save, sender=Employer)
+def create_employer_key(sender, instance, created, *args, **kwargs):
     if created:
-        link = SocialLink(
-            is_default=True, name='Main Job Board', employer_id=instance.id
-        )
-        link.save()
-        # If this is an employer then, they should only be subscribed to their jobs
-        if instance.organization_type & Employer.ORG_TYPE_EMPLOYER:
-            employer_subscription = JobSubscriptionView.get_or_create_employer_subscription(instance.id)
-            link.job_subscriptions.add(employer_subscription.id)
+        instance.employer_key = re.sub('[^a-z0-9]', '-', instance.employer_name.lower())
+        existing_employer_filter = Q(employer_key=instance.employer_key) & ~Q(id=instance.id)
+        if Employer.objects.filter(existing_employer_filter):
+            instance.employer_key = f'{instance.employer_key}{instance.id}'
+        instance.save()
+        
+
+@receiver(post_save, sender=Employer)
+def create_employer_info(sender, instance, created, *args, **kwargs):
+    if instance.email_domains and not instance.description:
+        EmployerInfoView.fill_employer_description(employer_filter=Q(id=instance.id))
+        
+        
+@receiver(pre_save, sender=JobApplication)
+def parse_social_link(sender, instance, *args, **kwargs):
+    if instance.social_link:
+        instance.referrer_employer_id = instance.referrer_employer_id or instance.social_link.employer_id
+        instance.referrer_user_id = instance.referrer_user_id or instance.social_link.owner_id
+        
+        
+@receiver(pre_save, sender=PageView)
+def parse_social_link(sender, instance, *args, **kwargs):
+    if instance.social_link_id:
+        try:
+            social_link = SocialLink.objects.get(id=instance.social_link_id)
+            instance.employer_id = instance.employer_id or social_link.employer_id
+            instance.page_owner_id = instance.page_owner_id or social_link.owner_id
+        except SocialLink.DoesNotExist:
+            instance.social_link = None
+        

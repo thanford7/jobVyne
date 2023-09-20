@@ -17,17 +17,19 @@ def generate_user_token(user, user_key, timestamp=None):
     """
     timestamp = timestamp or _num_seconds(datetime.now())
     ts_b36 = int_to_base36(timestamp)
-    hash_string = salted_hmac(
-        key_salt,
-        make_hash_value(user, user_key, timestamp),
-        secret=settings.SECRET_KEY,
-        algorithm='sha256',
-    ).hexdigest()[
-                  ::2
-                  ]  # Limit to shorten the URL.
+    hash_string = get_hash_string(make_hash_value(user, user_key, timestamp))
     if user_key:
         return f'{ts_b36}-{user_key}-{hash_string}'
     return f'{ts_b36}-{hash_string}'
+
+
+def get_hash_string(text):
+    return salted_hmac(
+        key_salt,
+        text,
+        secret=settings.SECRET_KEY,
+        algorithm='sha256',
+    ).hexdigest()[::2]  # Limit to shorten the URL.
 
 
 def make_hash_value(user, user_key, timestamp):
@@ -81,3 +83,37 @@ def get_user_id_from_uid(uid):
 
 def _num_seconds(dt):
     return int((dt - datetime(2001, 1, 1)).total_seconds())
+
+
+
+## This is NOT cryptographically safe! The intent is just to obfuscate text to make it difficult for a user to guess
+HASH_SALT = 'adsklgnsalg239rsfdknasl!($KWLERQ@'
+HASH_SHIFT = 6
+
+
+def get_reversible_hash(text):
+    salted_text = ''
+    for idx, char in enumerate(text):
+        salted_text += char
+        if idx and (not idx % 3):
+            count = int((idx / 3) % len(HASH_SALT))
+            salted_text += HASH_SALT[count]
+    hashed_text = ''
+    for char in salted_text:
+        hashed_text += chr(ord(char) + HASH_SHIFT)
+    
+    return hashed_text
+        
+        
+def reverse_hash(hash_text):
+    unsalted_text = ''
+    for idx, char in enumerate(hash_text):
+        if idx and (not idx % 4):
+            continue
+        unsalted_text += char
+    
+    unhashed_text = ''
+    for char in unsalted_text:
+        unhashed_text += chr(ord(char) - HASH_SHIFT)
+    
+    return unhashed_text

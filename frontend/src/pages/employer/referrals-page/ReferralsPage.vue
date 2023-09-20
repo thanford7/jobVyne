@@ -1,8 +1,8 @@
 <template>
   <q-page padding>
     <div class="q-ml-sm">
-      <PageHeader title="Employee referrals"/>
-      <div>
+      <PageHeader title="Referral Requests"/>
+      <div class="q-mt-md">
         <div class="row q-gutter-y-md">
           <div class="col-12 callout-card">
             Send referral requests to employees. Each employee will receive a unique tracking link.
@@ -143,7 +143,7 @@ export default {
     const authStore = useAuthStore()
     const { user } = storeToRefs(authStore)
 
-    const pageTitle = 'Employee Referrals'
+    const pageTitle = 'Referral Requests'
     const metaData = {
       title: pageTitle,
       titleTemplate: globalStore.getPageTitle

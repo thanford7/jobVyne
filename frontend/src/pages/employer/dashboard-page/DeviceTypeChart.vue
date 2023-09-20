@@ -15,7 +15,7 @@
 
 <script>
 import BaseChart from 'components/charts/BaseChart.vue'
-import { chartColors } from 'components/charts/chartProps.js'
+import { chartColors } from 'components/charts/chartUtil.js'
 import ChartSkeleton from 'components/charts/ChartSkeleton.vue'
 import dateTimeUtil from 'src/utils/datetime.js'
 import { useAuthStore } from 'stores/auth-store.js'

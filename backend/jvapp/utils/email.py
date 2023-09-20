@@ -168,9 +168,12 @@ def send_django_email(
         subtype = None
         if re.match('^.*\.(jpeg|jpg)$', file_path):
             subtype = 'jpeg'
-        employer_logo = MIMEImage(get_file_from_path(file_path), _subtype=subtype)
-        employer_logo.add_header('Content-ID', '<employer_logo>')
-        message.attach(employer_logo)
+        try:
+            employer_logo = MIMEImage(get_file_from_path(file_path), _subtype=subtype)
+            employer_logo.add_header('Content-ID', '<employer_logo>')
+            message.attach(employer_logo)
+        except FileNotFoundError:
+            pass
         
     if is_tracked:
         # Note: Need to use message_attachments instead of files since in-memory files

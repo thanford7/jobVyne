@@ -49,7 +49,7 @@ import PageHeader from 'components/PageHeader.vue'
 import JobBoardTable from 'pages/employer/job-boards-page/JobBoardTable.vue'
 import EmployerSection from 'pages/employer/jobs-page/EmployerSection.vue'
 import JobSubscriptionsSection from 'pages/employer/jobs-page/JobSubscriptionsSection.vue'
-import { Loading, useMeta } from 'quasar'
+import { useMeta } from 'quasar'
 import dataUtil from 'src/utils/data.js'
 import { useAuthStore } from 'stores/auth-store.js'
 import { useGlobalStore } from 'stores/global-store.js'
@@ -86,13 +86,13 @@ export default {
       deep: true
     }
   },
-  preFetch () {
+  async mounted () {
     const authStore = useAuthStore()
-    Loading.show()
-
-    return authStore.setUser().finally(() => {
-      Loading.hide()
-    })
+    await authStore.setUser()
+    const { tab } = this.$route.query
+    if (tab) {
+      this.tab = tab
+    }
   },
   setup () {
     const globalStore = useGlobalStore()

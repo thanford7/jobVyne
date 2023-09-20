@@ -13,9 +13,12 @@ class PageView(models.Model, JobVynePermissionsMixin):
     # page
     relative_url = models.CharField(max_length=100)
     social_link = models.ForeignKey(
-        'SocialLink', on_delete=models.CASCADE, null=True, blank=True, related_name='page_view'
+        'SocialLink', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view'
     )
+    viewer = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='page_view')
     platform = models.ForeignKey('SocialPlatform', on_delete=models.SET_NULL, null=True, blank=True)
+    page_owner = models.ForeignKey('JobVyneUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='owner_page_view')
+    employer = models.ForeignKey('Employer', on_delete=models.SET_NULL, null=True, blank=True, related_name='employer_page_view')
     
     # Unique characteristics
     ip_address = models.CharField(max_length=40, null=True, blank=True)
@@ -45,9 +48,9 @@ class PageView(models.Model, JobVynePermissionsMixin):
         if user.is_admin:
             return query
     
-        filter = Q(social_link__owner_id=user.id)
+        filter = (Q(social_link__owner_id=user.id) | Q(page_owner_id=user.id))
         if user.is_employer:
-            filter |= Q(social_link__employer_id=user.employer_id)
+            filter |= (Q(social_link__employer_id=user.employer_id) | Q(employer_id=user.employer_id))
     
         return query.filter(filter)
     
@@ -153,3 +156,29 @@ class MessageGroup(AuditFields):
         one user or employer
         """
         return bool(user_ids or employer_id)
+
+
+class AIRequest(AuditFields):
+    RESULT_STATUS_SUCCESS = 'SUCCESS'
+    RESULT_STATUS_ERROR = 'ERROR'
+    RESULT_STATUS_UNPARSEABLE = 'UNPARSEABLE'
+
+    prompt_hash = models.CharField(max_length=40)
+    result_status = models.CharField(max_length=20)
+    response = models.JSONField(null=True)
+    
+    
+class UserEmailInvite(models.Model):
+    invite_email = models.EmailField()
+    inviter = models.ForeignKey('JobVyneUser', on_delete=models.CASCADE)
+    sent_dt = models.DateTimeField()
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['invite_email', 'inviter_id'], name='unique_invite')
+        ]
+    
+    
+class EmailUnsubscribe(models.Model):
+    email = models.EmailField(unique=True)
+    unsubscribe_dt = models.DateTimeField()

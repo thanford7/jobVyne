@@ -1,17 +1,20 @@
 import json
+import zoneinfo
 from collections import defaultdict
-from datetime import timezone
 
 from django.core.paginator import Paginator
 from django.db.models import Count, F, Prefetch, Q, Sum, Value
 from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek, TruncYear
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from jvapp.apis._apiBase import JobVyneAPIView
+from jvapp.models.employer import Employer, EmployerJob, Taxonomy
 from jvapp.models.job_seeker import JobApplication
 from jvapp.models.tracking import MessageThreadContext, PageView
 from jvapp.models.user import JobVyneUser, UserApplicationReview
+from jvapp.permissions.general import IsAdmin
 from jvapp.serializers.location import get_serialized_location
 from jvapp.serializers.tracking import get_serialized_message
 from jvapp.utils.data import coerce_bool, coerce_int
@@ -24,7 +27,9 @@ class BaseDataView(JobVyneAPIView):
         super().initial(request, *args, **kwargs)
         self.start_dt = get_datetime_or_none(self.query_params.get('start_dt'))
         self.end_dt = get_datetime_or_none(self.query_params.get('end_dt'))
-        self.timezone = self.end_dt.tzinfo if self.end_dt else timezone.utc
+        self.timezone = None
+        if tzname := self.query_params.get('timezone'):
+            self.timezone = zoneinfo.ZoneInfo(tzname)
         self.owner_id = self.query_params.get('owner_id')
         if self.owner_id:
             self.owner_id = int(self.owner_id)
@@ -45,6 +50,8 @@ class BaseDataView(JobVyneAPIView):
     
     @staticmethod
     def get_link_data(social_link):
+        if not social_link:
+            return {}
         return {
             'link_id': social_link.id,
             'owner_id': social_link.owner_id,
@@ -173,7 +180,8 @@ class ApplicationsView(BaseDataView):
         )
     
     def serialize_application(self, application, is_employer):
-        is_owner = application.social_link.owner_id == self.user.id
+        referrer = application.social_link.owner if application.social_link else application.referrer_user
+        is_owner = referrer and (referrer.id == self.user.id)
         application_data = {
             'id': application.id,
             'job_title': application.employer_job.job_title,
@@ -182,6 +190,7 @@ class ApplicationsView(BaseDataView):
             'linkedin_url': application.linkedin_url,
             'resume_url': application.resume.url if application.resume else None,
             'academic_transcript_url': application.academic_transcript.url if application.academic_transcript else None,
+            'cover_letter_url': application.cover_letter.url if application.cover_letter else None,
             'created_dt': get_datetime_format_or_none(application.created_dt),
             'locations': [get_serialized_location(l) for l in application.employer_job.locations.all()],
             'application_status': application.application_status
@@ -197,7 +206,7 @@ class ApplicationsView(BaseDataView):
             }
         
         if is_employer:
-            if referrer := application.social_link.owner:
+            if referrer:
                 application_data['referrer'] = {
                     'first_name': referrer.first_name,
                     'last_name': referrer.last_name,
@@ -238,9 +247,9 @@ class ApplicationsView(BaseDataView):
         if end_date:
             app_filter &= Q(created_dt__lte=end_date)
         if employer_id:
-            app_filter &= Q(social_link__employer_id=employer_id)
+            app_filter &= Q(referrer_employer_id=employer_id)
         if owner_id:
-            app_filter &= Q(social_link__owner_id=owner_id)
+            app_filter &= Q(referrer_user_id=owner_id)
         if is_exclude_job_board:
             app_filter &= Q(social_link__owner_id__isnull=False)
         
@@ -265,7 +274,7 @@ class ApplicationsView(BaseDataView):
         if user.is_employer:
             application_review_filter = Q(application__employer_job__employer_id=employer_id)
         else:
-            application_review_filter = Q(application__social_link__owner_id=user.id)
+            application_review_filter = Q(application__referrer_user_id=user.id)
         application_review_prefetch = Prefetch(
             'user_review',
             queryset=UserApplicationReview.objects
@@ -277,6 +286,8 @@ class ApplicationsView(BaseDataView):
             .select_related(
                 'platform',
                 'employer_job',
+                'referrer_user',
+                'referrer_employer',
                 'social_link',
                 'social_link__owner',
             ) \
@@ -355,9 +366,9 @@ class PageViewsView(BaseDataView):
     def get_link_views(user, start_date, end_date, employer_id=None, owner_id=None):
         view_filter = Q(access_dt__lte=end_date) & Q(access_dt__gte=start_date)
         if employer_id:
-            view_filter &= Q(social_link__employer_id=employer_id)
+            view_filter &= (Q(social_link__employer_id=employer_id) | Q(employer_id=employer_id))
         if owner_id:
-            view_filter &= Q(social_link__owner_id=owner_id)
+            view_filter &= (Q(social_link__owner_id=owner_id) | Q(page_owner_id=owner_id))
         views = PageView.objects \
             .select_related(
             'social_link',
@@ -365,3 +376,23 @@ class PageViewsView(BaseDataView):
         ) \
             .filter(view_filter)
         return PageView.jv_filter_perm(user, views)
+    
+    
+class AdminDataProcessedJobsView(JobVyneAPIView):
+    permission_classes = [IsAdmin]
+    
+    def get(self, request):
+        job_filter = Q(close_date__isnull=True) | Q(close_date__gt=timezone.now().date())
+        open_jobs = EmployerJob.objects.filter(job_filter)
+        jobs_with_processed_description = open_jobs.filter(qualifications__isnull=False).count()
+        jobs_with_profession = open_jobs.filter(taxonomy__taxonomy__tax_type=Taxonomy.TAX_TYPE_PROFESSION).count()
+        employers = Employer.objects.filter(organization_type=Employer.ORG_TYPE_EMPLOYER)
+        employers_with_description = employers.filter(description__isnull=False).count()
+        
+        return Response(status=status.HTTP_200_OK, data={
+            'open_jobs_count': open_jobs.count(),
+            'jobs_with_description_count': jobs_with_processed_description,
+            'jobs_with_profession_count': jobs_with_profession,
+            'employers_count': employers.count(),
+            'employers_with_description_count': employers_with_description
+        })
