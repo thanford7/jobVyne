@@ -559,7 +559,7 @@ class EmployerJobView(JobVyneAPIView):
                 job_filter &= Q(id__in=job_ids)
             is_only_closed = coerce_bool(self.query_params.get('is_only_closed'))
             is_include_closed = coerce_bool(self.query_params.get('is_include_closed'))
-            jobs = self.get_employer_jobs(employer_job_filter=job_filter, is_only_closed=is_only_closed, is_include_closed=is_include_closed)
+            jobs, paginated_jobs = self.get_employer_jobs(employer_job_filter=job_filter, is_only_closed=is_only_closed, is_include_closed=is_include_closed)
             rules = EmployerBonusRuleView.get_employer_bonus_rules(self.user,
                                                                    employer_id=employer_id) if self.user else None
             data = [get_serialized_employer_job(j, rules=rules, is_include_bonus=bool(self.user)) for j in jobs]

@@ -278,7 +278,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Email
-ADMINS = [('Todd', 'todd@jobvyne.com'), ('Michael', 'michael@jobvyne.com')]
+ADMINS = [('Todd', 'todd@jobvyne.com'),]
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_HOST_USER = 'apikey'  # Exactly that.
