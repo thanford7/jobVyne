@@ -6,10 +6,10 @@ from django.db.models import Q, UniqueConstraint
 
 from jvapp.models.abstract import ALLOWED_UPLOADS_IMAGE, ALLOWED_UPLOADS_VIDEO, AuditFields, JobVynePermissionsMixin
 
-__all__ = ('Article', 'ContentType', 'ContentItem', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
+__all__ = ('Article', 'ContentType', 'ContentItem', 'Event', 'SocialContentItem', 'SocialPost', 'SocialPostFile', 'SocialPostAudit')
 
-from jvapp.models.employer import Taxonomy
-
+from jvapp.models.employer import Taxonomy, Employer
+from jvapp.models.location import Location
 from jvapp.models.user import PermissionName
 
 
@@ -170,3 +170,15 @@ class Article(AuditFields):
     professions = models.ManyToManyField(Taxonomy, related_name='profession_articles')
     industries = models.ManyToManyField(Taxonomy, related_name='industry_articles')
     companies = models.JSONField()
+
+
+class Event(AuditFields):
+    source = models.CharField(max_length=40)
+    source_url = models.URLField()
+    name = models.CharField(max_length=100)
+    location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True)
+    description = models.TextField()
+    start_dt = models.DateTimeField()
+    end_dt = models.DateTimeField()
+    group = models.ForeignKey(Employer, on_delete=models.CASCADE)
+    professions = models.ManyToManyField(Taxonomy, related_name='profession_events')
